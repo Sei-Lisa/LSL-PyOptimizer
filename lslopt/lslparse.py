@@ -919,7 +919,7 @@ class parser(object):
                     # Promote value to float
                     term = [S[op], S[type1], term, self.autocastcheck(value, type1)]
                 else:
-                    # Convert LHS to type2 if possible (note keys are not allowed)
+                    # Convert LHS to type2 if possible (note no keys arrive here)
                     term = [S[op], S[type2], self.autocastcheck(term, type2), value]
 
         return term
