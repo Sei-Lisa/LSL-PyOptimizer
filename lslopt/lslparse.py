@@ -540,6 +540,10 @@ class parser(object):
         if tok0 == 'FLOAT_VALUE':
             return [CONSTANT, S['float'], val]
         if tok0 == 'STRING_VALUE':
+            if self.allowmultistrings:
+                while self.tok[0] == 'STRING_VALUE':
+                    val += self.tok[1]
+                    self.NextToken()
             return [CONSTANT, S['string'], val]
         # Key constants are not currently supported - use string
         #if tok0 == 'KEY_VALUE':
@@ -1294,7 +1298,12 @@ class parser(object):
         if tok[0] == 'FALSE':
             return 0
         if tok[0] in ('STRING_VALUE', 'KEY_VALUE', 'VECTOR_VALUE', 'ROTATION_VALUE', 'LIST_VALUE'):
-            return tok[1]
+            val = tok[1]
+            if tok[0] == 'STRING_VALUE' and self.allowmultistrings:
+                while self.tok[0] == 'STRING_VALUE':
+                    val += self.tok[1]
+                    self.NextToken()
+            return val
         if tok[0] == 'IDENT':
             tmp = self.FindSymbolPartial(tok[1])
             if tmp is None or len(tmp) > 3 or tmp[1] not in self.types:
@@ -1657,8 +1666,8 @@ class parser(object):
         # (TODO:) Allow string + key
         #self.allowkeyconcat = 'allowkeyconcat' in options
 
-        # (TODO:) Allow C style string composition: "blah" "blah"
-        #self.allowcstrings = 'allowcstrings' in options
+        # Allow C style string composition of strings: "blah" "blah" = "blahblah"
+        self.allowmultistrings = 'allowmultistrings' in options
 
         # Symbol table:
         # This is a list of all local and global symbol tables.
