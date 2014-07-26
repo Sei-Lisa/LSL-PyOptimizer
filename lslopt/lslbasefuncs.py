@@ -43,6 +43,7 @@ b64_re = re.compile(ur'^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2,3})?')
 
 ZERO_VECTOR      = Vector((0.0, 0.0, 0.0))
 ZERO_ROTATION    = Quaternion((0.0, 0.0, 0.0, 1.0))
+NULL_KEY         = u'00000000-0000-0000-0000-000000000000'
 
 Infinity = float('inf')
 NaN = float('nan')
@@ -656,6 +657,19 @@ def less(a, b):
         return int(ff(a) < ff(b))
     raise ELSLTypeMismatch
 
+def cond(x):
+    """Test whether x evaluates to True in a condition (if, while, for, ...)"""
+    tx = type(x)
+    if tx == Key:
+        if x == NULL_KEY or len(x) != 36:
+            return False
+        return bool(key_re.match(x))
+    if tx == Vector:
+        return bool(compare(x, ZERO_VECTOR, Eq=False))
+    if tx == Quaternion:
+        return bool(compare(x, ZERO_ROTATION, Eq=False))
+    return bool(x) # works fine for int, float, string, list
+
 def isinteger(x):
     return type(x) == int
 
@@ -966,7 +980,7 @@ def llList2Key(lst, pos):
     except IndexError:
         pass
     if lslcommon.LSO:
-        return Key(u'00000000-0000-0000-0000-000000000000') # NULL_KEY
+        return Key(NULL_KEY)
     return Key(u'')
 
 def llList2List(lst, start, end):
