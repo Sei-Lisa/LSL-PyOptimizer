@@ -10,7 +10,40 @@ import os
 class UnitTestCase(unittest.TestCase):
     pass
 
-class TestCompiler(UnitTestCase):
+class Test01LibraryLoader(UnitTestCase):
+    def test_coverage(self):
+        os.remove('builtins.txt')
+        f = open('builtins.txt', 'wb')
+        f.write(r'''const key a="\t"
+event ev(integer i)
+event ev(integer i)
+quaternion x(integer i)
+void x(integer i)
+blah
+const vector a = <4,5,3,2>
+const vector a = <4,5,3,2
+const vector a = <x,4,3>
+const vector a = <4,x,3>
+const vector a = <3,4,x>
+const rotation a = <3,4,4,x>
+const list l = []
+const quaternion q=<1,2,3,4>
+const string v="
+const string q="\t"
+''')
+        f.close()
+        parser()
+        f = open('builtins.txt.dat', 'rb')
+        b = f.read()
+        f.close()
+        os.remove('builtins.txt')
+        f = open('builtins.txt', 'wb')
+        f.write(b)
+        f.close()
+        parser()
+
+
+class Test02Compiler(UnitTestCase):
     def setUp(self):
         self.parser = parser()
         self.outscript = outscript()
@@ -150,6 +183,7 @@ class TestCompiler(UnitTestCase):
 
         print self.outscript.output(self.parser.parse('''
             float f=2+2;
+            string s = "1" "2";
             default{timer(){
             1+([]+(integer)~1);
             list a;
@@ -158,10 +192,11 @@ class TestCompiler(UnitTestCase):
             f += 4;
             integer i;
             i |= i;
+            "a" "b" "c";
             i>>=i;
             }}''',
             set(('explicitcast','extendedtypecast','extendedassignment',
-                'extendedglobalexpr'))))
+                'extendedglobalexpr', 'allowmultistrings'))))
         print self.parser.scopeindex
         self.assertRaises(EParseUnexpected, self.parser.PopScope)
 
@@ -172,45 +207,6 @@ class TestCompiler(UnitTestCase):
     def tearDown(self):
         del self.parser
         del self.outscript
-
-class TestLibraryLoader(UnitTestCase):
-    def test_coverage(self):
-        try:
-            os.remove('builtins.txt')
-        except OSError:
-            pass
-        f = open('builtins.txt', 'wb')
-        f.write(r'''const key a="\t"
-event ev(integer i)
-event ev(integer i)
-quaternion x(integer i)
-void x(integer i)
-blah
-const vector a = <4,5,3,2>
-const vector a = <4,5,3,2
-const vector a = <x,4,3>
-const vector a = <4,x,3>
-const vector a = <3,4,x>
-const rotation a = <3,4,4,x>
-const list l = []
-const quaternion q=<1,2,3,4>
-const string v="
-const string q="\t"
-''')
-        f.close()
-        parser()
-        f = open('builtins.txt.dat', 'rb')
-        b = f.read()
-        f.close()
-        try:
-            os.remove('builtins.txt')
-        except OSError:
-            pass
-        f = open('builtins.txt', 'wb')
-        f.write(b)
-        f.close()
-        parser()
-
 
 if __name__ == '__main__':
     unittest.main()
