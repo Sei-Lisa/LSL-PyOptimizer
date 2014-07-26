@@ -161,7 +161,7 @@ class outscript(object):
                 else:
                     ret += self.OutIndented(code[4])
             return ret
-        if node == 'EXPR':
+        if node in ('EXPR', 'CONSTANT', 'IDENT'): # FIXME: Hack!
             return self.dent() + self.OutExpr(code) + ';\n'
         if node == 'WHILE':
             ret = self.dent() + 'while (' + self.OutExpr(code[2]) + ')\n'
