@@ -4,7 +4,6 @@ from lslcommon import Key, Vector, Quaternion
 
 class outscript(object):
 
-    # FIXME: is this correct:
     binary_operands = frozenset(('||','&&','^','|','&','==','!=','<','<=','>',
         '>=','<<','>>','+','-','*','/','%', '=', '+=', '-=', '*=', '/=','%=',
         ))
