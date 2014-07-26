@@ -100,7 +100,7 @@ S = ('integer','float','string','key','vector','rotation','quaternion','list',
     'ROTATION','LIST','PRINT','FUNCTION','FIELD','EXPR','V++','V--','=',
     '+=','-=','*=','/=','%=','&=','|=','^=','<<=','>>=','NEG','!','~','++V',
     '--V','()','*','/','%','+','-','<<','>>','==','!=','&','^','|','&&','||',
-    '@','JUMP','STATE','RETURN','IF','WHILE','DO','FOR','DECL','{}',
+    '@','JUMP','STATE','RETURN','IF','WHILE','DO','FOR','DECL','{}',';',
     'Label','State','TRUE','FALSE','default','DEFAULT'
     )
 S = {i:i for i in S}
