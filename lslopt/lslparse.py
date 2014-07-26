@@ -1680,6 +1680,12 @@ class parser(object):
         # TODO: Allow pure C-style string parsing. This is low-priority.
         #self.allowcescapes = 'allowcescapes' in options
 
+        # TODO: Enable switch statements.
+        #self.enableswitch = 'enableswitch' in options
+
+        # TODO: Enable brackets for list elements e.g. (float)mylist[3], or mylist[5]=4
+        #self.lazylists = 'lazylists' in options
+
         del options # no longer needed
 
         # Symbol table:
