@@ -17,6 +17,8 @@ class outscript(object):
                 raise lslfuncs.ELSLTypeMismatch
             return '"' + value.encode('utf8').replace('\\','\\\\').replace('"','\\"').replace('\n','\\n') + '"'
         if type(value) == int:
+            if value < 0:
+                return '0x%X' % (value + 4294967296)
             return str(value)
         if type(value) == float:
             s = str(value)
