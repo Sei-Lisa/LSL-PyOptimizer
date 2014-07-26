@@ -190,6 +190,18 @@ class parser(object):
             return None
         return self.globals[symbol]
 
+    def FindScopeIndex(self, symbol, MustBeLabel = False):
+        """Same as FindSymbolPartial, but stops at globals, and returns scope
+        level instead of symbol table entry.
+        """
+        scope = self.scopeindex
+        while scope:
+            symtab = self.symtab[scope]
+            if symbol in symtab and (not MustBeLabel or symtab[symbol][1] == 'Label'):
+                return scope
+            scope = symtab[-1]
+        return scope
+
     def ValidateField(self, typ, field):
         if typ == 'vector' and field in ('x', 'y', 'z') \
            or typ == 'rotation' and field in ('x', 'y', 'z', 's'):
@@ -634,7 +646,7 @@ class parser(object):
         if typ not in self.types:
             raise EParseTypeMismatch(self)
         typ = S[typ]
-        lvalue = [S['IDENT'], typ, name, self.scopeindex]
+        lvalue = [S['IDENT'], typ, name, self.FindScopeIndex(name)]
         if tok0 == '.':
             self.NextToken()
             self.expect('IDENT')
@@ -751,7 +763,7 @@ class parser(object):
                 raise EParseUndefined(self)
             typ = S[typ]
 
-            ret = [S['IDENT'], typ, name, self.scopeindex]
+            ret = [S['IDENT'], typ, name, self.FindScopeIndex(name)]
             self.NextToken()
             if self.tok[0] == '.':
                 self.NextToken()
@@ -1157,7 +1169,7 @@ class parser(object):
             self.NextToken()
             self.expect(';')
             self.NextToken()
-            return [S['JUMP'], None, ['IDENT', S['Label'], name, self.scopeindex]]
+            return [S['JUMP'], None, ['IDENT', S['Label'], name, self.FindScopeIndex(name, MustBeLabel=True)]]
         if tok0 == 'STATE':
             self.NextToken()
             if self.tok[0] not in ('DEFAULT', 'IDENT'):
@@ -1170,7 +1182,7 @@ class parser(object):
             self.expect(';')
             self.NextToken()
             return [S['STATE'], None,
-                [S['IDENT'], S['State'], name, self.scopeindex] if name != 'default' else S['DEFAULT']]
+                [S['IDENT'], S['State'], name, 0] if name != 'default' else S['DEFAULT']]
         if tok0 == 'RETURN':
             self.NextToken()
             if self.tok[0] == ';':
@@ -1317,7 +1329,7 @@ class parser(object):
             if tmp is None or len(tmp) > 3 or tmp[1] not in self.types:
                 raise EParseUndefined(self)
             #return tmp[2]
-            return (S['IDENT'], S[tmp[1]], tok[1], self.scopeindex)
+            return (S['IDENT'], S[tmp[1]], tok[1], self.FindScopeIndex(tok[1]))
         if tok[0] == '<':
             value = [self.Parse_simple_expr()]
             self.autocastcheck((0, self.PythonType2LSL[type(value[0])]), 'float')
