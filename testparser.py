@@ -183,6 +183,8 @@ class Test02Compiler(UnitTestCase):
         self.parser.constants['LISTCONST']=[1,2,3]
         print self.outscript.output(self.parser.parse('default{timer(){LISTCONST;}}'))
 
+        print self.outscript.output(self.parser.parse('''string s="1" "2";default{timer(){}}''',
+            ['allowmultistrings'])) # the one below doesn't work because it uses extended global expr.
         print self.outscript.output(self.parser.parse('''
             float f=2+2;
             string s = "1" "2";
