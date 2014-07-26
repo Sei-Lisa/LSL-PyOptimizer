@@ -905,7 +905,7 @@ class parser(object):
                 # with typecast removal anyway.
             elif self.allowkeyconcat and op == '+' \
                  and type1 in ('key', 'string') and type2 in ('key', 'string'):
-                # Allow key addition (but add explicit cast)
+                # Allow string+key addition (but add explicit cast)
                 if type1 == 'key':
                     term = [S[op], S[type2], [S['CAST'], S[type2], term], value]
                 else:
