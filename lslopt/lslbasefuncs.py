@@ -351,6 +351,90 @@ def InternalList2Strings(val):
         ret.append(InternalTypecast(elem, unicode, InList=True, f32=True))
     return ret
 
+def InternalUTF8toString(s):
+    # Note Mono and LSO behave differently here.
+    # LSO *CAN* store invalid UTF-8.
+    # For example, llEscapeURL(llUnescapeURL("%80%C3")) gives "%80%C3" in LSO.
+    # (But llEscapeURL(llUnescapeURL("%80%00%C3")) still gives "%80")
+    # We don't emulate it, we've built this with Unicode strings in mind.
+
+    # decode(..., 'replace') replaces invalid chars with U+FFFD which is not
+    # what LSL does (LSL replaces with '?'). Since U+FFFD must be preserved if
+    # present, we need to write our own algorithm.
+
+    # Problem: Aliases are not valid UTF-8 for LSL, and code points above
+    # U+10FFFF are not supported. Both things complicate the alg a bit.
+
+    ret = u''
+    partialchar = b''
+    pending = 0
+    for c in s:
+        o = ord(c)
+        if partialchar:
+            if 0x80 <= o < 0xC0 and (
+                    partialchar[1:2]
+                    or b'\xC2' <= partialchar < b'\xF4' and partialchar not in b'\xE0\xF0'
+                    or partialchar == b'\xE0' and o >= 0xA0
+                    or partialchar == b'\xF0' and o >= 0x90
+                    or partialchar == b'\xF4' and o < 0x90
+                    ):
+                partialchar += c
+                pending -= 1
+                if pending == 0:
+                    ret += partialchar.decode('utf8')
+                    partialchar = b''
+                c = c
+                # NOTE: Without the above line, the following one hits a bug in
+                # python-coverage. It IS executed but not detected.
+                continue
+            ret += u'?' * len(partialchar)
+            partialchar = b''
+            # fall through to process current character
+        if o >= 0xC2 and o <= 0xF4:
+            partialchar = c
+            pending = 1 if o < 0xE0 else 2 if o < 0xF0 else 3
+        elif o >= 0x80:
+            ret += u'?'
+        else:
+            ret += c.decode('utf8')
+
+    if partialchar:
+        ret += u'?' * len(partialchar)
+
+    return zstr(ret)
+
+# The code of llDeleteSubList and llDeleteSubString is identical except for the type check
+def InternalDeleteSubSequence(val, start, end):
+    assert isinteger(start)
+    assert isinteger(end)
+    L = len(val)
+    if L == 0:
+        return val[:]
+
+    # Python does much of the same thing here, which helps a lot
+    if (start+L if start < 0 else start) <= (end+L if end < 0 else end):
+        if end == -1: end += L
+        return val[:start] + val[end+1:]
+    if end == -1: end += L
+    return val[end+1:start] # Exclusion range
+
+# The code of llGetSubString and llList2List is identical except for the type check
+def InternalGetSubSequence(val, start, end):
+    assert isinteger(start)
+    assert isinteger(end)
+    L = len(val)
+    if L == 0:
+        return val[:]
+
+    # Python does much of the same thing as LSL here, which helps a lot
+    if start < 0: start += L
+    if end < 0: end += L
+    if start > end:
+        if end == -1: end += L
+        return val[:end+1] + val[start:] # Exclusion range
+    if end == -1: end += L
+    return val[start:end+1]
+
 def typecast(val, out, InList=False, f32=True):
     """Type cast an item. Calls InternalList2Strings for lists and
     defers the rest to InternalTypecast.
@@ -693,59 +777,6 @@ def llBase64ToInteger(s):
     i = ord(s[0]) if s[0] < b'\x80' else ord(s[0])-256
     return (i<<24)+(ord(s[1])<<16)+(ord(s[2])<<8)+ord(s[3])
 
-# TODO: move
-def InternalUTF8toString(s):
-    # Note Mono and LSO behave differently here.
-    # LSO *CAN* store invalid UTF-8.
-    # For example, llEscapeURL(llUnescapeURL("%80%C3")) gives "%80%C3" in LSO.
-    # (But llEscapeURL(llUnescapeURL("%80%00%C3")) still gives "%80")
-    # We don't emulate it, we've built this with Unicode strings in mind.
-
-    # decode(..., 'replace') replaces invalid chars with U+FFFD which is not
-    # what LSL does (LSL replaces with '?'). Since U+FFFD must be preserved if
-    # present, we need to write our own algorithm.
-
-    # Problem: Aliases are not valid UTF-8 for LSL, and code points above
-    # U+10FFFF are not supported. Both things complicate the alg a bit.
-
-    ret = u''
-    partialchar = b''
-    pending = 0
-    for c in s:
-        o = ord(c)
-        if partialchar:
-            if 0x80 <= o < 0xC0 and (
-                    partialchar[1:2]
-                    or b'\xC2' <= partialchar < b'\xF4' and partialchar not in b'\xE0\xF0'
-                    or partialchar == b'\xE0' and o >= 0xA0
-                    or partialchar == b'\xF0' and o >= 0x90
-                    or partialchar == b'\xF4' and o < 0x90
-                    ):
-                partialchar += c
-                pending -= 1
-                if pending == 0:
-                    ret += partialchar.decode('utf8')
-                    partialchar = b''
-                c = c
-                # NOTE: Without the above line, the following one hits a bug in
-                # python-coverage. It IS executed but not detected.
-                continue
-            ret += u'?' * len(partialchar)
-            partialchar = b''
-            # fall through to process current character
-        if o >= 0xC2 and o <= 0xF4:
-            partialchar = c
-            pending = 1 if o < 0xE0 else 2 if o < 0xF0 else 3
-        elif o >= 0x80:
-            ret += u'?'
-        else:
-            ret += c.decode('utf8')
-
-    if partialchar:
-        ret += u'?' * len(partialchar)
-
-    return zstr(ret)
-
 def llBase64ToString(s):
     assert isstring(s)
     s = b64_re.match(s).group(0)
@@ -795,40 +826,6 @@ def llCos(f):
     if -9223372036854775808.0 <= f < 9223372036854775808.0:
         return F32(math.cos(f))
     return f
-
-# TODO: Move
-# The code of llDeleteSubList and llDeleteSubString is identical except for the type check
-def InternalDeleteSubSequence(val, start, end):
-    assert isinteger(start)
-    assert isinteger(end)
-    L = len(val)
-    if L == 0:
-        return val[:]
-
-    # Python does much of the same thing here, which helps a lot
-    if (start+L if start < 0 else start) <= (end+L if end < 0 else end):
-        if end == -1: end += L
-        return val[:start] + val[end+1:]
-    if end == -1: end += L
-    return val[end+1:start] # Exclusion range
-
-# TODO: Move
-# The code of llGetSubString and llList2List is identical except for the type check
-def InternalGetSubSequence(val, start, end):
-    assert isinteger(start)
-    assert isinteger(end)
-    L = len(val)
-    if L == 0:
-        return val[:]
-
-    # Python does much of the same thing as LSL here, which helps a lot
-    if start < 0: start += L
-    if end < 0: end += L
-    if start > end:
-        if end == -1: end += L
-        return val[:end+1] + val[start:] # Exclusion range
-    if end == -1: end += L
-    return val[start:end+1]
 
 def llDeleteSubList(lst, start, end):
     # This acts as llList2List if there's wraparound
