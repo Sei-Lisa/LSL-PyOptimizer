@@ -1642,7 +1642,7 @@ class parser(object):
                 self.NextToken()
 
 
-    def parse(self, script, options = set()):
+    def parse(self, script, options = frozenset()):
         """Parse the given stream with the given options.
 
         This function also builds the temporary globals table.
@@ -1663,11 +1663,14 @@ class parser(object):
         # the correctness of the output)
         self.explicitcast = 'explicitcast' in options
 
-        # (TODO:) Allow string + key
+        # TODO: Allow string + key
         #self.allowkeyconcat = 'allowkeyconcat' in options
 
         # Allow C style string composition of strings: "blah" "blah" = "blahblah"
         self.allowmultistrings = 'allowmultistrings' in options
+
+        # TODO: Allow pure C-style string parsing. This is low-priority.
+        #self.allowcescapes = 'allowcescapes' in options
 
         # Symbol table:
         # This is a list of all local and global symbol tables.
