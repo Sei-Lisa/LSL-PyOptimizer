@@ -1,7 +1,7 @@
 import re
 import math
 from lslcommon import *
-from lslbasefuncs import llStringTrim, shouldbestring, shouldbelist, InternalTypecast
+from lslbasefuncs import llStringTrim, isstring, islist, InternalTypecast
 
 JSON_INVALID = u'\uFDD0'
 JSON_OBJECT  = u'\uFDD1'
@@ -470,7 +470,7 @@ def InternalJson2Elem(json):
     return json
 
 def llJson2List(json):
-    shouldbestring(json)
+    assert isstring(json)
     json = llStringTrim(json, 3) # STRING_TRIM
 
     if json == u'':
@@ -553,8 +553,8 @@ def llJson2List(json):
     return [InternalJson2Elem(json)]
 
 def llJsonGetValue(json, lst):
-    shouldbestring(json)
-    shouldbelist(lst)
+    assert isstring(json)
+    assert islist(lst)
     return InternalJsonFindValue(json, lst, ReturnsToken=False)
 
 '''def InternalJsonRecuriveSetValue(json, lst, val):
@@ -587,9 +587,9 @@ def llJsonGetValue(json, lst):
 
 
 def llJsonSetValue(json, lst, val):
-    shouldbestring(json)
-    shouldbelist(lst)
-    shouldbestring(val)
+    assert isstring(json)
+    assert islist(lst)
+    assert isstring(val)
     if lst == []:
         # [] replaces the entire string no matter if it was invalid
         if val == JSON_DELETE:
@@ -605,16 +605,16 @@ def llJsonSetValue(json, lst, val):
 '''
 
 def llJsonValueType(json, lst):
-    shouldbestring(json)
-    shouldbelist(lst)
+    assert isstring(json)
+    assert islist(lst)
     ret = InternalJsonFindValue(json, lst, ReturnsToken=True)
     if ret == JSON_INVALID:
         return ret
     return ret[2]
 
 def llList2Json(kind, lst):
-    shouldbestring(kind)
-    shouldbelist(lst)
+    assert isstring(kind)
+    assert islist(lst)
 
     if kind == JSON_OBJECT:
         ret = u'{'
