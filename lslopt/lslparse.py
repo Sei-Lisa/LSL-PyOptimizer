@@ -1672,6 +1672,8 @@ class parser(object):
         # TODO: Allow pure C-style string parsing. This is low-priority.
         #self.allowcescapes = 'allowcescapes' in options
 
+        del options # no longer needed
+
         # Symbol table:
         # This is a list of all local and global symbol tables.
         # The first element (0) is the global scope. Each symbol table is a
