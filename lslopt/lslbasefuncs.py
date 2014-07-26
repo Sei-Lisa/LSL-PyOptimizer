@@ -916,11 +916,16 @@ def llIntegerToBase64(x):
 
 def llList2CSV(lst):
     assert islist(lst)
-    # WARNING: FIXME: NOT THREAD SAFE
-    tmp = lslcommon.LSO
-    lslcommon.LSO = True # Use LSO rules for float to string conversion
-    ret = u', '.join(InternalList2Strings(lst))
-    lslcommon.LSO = tmp
+    ret = []
+    for elem in val:
+        # This always uses LSO rules for float to string.
+        if type(elem) == float:
+            ret.append(u'%.6f' % elem)
+        elif type(elem) in (Vector, Quaternion):
+            ret.append(u'<' + u', '.join(list(u'%.6f' % x for x in elem)) + u'>')
+        else:
+            ret.append(InternalTypecast(elem, unicode, InList=True, f32=True))
+    ret = u', '.join(ret)
     return ret
 
 def llList2Float(lst, pos):
