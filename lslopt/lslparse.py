@@ -886,6 +886,7 @@ class parser(object):
                #or op == '-' and type2 not in ('integer', 'float',
                #                               'vector', 'rotation'):
                 raise EParseTypeMismatch(self)
+            # Isolate the additions where the types match to make our life easier later
             if op == '+' and (type1 == type2 or type1 == 'list' or type2 == 'list'):
                 if type1 == type2 == 'key':
                     # key + key is the only disallowed combo of equals
@@ -902,6 +903,13 @@ class parser(object):
                 # list + (list)nonlist and same goes for nonlist + list, they
                 # don't compile to the same thing, but the optimizer should deal
                 # with typecast removal anyway.
+            elif self.allowkeyconcat and op == '+' \
+                 and type1 in ('key', 'string') and type2 in ('key', 'string'):
+                # Allow key addition (but add explicit cast)
+                if type1 == 'key':
+                    term = [S[op], S[type2], [S['CAST'], S[type2], term], value]
+                else:
+                    term = [S[op], S[type1], term, [S['CAST'], S[type1], value]]
             elif type1 == 'key' or type2 == 'key':
                 # Only list + key or key + list is allowed, otherwise keys can't
                 # be added or subtracted with anything.
@@ -1663,8 +1671,8 @@ class parser(object):
         # the correctness of the output)
         self.explicitcast = 'explicitcast' in options
 
-        # TODO: Allow string + key
-        #self.allowkeyconcat = 'allowkeyconcat' in options
+        # Allow string + key = string and key + string = string
+        self.allowkeyconcat = 'allowkeyconcat' in options
 
         # Allow C style string composition of strings: "blah" "blah" = "blahblah"
         self.allowmultistrings = 'allowmultistrings' in options

@@ -81,7 +81,7 @@ class Test02Compiler(UnitTestCase):
                 <0,0,0.>0>0>*<0,0,0==0>2,3>>3>3.>%<3,4,5>;
                 f -= TRUE-(integer)-1;
                 f *= !FALSE;
-                V %= ZERO_VECTOR*ZERO_ROTATION;
+                V %= (ZERO_VECTOR+-ZERO_VECTOR)*(ZERO_ROTATION+-ZERO_ROTATION);
                 1e37;1.1e22;1.;
                 print(V *= 3);
                 fwd("","","");
@@ -147,6 +147,8 @@ class Test02Compiler(UnitTestCase):
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){""-(key)"";}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){""+f();}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){""+(key)"";}''')
+        self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){(key)""+"";}''')
+        self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){(key)""+(key)"";}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){key k;k+k;}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){3/<1,2,3>;}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){3/<1,2,3,4>;}''')
@@ -193,10 +195,12 @@ class Test02Compiler(UnitTestCase):
             integer i;
             i |= i;
             "a" "b" "c";
+            "a"+(key)"b"; (key)"a" + "b";
             i>>=i;
             }}''',
-            set(('explicitcast','extendedtypecast','extendedassignment',
-                'extendedglobalexpr', 'allowmultistrings'))))
+            ['explicitcast','extendedtypecast','extendedassignment',
+                'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat']
+            ))
         print self.parser.scopeindex
         self.assertRaises(EParseUnexpected, self.parser.PopScope)
 
