@@ -165,9 +165,13 @@ class optimizer(object):
             if self.globalmode:
                 val = self.symtab[code[3]][code[2]][2]
                 if val is not None:
-                    # Infinite recursion is prevented at the parser level, by
-                    # not allowing forward globals in global var definitions.
-                    self.FoldTree(val)
+                    if type(val) == tuple:
+                        # Infinite recursion is prevented at the parser level, by
+                        # not allowing forward globals in global var definitions.
+                        self.FoldTree(val)
+                        if val[0] != 'EXPR' or val[2][0] != CONSTANT:
+                            return
+                        val = val[2][2]
                     if code[1] != 'key' and val is not None:
                         code[:] = [CONSTANT, code[1], val]
             return
@@ -207,11 +211,23 @@ class optimizer(object):
 
         if code0 == 'FIELD':
             if self.globalmode:
-                # We can fold a vector or rotation field as they are constant.
-                assert code[2][0] == 'IDENT'
-                value = self.symtab[code[2][3]][code[2][2]][2]
-                assert type(value) in (lslfuncs.Vector, lslfuncs.Quaternion)
-                code[:] = [CONSTANT, 'float', lslfuncs.ff(value['xyzs'].index(code[3]))]
+                # We can fold a global vector or rotation field as they are
+                # constant, but that involves resolving the symbols that aren't
+                # already.
+                assert code[2][0] == 'IDENT' # that should be granted
+                glob = self.symtab[code[2][3]][code[2][2]]
+                origin = glob[2]
+                if type(origin) == tuple:
+                    # We have to do this due to not processing globals in order.
+                    self.FoldTree(origin)
+                    # Unfold constant expression
+                    if origin[0] != 'EXPR' or origin[2][0] != CONSTANT:
+                        return
+                    origin = origin[2][2]
+                    self.symtab[code[2][3]][code[2][2]] = glob[:2] + (origin,) + glob[3:]
+                if type(origin) not in (lslfuncs.Vector, lslfuncs.Quaternion):
+                    return
+                code[:] = [CONSTANT, 'float', lslfuncs.ff(origin['xyzs'.index(code[3])])]
             return
 
         if code0 == '{}':
