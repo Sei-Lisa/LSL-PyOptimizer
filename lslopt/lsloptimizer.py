@@ -226,7 +226,8 @@ class optimizer(object):
                     origin = origin[2][2]
                     self.symtab[code[2][3]][code[2][2]] = glob[:2] + (origin,) + glob[3:]
                 if type(origin) not in (lslfuncs.Vector, lslfuncs.Quaternion):
-                    return
+                    # Precondition not met
+                    return # pragma: no cover
                 code[:] = [CONSTANT, 'float', lslfuncs.ff(origin['xyzs'.index(code[3])])]
             return
 
@@ -332,7 +333,7 @@ class optimizer(object):
                 self.FoldTree(expr)
             return
 
-        if code0 in ('V++','V--','--V','++V'):
+        if code0 in ('V++','V--','--V','++V',';'):
             return
 
         raise Exception('Internal error: This should not happen, node = ' + code0)
@@ -365,4 +366,4 @@ class optimizer(object):
                 if val[0] == 'EXPR' and val[2][0] == CONSTANT:
                     symtab[0][name] = entry[:2] + (val[2][2],) + entry[3:]
                 else:
-                    warning(u'Expression does not collapse to a single constant.')
+                    warning(u'WARNING: Expression does not collapse to a single constant.')
