@@ -10,6 +10,8 @@ class optimizer(object):
     binary_ops = frozenset(('+','-','*','/','%','<<','>>','<','<=','>','>=',
         '==','!=','|','^','&','||','&&'))
     assign_ops = frozenset(('=','+=','-=','*=','/=','%=','&=','|=','^=','<<=','>>='))
+    LSL2PythonType = {'integer':int, 'float':float, 'string':unicode, 'key':lslfuncs.Key,
+        'vector':lslfuncs.Vector, 'rotation':lslfuncs.Quaternion, 'list':list}
 
     def FoldAndRemoveEmptyStmts(self, lst):
         """Utility function for elimination of useless expressions in FOR"""
@@ -39,7 +41,12 @@ class optimizer(object):
         Also optimizes away IF, WHILE, etc.
         """
         while code[0] == 'EXPR':
-            code[:] = code[2]
+            if type(code) == tuple:
+                # just enter
+                code = code[2]
+            else:
+                # unfold
+                code[:] = code[2]
 
         code0 = code[0]
 
@@ -53,7 +60,11 @@ class optimizer(object):
                 # Enable key constants. We'll typecast them back on output, but
                 # this enables some optimizations.
                 #if code[1] != 'key': # key constants not possible
-                    code[:] = [CONSTANT, code[1], lslfuncs.typecast(code[2][2])]
+
+                    #DEBUG
+                    print repr(type(code[2][2])), code[1]
+
+                    code[:] = [CONSTANT, code[1], lslfuncs.typecast(code[2][2], self.LSL2PythonType[code[1]])]
             return
 
         if code0 == 'NEG':
@@ -110,7 +121,7 @@ class optimizer(object):
                     else:
                         result = lslfuncs.less(op1, op2)
                     if op in ('>=', '<='):
-                        result = not result
+                        result = 1-result
                 elif op == '|':
                     result = op1 | op2
                 elif op == '^':
@@ -122,7 +133,7 @@ class optimizer(object):
                 elif op == '&&':
                     result = int(op1 and op2)
                 else:
-                    raise Exception(u'Internal error: Operator not found: ' + op.decode('utf8'))
+                    raise Exception(u'Internal error: Operator not found: ' + op.decode('utf8')) # pragma: no cover
                 code[:] = [CONSTANT, code[1], result]
             elif code[0] == '-' and code[2][1] in ('integer', 'float') and code[3][1] in ('integer', 'float'):
                 # Change - to + - for int/float
@@ -298,20 +309,8 @@ class optimizer(object):
 
     def Fold(self, code, IsGlobal = True):
         assert type(code[2]) == tuple
-        tree = list(code[2])
         self.globalmode = IsGlobal and len(code) == 3
-        self.FoldTree(tree)
-        # As a special case, we fold the constants that are keys,
-        # because the folder
-
-        if type(code) == tuple:
-            code = list(code)
-            code[2] = tuple(tree)
-            code = tuple(code)
-        else:
-            assert False
-            code[2] = tuple(tree)
-
+        self.FoldTree(code[2])
         del self.globalmode
 
     def optimize(self, symtab, functions):
