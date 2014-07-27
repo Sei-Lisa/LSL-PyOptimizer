@@ -186,6 +186,8 @@ class parser(object):
                 #    return (symtab[symbol][1], symtab[symbol][3])
                 return symtab[symbol][1]
             scope = symtab[-1]
+        if self.globalmode and symbol not in self.symtab[0]:
+            return None # Disallow forwards in global var mode
         if symbol not in self.globals:
             return None
         return self.globals[symbol]
@@ -1464,7 +1466,9 @@ class parser(object):
                 if self.tok[0] == '=':
                     self.NextToken()
                     if self.extendedglobalexpr:
+                        self.globalmode = True # Var def. Disallow forward globals.
                         value = tuple(self.Parse_expression()) # Use advanced expression evaluation.
+                        self.globalmode = False # Allow forward globals again.
                     else:
                         value = self.Parse_simple_expr() # Use LSL's dull global expression.
                     self.expect(';')
@@ -1712,6 +1716,11 @@ class parser(object):
         self.scopeindex = 0
 
         self.dictorder = 0
+
+        # This is a small hack to prevent circular definitions in globals when
+        # extended expressions are enabled. When false (default), forward
+        # globals are allowed; if true, only already seen globals are permitted.
+        self.globalmode = False
 
         # Globals and labels can be referenced before they are defined. That
         # includes states.

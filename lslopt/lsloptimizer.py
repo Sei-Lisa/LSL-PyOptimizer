@@ -165,9 +165,8 @@ class optimizer(object):
             if self.globalmode:
                 val = self.symtab[code[3]][code[2]][2]
                 if val is not None:
-                    # WARNING: Possible reference loop here
-                    # TODO: Break reference loop by only accepting globals in order
-                    # of definition during parsing.
+                    # Infinite recursion is prevented at the parser level, by
+                    # not allowing forward globals in global var definitions.
                     self.FoldTree(val)
                     if code[1] != 'key' and val is not None:
                         code[:] = [CONSTANT, code[1], val]
