@@ -74,7 +74,10 @@ class outscript(object):
                 return '[]'
             if len(value) < 5:
                 self.listmode = True
-                ret = '[ ' + self.Value2LSL(value[0]) + ' ]'
+                ret = '[ ' + self.Value2LSL(value[0])
+                for elem in value[1:]:
+                    ret += ', ' + self.Value2LSL(elem)
+                ret += ' ]'
                 self.listmode = False
                 return ret
             ret = '\n'
