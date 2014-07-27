@@ -331,6 +331,10 @@ class optimizer(object):
             expr = self.symtab[code[3]][code[2]][2]
             if expr is not None:
                 self.FoldTree(expr)
+                # TODO: Remove assignment if default
+            else:
+                # TODO: Add assignment if ZERO_VECTOR, ZERO_ROTATION or FLOAT.
+                pass
             return
 
         if code0 in ('V++','V--','--V','++V',';'):
@@ -345,7 +349,7 @@ class optimizer(object):
         del self.globalmode
 
     def optimize(self, symtab, functions):
-        """Optimize the symbolic table symtab in place. Uses a table of
+        """Optimize the symbolic table symtab in place. Requires a table of
         predefined functions for folding constants.
         """
         self.functions = functions
