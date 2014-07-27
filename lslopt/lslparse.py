@@ -186,7 +186,7 @@ class parser(object):
                 #    return (symtab[symbol][1], symtab[symbol][3])
                 return symtab[symbol][1]
             scope = symtab[-1]
-        if self.globalmode and symbol not in self.symtab[0]:
+        if self.globalmode and symbol not in self.symtab[0] and symbol not in self.functions:
             return None # Disallow forwards in global var mode
         if symbol not in self.globals:
             return None
