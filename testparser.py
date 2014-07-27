@@ -3,6 +3,7 @@ from lslopt.lslparse import parser,EParseSyntax,EParseUEOF,EParseAlreadyDefined,
     EParseInvalidField,EParseFunctionMismatch,EParseDeclarationScope,EParseUnexpected,\
     fieldpos
 from lslopt.lsloutput import outscript
+from lslopt.lsloptimizer import optimizer
 from lslopt import lslfuncs
 import unittest
 import os
@@ -10,7 +11,7 @@ import os
 class UnitTestCase(unittest.TestCase):
     pass
 
-class Test01LibraryLoader(UnitTestCase):
+class Test01_LibraryLoader(UnitTestCase):
     def test_coverage(self):
         os.remove('builtins.txt')
         f = open('builtins.txt', 'wb')
@@ -43,7 +44,7 @@ const string q="\t"
         parser()
 
 
-class Test02Compiler(UnitTestCase):
+class Test02_Compiler(UnitTestCase):
     def setUp(self):
         self.parser = parser()
         self.outscript = outscript()
@@ -188,12 +189,13 @@ class Test02Compiler(UnitTestCase):
         print self.outscript.output(self.parser.parse('''
             float f=2+2;
             string s = "1" "2";
+            list L = [(key)""];
             default{timer(){
             1+([]+(integer)~1);
             list a;
             float f;
             a = 3; a += 3;
-            f += 4;
+            f += 4; f += -4.3;
             integer i;
             i |= i;
             "a" "b" "c";
@@ -207,12 +209,51 @@ class Test02Compiler(UnitTestCase):
         self.assertRaises(EParseUnexpected, self.parser.PopScope)
 
         self.assertEqual(fieldpos("a,b",",",3),-1)
-        self.assertRaises(lslfuncs.ELSLTypeMismatch, self.outscript.Value2LSL, lslfuncs.Key(u''))
-        self.assertRaises(lslfuncs.ELSLTypeMismatch, self.outscript.Value2LSL, '')
+        self.assertEqual(self.outscript.Value2LSL(lslfuncs.Key(u'')), '((key)"")')
+        self.assertRaises(AssertionError, self.outscript.Value2LSL, '')
 
     def tearDown(self):
         del self.parser
         del self.outscript
+
+class Test03_Optimizer(UnitTestCase):
+    def setUp(self):
+        self.parser = parser()
+        self.opt = optimizer()
+        self.outscript = outscript()
+
+    def test_coverage(self):
+        p = self.parser.parse('''
+            float f=2+2;
+            string s = "1" "2";
+            list L = [(key)""];
+            default{timer(){
+            1+([]+(integer)~1);
+            list a;
+            float f;
+            integer j = 3||4&&5|6^7&8.==9!=10.e+01f<11<=12>13.>=14<<15>>16==0&&3==
+                ++f-f++-(llFloor(f)<<3);
+            integer k = 2 + (3 * 25 - 4)/2 % 9;
+            a = 3; a += !3;
+            f += 4; f += -4.3;
+            integer i;
+            for(i=3,i;1;){}
+            i |= !i;
+            "a" "b" "c";
+            "a"+(key)"b"; (key)"a" + "b";
+            i>>=i;
+            }}''',
+            ['explicitcast','extendedtypecast','extendedassignment',
+                'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat']
+            )
+        self.opt.optimize(p, self.parser.functions)
+        print self.outscript.output(p)
+
+    def tearDown(self):
+        del self.parser
+        del self.opt
+        del self.outscript
+
 
 if __name__ == '__main__':
     unittest.main()
