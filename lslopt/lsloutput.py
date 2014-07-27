@@ -33,13 +33,13 @@ class outscript(object):
             return pfx + '"' + value.encode('utf8').replace('\\','\\\\') \
                 .replace('"','\\"').replace('\n','\\n') + '"' + sfx
         if tvalue == int:
-            if value < 0 and not self.globalmode and not self.optsigns:
+            if value < 0 and not self.globalmode and self.optsigns:
                 #return '0x%X' % (value + 4294967296)
                 return '((integer)' + str(value) + ')'
             return str(value)
         if tvalue == float:
-            if value.is_integer() and -2147483648.0 <= value < 2147483648.0:
-                if self.globalmode or not self.optsigns:# or value >= 0:
+            if self.optsigns and value.is_integer() and -2147483648.0 <= value < 2147483648.0:
+                if self.globalmode:# or value >= 0:
                     return str(int(value))
                 else:
                     return '((float)' + str(int(value)) + ')'
@@ -258,7 +258,7 @@ class outscript(object):
         order = []
         self.symtab = symtab
 
-        self.optsigns = False
+        self.optsigns = True
 
         for i in symtab:
             item = []
