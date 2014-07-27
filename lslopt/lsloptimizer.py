@@ -1,6 +1,6 @@
 
 import lslfuncs
-from lslparse import S
+from lslparse import S, warning
 
 CONSTANT = S['CONSTANT']
 
@@ -135,20 +135,42 @@ class optimizer(object):
             elif code[0] == '-' and code[2][1] in ('integer', 'float') and code[3][1] in ('integer', 'float'):
                 # Change - to + - for int/float
                 if code[3][0] == CONSTANT:
-                    code[3][2] = lslfuncs.neg(code[3][2])
+                    if code[3][2] == 0:
+                        code[:] = code[2]
+                    else:
+                        code[0] = S['+']
+                        code[3][2] = lslfuncs.neg(code[3][2])
                 else:
                     code[:] = [S['+'], code[1], code[2], [S['NEG'], code[3][1], code[3]]]
             elif code[0] == '<<' and code[3][0] == CONSTANT:
                 # Transforming << into multiply saves some bytes.
                 if code[2][0] in ('+', '-', 'NEG'): # operands with priority between * and <<
                     code[2] = [S['()'], code[2][1], code[2]]
-                code[:] = [S['*'], code[1], code[2], 1<<(code[3][2] & 31)]
+                if not (code[3][2] & 31):
+                    code[:] = code[2]
+                else:
+                    code[:] = [S['*'], code[1], code[2], [CONSTANT, 'integer', 1<<(code[3][2] & 31)]]
+            else:
+                pass # TODO: Eliminate redundancy (x+0, x*1, x*-1, v+ZERO_VECTOR, perhaps x-1=~-x, etc.)
+                    # Note some cases e.g. x*0 can't be optimized away without side-effect analysis.
+                    # But some cases like %1 can be turned into *0 to save bytes.
+            return
+
+        if code0 in self.assign_ops:
+            # TODO: Eliminate redundant operations, e.g. a += 0; etc.
+            self.FoldTree(code[3])
             return
 
         if code0 == 'IDENT':
             if self.globalmode:
-                if code[1] != 'key' and self.symtab[code[3]][code[2]][2] is not None:
-                    code[:] = [CONSTANT, code[1], self.symtab[code[2]][2]]
+                val = self.symtab[code[3]][code[2]][2]
+                if val is not None:
+                    # WARNING: Possible reference loop here
+                    # TODO: Break reference loop by only accepting globals in order
+                    # of definition during parsing.
+                    self.FoldTree(val)
+                    if code[1] != 'key' and val is not None:
+                        code[:] = [CONSTANT, code[1], val]
             return
 
         if code0 == 'FUNCTION':
@@ -295,19 +317,15 @@ class optimizer(object):
                 self.FoldTree(expr)
             return
 
-        if code0 in self.assign_ops:
-            self.FoldTree(code[3])
-            return
-
         if code0 in ('V++','V--','--V','++V'):
             return
 
         raise Exception('Internal error: This should not happen, node = ' + code0)
 
     def Fold(self, code, IsGlobal = True):
-        assert type(code[2]) == tuple
+        assert type(code) == tuple
         self.globalmode = IsGlobal and len(code) == 3
-        self.FoldTree(code[2])
+        self.FoldTree(code)
         del self.globalmode
 
     def optimize(self, symtab, functions):
@@ -324,6 +342,12 @@ class optimizer(object):
             entry = symtab[0][name]
             if entry[1] == 'State':
                 for event in entry[2]:
-                    self.Fold(entry[2][event], False)
+                    self.Fold(entry[2][event][2], False)
             elif type(entry[2]) == tuple:
-                self.Fold(entry) # global
+                self.Fold(entry[2]) # global
+                val = entry[2]
+                # Unfold constant
+                if val[0] == 'EXPR' and val[2][0] == CONSTANT:
+                    symtab[0][name] = entry[:2] + (val[2][2],) + entry[3:]
+                else:
+                    warning(u'Expression does not collapse to a single constant.')
