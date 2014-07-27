@@ -42,6 +42,7 @@ class outscript(object):
                 if self.globalmode:# or value >= 0:
                     return str(int(value))
                 else:
+                    # Important inside lists!!
                     return '((float)' + str(int(value)) + ')'
             s = str(value)
             # Try to remove as many decimals as possible but keeping the F32 value intact
