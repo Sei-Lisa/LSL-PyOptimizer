@@ -72,7 +72,10 @@ class outscript(object):
             if value == []:
                 return '[]'
             if len(value) < 5:
-                return '[ ' + self.Value2LSL(value[0]) + ' ]'
+                self.listmode = True
+                ret = '[ ' + self.Value2LSL(value[0]) + ' ]'
+                self.listmode = False
+                return ret
             ret = '\n'
             first = True
             self.indentlevel += 1
