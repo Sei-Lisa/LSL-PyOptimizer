@@ -1870,7 +1870,7 @@ class parser(object):
                             #if typ == 'key':
                             #    val = Key(val)
                         elif typ == 'key':
-                            warning(u'Key constants not supported: ' + line.decode('utf8'))
+                            warning(u'Key constants not supported in builtins.txt: ' + line.decode('utf8'))
                             val = None
                         elif typ in ('vector', 'rotation'):
                             if val[0:1] != '<' or val[-1:] != '>':
@@ -1900,7 +1900,7 @@ class parser(object):
                                 val = Vector(val)
                         else:
                             assert typ == 'list'
-                            warning(u'List constants not supported: ' + line.decode('utf8'))
+                            warning(u'List constants not supported in builtins.txt: ' + line.decode('utf8'))
                             val = None
                         if val is not None:
                             self.constants[name] = val
