@@ -3,15 +3,15 @@
 
 class Key(unicode):
     def __repr__(self):
-        return self.__class__.__name__ + '(' + super(self.__class__, self).__repr__() + ')'
+        return 'Key(' + super(Key, self).__repr__() + ')'
 
 class Vector(tuple):
     def __repr__(self):
-        return self.__class__.__name__ + '(' + super(self.__class__, self).__repr__() + ')'
+        return 'Vector(' + super(Vector, self).__repr__() + ')'
 
 class Quaternion(tuple):
     def __repr__(self):
-        return self.__class__.__name__ + '(' + super(self.__class__, self).__repr__() + ')'
+        return 'Quaternion(' + super(Quaternion, self).__repr__() + ')'
 
 # Recognized: 3763, 6466, 6495
 Bugs = set([6495])
