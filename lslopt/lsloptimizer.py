@@ -1,7 +1,6 @@
 
 import lslfuncs
 from lslparse import S
-import math
 
 CONSTANT = S['CONSTANT']
 
@@ -10,6 +9,7 @@ class optimizer(object):
     # explicitly exclude assignments
     binary_ops = frozenset(('+','-','*','/','%','<<','>>','<','<=','>','>=',
         '==','!=','|','^','&','||','&&'))
+    assign_ops = frozenset(('=','+=','-=','*=','/=','%=','&=','|=','^=','<<=','>>='))
 
     def FoldAndRemoveEmptyStmts(self, lst):
         """Utility function for elimination of useless expressions in FOR"""
@@ -43,6 +43,10 @@ class optimizer(object):
 
         code0 = code[0]
 
+        if code0 == CONSTANT:
+            # Job already done
+            return
+
         if code0 == 'CAST':
             self.FoldTree(code[2])
             if code[2][0] == CONSTANT:
@@ -74,6 +78,7 @@ class optimizer(object):
             self.FoldTree(code[2])
             if code[2][0] == CONSTANT:
                 code[:] = code[2]
+            return
 
         if code0 in self.binary_ops:
             # RTL evaluation
@@ -132,11 +137,11 @@ class optimizer(object):
                 code[:] = [S['*'], code[1], code[2], 1<<(code[3][2] & 31)]
             return
 
-        if self.globalmode:
-            if code0 == 'IDENT':
+        if code0 == 'IDENT':
+            if self.globalmode:
                 if code[1] != 'key' and self.symtab[code[3]][code[2]][2] is not None:
                     code[:] = [CONSTANT, code[1], self.symtab[code[2]][2]]
-                return
+            return
 
         if code0 == 'FUNCTION':
             for x in code[3][::-1]:
@@ -273,12 +278,23 @@ class optimizer(object):
         if code0 == 'RETURN':
             if code[2] is not None:
                 self.FoldTree(code[2])
+            return
 
         if code0 == 'DECL':
             # The expression code is elsewhere.
             expr = self.symtab[code[3]][code[2]][2]
             if expr is not None:
                 self.FoldTree(expr)
+            return
+
+        if code0 in self.assign_ops:
+            self.FoldTree(code[3])
+            return
+
+        if code0 in ('V++','V--','--V','++V'):
+            return
+
+        raise Exception('Internal error: This should not happen, node = ' + code0)
 
     def Fold(self, code, IsGlobal = True):
         assert type(code[2]) == tuple
@@ -287,17 +303,6 @@ class optimizer(object):
         self.FoldTree(tree)
         # As a special case, we fold the constants that are keys,
         # because the folder
-
-        # TODO: Move this to a post-folding optimization.
-        #       Reasons: (1) it doesn't optimize deep constants and
-        #       (2) it disturbs normal folding if done on the fly.
-        # Mono optimization: (integer)-5 and (float)-3.0 is cheaper.
-        if not IsGlobal and tree[0] == 'CONSTANT':
-            # Disabled because we print integer constants in hex anyway.
-            #if tree[1] == 'integer' and tree[2] < 0:
-            #    tree[:] = [S['CAST'], 'integer', tree]
-            if tree[1] == 'float' and tree[2] < 0.0 and not math.isinf(tree[2]):
-                tree[:] = [S['CAST'], 'float', tree]
 
         if type(code) == tuple:
             code = list(code)
