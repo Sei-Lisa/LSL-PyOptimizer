@@ -157,9 +157,18 @@ class optimizer(object):
             return
 
         if code0 in ('VECTOR', 'ROTATION', 'LIST'):
+            isconst = True
             for x in code[:1:-1]:
                 self.FoldTree(x)
-            # TODO: Fold into constant if possible.
+                if x[0] != CONSTANT:
+                    isconst = False
+            if isconst:
+                value = [x[2] for x in code[2:]]
+                if code0 == 'VECTOR':
+                    value = lslfuncs.Vector([lslfuncs.ff(x) for x in value])
+                elif code0 == 'ROTATION':
+                    value = lslfuncs.Quaternion([lslfuncs.ff(x) for x in value])
+                code[:] = [CONSTANT, code[1], value]
             return
 
         if code0 == 'FIELD':
