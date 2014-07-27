@@ -1,6 +1,11 @@
 # Convert a symbol table (with parse tree) back to a script.
 import lslfuncs
 from lslcommon import Key, Vector, Quaternion
+import sys
+
+def warning(txt):
+    assert type(txt) == unicode
+    sys.stderr.write(txt + u'\n')
 
 class outscript(object):
 
@@ -11,16 +16,33 @@ class outscript(object):
     unary_operands = frozenset(('NEG', '!', '~'))
 
     def Value2LSL(self, value):
-        if type(value) in (Key, unicode):
+        tvalue = type(value)
+        if tvalue in (Key, unicode):
+            pfx = sfx = ''
             if type(value) == Key:
                 # Constants of type key can not be represented
-                raise lslfuncs.ELSLTypeMismatch
-            return '"' + value.encode('utf8').replace('\\','\\\\').replace('"','\\"').replace('\n','\\n') + '"'
-        if type(value) == int:
-            if value < 0:
-                return '0x%X' % (value + 4294967296)
+                #raise lslfuncs.ELSLTypeMismatch
+                # Actually they can be the result of folding.
+                # On second thought, if we report the error, the location info is lost.
+                # So we will let the compiler deal with the error.
+                if self.globalmode and self.listmode:
+                    warning(u'Illegal combo: Key type inside a global list')
+                if self.listmode or not self.globalmode:
+                    pfx = '((key)'
+                    sfx = ')'
+            return pfx + '"' + value.encode('utf8').replace('\\','\\\\') \
+                .replace('"','\\"').replace('\n','\\n') + '"' + sfx
+        if tvalue == int:
+            if value < 0 and not self.globalmode and not self.optsigns:
+                #return '0x%X' % (value + 4294967296)
+                return '((integer)' + str(value) + ')'
             return str(value)
-        if type(value) == float:
+        if tvalue == float:
+            if value.is_integer() and -2147483648.0 <= value < 2147483648.0:
+                if self.globalmode or not self.optsigns:# or value >= 0:
+                    return str(int(value))
+                else:
+                    return '((float)' + str(int(value)) + ')'
             s = str(value)
             # Try to remove as many decimals as possible but keeping the F32 value intact
             exp = s.find('e')
@@ -37,14 +59,16 @@ class outscript(object):
                 exp = ''
             while s[-1] != '.' and lslfuncs.F32(float(s[:-1]+exp)) == value:
                 s = s[:-1]
-            return s + exp
-        if type(value) == Vector:
+            if value >= 0 or self.globalmode or not self.optsigns:
+                return s + exp
+            return '((float)' + s + exp + ')'
+        if tvalue == Vector:
             return '<' + self.Value2LSL(value[0]) + ', ' + self.Value2LSL(value[1]) \
                 + ', ' + self.Value2LSL(value[2]) + '>'
-        if type(value) == Quaternion:
+        if tvalue == Quaternion:
             return '<' + self.Value2LSL(value[0]) + ', ' + self.Value2LSL(value[1]) \
                 + ', ' + self.Value2LSL(value[2]) + ', ' + self.Value2LSL(value[3]) + '>'
-        if type(value) == list:
+        if tvalue == list:
             if value == []:
                 return '[]'
             if len(value) < 5:
@@ -57,11 +81,13 @@ class outscript(object):
                     ret += self.dent() + ', '
                 else:
                     ret += self.dent() + '[ '
+                self.listmode = True
                 ret += self.Value2LSL(entry) + '\n'
+                self.listmode = False
                 first = False
             self.indentlevel -= 1
             return ret + self.dent() + self.indent + ']'
-        raise lslfuncs.ELSLTypeMismatch
+        assert False, u'Unknown value type in Value2LSL: ' + repr(type(value))
 
     def dent(self):
         return self.indent * self.indentlevel
@@ -232,6 +258,8 @@ class outscript(object):
         order = []
         self.symtab = symtab
 
+        self.optsigns = False
+
         for i in symtab:
             item = []
             for j in sorted(i.items(), key=lambda k: -1 if k[0]==-1 else k[1][0]):
@@ -242,6 +270,8 @@ class outscript(object):
         ret = ''
         self.indent = '    '
         self.indentlevel = 0
+        self.globalmode = False
+        self.listmode = False
         for name in order[0]:
             sym = symtab[0][name]
 
@@ -262,10 +292,11 @@ class outscript(object):
                 self.indentlevel -= 1
                 ret += self.dent() + '}\n'
 
-            elif len(sym) > 3:
+            elif len(sym) > 3: # function call
                 ret += self.OutFunc(sym[1], name, sym[3], symtab[sym[4]], sym[2])
 
-            else:
+            else: # global var
+                self.globalmode = True
                 ret += sym[1] + ' ' + name
                 if sym[2] is not None:
                     ret += ' = '
@@ -275,5 +306,6 @@ class outscript(object):
                         ret += self.Value2LSL(sym[2])
 
                 ret += ';\n'
+                self.globalmode = False
 
         return ret
