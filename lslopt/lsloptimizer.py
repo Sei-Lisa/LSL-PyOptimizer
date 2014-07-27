@@ -61,9 +61,6 @@ class optimizer(object):
                 # this enables some optimizations.
                 #if code[1] != 'key': # key constants not possible
 
-                    #DEBUG
-                    print repr(type(code[2][2])), code[1]
-
                     code[:] = [CONSTANT, code[1], lslfuncs.typecast(code[2][2], self.LSL2PythonType[code[1]])]
             return
 
