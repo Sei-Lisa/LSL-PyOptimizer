@@ -225,6 +225,7 @@ class Test03_Optimizer(UnitTestCase):
     def test_coverage(self):
         p = self.parser.parse('''
             float f=2+2;
+            float g = f;
             string s = "1" "2";
             list L = [(key)""];
             default{timer(){
@@ -232,7 +233,7 @@ class Test03_Optimizer(UnitTestCase):
             list a;
             float f;
             integer j = 3||4&&5|6^7&8.==9!=10.e+01f<11<=12>13.>=14<<15>>16==0&&3==
-                ++f-f++-(llFloor(f)<<3);
+                ++f-f++-(3 + llFloor(f)<<3 << 32) - 2 - 0;
             integer k = 2 + (3 * 25 - 4)/2 % 9;
             a = 3; a += !3;
             f += 4; f += -4.3;
