@@ -25,7 +25,9 @@ def main():
         script = outs.output(symtab)
         del outs
         del symtab
-        print script.decode('utf8'),
+        sys.stdout.write(script)
         return 0
 
-sys.exit(main())
+ret = main()
+if ret:
+    sys.exit(ret)
