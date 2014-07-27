@@ -180,6 +180,8 @@ class Test02_Compiler(UnitTestCase):
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){string i;(i&=i);}''',
             set(('extendedassignment')))
 
+        self.assertRaises(EParseUndefined, self.parser.parse, '''key a=b;key b;default{timer(){}}''',
+            ['extendedglobalexpr'])
         # Force a list constant down its throat, to test coverage of LIST_VALUE
         self.parser.constants['LISTCONST']=[1,2,3]
         print self.outscript.output(self.parser.parse('default{timer(){LISTCONST;}}'))
@@ -234,6 +236,7 @@ class Test03_Optimizer(UnitTestCase):
             float ffff=vvvv.x;
             vector vvvv2=vvvv;
             float ffff3 = v.z;
+            integer fn(){return fn();}
 
             default{touch(integer n){
                 1+([]+(integer)~1);
@@ -252,7 +255,10 @@ class Test03_Optimizer(UnitTestCase):
                 "a" "b" "c";
                 "a"+(key)"b"; (key)"a" + "b";
                 i>>=i;
-                if (1) do while (0); while (0); if (0) ; else ;
+                if (1) do while (0); while (0); if (0); if (0);else; for(;0;);
+                if (i) ; else ; while (i) ; do ; while (i); for(;i;);
+                do while (1); while(1); for(;1;);
+                for (i=0,i;0;);for(i=0,i=0;0;);return;
             }}''',
             ['explicitcast','extendedtypecast','extendedassignment',
                 'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat']

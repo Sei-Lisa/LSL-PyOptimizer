@@ -336,7 +336,7 @@ class optimizer(object):
         if code0 in ('V++','V--','--V','++V',';'):
             return
 
-        raise Exception('Internal error: This should not happen, node = ' + code0)
+        raise Exception('Internal error: This should not happen, node = ' + code0) # pragma: no cover
 
     def Fold(self, code, IsGlobal = True):
         assert type(code) == tuple
