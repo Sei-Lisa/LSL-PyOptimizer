@@ -367,9 +367,10 @@ class optimizer(object):
                     self.Fold(entry[2][event][2], False)
             elif type(entry[2]) == tuple:
                 self.Fold(entry[2]) # global
-                val = entry[2]
-                # Unfold constant
-                if val[0] == 'EXPR' and val[2][0] == CONSTANT:
-                    symtab[0][name] = entry[:2] + (val[2][2],) + entry[3:]
-                else:
-                    warning(u'WARNING: Expression does not collapse to a single constant.')
+                if len(entry) == 3:
+                    val = entry[2]
+                    # Unfold constant
+                    if val[0] == 'EXPR' and val[2][0] == CONSTANT:
+                        symtab[0][name] = entry[:2] + (val[2][2],) + entry[3:]
+                    else:
+                        warning(u'WARNING: Expression does not collapse to a single constant.')
