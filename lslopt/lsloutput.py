@@ -1,11 +1,7 @@
 # Convert a symbol table (with parse tree) back to a script.
 import lslfuncs
 from lslcommon import Key, Vector, Quaternion
-import sys
-
-def warning(txt):
-    assert type(txt) == unicode
-    sys.stderr.write(txt + u'\n')
+from lslparse import warning
 
 class outscript(object):
 
@@ -23,13 +19,17 @@ class outscript(object):
                 # Constants of type key can not be represented
                 #raise lslfuncs.ELSLTypeMismatch
                 # Actually they can be the result of folding.
-                # On second thought, if we report the error, the location info is lost.
-                # So we will let the compiler deal with the error.
+                # On second thought, if we report the error, the location info
+                # is lost. So we emit a warning instead, letting the compiler
+                # report the error in the generated source.
                 if self.globalmode and self.listmode:
                     warning(u'Illegal combo: Key type inside a global list')
                 if self.listmode or not self.globalmode:
-                    pfx = '((key)'
-                    sfx = ')'
+                    if self.globalmode:
+                        pfx = '(key)'
+                    else:
+                        pfx = '((key)'
+                        sfx = ')'
             return pfx + '"' + value.encode('utf8').replace('\\','\\\\') \
                 .replace('"','\\"').replace('\n','\\n') + '"' + sfx
         if tvalue == int:
@@ -90,7 +90,7 @@ class outscript(object):
                 first = False
             self.indentlevel -= 1
             return ret + self.dent() + self.indent + ']'
-        assert False, u'Unknown value type in Value2LSL: ' + repr(type(value))
+        assert False, u'Value of unknown type in Value2LSL: ' + repr(value)
 
     def dent(self):
         return self.indent * self.indentlevel
