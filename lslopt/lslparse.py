@@ -1693,6 +1693,8 @@ class parser(object):
         # Allow C style string composition of strings: "blah" "blah" = "blahblah"
         self.allowmultistrings = 'allowmultistrings' in options
 
+        # TODO: Add option to skip preprocessor directives (specifically #line).
+
         # TODO: Allow pure C-style string parsing. This is low-priority.
         #self.allowcescapes = 'allowcescapes' in options
 
