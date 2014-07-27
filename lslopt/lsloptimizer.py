@@ -11,6 +11,18 @@ class optimizer(object):
     binary_ops = frozenset(('+','-','*','/','%','<<','>>','<','<=','>','>=',
         '==','!=','|','^','&','||','&&'))
 
+    def FoldAndRemoveEmptyStmts(self, lst):
+        """Utility function for elimination of useless expressions in FOR"""
+        x = 0
+        while x < len(lst):
+            self.FoldTree(lst[x])
+            self.FoldStmt(lst[x])
+            # If eliminated, it must be totally removed. A ';' won't do.
+            if lst[x][0] == ';':
+                del lst[x]
+            else:
+                x += 1
+
     def FoldStmt(self, code):
         """If the statement is a constant or an identifier, remove it as it does
         nothing.
@@ -228,8 +240,8 @@ class optimizer(object):
             return
 
         if code0 == 'FOR':
-            for x in code[2]:
-                self.FoldTree(x) # Initializer expresion list, always executed.
+            self.FoldAndRemoveEmptyStmts(code[2])
+
             self.FoldTree(code[3]) # Condition.
             if code[3][0] == CONSTANT:
                 # FOR is delicate. It can have multiple expressions at start.
@@ -240,19 +252,17 @@ class optimizer(object):
                 if lslfuncs.cond(code[3][2]):
                     # Endless loop. Just replace the constant and traverse the rest.
                     code[3][1:2] = [S['integer'], 1]
-                    for x in code[4]:
-                        self.FoldTree(x)
-                    self.FoldTree(5)
-                    self.FoldStmt(5)
+                    self.FoldAndRemoveEmptyStmts(code[4])
+                    self.FoldTree(code[5])
+                    self.FoldStmt(code[5])
                 elif len(code[2]) > 1:
-                    code[:] = [S['{}'], None, code[2]]
+                    code[:] = [S['{}'], None] + code[2]
                 elif code[2]:
                     code[:] = code[2][0]
                 else:
                     code[:] = [S[';'], None]
             else:
-                for x in code[4]:
-                    self.FoldTree(x)
+                self.FoldAndRemoveEmptyStmts(code[4])
                 self.FoldTree(code[5])
                 self.FoldStmt(code[5])
             return
