@@ -13,6 +13,8 @@ class optimizer(object):
     LSL2PythonType = {'integer':int, 'float':float, 'string':unicode, 'key':lslfuncs.Key,
         'vector':lslfuncs.Vector, 'rotation':lslfuncs.Quaternion, 'list':list}
 
+    ignored_stmts = frozenset(('V++','V--','--V','++V',';','STATE','JUMP','@'))
+
     def FoldAndRemoveEmptyStmts(self, lst):
         """Utility function for elimination of useless expressions in FOR"""
         x = 0
@@ -337,7 +339,7 @@ class optimizer(object):
                 pass
             return
 
-        if code0 in ('V++','V--','--V','++V',';'):
+        if code0 in self.ignored_stmts:
             return
 
         raise Exception('Internal error: This should not happen, node = ' + code0) # pragma: no cover
