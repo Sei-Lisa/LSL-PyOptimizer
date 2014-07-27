@@ -163,12 +163,6 @@ class optimizer(object):
             return
 
         if code0 == 'FIELD':
-            # FIXME: I was drunk when I wrote this.
-            #self.FoldTree(code[2])
-            #assert code[2][1] in ('vector', 'rotation')
-            #idx = '--xyzs'.index(code[3])
-            #if code[2][idx][0] == CONSTANT:
-            #    code[:] = [CONSTANT, 'float', code[2][idx][0]]
             if self.globalmode:
                 # We can fold a vector or rotation field as they are constant.
                 assert code[2][0] == 'IDENT'
