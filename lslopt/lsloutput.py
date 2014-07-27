@@ -23,7 +23,7 @@ class outscript(object):
                 # is lost. So we emit a warning instead, letting the compiler
                 # report the error in the generated source.
                 if self.globalmode and self.listmode:
-                    warning(u'Illegal combo: Key type inside a global list')
+                    warning('WARNING: Illegal combo: Key type inside a global list')
                 if self.listmode or not self.globalmode:
                     if self.globalmode:
                         pfx = '(key)'
@@ -52,6 +52,7 @@ class outscript(object):
                 if '.' not in s:
                     # I couldn't produce one but it's assumed that if it happens,
                     # this code deals with it correctly
+                    # FIXME: Not true, it should handle (float) conversion.
                     return s + exp # pragma: no cover
             else:
                 if '.' not in s:
@@ -60,6 +61,7 @@ class outscript(object):
                 exp = ''
             while s[-1] != '.' and lslfuncs.F32(float(s[:-1]+exp)) == value:
                 s = s[:-1]
+            # TODO: Refine.
             if value >= 0 or self.globalmode or not self.optsigns:
                 return s + exp
             return '((float)' + s + exp + ')'
@@ -282,6 +284,9 @@ class outscript(object):
         for name in order[0]:
             sym = symtab[0][name]
 
+            #DEBUG
+            #print name, repr(sym)
+
             ret += self.dent()
             if sym[1] == 'State':
                 if name == 'default':
@@ -299,10 +304,11 @@ class outscript(object):
                 self.indentlevel -= 1
                 ret += self.dent() + '}\n'
 
-            elif len(sym) > 3: # function call
+            elif len(sym) > 3: # function definition
                 ret += self.OutFunc(sym[1], name, sym[3], symtab[sym[4]], sym[2])
 
             else: # global var
+
                 self.globalmode = True
                 ret += sym[1] + ' ' + name
                 if sym[2] is not None:

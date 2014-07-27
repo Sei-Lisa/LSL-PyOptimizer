@@ -160,6 +160,7 @@ class optimizer(object):
 
         if code0 in self.assign_ops:
             # TODO: Eliminate redundant operations, e.g. a += 0; etc.
+            # Consider also e.g. x -= 1 or x -= a transforming it into +=.
             self.FoldTree(code[3])
             return
 
@@ -344,18 +345,14 @@ class optimizer(object):
 
         raise Exception('Internal error: This should not happen, node = ' + code0) # pragma: no cover
 
-    def Fold(self, code, IsGlobal = True):
-        assert type(code) == tuple
-        self.globalmode = IsGlobal and len(code) == 3
-        self.FoldTree(code)
-        del self.globalmode
-
     def optimize(self, symtab, functions):
         """Optimize the symbolic table symtab in place. Requires a table of
         predefined functions for folding constants.
         """
         self.functions = functions
         self.symtab = symtab
+
+        self.globalmode = False
 
         # Fold constants etc.
         for name in symtab[0]:
@@ -364,13 +361,15 @@ class optimizer(object):
             entry = symtab[0][name]
             if entry[1] == 'State':
                 for event in entry[2]:
-                    self.Fold(entry[2][event][2], False)
+                    self.FoldTree(entry[2][event][2])
             elif type(entry[2]) == tuple:
-                self.Fold(entry[2]) # global
-                if len(entry) == 3:
+                self.globalmode = len(entry) == 3
+                self.FoldTree(entry[2]) # global
+                if self.globalmode:
                     val = entry[2]
                     # Unfold constant
                     if val[0] == 'EXPR' and val[2][0] == CONSTANT:
                         symtab[0][name] = entry[:2] + (val[2][2],) + entry[3:]
                     else:
-                        warning(u'WARNING: Expression does not collapse to a single constant.')
+                        warning('WARNING: Expression does not collapse to a single constant.')
+                self.globalmode = False

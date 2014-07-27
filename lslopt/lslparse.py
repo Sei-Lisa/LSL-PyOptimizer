@@ -6,8 +6,8 @@ import sys, re
 # reading it.
 
 def warning(txt):
-    assert type(txt) == unicode
-    sys.stderr.write(txt + u'\n')
+    assert type(txt) == str
+    sys.stderr.write(txt + '\n')
 
 def isdigit(c):
     return '0' <= c <= '9'
@@ -1818,7 +1818,7 @@ class parser(object):
                 if not line: break
                 match = parse_lin_re.match(line)
                 if not match:
-                    warning(u'Syntax error in builtins.txt: ' + line.decode('utf8'))
+                    warning('Syntax error in builtins.txt: ' + line)
                     continue
                 if match.group(1):
                     # event or function
@@ -1836,20 +1836,20 @@ class parser(object):
                     name = match.group(2)
                     if typ == 'event':
                         if name in self.events:
-                            warning(u'Event already defined in bultins.txt, overwriting: ' + name.decode('utf8'))
+                            warning('Event already defined in bultins.txt, overwriting: ' + name)
                         self.events[name] = tuple(args)
                     else:
                         # Library functions go to the functions table. If
                         # they are implemented in lslfuncs.*, they get a
                         # reference to the implementation; otherwise None.
                         if name in self.functions:
-                            warning(u'Function already defined in bultins.txt, overwriting: ' + name.decode('utf8'))
+                            warning('Function already defined in bultins.txt, overwriting: ' + name)
                         self.functions[name] = (typ, tuple(args), getattr(lslfuncs, name, None))
                 elif match.group(4):
                     # constant
                     name = match.group(5)
                     if name in self.constants:
-                        warning(u'Global already defined in bultins.txt, overwriting: ' + name.decode('utf8'))
+                        warning('Global already defined in bultins.txt, overwriting: ' + name)
                     try:
                         typ = match.group(4)
                         if typ == 'quaternion':
@@ -1881,7 +1881,7 @@ class parser(object):
                             #if typ == 'key':
                             #    val = Key(val)
                         elif typ == 'key':
-                            warning(u'Key constants not supported in builtins.txt: ' + line.decode('utf8'))
+                            warning('Key constants not supported in builtins.txt: ' + line)
                             val = None
                         elif typ in ('vector', 'rotation'):
                             if val[0:1] != '<' or val[-1:] != '>':
@@ -1911,14 +1911,14 @@ class parser(object):
                                 val = Vector(val)
                         else:
                             assert typ == 'list'
-                            warning(u'List constants not supported in builtins.txt: ' + line.decode('utf8'))
+                            warning('List constants not supported in builtins.txt: ' + line)
                             val = None
                         if val is not None:
                             self.constants[name] = val
 
                     except EInternal:
-                        warning(u'Invalid string in builtins.txt: ' + line.decode('utf8'))
+                        warning('Invalid string in builtins.txt: ' + line)
                     except ValueError:
-                        warning(u'Invalid vector syntax in builtins.txt: ' + line.decode('utf8'))
+                        warning('Invalid vector syntax in builtins.txt: ' + line)
         finally:
             f.close()
