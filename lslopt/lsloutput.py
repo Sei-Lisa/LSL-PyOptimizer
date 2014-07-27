@@ -163,8 +163,6 @@ class outscript(object):
                 else:
                     ret += self.OutIndented(code[4])
             return ret
-        if node in ('EXPR', 'CONSTANT', 'IDENT'): # FIXME: Hack!
-            return self.dent() + self.OutExpr(code) + ';\n'
         if node == 'WHILE':
             ret = self.dent() + 'while (' + self.OutExpr(code[2]) + ')\n'
             ret += self.OutIndented(code[3])
@@ -213,7 +211,7 @@ class outscript(object):
         if node == ';':
             return self.dent() + ';\n'
 
-        raise Exception('Internal error: statement type not found: ' + repr(node)) # pragma: no cover
+        return self.dent() + self.OutExpr(code) + ';\n'
 
     def OutFunc(self, typ, name, paramlist, paramsymtab, code):
         ret = self.dent()
