@@ -266,6 +266,15 @@ class Test03_Optimizer(UnitTestCase):
         self.opt.optimize(p, self.parser.functions)
         print self.outscript.output(p)
 
+    def test_regression(self):
+        p = self.parser.parse('''
+            integer a;
+            x() { if (1) { string s = "x"; s = s + (string)a; } }
+            default { timer() { } }
+            ''', ['extendedassignment'])
+        self.opt.optimize(p, self.parser.functions)
+        self.outscript.output(p)
+
     def tearDown(self):
         del self.parser
         del self.opt
