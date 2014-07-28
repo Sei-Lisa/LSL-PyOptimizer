@@ -1347,22 +1347,38 @@ class parser(object):
             return (S['IDENT'], S[tmp[1]], tok[1], self.FindScopeIndex(tok[1]))
         if tok[0] == '<':
             value = [self.Parse_simple_expr()]
-            self.autocastcheck((0, self.PythonType2LSL[type(value[0])]), 'float')
+            if type(value[0]) == tuple:
+                typnode = value[0]
+            else:
+                typnode = (0, self.PythonType2LSL[type(value[0])])
+            self.autocastcheck(typnode, 'float')
             self.expect(',')
             self.NextToken()
             value.append(self.Parse_simple_expr())
-            self.autocastcheck((0, self.PythonType2LSL[type(value[1])]), 'float')
+            if type(value[1]) == tuple:
+                typnode = value[1]
+            else:
+                typnode = (0, self.PythonType2LSL[type(value[1])])
+            self.autocastcheck(typnode, 'float')
             self.expect(',')
             self.NextToken()
             value.append(self.Parse_simple_expr())
-            self.autocastcheck((0, self.PythonType2LSL[type(value[2])]), 'float')
+            if type(value[2]) == tuple:
+                typnode = value[2]
+            else:
+                typnode = (0, self.PythonType2LSL[type(value[2])])
+            self.autocastcheck(typnode, 'float')
             if self.tok[0] == '>':
                 self.NextToken()
                 return Vector(value)
             self.expect(',')
             self.NextToken()
             value.append(self.Parse_simple_expr())
-            self.autocastcheck((0, self.PythonType2LSL[type(value[3])]), 'float')
+            if type(value[3]) == tuple:
+                typnode = value[3]
+            else:
+                typnode = (0, self.PythonType2LSL[type(value[3])])
+            self.autocastcheck(typnode, 'float')
             self.expect('>')
             self.NextToken()
             return Quaternion(value)

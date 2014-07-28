@@ -80,10 +80,10 @@ class outscript(object):
                 return '[]'
             if len(value) < 5:
                 self.listmode = True
-                ret = '[ ' + self.Value2LSL(value[0])
+                ret = '[' + self.Value2LSL(value[0])
                 for elem in value[1:]:
                     ret += ', ' + self.Value2LSL(elem)
-                ret += ' ]'
+                ret += ']'
                 self.listmode = False
                 return ret
             ret = '\n'
@@ -100,6 +100,9 @@ class outscript(object):
                 first = False
             self.indentlevel -= 1
             return ret + self.dent() + self.indent + ']'
+
+        if tvalue == tuple and value[0] == 'IDENT': # HACK
+            return value[2]
         assert False, u'Value of unknown type in Value2LSL: ' + repr(value)
 
     def dent(self):
@@ -180,7 +183,7 @@ class outscript(object):
             op = self.OutExpr(expr[2])
             return op + ' = ' + op + ' ' + node[:-1] + ' (' + self.OutExpr(expr[3]) + ')'
 
-        raise Exception('Internal error: expression type "' + node + '" not handled') # pragma: no cover
+        assert False, 'Internal error: expression type "' + node + '" not handled' # pragma: no cover
 
     def OutCode(self, code):
         #return self.dent() + '{\n' + self.dent() + '}\n'

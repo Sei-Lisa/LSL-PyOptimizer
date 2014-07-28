@@ -278,6 +278,19 @@ class Test03_Optimizer(UnitTestCase):
             ''', ['extendedassignment'])
         self.opt.optimize(p, self.parser.functions)
         self.outscript.output(p)
+        p = self.parser.parse('''
+            key k = "blah";
+            list L = [k, "xxxx", 1.0];
+            float f;
+            vector v = <f, 3, 4>;
+
+            default{timer(){}}
+            ''', ['extendedassignment'])
+        self.opt.optimize(p, self.parser.functions)
+        out = self.outscript.output(p)
+        self.assertEqual(out, 'key k = "blah";\nlist L = [k, "xxxx", 1.];\n'
+            'float f;\nvector v = <f, 3, 4>;\ndefault\n{\n    timer()\n'
+            '    {\n    }\n}\n')
 
     def tearDown(self):
         del self.parser
