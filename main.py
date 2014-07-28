@@ -28,8 +28,9 @@ Options (* means not implemented):
                        optimize concatenated strings if they are parenthesized
                        correctly, see note at the footer).
   skippreproc          Skip preprocessor directives in the source as if they
-                       were comments. Not useful unless the script is output
-                       by cpp, which inserts directives like: # 123 "filename"
+                       were comments. Not useful unless the script is itself
+                       the output of a preprocessor like cpp, which inserts
+                       directives like: # 123 "filename".
   optimize             Runs the optimizer.
   optsigns             Optimize signs and float as int.
   * allowcescapes      Enables use of \r, \b, \xNN, \NNN, etc.
