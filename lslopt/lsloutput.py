@@ -30,6 +30,9 @@ class outscript(object):
                     else:
                         pfx = '((key)'
                         sfx = ')'
+            if '\t' in value:
+                warning('WARNING: A string contains a tab. Tabs are expanded to four'
+                        ' spaces by the viewer when copy-pasting the code.')
             return pfx + '"' + value.encode('utf8').replace('\\','\\\\') \
                 .replace('"','\\"').replace('\n','\\n') + '"' + sfx
         if tvalue == int:
@@ -59,6 +62,7 @@ class outscript(object):
                     # This should never happen (Python should always return a point or exponent)
                     return s + '.' # pragma: no cover
                 exp = ''
+            # TODO: Move this to a separate function to fix the above.
             while s[-1] != '.' and lslfuncs.F32(float(s[:-1]+exp)) == value:
                 s = s[:-1]
             # TODO: Refine.
