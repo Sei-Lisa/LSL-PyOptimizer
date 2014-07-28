@@ -196,15 +196,16 @@ class outscript(object):
             self.indentlevel -= 1
             return ret + self.dent() + '}\n'
         if node == 'IF':
-            ret = self.dent() + 'if (' + self.OutExpr(code[2]) + ')\n'
-            ret += self.OutIndented(code[3])
-            if len(code) > 4:
-                ret += self.dent() + 'else\n'
-                if code[4][0] == 'IF':
-                    ret += self.OutCode(code[4])
-                else:
-                    ret += self.OutIndented(code[4])
-            return ret
+            ret = self.dent()
+            while True:
+                ret += 'if (' + self.OutExpr(code[2]) + ')\n' + self.OutIndented(code[3])
+                if len(code) < 5:
+                    return ret
+                if code[4][0] != 'IF':
+                    ret += self.dent() + 'else\n' + self.OutIndented(code[4])
+                    return ret
+                ret += self.dent() + 'else '
+                code = code[4]
         if node == 'WHILE':
             ret = self.dent() + 'while (' + self.OutExpr(code[2]) + ')\n'
             ret += self.OutIndented(code[3])
