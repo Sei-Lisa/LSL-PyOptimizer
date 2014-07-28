@@ -42,30 +42,58 @@ class outscript(object):
             return str(value)
         if tvalue == float:
             if self.optsigns and value.is_integer() and -2147483648.0 <= value < 2147483648.0:
-                if self.globalmode and not self.listmode:# or value >= 0:
+                if self.globalmode and not self.listmode:
                     return str(int(value))
                 elif not self.globalmode:
                     # Important inside lists!!
                     return '((float)' + str(int(value)) + ')'
             s = str(value)
+            if s in ('inf', '-inf', 'nan'):
+                return '((float)"' + s + '")' # this shouldn't appear in globals
             # Try to remove as many decimals as possible but keeping the F32 value intact
             exp = s.find('e')
             if ~exp:
                 s, exp = s[:exp], s[exp:]
+                if exp[1] == '+':
+                    exp = exp[:1] + exp[2:]
                 if '.' not in s:
                     # I couldn't produce one but it's assumed that if it happens,
                     # this code deals with it correctly
-                    # FIXME: Not true, it should handle (float) conversion.
-                    return s + exp # pragma: no cover
+                    s += '.' # pragma: no cover
             else:
                 if '.' not in s:
                     # This should never happen (Python should always return a point or exponent)
                     return s + '.' # pragma: no cover
                 exp = ''
-            # TODO: Move this to a separate function to fix the above.
+
+            # Shorten the float as much as possible.
             while s[-1] != '.' and lslfuncs.F32(float(s[:-1]+exp)) == value:
                 s = s[:-1]
-            # TODO: Refine.
+            if s[-1] != '.':
+                news = s
+                neg = ''
+                if s[0] == '-':
+                    news = s[1:]
+                    neg = '-'
+                # Try harder
+                point = news.index('.') + 1 - len(news) # Remove point
+                news = str(int(news[:point-1] + news[point:]) + 1) # Increment
+                news = news[:point + len(news)] + '.' + news[point + len(news):] # Reinsert point
+                # Repeat the operation with the incremented number
+                while news[-1] != '.' and lslfuncs.F32(float(neg+news[:-1]+exp)) == value:
+                    news = news[:-1]
+                if len(neg+news) < len(s) and lslfuncs.F32(float(neg+news[:-1]+exp)) == value:
+                    # Success! But we try even harder.
+                    if exp != '':
+                        if news[2:3] == '.': # we converted 9.9... into 10.
+                            newexp = 'e' + str(int(exp[1:])+1) # increase exponent
+                            news2 = news[0] + '.' + news[1] + news[3:] # move dot to the left
+                            while news2[-1] == '0': # remove trailing zeros
+                                news2 = news2[:-1]
+                            if len(neg+news2) < len(s) and lslfuncs.F32(float(neg+news2[:-1]+newexp)) == value:
+                                news = news2
+                                exp = newexp
+                    s = neg+news
             if value >= 0 or self.globalmode or not self.optsigns:
                 return s + exp
             return '((float)' + s + exp + ')'
