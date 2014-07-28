@@ -342,11 +342,12 @@ class optimizer(object):
         if code0 == 'DECL':
             # The expression code is elsewhere.
             expr = self.symtab[code[3]][code[2]][2]
+            # Irrelevant if list or string or key.
             if expr is not None:
                 self.FoldTree(expr)
-                # TODO: Remove assignment if default
+                # TODO: Remove assignment if integer zero.
             else:
-                # TODO: Add assignment if ZERO_VECTOR, ZERO_ROTATION or FLOAT.
+                # TODO: Add assignment if vector, rotation or float.
                 pass
             return
 
