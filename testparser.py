@@ -175,6 +175,7 @@ class Test02_Compiler(UnitTestCase):
         self.assertRaises(EParseUEOF, self.parser.parse, '''f(){(integer)''')
         self.assertRaises(EParseInvalidField, self.parser.parse, '''f(){vector v;v.s;}''')
         self.assertRaises(EParseSyntax, self.parser.parse, '''f(){<1,2,3,4==5>;}''')
+        self.assertRaises(EParseSyntax, self.parser.parse, '''#blah;\ndefault{timer(){}}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){<1,2,3,4>"">;}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){<1,2,3,"">"">;}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){string i;(i&=i);}''',
@@ -190,6 +191,7 @@ class Test02_Compiler(UnitTestCase):
             ['allowmultistrings'])) # the one below doesn't work because it uses extended global expr.
         print self.outscript.output(self.parser.parse('''
             float f=2+2;
+            #blah;
             string s = "1" "2";
             list L = [(key)""];
             default{timer(){
@@ -205,7 +207,8 @@ class Test02_Compiler(UnitTestCase):
             i>>=i;
             }}''',
             ['explicitcast','extendedtypecast','extendedassignment',
-                'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat']
+                'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat',
+                'skippreproc']
             ))
         print self.parser.scopeindex
         self.assertRaises(EParseUnexpected, self.parser.PopScope)
@@ -264,6 +267,7 @@ class Test03_Optimizer(UnitTestCase):
                 'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat']
             )
         self.opt.optimize(p, self.parser.functions)
+        self.opt.optimize(p, self.parser.functions, ())
         print self.outscript.output(p)
 
     def test_regression(self):
