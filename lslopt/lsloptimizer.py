@@ -355,6 +355,13 @@ class optimizer(object):
 
         raise Exception('Internal error: This should not happen, node = ' + code0) # pragma: no cover
 
+    def IsValidGlobalConstant(self, value):
+        if value[0] == 'EXPR':
+            value = value[2]
+        if value[0] not in ('VECTOR', 'ROTATION', 'LIST'):
+            return False
+        return all(x[0] in (CONSTANT, 'IDENT') for x in value[2:])
+
     def optimize(self, symtab, functions, options = ('optimize',)):
         """Optimize the symbolic table symtab in place. Requires a table of
         predefined functions for folding constants.
@@ -388,6 +395,6 @@ class optimizer(object):
                     # Unfold constant
                     if val[0] == 'EXPR' and val[2][0] == CONSTANT:
                         symtab[0][name] = entry[:2] + (val[2][2],) + entry[3:]
-                    else:
+                    elif not self.IsValidGlobalConstant(val):
                         warning('WARNING: Expression does not collapse to a single constant.')
                 self.globalmode = False
