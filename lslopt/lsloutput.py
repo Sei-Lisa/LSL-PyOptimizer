@@ -262,12 +262,13 @@ class outscript(object):
                 first = False
         return ret + ')\n' + self.OutCode(code)
 
-    def output(self, symtab):
+    def output(self, symtab, options = ('optimizesigns',)):
         # Build a sorted list of dict entries
         order = []
         self.symtab = symtab
 
-        self.optsigns = True
+        # Optimize signs
+        self.optsigns = 'optimizesigns' in options
 
         for i in symtab:
             item = []
@@ -283,9 +284,6 @@ class outscript(object):
         self.listmode = False
         for name in order[0]:
             sym = symtab[0][name]
-
-            #DEBUG
-            #print name, repr(sym)
 
             ret += self.dent()
             if sym[1] == 'State':

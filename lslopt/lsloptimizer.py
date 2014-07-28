@@ -31,6 +31,7 @@ class optimizer(object):
         """If the statement is a constant or an identifier, remove it as it does
         nothing.
         """
+        # Ideally this should consider side effect analysis of the whole thing.
         if code[0] in (CONSTANT, 'IDENT', 'FIELD'):
             code[:] = [S[';'], None]
         else:
@@ -86,7 +87,10 @@ class optimizer(object):
 
         if code0 == '()':
             self.FoldTree(code[2])
-            if code[2][0] == CONSTANT:
+            if code[2][0] in (CONSTANT, 'VECTOR', 'ROTATION', 'LIST',
+               'IDENT', 'FIELD', 'V++', 'V--', 'FUNCTION', 'PRINT'):
+                # Child is an unary postfix expression; parentheses can be
+                # removed safely.
                 code[:] = code[2]
             return
 
@@ -154,8 +158,11 @@ class optimizer(object):
                     code[:] = [S['*'], code[1], code[2], [CONSTANT, 'integer', 1<<(code[3][2] & 31)]]
             else:
                 pass # TODO: Eliminate redundancy (x+0, x*1, x*-1, v+ZERO_VECTOR, perhaps x-1=~-x, etc.)
+                    # Include != to ^  and || to | and maybe && to &
                     # Note some cases e.g. x*0 can't be optimized away without side-effect analysis.
                     # But some cases like %1 can be turned into *0 to save bytes.
+                    # Turn also % (power of 2) into & mask (oops, nope, negative doesn't work)
+                    # Maybe turn != -1 into ~ in if()'s.
             return
 
         if code0 in self.assign_ops:
@@ -345,10 +352,16 @@ class optimizer(object):
 
         raise Exception('Internal error: This should not happen, node = ' + code0) # pragma: no cover
 
-    def optimize(self, symtab, functions):
+    def optimize(self, symtab, functions, options = ('optimize',)):
         """Optimize the symbolic table symtab in place. Requires a table of
         predefined functions for folding constants.
         """
+
+        if 'optimize' not in options:
+            return
+
+        # TODO: Add option to handle local jumps properly.
+
         self.functions = functions
         self.symtab = symtab
 

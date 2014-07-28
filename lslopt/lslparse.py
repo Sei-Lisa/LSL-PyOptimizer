@@ -249,6 +249,19 @@ class parser(object):
                 self.pos += 1
 
                 # Process comments
+                if c == '#' and self.skippreproc:
+                    # Preprocessor directives act like single line comments.
+                    # Most are not supposed to reach us but cpp also generates
+                    # as output lines like: # 123 "file.lsl"
+                    self.ceof()
+                    while self.script[self.pos] != '\n':
+                        self.pos += 1
+                        self.ceof() # A single-line comment at EOF is not unexpected EOF.
+
+                    self.pos += 1
+                    self.ceof()
+                    continue
+
                 if c == '/':
                     if self.script[self.pos:self.pos+1] == '/':
                         self.pos += 1
@@ -1666,7 +1679,7 @@ class parser(object):
                 self.NextToken()
 
 
-    def parse(self, script, options = frozenset()):
+    def parse(self, script, options = ()):
         """Parse the given stream with the given options.
 
         This function also builds the temporary globals table.
@@ -1693,7 +1706,8 @@ class parser(object):
         # Allow C style string composition of strings: "blah" "blah" = "blahblah"
         self.allowmultistrings = 'allowmultistrings' in options
 
-        # TODO: Add option to skip preprocessor directives (specifically #line).
+        # Skip preprocessor directives (specifically #line).
+        self.skippreproc = 'skippreproc' in options
 
         # TODO: Allow pure C-style string parsing. This is low-priority.
         #self.allowcescapes = 'allowcescapes' in options
