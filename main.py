@@ -35,7 +35,7 @@ Options (* means not implemented):
                        directives like: # 123 "filename".
   optimize             Runs the optimizer.
   optsigns             Optimize signs and float as int.
-  * foldtabs           Tabs can't be copy-pasted, so they aren't optimized by
+  foldtabs             Tabs can't be copy-pasted, so they aren't optimized by
                        default. But with support from the viewer, they can be
                        folded too and make it to the uploaded source. This
                        option overrides that check, enabling optimization of

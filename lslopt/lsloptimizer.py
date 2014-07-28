@@ -196,6 +196,9 @@ class optimizer(object):
                 else:
                     # Call it
                     val = self.functions[code[2]][2](*tuple(x[2] for x in code[3]))
+                    if not self.foldtabs and isinstance(val, unicode) and '\t' in val:
+                        warning('WARNING: Tab in function result and foldtabs option not used.')
+                        return
                     code[:] = [CONSTANT, code[1], val]
             return
 
@@ -359,6 +362,8 @@ class optimizer(object):
 
         if 'optimize' not in options:
             return
+
+        self.foldtabs = 'foldtabs' in options
 
         # TODO: Add option to handle local jumps properly.
 
