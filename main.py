@@ -9,7 +9,9 @@ def main():
     if len(sys.argv) < 2:
         sys.stderr.write(r'''LSL optimizer v0.1
 
-Usage: %s [-o option[,option[,...]]] filename
+Usage: %s [-O option[,option[,...]]] filename
+
+If filename is a dash (-) then standard input is used.
 
 Options (* means not implemented):
   extendedglobalexpr   Enables arbitrary expressions in globals (as opposed to
@@ -50,7 +52,7 @@ means that e.g. a + 3 + 5 is not optimized to a + 8; however a + (3 + 5) is.
 ''' % sys.argv[0])
         return 1
 
-    if sys.argv[1] == '-o':
+    if sys.argv[1] == '-O':
         if len(sys.argv) < 4:
             sys.stderr.write('Command line: Not enough parameters\n')
             return 1
@@ -62,7 +64,11 @@ means that e.g. a + 3 + 5 is not optimized to a + 8; however a + (3 + 5) is.
 
     p = parser()
     try:
-        p.parsefile(fname, options)
+        if fname == '-':
+            script = sys.stdin.read()
+            p.parse(script, options)
+        else:
+            p.parsefile(fname, options)
         funcs = p.functions
         symtab = p.symtab
     except EParse as e:
