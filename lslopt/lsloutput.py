@@ -42,9 +42,9 @@ class outscript(object):
             return str(value)
         if tvalue == float:
             if self.optsigns and value.is_integer() and -2147483648.0 <= value < 2147483648.0:
-                if self.globalmode:# or value >= 0:
+                if self.globalmode and not self.listmode:# or value >= 0:
                     return str(int(value))
-                else:
+                elif not self.globalmode:
                     # Important inside lists!!
                     return '((float)' + str(int(value)) + ')'
             s = str(value)
