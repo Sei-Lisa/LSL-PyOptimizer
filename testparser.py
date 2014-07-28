@@ -70,6 +70,8 @@ class Test02_Compiler(UnitTestCase):
             float ff = f;
             list L = [];
             list L2 = [2,3,4,5,6];
+            list L3 = [2,3,f,5,6];
+            rotation QQ = <f,f,f,f>;
             integer fn(integer x){
                 if (1) for (f=3,f=4,f=5;3;f++,f++) do while(0); while(0); else if (2) return 2; else;
                 fn(3);
@@ -257,9 +259,10 @@ class Test03_Optimizer(UnitTestCase):
                 i |= !i;
                 "a" "b" "c";
                 "a"+(key)"b"; (key)"a" + "b";
+                llUnescapeURL("%09");
                 i>>=i;
                 if (1) do while (0); while (0); if (0); if (0);else; for(;0;);
-                if (i) ; else ; while (i) ; do ; while (i); for(;i;);
+                if (i) if (i); else ; while (i) ; do ; while (i); for(;i;);
                 do while (1); while(1); for(;1;);
                 for (i=0,i;0;);for(i=0,i=0;0;);return;
             }}''',
@@ -269,7 +272,12 @@ class Test03_Optimizer(UnitTestCase):
         self.opt.optimize(p, self.parser.functions)
         self.opt.optimize(p, self.parser.functions, ())
         print self.outscript.output(p)
-
+        p = self.parser.parse('''string s = llUnescapeURL("%09");default{timer(){float f=llSqrt(-1);}}''',
+            ['explicitcast','extendedtypecast','extendedassignment',
+                'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat']
+            )
+        self.opt.optimize(p, self.parser.functions, ['optimize','foldtabs'])
+        print self.outscript.output(p)
     def test_regression(self):
         p = self.parser.parse('''
             integer a;
