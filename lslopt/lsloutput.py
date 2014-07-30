@@ -308,11 +308,8 @@ class outscript(object):
         self.globalmode = False
         self.listmode = False
         for node in self.tree:
-            if node['nt'] == 'DECL': # TODO: self.globalmode = node['nt'] == 'DECL'
-                self.globalmode = True
-                ret += self.OutCode(node)
-                self.globalmode = False
-            else:
-                ret += self.OutCode(node)
+            self.globalmode = node['nt'] == 'DECL'
+            ret += self.OutCode(node)
+            self.globalmode = False
 
         return ret
