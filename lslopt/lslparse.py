@@ -1870,7 +1870,7 @@ class parser(object):
                         fn = getattr(lslfuncs, name, None)
                         self.functions[name] = {'Kind':'f', 'Type':typ, 'ParamTypes':args}
                         if fn is not None:
-                            self.functions['Fn'] = fn
+                            self.functions[name]['Fn'] = fn
                 elif match.group(4):
                     # constant
                     name = match.group(5)
