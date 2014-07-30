@@ -14,7 +14,7 @@ Usage: %s [-O [+|-]option[,[+|-]option[,...]]] filename
 That's an upper case o, not the number zero.
 If filename is a dash (-) then standard input is used.
 
-Options (+ means default, - means not default, * means not implemented):
+Options (+ means default, * means not implemented):
   +extendedglobalexpr  Enables arbitrary expressions in globals (as opposed to
                        dull simple expressions allowed by regular LSL). Needs
                        the optimizer to run for the result to be compilable.
@@ -35,8 +35,9 @@ Options (+ means default, - means not default, * means not implemented):
                        the output of a preprocessor like cpp, which inserts
                        directives like: # 123 "filename".
   +optimize            Runs the optimizer.
-  +optsigns            Optimize signs and float as int.
-  -foldtabs            Tabs can't be copy-pasted, so they aren't optimized by
+  +optsigns            Optimize signs in float and integer constants.
+  +optfloats           Optimize a float when it is an integral value.
+  foldtabs             Tabs can't be copy-pasted, so they aren't optimized by
                        default. But with support from the viewer, they can be
                        folded too and make it to the uploaded source. This
                        option overrides that check, enabling optimization of
@@ -55,7 +56,8 @@ means that e.g. a + 3 + 5 is not optimized to a + 8; however a + (3 + 5) is.
         return 1
 
     options = set(('extendedglobalexpr','extendedtypecast','extendedassignment',
-        'allowkeyconcat','allowmultistrings','skippreproc','optimize','optsigns'
+        'allowkeyconcat','allowmultistrings','skippreproc','optimize',
+        'optsigns','optfloats'
         ))
 
     if sys.argv[1] == '-O':

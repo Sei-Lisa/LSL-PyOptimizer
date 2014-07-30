@@ -41,7 +41,7 @@ class outscript(object):
                 return '((integer)' + str(value) + ')'
             return str(value)
         if tvalue == float:
-            if self.optsigns and value.is_integer() and -2147483648.0 <= value < 2147483648.0:
+            if self.optfloats and value.is_integer() and -2147483648.0 <= value < 2147483648.0:
                 if self.globalmode and not self.listmode:
                     return str(int(value))
                 elif not self.globalmode:
@@ -295,12 +295,13 @@ class outscript(object):
 
         return self.dent() + self.OutExpr(node) + ';\n'
 
-    def output(self, treesymtab, options = ('optsigns',)):
+    def output(self, treesymtab, options = ('optsigns','optfloats')):
         # Build a sorted list of dict entries
         self.tree, self.symtab = treesymtab
 
         # Optimize signs
         self.optsigns = 'optsigns' in options
+        self.optfloats = 'optfloats' in options
 
         ret = ''
         self.indent = '    '
