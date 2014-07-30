@@ -134,11 +134,11 @@ class outscript(object):
     def dent(self):
         return self.indent * self.indentlevel
 
-    def OutIndented(self, code):
-        if code['node'] != '{}':
+    def OutIndented(self, node):
+        if node['nt'] != '{}':
             self.indentlevel += 1
-        ret = self.OutCode(code)
-        if code['node'] != '{}':
+        ret = self.OutCode(node)
+        if node['nt'] != '{}':
             self.indentlevel -= 1
         return ret
 
@@ -155,96 +155,96 @@ class outscript(object):
 
     def OutExpr(self, expr):
         # Handles expression nodes (as opposed to statement nodes)
-        node = expr['node']
-        if 'br' in expr:
-            child = expr['br']
+        nt = expr['nt']
+        if 'ch' in expr:
+            child = expr['ch']
 
-        if node == '()':
+        if nt == '()':
             return '(' + self.OutExpr(child[0]) + ')'
 
-        if node in self.binary_operands:
-            return self.OutExpr(child[0]) + ' ' + node + ' ' + self.OutExpr(child[1])
+        if nt in self.binary_operands:
+            return self.OutExpr(child[0]) + ' ' + nt + ' ' + self.OutExpr(child[1])
 
-        if node == 'IDENT':
+        if nt == 'IDENT':
             return expr['name']
 
-        if node == 'CONST':
+        if nt == 'CONST':
             return self.Value2LSL(expr['value'])
 
-        if node == 'CAST':
-            ret =  '(' + expr['type'] + ')'
+        if nt == 'CAST':
+            ret =  '(' + expr['t'] + ')'
             expr = child[0]
-            if expr['node'] in ('CONST', 'IDENT', 'V++', 'V--', 'VECTOR',
+            if expr['nt'] in ('CONST', 'IDENT', 'V++', 'V--', 'VECTOR',
                'ROTATION', 'LIST', 'FIELD', 'PRINT', 'FUNCTION', '()'):
                 return ret + self.OutExpr(expr)
             return ret + '(' + self.OutExpr(expr) + ')'
 
-        if node == 'LIST':
+        if nt == 'LIST':
             self.listmode = True
             ret = '[' + self.OutExprList(child) + ']'
             self.listmode = False
             return ret
 
-        if node in ('VECTOR', 'ROTATION'):
+        if nt in ('VECTOR', 'ROTATION'):
             return '<' + self.OutExprList(child) + '>'
 
-        if node == 'FNCALL':
+        if nt == 'FNCALL':
             return expr['name'] + '(' + self.OutExprList(child) + ')'
 
-        if node == 'PRINT':
+        if nt == 'PRINT':
             return 'print(' + self.OutExpr(child[0]) + ')'
 
-        if node in self.unary_operands:
-            if node == 'NEG':
-                node = '- '
-            return node + self.OutExpr(child[0])
+        if nt in self.unary_operands:
+            if nt == 'NEG':
+                nt = '- '
+            return nt + self.OutExpr(child[0])
 
-        if node == 'FLD':
+        if nt == 'FLD':
             return self.OutExpr(child[0]) + '.' + expr['fld']
 
-        if node in ('V--', 'V++'):
-            return self.OutExpr(child[0]) + ('++' if node == 'V++' else '--')
+        if nt in ('V--', 'V++'):
+            return self.OutExpr(child[0]) + ('++' if nt == 'V++' else '--')
 
-        if node in ('--V', '++V'):
-            return ('++' if node == '++V' else '--') + self.OutExpr(child[0])
+        if nt in ('--V', '++V'):
+            return ('++' if nt == '++V' else '--') + self.OutExpr(child[0])
 
-        if node in self.extended_assignments:
+        if nt in self.extended_assignments:
             lvalue = self.OutExpr(child[0])
-            return lvalue + ' = ' + lvalue + ' ' + node[:-1] + ' (' + self.OutExpr(child[1]) + ')'
+            return lvalue + ' = ' + lvalue + ' ' + nt[:-1] + ' (' + self.OutExpr(child[1]) + ')'
 
-        if node == 'EXPRLIST':
+        if nt == 'EXPRLIST':
             return self.OutExprList(child)
 
-        assert False, 'Internal error: expression type "' + node + '" not handled' # pragma: no cover
+        assert False, 'Internal error: expression type "' + nt + '" not handled' # pragma: no cover
 
-    def OutCode(self, code):
-        node = code['node']
-        if 'br' in code:
-            child = code['br']
+    def OutCode(self, node):
+        nt = node['nt']
+        if 'ch' in node:
+            child = node['ch']
         else:
             child = None
 
-        if node == 'IF':
+        if nt == 'IF':
             ret = self.dent()
             while True:
                 ret += 'if (' + self.OutExpr(child[0]) + ')\n' + self.OutIndented(child[1])
                 if len(child) < 3:
                     return ret
-                if child[2]['node'] != 'IF':
+                if child[2]['nt'] != 'IF':
                     ret += self.dent() + 'else\n' + self.OutIndented(child[2])
                     return ret
                 ret += self.dent() + 'else '
-                code = child[2]
-                child = code['br']
-        if node == 'WHILE':
+                node = child[2]
+                child = node['ch']
+        if nt == 'WHILE':
             ret = self.dent() + 'while (' + self.OutExpr(child[0]) + ')\n'
             ret += self.OutIndented(child[1])
             return ret
-        if node == 'DO':
+        if nt == 'DO':
             ret = self.dent() + 'do\n'
             ret += self.OutIndented(child[0])
             return ret + self.dent() + 'while (' + self.OutExpr(child[1]) + ');\n'
-        if node == 'FOR':
+        if nt == 'FOR':
             ret = self.dent() + 'for ('
             ret += self.OutExpr(child[0])
             ret += '; ' + self.OutExpr(child[1]) + '; '
@@ -252,48 +252,48 @@ class outscript(object):
             ret += ')\n'
             ret += self.OutIndented(child[3])
             return ret
-        if node == '@':
-            return self.dent() + '@' + code['name'] + ';\n'
-        if node == 'JUMP':
-            return self.dent() + 'jump ' + code['name'] + ';\n'
-        if node == 'STATE':
-            return self.dent() + 'state ' + code['name'] + ';\n'
-        if node == 'RETURN':
+        if nt == '@':
+            return self.dent() + '@' + node['name'] + ';\n'
+        if nt == 'JUMP':
+            return self.dent() + 'jump ' + node['name'] + ';\n'
+        if nt == 'STSW':
+            return self.dent() + 'state ' + node['name'] + ';\n'
+        if nt == 'RETURN':
             if child:
                 return self.dent() + 'return ' + self.OutExpr(child[0]) + ';\n'
             return self.dent() + 'return;\n'
-        if node == 'DECL':
-            ret = self.dent() + code['type'] + ' ' + code['name']
+        if nt == 'DECL':
+            ret = self.dent() + node['t'] + ' ' + node['name']
             if child:
                 ret += ' = ' + self.OutExpr(child[0])
             return ret + ';\n'
-        if node == ';':
+        if nt == ';':
             return self.dent() + ';\n'
 
-        if node in ('STATEDEF', '{}'):
+        if nt in ('STDEF', '{}'):
             ret = ''
-            if node == 'STATEDEF':
-                if code['name'] == 'default':
+            if nt == 'STDEF':
+                if node['name'] == 'default':
                     ret = self.dent() + 'default\n'
                 else:
-                    ret = self.dent() + 'state ' + code['name'] + '\n'
+                    ret = self.dent() + 'state ' + node['name'] + '\n'
 
             ret += self.dent() + '{\n'
             self.indentlevel += 1
-            for stmt in code['br']:
+            for stmt in node['ch']:
                 ret += self.OutCode(stmt)
             self.indentlevel -= 1
             return ret + self.dent() + '}\n'
 
-        if node == 'FNDEF':
+        if nt == 'FNDEF':
             ret = self.dent()
-            if code['type'] is not None:
-                ret += code['type'] + ' '
-            ret += code['name'] + '('
-            ret += ', '.join(typ + ' ' + name for typ, name in zip(code['ptypes'], code['pnames']))
+            if node['t'] is not None:
+                ret += node['t'] + ' '
+            ret += node['name'] + '('
+            ret += ', '.join(typ + ' ' + name for typ, name in zip(node['ptypes'], node['pnames']))
             return ret + ')\n' + self.OutCode(child[0])
 
-        return self.dent() + self.OutExpr(code) + ';\n'
+        return self.dent() + self.OutExpr(node) + ';\n'
 
     def output(self, treesymtab, options = ('optsigns',)):
         # Build a sorted list of dict entries
@@ -307,12 +307,12 @@ class outscript(object):
         self.indentlevel = 0
         self.globalmode = False
         self.listmode = False
-        for code in self.tree:
-            if code['node'] == 'DECL':
+        for node in self.tree:
+            if node['nt'] == 'DECL': # TODO: self.globalmode = node['nt'] == 'DECL'
                 self.globalmode = True
-                ret += self.OutCode(code)
+                ret += self.OutCode(node)
                 self.globalmode = False
             else:
-                ret += self.OutCode(code)
+                ret += self.OutCode(node)
 
         return ret

@@ -186,13 +186,13 @@ class parser(object):
         """Check if automatic dynamic cast is possible, and insert it if
         requested explicitly.
         """
-        tval = value['type']
+        tval = value['t']
         if tval == tgttype:
             return value
         if tval in ('string', 'key') and tgttype in ('string', 'key') \
            or tval == 'integer' and tgttype == 'float':
             if self.explicitcast:
-                return {'node':'CAST', 'type':tgttype, 'br':[value]}
+                return {'nt':'CAST', 't':tgttype, 'ch':[value]}
             return value
         raise EParseTypeMismatch(self)
 
@@ -481,11 +481,11 @@ class parser(object):
                     ret.append(inequality)
                     return ret
             # This is basically a copy/paste of the Parse_inequality handler
-            ltype = inequality['type']
+            ltype = inequality['t']
             if ltype not in ('integer', 'float'):
                 raise EParseTypeMismatch(self)
             rexpr = self.Parse_shift()
-            rtype = rexpr['type']
+            rtype = rexpr['t']
             if rtype not in ('integer', 'float'):
                 raise EParseTypeMismatch(self)
             if ltype != rtype:
@@ -493,7 +493,7 @@ class parser(object):
                     inequality = self.autocastcheck(inequality, rtype)
                 else:
                     rexpr = self.autocastcheck(rexpr, ltype)
-            inequality = {'node':op, 'type':'integer', 'br':[inequality, rexpr]}
+            inequality = {'nt':op, 't':'integer', 'ch':[inequality, rexpr]}
 
         # Reaching this means an operator or lower precedence happened,
         # e.g. <1,1,1,2==2> (that's syntax error in ==)
@@ -529,28 +529,28 @@ class parser(object):
             tok0 = self.tok[0]
             val = self.tok[1]
             self.NextToken()
-            return {'node':CONST, 'type':'integer' if type(val) == int else 'float', 'value':-val}
+            return {'nt':CONST, 't':'integer' if type(val) == int else 'float', 'value':-val}
         if tok0 == 'INTEGER_VALUE':
-            return {'node':CONST, 'type':'integer', 'value':val}
+            return {'nt':CONST, 't':'integer', 'value':val}
         if tok0 == 'FLOAT_VALUE':
-            return {'node':CONST, 'type':'float', 'value':val}
+            return {'nt':CONST, 't':'float', 'value':val}
         if tok0 == 'STRING_VALUE':
             if self.allowmultistrings:
                 while self.tok[0] == 'STRING_VALUE':
                     val += self.tok[1]
                     self.NextToken()
-            return {'node':CONST, 'type':'string', 'value':val}
+            return {'nt':CONST, 't':'string', 'value':val}
         # Key constants are not currently supported - use string
         #if tok0 == 'KEY_VALUE':
         #    return [CONST, 'key', val]
         if tok0 == 'VECTOR_VALUE':
-            return {'node':CONST, 'type':'vector', 'value':val}
+            return {'nt':CONST, 't':'vector', 'value':val}
         if tok0 == 'ROTATION_VALUE':
-            return {'node':CONST, 'type':'rotation', 'value':val}
+            return {'nt':CONST, 't':'rotation', 'value':val}
         if tok0 == 'LIST_VALUE':
-            return {'node':CONST, 'type':'list', 'value':val}
+            return {'nt':CONST, 't':'list', 'value':val}
         if tok0 in ('TRUE', 'FALSE'):
-            return {'node':CONST, 'type':'integer', 'value':int(tok0 == 'TRUE')}
+            return {'nt':CONST, 't':'integer', 'value':int(tok0 == 'TRUE')}
         if tok0 == '<':
             val = [self.Parse_expression()]
             self.expect(',')
@@ -586,23 +586,23 @@ class parser(object):
             val += self.Parse_vector_rotation_tail()
 
             if len(val) == 3:
-                return {'node':'VECTOR', 'type':'vector', 'br':val}
-            return {'node':'ROTATION', 'type':'rotation', 'br':val}
+                return {'nt':'VECTOR', 't':'vector', 'ch':val}
+            return {'nt':'ROTATION', 't':'rotation', 'ch':val}
 
         if tok0 == '[':
             val = self.Parse_optional_expression_list()
             self.expect(']')
             self.NextToken()
-            return {'node':'LIST', 'type':'list', 'br':val}
+            return {'nt':'LIST', 't':'list', 'ch':val}
         if tok0 == 'PRINT':
             self.expect('(')
             self.NextToken()
             expr = self.Parse_expression()
-            if expr['type'] not in self.types:
-                raise EParseTypeMismatch(self) if expr['type'] is None else EParseUndefined(self)
+            if expr['t'] not in self.types:
+                raise EParseTypeMismatch(self) if expr['t'] is None else EParseUndefined(self)
             self.expect(')')
             self.NextToken()
-            return {'node':'PRINT', 'type':None, 'br':[expr]}
+            return {'nt':'PRINT', 't':None, 'ch':[expr]}
 
         if tok0 != 'IDENT':
             if tok0 == 'EOF':
@@ -623,30 +623,30 @@ class parser(object):
             args = self.Parse_optional_expression_list(sym['ParamTypes'])
             self.expect(')')
             self.NextToken()
-            return {'node':'FNCALL', 'type':sym['Type'], 'name':name,
-                'scope':self.scopeindex, 'br':args}
+            return {'nt':'FNCALL', 't':sym['Type'], 'name':name,
+                'scope':self.scopeindex, 'ch':args}
         if sym['Kind'] != 'v':
             raise EParseTypeMismatch(self)
         typ = sym['Type']
-        lvalue = {'node':'IDENT', 'type':typ, 'name':name, 'scope':sym['Scope']}
+        lvalue = {'nt':'IDENT', 't':typ, 'name':name, 'scope':sym['Scope']}
         if tok0 == '.':
             self.NextToken()
             self.expect('IDENT')
             self.ValidateField(typ, self.tok[1])
-            lvalue = {'node':'FLD', 'type':'float', 'br':[lvalue], 'fld':self.tok[1]}
+            lvalue = {'nt':'FLD', 't':'float', 'ch':[lvalue], 'fld':self.tok[1]}
             self.NextToken()
             tok0 = self.tok[0]
 
         if tok0 in ('++', '--'):
             self.NextToken()
-            if lvalue['type'] not in ('integer', 'float'):
+            if lvalue['t'] not in ('integer', 'float'):
                 raise EParseTypeMismatch(self)
-            return {'node':'V++' if tok0 == '++' else 'V--', 'type':lvalue['type'], 'br':[lvalue]}
+            return {'nt':'V++' if tok0 == '++' else 'V--', 't':lvalue['t'], 'ch':[lvalue]}
         if AllowAssignment and (tok0 in self.assignment_ops
                                 or self.extendedassignment and tok0 in self.extassignment_ops):
             self.NextToken()
             expr = self.Parse_expression()
-            rtyp = expr['type']
+            rtyp = expr['t']
             if rtyp not in self.types:
                 raise EParseTypeMismatch(self)
             if typ in ('integer', 'float'):
@@ -661,11 +661,11 @@ class parser(object):
             if tok0 == '=':
                 if typ == 'list' != rtyp:
                     if self.explicitcast:
-                        expr = {'node':'CAST', 'type':typ, 'br':[expr]}
+                        expr = {'nt':'CAST', 't':typ, 'ch':[expr]}
                 else:
                     expr = self.autocastcheck(expr, typ)
 
-                return {'node':'=', 'type':typ, 'br':[lvalue, expr]}
+                return {'nt':'=', 't':typ, 'ch':[lvalue, expr]}
 
             if tok0 == '+=':
                 if typ == 'float':
@@ -675,34 +675,34 @@ class parser(object):
                     raise EParseTypeMismatch(self)
                 if self.explicitcast:
                     if typ == 'list' != rtyp:
-                        expr = {'node':'CAST', 'type':typ, 'br':[expr]}
-                return {'node':tok0, 'type':typ, 'br':[lvalue, expr]}
+                        expr = {'nt':'CAST', 't':typ, 'ch':[expr]}
+                return {'nt':tok0, 't':typ, 'ch':[lvalue, expr]}
 
             if tok0 == '-=':
                 if typ == rtyp in ('integer', 'float', 'vector', 'rotation'):
-                    return {'node':tok0, 'type':typ, 'br':[lvalue, expr]}
+                    return {'nt':tok0, 't':typ, 'ch':[lvalue, expr]}
                 raise EParseTypeMismatch(self)
 
             if tok0 in ('*=', '/='):
                 # There is a special case dealt with in advance.
                 if tok0 == '*=' and typ == 'integer' and rtyp == 'float':
-                    return {'node':tok0, 'type':typ, 'br':[lvalue, expr]}
+                    return {'nt':tok0, 't':typ, 'ch':[lvalue, expr]}
 
                 if (typ == rtyp or typ == 'vector') and rtyp in ('integer', 'float', 'rotation'):
                     if typ == 'vector' and rtyp == 'integer':
                         expr = self.autocastcheck(expr, 'float')
-                    return {'node':tok0, 'type':typ, 'br':[lvalue, expr]}
+                    return {'nt':tok0, 't':typ, 'ch':[lvalue, expr]}
                 raise EParseTypeMismatch(self)
 
             if tok0 == '%=':
                 if typ == rtyp in ('integer', 'vector'):
-                    return {'node':tok0, 'type':typ, 'br':[lvalue, expr]}
+                    return {'nt':tok0, 't':typ, 'ch':[lvalue, expr]}
                 raise EParseTypeMismatch(self)
 
             # Rest take integer operands only
 
             if typ == rtyp == 'integer':
-                return {'node':tok0, 'type':typ, 'br':[lvalue, expr]}
+                return {'nt':tok0, 't':typ, 'ch':[lvalue, expr]}
             raise EParseTypeMismatch(self)
 
         return lvalue
@@ -726,16 +726,16 @@ class parser(object):
             # Unary minus
             self.NextToken()
             value = self.Parse_factor()
-            if value['type'] not in ('integer', 'float', 'vector', 'rotation'):
+            if value['t'] not in ('integer', 'float', 'vector', 'rotation'):
                 raise EParseTypeMismatch(self)
-            return {'node':'NEG', 'type':value['type'], 'br':[value]}
+            return {'nt':'NEG', 't':value['t'], 'ch':[value]}
         if tok0 in ('!', '~'):
             # Unary logic and bitwise NOT - applies to integers only
             self.NextToken()
             value = self.Parse_unary_expression()
-            if value['type'] != 'integer':
+            if value['t'] != 'integer':
                 raise EParseTypeMismatch(self)
-            return {'node':tok0, 'type':'integer', 'br':[value]}
+            return {'nt':tok0, 't':'integer', 'ch':[value]}
         if tok0 in ('++', '--'):
             # Pre-increment / pre-decrement
             self.NextToken()
@@ -747,20 +747,20 @@ class parser(object):
                 raise EParseUndefined(self)
             typ = sym['Type']
 
-            ret = {'node':'IDENT', 'type':typ, 'name':name, 'scope':sym['Scope']}
+            ret = {'nt':'IDENT', 't':typ, 'name':name, 'scope':sym['Scope']}
             self.NextToken()
             if self.tok[0] == '.':
                 self.NextToken()
                 self.expect('IDENT')
                 self.ValidateField(typ, self.tok[1])
-                ret = {'node':'FLD', 'type':'float', 'br':[ret], 'fld':self.tok[1]}
+                ret = {'nt':'FLD', 't':'float', 'ch':[ret], 'fld':self.tok[1]}
                 self.NextToken()
 
-            typ = ret['type']
+            typ = ret['t']
             if typ not in ('integer', 'float'):
                 raise EParseTypeMismatch(self)
 
-            return {'node':'++V' if tok0 == '++' else '--V', 'type':typ, 'br':[ret]}
+            return {'nt':'++V' if tok0 == '++' else '--V', 't':typ, 'ch':[ret]}
 
         if tok0 == '(':
             # Parenthesized expression or typecast
@@ -771,7 +771,7 @@ class parser(object):
                 expr = self.Parse_expression()
                 self.expect(')')
                 self.NextToken()
-                return {'node':'()', 'type':expr['type'], 'br':[expr]}
+                return {'nt':'()', 't':expr['t'], 'ch':[expr]}
 
             # Typecast
             typ = self.tok[1]
@@ -789,10 +789,10 @@ class parser(object):
                     expr = self.Parse_expression()
                     self.expect(')')
                     self.NextToken()
-                    expr = {'node':'()', 'type':expr['type'], 'br':[expr]}
+                    expr = {'nt':'()', 't':expr['t'], 'ch':[expr]}
                 else:
                     expr = self.Parse_unary_postfix_expression(AllowAssignment = False)
-            basetype = expr['type']
+            basetype = expr['t']
             if typ == 'list' and basetype in self.types \
                or basetype in ('integer', 'float') and typ in ('integer', 'float', 'string') \
                or basetype == 'string' and typ in self.types \
@@ -800,7 +800,7 @@ class parser(object):
                or basetype == 'vector' and typ in ('string', 'vector') \
                or basetype == 'rotation' and typ in ('string', 'rotation') \
                or basetype == 'list' and typ == 'string':
-                return {'node':'CAST', 'type':typ, 'br':[expr]}
+                return {'nt':'CAST', 't':typ, 'ch':[expr]}
             raise EParseTypeMismatch(self)
 
         # Must be a postfix expression.
@@ -815,7 +815,7 @@ class parser(object):
         factor = self.Parse_unary_expression()
         while self.tok[0] in ('*', '/', '%'):
             op = self.tok[0]
-            ltype = factor['type']
+            ltype = factor['t']
             # Acceptable types for LHS
             if op in ('*', '/') and ltype not in ('integer', 'float',
                                                   'vector', 'rotation') \
@@ -823,13 +823,13 @@ class parser(object):
                 raise EParseTypeMismatch(self)
             self.NextToken()
             rexpr = self.Parse_unary_expression()
-            rtype = rexpr['type']
+            rtype = rexpr['t']
             # Mod is easier to check for
             if op == '%' and ltype != rtype:
                 raise EParseTypeMismatch(self)
             if op == '%' or ltype == rtype == 'integer':
                 # Deal with the special cases first (it's easy)
-                factor = {'node':op, 'type':ltype, 'br':[factor, rexpr]}
+                factor = {'nt':op, 't':ltype, 'ch':[factor, rexpr]}
             else:
                 # Any integer must be promoted to float now
                 if ltype == 'integer':
@@ -851,7 +851,7 @@ class parser(object):
                         resulttype = 'float'
                     else:
                         resulttype = ltype
-                    factor = {'node':op, 'type':resulttype, 'br':[factor, rexpr]}
+                    factor = {'nt':op, 't':resulttype, 'ch':[factor, rexpr]}
                 else:
                     raise EParseTypeMismatch(self)
 
@@ -865,14 +865,14 @@ class parser(object):
         term = self.Parse_factor()
         while self.tok[0] in ('+', '-'):
             op = self.tok[0]
-            ltype = term['type']
+            ltype = term['t']
             if op == '+' and ltype not in self.types \
                or op == '-' and ltype not in ('integer', 'float',
                                               'vector', 'rotation'):
                 raise EParseTypeMismatch(self)
             self.NextToken()
             rexpr = self.Parse_factor()
-            rtype = rexpr['type']
+            rtype = rexpr['t']
             # This is necessary, but the reason is subtle.
             # The types must match in principle (except integer/float), so it
             # doesn't seem necessary to check rtype. But there's the case
@@ -889,12 +889,12 @@ class parser(object):
                     raise EParseTypeMismatch(self)
                 if self.explicitcast:
                     if ltype == 'list' != rtype:
-                        rexpr = {'node':'CAST', 'type':ltype, 'br':[rexpr]}
+                        rexpr = {'nt':'CAST', 't':ltype, 'ch':[rexpr]}
                         #rtype = ltype # unused
                     elif rtype == 'list' != ltype:
-                        term = {'node':'CAST', 'type':rtype, 'br':[term]}
+                        term = {'nt':'CAST', 't':rtype, 'ch':[term]}
                         ltype = rtype
-                term = {'node':op, 'type':ltype, 'br':[term, rexpr]}
+                term = {'nt':op, 't':ltype, 'ch':[term, rexpr]}
                 # Note that although list + nonlist is semantically the same as
                 # list + (list)nonlist and same goes for nonlist + list, they
                 # don't compile to the same thing, but the optimizer should deal
@@ -903,11 +903,11 @@ class parser(object):
                  and ltype in ('key', 'string') and rtype in ('key', 'string'):
                 # Allow string+key addition (but add explicit cast)
                 if ltype == 'key':
-                    term = {'node':op, 'type':rtype,
-                        'br':[{'node':'CAST', 'type':rtype, 'br':[term]}, rexpr]}
+                    term = {'nt':op, 't':rtype,
+                        'ch':[{'nt':'CAST', 't':rtype, 'ch':[term]}, rexpr]}
                 else:
-                    term = {'node':op, 'type':ltype,
-                        'br':[term, {'node':'CAST', 'type':ltype, 'br':[rexpr]}]}
+                    term = {'nt':op, 't':ltype,
+                        'ch':[term, {'nt':'CAST', 't':ltype, 'ch':[rexpr]}]}
             elif ltype == 'key' or rtype == 'key':
                 # Only list + key or key + list is allowed, otherwise keys can't
                 # be added or subtracted with anything.
@@ -915,10 +915,10 @@ class parser(object):
             else:
                 if ltype == 'float':
                     # Promote rexpr to float
-                    term = {'node':op, 'type':ltype, 'br':[term, self.autocastcheck(rexpr, ltype)]}
+                    term = {'nt':op, 't':ltype, 'ch':[term, self.autocastcheck(rexpr, ltype)]}
                 else:
                     # Convert LHS to rtype if possible (note no keys arrive here)
-                    term = {'node':op, 'type':rtype, 'br':[self.autocastcheck(term, rtype), rexpr]}
+                    term = {'nt':op, 't':rtype, 'ch':[self.autocastcheck(term, rtype), rexpr]}
 
         return term
 
@@ -929,14 +929,14 @@ class parser(object):
         """
         shift = self.Parse_term()
         while self.tok[0] in ('<<', '>>'):
-            if shift['type'] != 'integer':
+            if shift['t'] != 'integer':
                 raise EParseTypeMismatch(self)
             op = self.tok[0]
             self.NextToken()
             rexpr = self.Parse_term()
-            if rexpr['type'] != 'integer':
+            if rexpr['t'] != 'integer':
                 raise EParseTypeMismatch(self)
-            shift = {'node':op, 'type':'integer', 'br':[shift , rexpr]}
+            shift = {'nt':op, 't':'integer', 'ch':[shift , rexpr]}
 
         return shift
 
@@ -949,12 +949,12 @@ class parser(object):
         inequality = self.Parse_shift()
         while self.tok[0] in ('<', '<=', '>', '>='):
             op = self.tok[0]
-            ltype = inequality['type']
+            ltype = inequality['t']
             if ltype not in ('integer', 'float'):
                 raise EParseTypeMismatch(self)
             self.NextToken()
             rexpr = self.Parse_shift()
-            rtype = rexpr['type']
+            rtype = rexpr['t']
             if rtype not in ('integer', 'float'):
                 raise EParseTypeMismatch(self)
             if ltype != rtype:
@@ -962,7 +962,7 @@ class parser(object):
                     inequality = self.autocastcheck(inequality, rtype)
                 else:
                     rexpr = self.autocastcheck(rexpr, ltype)
-            inequality = {'node':op, 'type':'integer', 'br':[inequality, rexpr]}
+            inequality = {'nt':op, 't':'integer', 'ch':[inequality, rexpr]}
 
         return inequality
 
@@ -975,19 +975,19 @@ class parser(object):
         comparison = self.Parse_inequality()
         while self.tok[0] in ('==', '!='):
             op = self.tok[0]
-            ltype = comparison['type']
+            ltype = comparison['t']
             if ltype not in self.types:
                 raise EParseTypeMismatch(self)
             self.NextToken()
             rexpr = self.Parse_inequality()
-            rtype = rexpr['type']
+            rtype = rexpr['t']
             if ltype == 'float':
                 rexpr = self.autocastcheck(rexpr, ltype)
             else:
                 # For string & key, RHS (rtype) mandates the conversion
                 # (that's room for optimization: always compare strings)
                 comparison = self.autocastcheck(comparison, rtype)
-            comparison = {'node':op, 'type':'integer', 'br':[comparison, rexpr]}
+            comparison = {'nt':op, 't':'integer', 'ch':[comparison, rexpr]}
 
         return comparison
 
@@ -998,14 +998,14 @@ class parser(object):
         """
         bitbool_factor = self.Parse_comparison()
         while self.tok[0] == '&':
-            if bitbool_factor['type'] != 'integer':
+            if bitbool_factor['t'] != 'integer':
                 raise EParseTypeMismatch(self)
             op = self.tok[0]
             self.NextToken()
             rexpr = self.Parse_comparison()
-            if rexpr['type'] != 'integer':
+            if rexpr['t'] != 'integer':
                 raise EParseTypeMismatch(self)
-            bitbool_factor = {'node':op, 'type':'integer', 'br':[bitbool_factor, rexpr]}
+            bitbool_factor = {'nt':op, 't':'integer', 'ch':[bitbool_factor, rexpr]}
 
         return bitbool_factor
 
@@ -1016,14 +1016,14 @@ class parser(object):
         """
         bitxor_term = self.Parse_bitbool_factor()
         while self.tok[0] == '^':
-            if bitxor_term['type'] != 'integer':
+            if bitxor_term['t'] != 'integer':
                 raise EParseTypeMismatch(self)
             op = self.tok[0]
             self.NextToken()
             rexpr = self.Parse_bitbool_factor()
-            if rexpr['type'] != 'integer':
+            if rexpr['t'] != 'integer':
                 raise EParseTypeMismatch(self)
-            bitxor_term = {'node':op, 'type':'integer', 'br':[bitxor_term, rexpr]}
+            bitxor_term = {'nt':op, 't':'integer', 'ch':[bitxor_term, rexpr]}
 
         return bitxor_term
 
@@ -1034,14 +1034,14 @@ class parser(object):
         """
         bitbool_term = self.Parse_bitxor_term()
         while self.tok[0] == '|':
-            if bitbool_term['type'] != 'integer':
+            if bitbool_term['t'] != 'integer':
                 raise EParseTypeMismatch(self)
             op = self.tok[0]
             self.NextToken()
             rexpr = self.Parse_bitxor_term()
-            if rexpr['type'] != 'integer':
+            if rexpr['t'] != 'integer':
                 raise EParseTypeMismatch(self)
-            bitbool_term = {'node':op, 'type':'integer', 'br':[bitbool_term, rexpr]}
+            bitbool_term = {'nt':op, 't':'integer', 'ch':[bitbool_term, rexpr]}
 
         return bitbool_term
 
@@ -1064,14 +1064,14 @@ class parser(object):
         """
         expression = self.Parse_bitbool_term()
         while self.tok[0] in ('&&', '||'):
-            if expression['type'] != 'integer':
+            if expression['t'] != 'integer':
                 raise EParseTypeMismatch(self)
             op = self.tok[0]
             self.NextToken()
             rexpr = self.Parse_bitbool_term()
-            if rexpr['type'] != 'integer':
+            if rexpr['t'] != 'integer':
                 raise EParseTypeMismatch(self)
-            expression = {'node':op, 'type':'integer', 'br':[expression, rexpr]}
+            expression = {'nt':op, 't':'integer', 'ch':[expression, rexpr]}
 
         return expression
 
@@ -1090,19 +1090,19 @@ class parser(object):
         idx = 0
         if self.tok[0] not in (']', ')', ';'):
             while True:
-                val = self.Parse_expression()
+                expr = self.Parse_expression()
                 if expected_types is not None:
                     if idx >= len(expected_types):
                         raise EParseFunctionMismatch(self)
                     try:
-                        val = self.autocastcheck(val, expected_types[idx]);
+                        expr = self.autocastcheck(expr, expected_types[idx]);
                     except EParseTypeMismatch:
                         raise EParseFunctionMismatch(self)
                 else:
-                    if val['type'] not in self.types:
+                    if expr['t'] not in self.types:
                         raise EParseTypeMismatch(self)
                 idx += 1
-                ret.append(val)
+                ret.append(expr)
                 if self.tok[0] != ',':
                     break
                 self.NextToken()
@@ -1136,7 +1136,7 @@ class parser(object):
             return self.Parse_code_block(ReturnType)
         if tok0 == ';':
             self.NextToken()
-            return {'node':';', 'type':None}
+            return {'nt':';', 't':None}
         if tok0 == '@':
             self.NextToken()
             self.expect('IDENT')
@@ -1147,13 +1147,13 @@ class parser(object):
             self.NextToken()
             self.expect(';')
             self.NextToken()
-            return {'node':'@', 'type':None, 'name':name}
+            return {'nt':'@', 't':None, 'name':name}
         if tok0 == 'JUMP':
             self.NextToken()
             self.expect('IDENT')
             name = self.tok[1]
             sym = self.FindSymbolPartial(name, MustBeLabel=True)
-            jumpnode = {'node':'JUMP', 'type':None, 'name':name}
+            jumpnode = {'nt':'JUMP', 't':None, 'name':name}
             if not sym or sym['Kind'] != 'l':
                 # It might still be a forward reference, so we add it to the
                 # list of things to look up when done
@@ -1175,7 +1175,7 @@ class parser(object):
             self.NextToken()
             self.expect(';')
             self.NextToken()
-            return {'node':'STATE', 'type':None, 'name':name}
+            return {'nt':'STSW', 't':None, 'name':name}
         if tok0 == 'RETURN':
             self.NextToken()
             if self.tok[0] == ';':
@@ -1189,9 +1189,9 @@ class parser(object):
             if ReturnType is not None and value is None:
                 raise EParseReturnIsEmpty(self)
             if value is None:
-                return {'node':'RETURN', 'type':None}
-            return {'node':'RETURN', 'type':None, 'br':[self.autocastcheck(value, ReturnType)]}
-        if tok0 == 'IF':
+                return {'nt':'RETURN', 't':None}
+            return {'nt':'RETURN', 't':None, 'ch':[self.autocastcheck(value, ReturnType)]}
+        if tok0 == 'IF': # TODO: Convert this into a loop for ELSE IF's, saving recursion
             self.NextToken()
             self.expect('(')
             self.NextToken()
@@ -1204,8 +1204,8 @@ class parser(object):
                 self.NextToken()
                 else_branch = self.Parse_statement(ReturnType)
             if else_branch is not None:
-                return {'node':'IF', 'type':None, 'br':[condition, then_branch, else_branch]}
-            return {'node':'IF', 'type':None, 'br':[condition, then_branch]}
+                return {'nt':'IF', 't':None, 'ch':[condition, then_branch, else_branch]}
+            return {'nt':'IF', 't':None, 'ch':[condition, then_branch]}
 
         if tok0 == 'WHILE':
             self.NextToken()
@@ -1214,7 +1214,7 @@ class parser(object):
             condition = self.Parse_expression()
             self.expect(')')
             self.NextToken()
-            return {'node':'WHILE', 'type':None, 'br':[condition, self.Parse_statement(ReturnType)]}
+            return {'nt':'WHILE', 't':None, 'ch':[condition, self.Parse_statement(ReturnType)]}
         if tok0 == 'DO':
             self.NextToken()
             stmt = self.Parse_statement(ReturnType)
@@ -1227,7 +1227,7 @@ class parser(object):
             self.NextToken()
             self.expect(';')
             self.NextToken()
-            return {'node':'DO', 'type':None, 'br':[stmt, condition]}
+            return {'nt':'DO', 't':None, 'ch':[stmt, condition]}
         if tok0 == 'FOR':
             self.NextToken()
             self.expect('(')
@@ -1242,10 +1242,10 @@ class parser(object):
             self.expect(')')
             self.NextToken()
             stmt = self.Parse_statement(ReturnType)
-            return {'node':'FOR', 'type':None,
-                'br':[{'node':'EXPRLIST','type':None, 'br':initializer},
+            return {'nt':'FOR', 't':None,
+                'ch':[{'nt':'EXPRLIST','t':None, 'ch':initializer},
                       condition,
-                      {'node':'EXPRLIST','type':None, 'br':iterator},
+                      {'nt':'EXPRLIST','t':None, 'ch':iterator},
                       stmt]}
         if tok0 == 'TYPE':
             if not AllowDecl:
@@ -1258,10 +1258,10 @@ class parser(object):
                 raise EParseAlreadyDefined(self)
             self.NextToken()
             value = None
-            decl = {'node':'DECL','type':typ, 'name':name, 'scope':self.scopeindex}
+            decl = {'nt':'DECL','t':typ, 'name':name, 'scope':self.scopeindex}
             if self.tok[0] == '=':
                 self.NextToken()
-                decl['br'] = [self.Parse_expression()]
+                decl['ch'] = [self.Parse_expression()]
             self.expect(';')
             self.NextToken()
             self.AddSymbol('v', self.scopeindex, name, Type=typ)
@@ -1297,7 +1297,7 @@ class parser(object):
         self.expect('}')
         self.NextToken()
 
-        return {'node':'{}', 'type':None, 'br':body}
+        return {'nt':'{}', 't':None, 'ch':body}
 
     def Parse_simple_expr(self, ForbidList=False):
         """Grammar parsed here:
@@ -1315,19 +1315,19 @@ class parser(object):
         tok = self.tok
         self.NextToken()
         if tok[0] in ('TRUE', 'FALSE'): # TRUE and FALSE don't admit sign in globals
-            return {'node':'CONST', 'type':'integer', 'value':int(tok[0]=='TRUE')}
+            return {'nt':'CONST', 't':'integer', 'value':int(tok[0]=='TRUE')}
         if tok[0] in ('STRING_VALUE', 'KEY_VALUE', 'VECTOR_VALUE', 'ROTATION_VALUE', 'LIST_VALUE'):
             val = tok[1]
             if tok[0] == 'STRING_VALUE' and self.allowmultistrings:
                 while self.tok[0] == 'STRING_VALUE':
                     val += self.tok[1]
                     self.NextToken()
-            return {'node':'CONST', 'type':self.PythonType2LSL[type(val)], 'value':val}
+            return {'nt':'CONST', 't':self.PythonType2LSL[type(val)], 'value':val}
         if tok[0] == 'IDENT':
             sym = self.FindSymbolPartial(tok[1])
             if sym is None or sym['Kind'] != 'v':
                 raise EParseUndefined(self)
-            return {'node':'IDENT', 'type':sym['Type'], 'name':tok[1], 'scope':sym['Scope']}
+            return {'nt':'IDENT', 't':sym['Type'], 'name':tok[1], 'scope':sym['Scope']}
         if tok[0] == '<':
             value = [self.Parse_simple_expr()]
             self.autocastcheck(value[0], 'float')
@@ -1341,25 +1341,25 @@ class parser(object):
             self.autocastcheck(value[2], 'float')
             if self.tok[0] == '>':
                 self.NextToken()
-                return {'node':'VECTOR', 'type':'vector', 'br':value}
+                return {'nt':'VECTOR', 't':'vector', 'ch':value}
             self.expect(',')
             self.NextToken()
             value.append(self.Parse_simple_expr())
             self.autocastcheck(value[3], 'float')
             self.expect('>')
             self.NextToken()
-            return {'node':'ROTATION', 'type':'rotation', 'br':value}
+            return {'nt':'ROTATION', 't':'rotation', 'ch':value}
 
         if tok[0] == '[' and not ForbidList:
             value = []
             if self.tok[0] == ']':
                 self.NextToken()
-                return {'node':'LIST','type':'list','br':value}
+                return {'nt':'LIST','t':'list','ch':value}
             while True:
                 value.append(self.Parse_simple_expr(ForbidList=True))
                 if self.tok[0] == ']':
                     self.NextToken()
-                    return {'node':'LIST','type':'list','br':value}
+                    return {'nt':'LIST','t':'list','ch':value}
                 self.expect(',')
                 self.NextToken()
         # Integer or Float constant expected
@@ -1373,7 +1373,7 @@ class parser(object):
         value = tok[1]
         if neg and (tok[0] != 'INTEGER_VALUE' or value == -2147483648):
             value = -value
-        return {'node':'CONST', 'type':'float' if tok[0] == 'FLOAT_VALUE' else 'integer', 'value':value}
+        return {'nt':'CONST', 't':'float' if tok[0] == 'FLOAT_VALUE' else 'integer', 'value':value}
 
     def Parse_optional_param_list(self):
         """Grammar parsed here:
@@ -1431,9 +1431,9 @@ class parser(object):
             self.expect(')')
             self.NextToken()
             body = self.Parse_code_block(None)
-            ret.append({'node':'FNDEF', 'type':None, 'name':name,
+            ret.append({'nt':'FNDEF', 't':None, 'name':name,
                 'pscope':self.scopeindex, 'ptypes':params[0], 'pnames':params[1],
-                'br':[body]})
+                'ch':[body]})
             self.PopScope()
 
         return ret
@@ -1478,10 +1478,10 @@ class parser(object):
                     value = None
 
                 assert self.scopeindex == 0
-                decl = {'node':'DECL', 'type':typ, 'name':name, 'scope':0}
+                decl = {'nt':'DECL', 't':typ, 'name':name, 'scope':0}
                 if value is not None:
                     value = self.autocastcheck(value, typ)
-                    decl['br'] = [value]
+                    decl['ch'] = [value]
                 self.AddSymbol('v', 0, name, Loc=len(self.tree), Type=typ)
                 self.tree.append(decl)
 
@@ -1496,9 +1496,9 @@ class parser(object):
                 paramscope = self.scopeindex
                 self.AddSymbol('f', 0, name, Loc=len(self.tree), Type=typ,
                     ParamTypes=params[0], ParamNames=params[1])
-                self.tree.append({'node':'FNDEF', 'type':typ, 'name':name,
+                self.tree.append({'nt':'FNDEF', 't':typ, 'name':name,
                     'pscope':paramscope,
-                    'ptypes':params[0], 'pnames':params[1], 'br':[body]})
+                    'ptypes':params[0], 'pnames':params[1], 'ch':[body]})
                 self.PopScope()
                 assert self.scopeindex == 0
             else:
@@ -1543,7 +1543,7 @@ class parser(object):
             events = self.Parse_events()
 
             self.expect('}')
-            self.tree.append({'node':'STATEDEF', 'type':None, 'name':name, 'br':events})
+            self.tree.append({'nt':'STDEF', 't':None, 'name':name, 'ch':events})
             self.NextToken()
 
     def Parse_script(self):
@@ -1867,8 +1867,10 @@ class parser(object):
                         # reference to the implementation; otherwise None.
                         if name in self.functions:
                             warning('Function already defined in bultins.txt, overwriting: ' + name)
-                        self.functions[name] = {'Kind':'f', 'Type':typ, 'ParamTypes':args,
-                            'Loc':getattr(lslfuncs, name, None)}
+                        fn = getattr(lslfuncs, name, None)
+                        self.functions[name] = {'Kind':'f', 'Type':typ, 'ParamTypes':args}
+                        if fn is not None:
+                            self.functions['Fn'] = fn
                 elif match.group(4):
                     # constant
                     name = match.group(5)
@@ -1878,67 +1880,67 @@ class parser(object):
                         typ = match.group(4)
                         if typ == 'quaternion':
                             typ = 'rotation'
-                        val = match.group(6)
+                        value = match.group(6)
                         if typ == 'integer':
-                            val = int(val, 0)
+                            value = int(value, 0)
                         elif typ == 'float':
-                            val = lslfuncs.F32(float(val))
+                            value = lslfuncs.F32(float(value))
                         elif typ == 'string':
-                            val = val.decode('utf8')
-                            if not parse_str_re.match(val):
+                            value = value.decode('utf8')
+                            if not parse_str_re.match(value):
                                 raise EInternal
                             esc = False
-                            tmp = val[1:-1]
-                            val = u''
+                            tmp = value[1:-1]
+                            value = u''
                             for c in tmp:
                                 if esc:
                                     if c == u'n':
                                         c = u'\n'
                                     elif c == u't':
                                         c = u'    '
-                                    val += c
+                                    value += c
                                     esc = False
                                 elif c == u'\\':
                                     esc = True
                                 else:
-                                    val += c
+                                    value += c
                             #if typ == 'key':
-                            #    val = Key(val)
+                            #    value = Key(value)
                         elif typ == 'key':
                             warning('Key constants not supported in builtins.txt: ' + line)
-                            val = None
+                            value = None
                         elif typ in ('vector', 'rotation'):
-                            if val[0:1] != '<' or val[-1:] != '>':
+                            if value[0:1] != '<' or value[-1:] != '>':
                                 raise ValueError
-                            val = val[1:-1].split(',')
-                            if len(val) != (3 if typ == 'vector' else 4):
+                            value = value[1:-1].split(',')
+                            if len(value) != (3 if typ == 'vector' else 4):
                                 raise ValueError
-                            num = parse_num_re.match(val[0])
+                            num = parse_num_re.match(value[0])
                             if not num:
                                 raise ValueError
-                            val[0] = lslfuncs.F32(float(num.group(1)))
-                            num = parse_num_re.match(val[1])
+                            value[0] = lslfuncs.F32(float(num.group(1)))
+                            num = parse_num_re.match(value[1])
                             if not num:
                                 raise ValueError
-                            val[1] = lslfuncs.F32(float(num.group(1)))
-                            num = parse_num_re.match(val[2])
+                            value[1] = lslfuncs.F32(float(num.group(1)))
+                            num = parse_num_re.match(value[2])
                             if not num:
                                 raise ValueError
-                            val[2] = lslfuncs.F32(float(num.group(1)))
-                            if typ != 'vector':
-                                num = parse_num_re.match(val[3])
+                            value[2] = lslfuncs.F32(float(num.group(1)))
+                            if typ == 'vector':
+                                value = Vector(value)
+                            else:
+                                num = parse_num_re.match(value[3])
                                 if not num:
                                     raise ValueError
-                                val[3] = lslfuncs.F32(float(num.group(1)))
-                                val = Quaternion(val)
-                            else:
-                                val = Vector(val)
+                                value[3] = lslfuncs.F32(float(num.group(1)))
+                                value = Quaternion(value)
                         else:
                             assert typ == 'list'
                             warning('List constants not supported in builtins.txt: ' + line)
-                            val = None
-                        if val is not None:
-                            self.constants[name] = val
+                            value = None
+                        if value is not None:
+                            self.constants[name] = value
 
                     except EInternal:
                         warning('Invalid string in builtins.txt: ' + line)
