@@ -1,10 +1,14 @@
 
 import lslfuncs
-from lslparse import S, warning
-
-CONSTANT = S['CONSTANT']
+from lslparse import warning
 
 class optimizer(object):
+
+    # Default values per type when declaring variables
+    DefaultValues = {'integer': 0, 'float': 0.0, 'string': u'',
+        'key': lslfuncs.Key(u''), 'vector': lslfuncs.ZERO_VECTOR,
+        'rotation': lslfuncs.ZERO_ROTATION, 'list': []
+        }
 
     # explicitly exclude assignments
     binary_ops = frozenset(('+','-','*','/','%','<<','>>','<','<=','>','>=',
@@ -17,91 +21,93 @@ class optimizer(object):
 
     def FoldAndRemoveEmptyStmts(self, lst):
         """Utility function for elimination of useless expressions in FOR"""
-        x = 0
-        while x < len(lst):
-            self.FoldTree(lst[x])
-            self.FoldStmt(lst[x])
+        idx = 0
+        while idx < len(lst):
+            self.FoldTree(lst, idx)
+            self.FoldStmt(lst, idx)
             # If eliminated, it must be totally removed. A ';' won't do.
-            if lst[x][0] == ';':
-                del lst[x]
+            if lst[idx]['node'] == ';':
+                del lst[idx]
             else:
-                x += 1
+                idx += 1
 
-    def FoldStmt(self, code):
+    def FoldStmt(self, parent, index):
         """If the statement is a constant or an identifier, remove it as it does
         nothing.
         """
         # Ideally this should consider side effect analysis of the whole thing.
-        if code[0] in (CONSTANT, 'IDENT', 'FIELD'):
-            code[:] = [S[';'], None]
-        else:
-            code[:] = code
+        if parent[index]['node'] in ('CONST', 'IDENT', 'FIELD'):
+            parent[index] = {'node':';','type':None}
 
-    def FoldTree(self, code):
+    def FoldTree(self, parent, index):
         """Recursively traverse the tree to fold constants, changing it in
         place.
 
         Also optimizes away IF, WHILE, etc.
         """
-        while code[0] == 'EXPR':
-            if type(code) == tuple:
-                # just enter
-                code = code[2]
-            else:
-                # unfold
-                code[:] = code[2]
+        code = parent[index]
+        if code is None: return # Deleted statement
+        node = code['node']
+        child = code['br'] if 'br' in code else None
 
-        code0 = code[0]
-
-        if code0 == CONSTANT:
+        if node == 'CONST':
             # Job already done
             return
 
-        if code0 == 'CAST':
-            self.FoldTree(code[2])
-            if code[2][0] == CONSTANT:
+        if node == 'CAST':
+            self.FoldTree(child, 0)
+            if child[0]['node'] == 'CONST':
                 # Enable key constants. We'll typecast them back on output, but
                 # this enables some optimizations.
-                #if code[1] != 'key': # key constants not possible
+                #if code['type'] != 'key': # key constants not possible
 
-                    code[:] = [CONSTANT, code[1], lslfuncs.typecast(code[2][2], self.LSL2PythonType[code[1]])]
+                    parent[index] = {'node':'CONST', 'type':code['type'],
+                        'value':lslfuncs.typecast(
+                            child[0]['value'], self.LSL2PythonType[code['type']])}
             return
 
-        if code0 == 'NEG':
-            self.FoldTree(code[2])
-            if code[2][0] == CONSTANT:
-                code[:] = [CONSTANT, code[1], lslfuncs.neg(code[2][2])]
+        if node == 'NEG':
+            self.FoldTree(child, 0)
+            if child[0]['node'] == 'CONST':
+                code = parent[index] = child[0]
+                code['value'] = lslfuncs.neg(code['value'])
             return
 
-        if code0 == '!':
-            self.FoldTree(code[2])
-            if code[2][0] == CONSTANT:
-                code[:] = [CONSTANT, code[1], int(not code[2][2])]
+        if node == '!':
+            self.FoldTree(child, 0)
+            if child[0]['node'] == 'CONST':
+                code = parent[index] = child[0]
+                code['value'] = int(not code['value'])
             return
 
-        if code0 == '~':
-            self.FoldTree(code[2])
-            if code[2][0] == CONSTANT:
-                code[:] = [CONSTANT, code[1], ~code[2][2]]
+        if node == '~':
+            self.FoldTree(child, 0)
+            if child[0]['node'] == 'CONST':
+                code = parent[index] = child[0]
+                code['value'] = ~code['value']
             return
 
-        if code0 == '()':
-            self.FoldTree(code[2])
-            if code[2][0] in (CONSTANT, 'VECTOR', 'ROTATION', 'LIST',
+        if node == '()':
+            self.FoldTree(child, 0)
+            if child[0]['node'] in ('CONST', 'VECTOR', 'ROTATION', 'LIST',
                'IDENT', 'FIELD', 'V++', 'V--', 'FUNCTION', 'PRINT'):
-                # Child is an unary postfix expression; parentheses can be
-                # removed safely.
-                code[:] = code[2]
+                # Child is an unary postfix expression; parentheses are
+                # redundant and can be removed safely. Not strictly an
+                # optimization but it helps keep the output tidy-ish a bit.
+                # It's not done in general (e.g. (a * b) + c does not need
+                # parentheses but these are not eliminated). Only the cases
+                # like (myvar) are simplified.
+                parent[index] = child[0]
             return
 
-        if code0 in self.binary_ops:
+        if node in self.binary_ops:
             # RTL evaluation
-            self.FoldTree(code[3])
-            self.FoldTree(code[2])
-            if code[2][0] == code[3][0] == CONSTANT:
-                op = code0
-                op1 = code[2][2]
-                op2 = code[3][2]
+            self.FoldTree(child, 1)
+            self.FoldTree(child, 0)
+            if child[0]['node'] == child[1]['node'] == 'CONST':
+                op = node
+                op1 = child[0]['value']
+                op2 = child[1]['value']
                 if op == '+':
                     result = lslfuncs.add(op1, op2)
                 elif op == '-':
@@ -117,7 +123,7 @@ class optimizer(object):
                 elif op == '>>':
                     result = lslfuncs.S32(op1 >> (op2 & 31))
                 elif op == '==' or op == '!=':
-                    result = lslfuncs.compare(op1, op2, op == '==')
+                    result = lslfuncs.compare(op1, op2, Eq = (op == '=='))
                 elif op in ('<', '<=', '>', '>='):
                     if op in ('>', '<='):
                         result = lslfuncs.less(op2, op1)
@@ -137,25 +143,33 @@ class optimizer(object):
                     result = int(op1 and op2)
                 else:
                     raise Exception(u'Internal error: Operator not found: ' + op.decode('utf8')) # pragma: no cover
-                code[:] = [CONSTANT, code[1], result]
-            elif code[0] == '-' and code[2][1] in ('integer', 'float') and code[3][1] in ('integer', 'float'):
+                parent[index] = {'node':'CONST', 'type':code['type'], 'value':result}
+            elif node == '-' and child[0]['type'] in ('integer', 'float') \
+                             and child[1]['type'] in ('integer', 'float'):
                 # Change - to + - for int/float
-                if code[3][0] == CONSTANT:
-                    if code[3][2] == 0:
-                        code[:] = code[2]
+                if child[1]['node'] == 'CONST':
+                    if child[1]['value'] == 0:
+                        parent[index] = child[0]
                     else:
-                        code[0] = S['+']
-                        code[3][2] = lslfuncs.neg(code[3][2])
+                        code['node'] = '+'
+                        child[1]['value'] = lslfuncs.neg(child[1]['value'])
+                #TODO: Implement to transform 0-x into -x: elif child[0]['node'] == 'CONST':
                 else:
-                    code[:] = [S['+'], code[1], code[2], [S['NEG'], code[3][1], code[3]]]
-            elif code[0] == '<<' and code[3][0] == CONSTANT:
+                    code['node'] = '+'
+                    child[1] = {'node':'NEG', 'type':child[1]['type'], 'br':[child[1]]}
+            elif node == '<<' and child[1]['node'] == 'CONST':
                 # Transforming << into multiply saves some bytes.
-                if code[2][0] in ('+', '-', 'NEG'): # operands with priority between * and <<
-                    code[2] = [S['()'], code[2][1], code[2]]
-                if not (code[3][2] & 31):
-                    code[:] = code[2]
-                else:
-                    code[:] = [S['*'], code[1], code[2], [CONSTANT, 'integer', 1<<(code[3][2] & 31)]]
+                if child[1]['value'] & 31:
+                    # x << 3  -->  x * 8
+                    # Do we need parentheses for *? It depends on x
+                    # e.g. x+3<<3 needs parentheses when converted to (x+3)*8
+                    if child[0]['node'] in ('+', '-', 'NEG'): # operands with priority between * and << #TODO: CHECK
+                        child[0] = {'node':'()', 'type':child[0]['type'], 'br':[child[0]]}
+                    # we have {<<, something, {CONST n}}, transform into {*, something, {CONST n}}
+                    code['node'] = '*'
+                    child[1]['value'] = 1<<(child[1]['value'] & 31)
+                else: # x << 0  -->  x
+                    parent[index] = child[0]
             else:
                 pass # TODO: Eliminate redundancy (x+0, x*1, x*-1, v+ZERO_VECTOR, perhaps x-1=~-x, etc.)
                     # Include != to ^  and || to | and maybe && to &
@@ -165,205 +179,195 @@ class optimizer(object):
                     # Maybe turn != -1 into ~ in if()'s.
             return
 
-        if code0 in self.assign_ops:
+        if node in self.assign_ops:
             # TODO: Eliminate redundant operations, e.g. a += 0; etc.
             # Consider also e.g. x -= 1 or x -= a transforming it into +=.
-            self.FoldTree(code[3])
+            # Actually just consider transforming the whole thing into a
+            # regular assignment, as there are no gains and it simplifies the
+            # optimization.
+            self.FoldTree(child, 1)
             return
 
-        if code0 == 'IDENT':
+        if node == 'IDENT' or node == 'FLD':
             if self.globalmode:
-                val = self.symtab[code[3]][code[2]][2]
-                if val is not None:
-                    if type(val) == tuple:
-                        # Infinite recursion is prevented at the parser level, by
-                        # not allowing forward globals in global var definitions.
-                        self.FoldTree(val)
-                        if val[0] != 'EXPR' or val[2][0] != CONSTANT:
-                            return
-                        val = val[2][2]
-                    if code[1] != 'key' and val is not None:
-                        code[:] = [CONSTANT, code[1], val]
+                ident = code if node == 'IDENT' else child[0]
+                # Resolve constant values so they can be optimized
+                sym = self.symtab[ident['scope']][ident['name']]
+
+                defn = self.tree[sym['Loc']]
+                assert defn['name'] == ident['name']
+
+                # Assume we already were there
+                if 'br' in defn:
+                    val = defn['br'][0]
+                    if val['node'] != 'CONST' or ident['type'] in ('list', 'key'):
+                        return
+                else:
+                    val = {'node':'CONST', 'type':defn['type'],
+                           'value':self.DefaultValues[defn['type']]}
+                if node == 'FLD':
+                    val = {'node':'CONST', 'type':'float',
+                        'value':val['value']['xyzs'.index(code['fld'])]}
+                parent[index] = val
             return
 
-        if code0 == 'FUNCTION':
-            for x in code[3][::-1]:
-                self.FoldTree(x)
-            if code[2] in self.functions and self.functions[code[2]][2] is not None:
-                for x in code[3]:
-                    if x[0] != CONSTANT:
-                        break
-                else:
+        if node == 'FNCALL':
+            for idx in xrange(len(child)-1, -1, -1):
+                self.FoldTree(child, idx)
+            if code['name'] in self.symtab[0]:
+                fn = self.symtab[0][code['name']]['Loc']
+                if fn is not None and type(fn) != int and all(arg['node'] == 'CONST' for arg in child):
                     # Call it
-                    val = self.functions[code[2]][2](*tuple(x[2] for x in code[3]))
-                    if not self.foldtabs and isinstance(val, unicode) and '\t' in val:
+                    value = fn(*tuple(arg['value'] for arg in child))
+                    if not self.foldtabs and isinstance(value, unicode) and '\t' in value:
                         warning('WARNING: Tab in function result and foldtabs option not used.')
                         return
-                    code[:] = [CONSTANT, code[1], val]
+                    parent[index] = {'node':'CONST', 'type':code['type'], 'value':value}
             return
 
-        if code0 == 'PRINT':
+        if node == 'PRINT':
             # useless but who knows
-            self.FoldTree(code[2])
+            self.FoldTree(child, 0)
             return
 
-        if code0 in ('VECTOR', 'ROTATION', 'LIST'):
+        if node in ('VECTOR', 'ROTATION', 'LIST'):
             isconst = True
-            for x in code[:1:-1]:
-                self.FoldTree(x)
-                if x[0] != CONSTANT:
+            for idx in xrange(len(child)-1, -1, -1):
+                self.FoldTree(child, idx)
+                if child[idx]['node'] != 'CONST':
                     isconst = False
             if isconst:
-                value = [x[2] for x in code[2:]]
-                if code0 == 'VECTOR':
+                value = [elem['value'] for elem in child]
+                if node == 'VECTOR':
                     value = lslfuncs.Vector([lslfuncs.ff(x) for x in value])
-                elif code0 == 'ROTATION':
+                elif node == 'ROTATION':
                     value = lslfuncs.Quaternion([lslfuncs.ff(x) for x in value])
-                code[:] = [CONSTANT, code[1], value]
+                parent[index] = {'node':'CONST', 'type':code['type'], 'value':value}
             return
 
-        if code0 == 'FIELD':
-            if self.globalmode:
-                # We can fold a global vector or rotation field as they are
-                # constant, but that involves resolving the symbols that aren't
-                # already.
-                assert code[2][0] == 'IDENT' # that should be granted
-                glob = self.symtab[code[2][3]][code[2][2]]
-                origin = glob[2]
-                if type(origin) == tuple:
-                    # We have to do this due to not processing globals in order.
-                    self.FoldTree(origin)
-                    # Unfold constant expression
-                    if origin[0] != 'EXPR' or origin[2][0] != CONSTANT:
-                        return
-                    origin = origin[2][2]
-                    self.symtab[code[2][3]][code[2][2]] = glob[:2] + (origin,) + glob[3:]
-                if type(origin) not in (lslfuncs.Vector, lslfuncs.Quaternion):
-                    # Precondition not met
-                    return # pragma: no cover
-                code[:] = [CONSTANT, 'float', lslfuncs.ff(origin['xyzs'.index(code[3])])]
+        if node in ('{}', 'FNDEF', 'STATEDEF'):
+            for idx in xrange(len(child)):
+                self.FoldTree(child, idx)
+                self.FoldStmt(child, idx)
             return
 
-        if code0 == '{}':
-            for x in code[2:]:
-                self.FoldTree(x)
-                self.FoldStmt(x)
-            return
-
-        if code0 == 'IF':
-            self.FoldTree(code[2])
-            if code[2][0] == CONSTANT:
+        if node == 'IF':
+            self.FoldTree(child, 0)
+            if child[0]['node'] == 'CONST':
                 # We can remove one of the branches safely.
-                if lslfuncs.cond(code[2][2]):
-                    self.FoldTree(code[3])
-                    code[:] = code[3]
-                    self.FoldStmt(code)
-                elif len(code) > 4:
-                    self.FoldTree(code[4])
-                    code[:] = code[4]
-                    self.FoldStmt(code)
+                if lslfuncs.cond(child[0]['value']):
+                    self.FoldTree(child, 1)
+                    parent[index] = child[1]
+                    self.FoldStmt(child, 1)
+                elif len(child) > 2:
+                    self.FoldTree(child, 2)
+                    parent[index] = child[2]
+                    self.FoldStmt(child, 2)
                 else:
                     # No ELSE branch, replace the statement with an empty one.
-                    code[:] = [S[';'], None]
+                    parent[index] = {'node':';', 'type':None}
             else:
-                self.FoldTree(code[3])
-                self.FoldStmt(code[3])
-                if len(code) > 4:
-                    self.FoldTree(code[4])
-                    self.FoldStmt(code[4])
+                self.FoldTree(child, 1)
+                self.FoldStmt(child, 1)
+                if len(child) > 2:
+                    self.FoldTree(child, 2)
+                    self.FoldStmt(child, 2)
             return
 
-        if code0 == 'WHILE':
-            self.FoldTree(code[2])
-            if code[2][0] == CONSTANT:
+        if node == 'WHILE':
+            self.FoldTree(child, 0)
+            if child[0]['node'] == 'CONST':
                 # See if the whole WHILE can be eliminated.
-                if lslfuncs.cond(code[2][2]):
+                if lslfuncs.cond(child[0]['value']):
                     # Endless loop which must be kept.
                     # First, replace the constant.
-                    code[2][1:2] = [S['integer'], 1]
+                    child[0].update({'type':'integer', 'value':1})
                     # Recurse on the statement.
-                    self.FoldTree(code[3])
-                    self.FoldStmt(code[3])
+                    self.FoldTree(child, 1)
+                    self.FoldStmt(child, 1)
                 else:
                     # Can be removed.
-                    code[:] = [S[';'], None]
+                    parent[index] = {'node':';', 'type':None}
             else:
-                self.FoldTree(code[3])
-                self.FoldStmt(code[3])
+                self.FoldTree(child, 1)
+                self.FoldStmt(child, 1)
             return
 
-        if code0 == 'DO':
-            self.FoldTree(code[2]) # This one is always executed.
-            self.FoldStmt(code[2])
-            self.FoldTree(code[3])
+        if node == 'DO':
+            self.FoldTree(child, 0) # This one is always executed.
+            self.FoldStmt(child, 0)
+            self.FoldTree(child, 1)
             # See if the latest part is a constant.
-            if code[3][0] == CONSTANT:
-                if lslfuncs.cond(code[3][2]):
+            if child[1]['node'] == 'CONST':
+                if lslfuncs.cond(child[1]['value']):
                     # Endless loop. Replace the constant.
-                    code[3][1:2] = [S['integer'], 1]
+                    child[1].update({'type':'integer', 'value':1})
                 else:
                     # Only one go. Replace with the statement(s).
-                    code[:] = code[2]
+                    parent[index] = child[0]
             return
 
-        if code0 == 'FOR':
-            self.FoldAndRemoveEmptyStmts(code[2])
+        if node == 'FOR':
+            assert child[0]['node'] == 'EXPRLIST'
+            assert child[2]['node'] == 'EXPRLIST'
+            self.FoldAndRemoveEmptyStmts(child[0]['br'])
 
-            self.FoldTree(code[3]) # Condition.
-            if code[3][0] == CONSTANT:
+            self.FoldTree(child, 1) # Condition.
+            if child[1]['node'] == 'CONST':
                 # FOR is delicate. It can have multiple expressions at start.
                 # And if there is more than one, these expressions will need a
                 # new block, which means new scope, which is dangerous.
                 # They are expressions, no declarations or labels allowed, but
                 # it feels creepy.
-                if lslfuncs.cond(code[3][2]):
+                if lslfuncs.cond(child[1]['value']):
                     # Endless loop. Just replace the constant and traverse the rest.
-                    code[3][1:2] = [S['integer'], 1]
-                    self.FoldAndRemoveEmptyStmts(code[4])
-                    self.FoldTree(code[5])
-                    self.FoldStmt(code[5])
-                elif len(code[2]) > 1:
-                    code[:] = [S['{}'], None] + code[2]
-                elif code[2]:
-                    code[:] = code[2][0]
+                    child[1].update({'type':'integer', 'value':1})
+                    self.FoldAndRemoveEmptyStmts(child[2]['br'])
+                    self.FoldTree(child, 3)
+                    self.FoldStmt(child, 3)
+                elif len(child[0]['br']) > 1:
+                    parent[index] = {'node':'{}', 'type':None, 'br':child[0]['br']}
+                elif child[0]['br']:
+                    parent[index] = child[0]['br'][0]
                 else:
-                    code[:] = [S[';'], None]
+                    parent[index] = {'node':';', 'type':None}
             else:
-                self.FoldAndRemoveEmptyStmts(code[4])
-                self.FoldTree(code[5])
-                self.FoldStmt(code[5])
+                self.FoldAndRemoveEmptyStmts(child[2]['br'])
+                self.FoldTree(child, 3)
+                self.FoldStmt(child, 3)
             return
 
-        if code0 == 'RETURN':
-            if code[2] is not None:
-                self.FoldTree(code[2])
+        if node == 'RETURN':
+            if child:
+                self.FoldTree(child, 0)
             return
 
-        if code0 == 'DECL':
+        if node == 'DECL':
             # The expression code is elsewhere.
-            expr = self.symtab[code[3]][code[2]][2]
-            # Irrelevant if list or string or key.
-            if expr is not None:
-                self.FoldTree(expr)
+            if child:
+                self.FoldTree(child, 0)
                 # TODO: Remove assignment if integer zero.
             else:
                 # TODO: Add assignment if vector, rotation or float.
                 pass
             return
 
-        if code0 in self.ignored_stmts:
+        if node in self.ignored_stmts:
             return
 
-        raise Exception('Internal error: This should not happen, node = ' + code0) # pragma: no cover
+        raise Exception('Internal error: This should not happen, node = ' + node) # pragma: no cover
 
-    def IsValidGlobalConstant(self, value):
-        if value[0] == 'EXPR':
-            value = value[2]
-        if value[0] not in ('VECTOR', 'ROTATION', 'LIST'):
+    def IsValidGlobalConstant(self, decl):
+        if 'br' not in decl:
+            return True
+        expr = decl['br'][0]
+        if expr['node'] in ('CONST', 'IDENT'):
+            return True
+        if expr['node'] not in ('VECTOR', 'ROTATION', 'LIST'):
             return False
-        return all(x[0] in (CONSTANT, 'IDENT') for x in value[2:])
+        return all(elem['node'] in ('CONST', 'IDENT') for elem in expr['br'])
 
-    def optimize(self, symtab, functions, options = ('optimize',)):
+    def optimize(self, treesymtab, options = ('optimize',)):
         """Optimize the symbolic table symtab in place. Requires a table of
         predefined functions for folding constants.
         """
@@ -375,27 +379,22 @@ class optimizer(object):
 
         # TODO: Add option to handle local jumps properly.
 
-        self.functions = functions
-        self.symtab = symtab
+        tree, symtab = self.tree, self.symtab = treesymtab
 
         self.globalmode = False
 
-        # Fold constants etc.
-        for name in symtab[0]:
-            if name == -1:
-                continue
-            entry = symtab[0][name]
-            if entry[1] == 'State':
-                for event in entry[2]:
-                    self.FoldTree(entry[2][event][2])
-            elif type(entry[2]) == tuple:
-                self.globalmode = len(entry) == 3
-                self.FoldTree(entry[2]) # global
-                if self.globalmode:
-                    val = entry[2]
-                    # Unfold constant
-                    if val[0] == 'EXPR' and val[2][0] == CONSTANT:
-                        symtab[0][name] = entry[:2] + (val[2][2],) + entry[3:]
-                    elif not self.IsValidGlobalConstant(val):
-                        warning('WARNING: Expression does not collapse to a single constant.')
+        # Constant folding pass. It does some other optimizations along the way.
+        for idx in xrange(len(tree)):
+            if tree[idx]['node'] == 'DECL':
+                self.globalmode = True
+                self.FoldTree(tree, idx)
                 self.globalmode = False
+                if not self.IsValidGlobalConstant(tree[idx]):
+                    warning('WARNING: Expression does not collapse to a single constant.')
+            else:
+                self.FoldTree(tree, idx)
+
+        treesymtab = (self.tree, self.symtab)
+        del self.tree
+        del self.symtab
+        return treesymtab

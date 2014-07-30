@@ -77,7 +77,7 @@ class outscript(object):
                     neg = '-'
                 # Try harder
                 point = news.index('.') + 1 - len(news) # Remove point
-                news = str(int(news[:point-1] + news[point:]) + 1) # Increment
+                news = str(int(news[:point-1] + news[point:]) + 1).zfill(len(news)-1) # Increment
                 news = news[:point + len(news)] + '.' + news[point + len(news):] # Reinsert point
                 # Repeat the operation with the incremented number
                 while news[-1] != '.' and lslfuncs.F32(float(neg+news[:-1]+exp)) == value:
@@ -129,230 +129,190 @@ class outscript(object):
             self.indentlevel -= 1
             return ret + self.dent() + self.indent + ']'
 
-        if tvalue == tuple and value[0] == 'IDENT': # HACK
-            return value[2]
         assert False, u'Value of unknown type in Value2LSL: ' + repr(value)
 
     def dent(self):
         return self.indent * self.indentlevel
 
     def OutIndented(self, code):
-        if code[0] != '{}':
+        if code['node'] != '{}':
             self.indentlevel += 1
         ret = self.OutCode(code)
-        if code[0] != '{}':
+        if code['node'] != '{}':
             self.indentlevel -= 1
         return ret
 
     def OutExprList(self, L):
         ret = ''
         if L:
+            First = True
             for item in L:
-                if ret != '':
+                if not First:
                     ret += ', '
                 ret += self.OutExpr(item)
+                First = False
         return ret
 
     def OutExpr(self, expr):
-        # Save some recursion by unwrapping the expression
-        while expr[0] == 'EXPR':
-            expr = expr[2]
-        node = expr[0]
+        # Handles expression nodes (as opposed to statement nodes)
+        node = expr['node']
+        if 'br' in expr:
+            child = expr['br']
 
         if node == '()':
-            return '(' + self.OutExpr(expr[2]) + ')'
+            return '(' + self.OutExpr(child[0]) + ')'
+
         if node in self.binary_operands:
-            return self.OutExpr(expr[2]) + ' ' + node + ' ' + self.OutExpr(expr[3])
+            return self.OutExpr(child[0]) + ' ' + node + ' ' + self.OutExpr(child[1])
 
         if node == 'IDENT':
-            return expr[2]
-        if node == 'CONSTANT':
-            return self.Value2LSL(expr[2])
+            return expr['name']
+
+        if node == 'CONST':
+            return self.Value2LSL(expr['value'])
+
         if node == 'CAST':
-            ret =  '(' + expr[1] + ')'
-            expr = expr[2]
-            if expr[0] == 'EXPR':
-                expr = expr[2]
-            if expr[0] in ('CONSTANT', 'IDENT', 'V++', 'V--', 'VECTOR',
-                'ROTATION', 'LIST', 'FIELD', 'PRINT', 'FUNCTION', '()'):
-                ret += self.OutExpr(expr)
-            else:
-                ret += '(' + self.OutExpr(expr) + ')'
-            return ret
+            ret =  '(' + expr['type'] + ')'
+            expr = child[0]
+            if expr['node'] in ('CONST', 'IDENT', 'V++', 'V--', 'VECTOR',
+               'ROTATION', 'LIST', 'FIELD', 'PRINT', 'FUNCTION', '()'):
+                return ret + self.OutExpr(expr)
+            return ret + '(' + self.OutExpr(expr) + ')'
+
         if node == 'LIST':
-            if len(expr) == 2:
-                return '[]'
-            return '[' + self.OutExprList(expr[2:]) + ']'
-        if node == 'VECTOR':
-            return '<' + self.OutExpr(expr[2]) + ', ' + self.OutExpr(expr[3]) \
-                + ', ' + self.OutExpr(expr[4]) + '>'
-        if node == 'ROTATION':
-            return '<' + self.OutExpr(expr[2]) + ', ' + self.OutExpr(expr[3]) \
-                + ', ' + self.OutExpr(expr[4]) + ', ' + self.OutExpr(expr[5]) + '>'
-        if node == 'FUNCTION':
-            return expr[2] + '(' + self.OutExprList(expr[3]) + ')'
+            self.listmode = True
+            ret = '[' + self.OutExprList(child) + ']'
+            self.listmode = False
+            return ret
+
+        if node in ('VECTOR', 'ROTATION'):
+            return '<' + self.OutExprList(child) + '>'
+
+        if node == 'FNCALL':
+            return expr['name'] + '(' + self.OutExprList(child) + ')'
+
         if node == 'PRINT':
-            return 'print(' + self.OutExpr(expr[2]) + ')'
+            return 'print(' + self.OutExpr(child[0]) + ')'
 
         if node in self.unary_operands:
             if node == 'NEG':
                 node = '- '
-            return node + self.OutExpr(expr[2])
+            return node + self.OutExpr(child[0])
 
-        if node == 'FIELD':
-            return self.OutExpr(expr[2]) + '.' + expr[3]
+        if node == 'FLD':
+            return self.OutExpr(child[0]) + '.' + expr['fld']
 
         if node in ('V--', 'V++'):
-            return self.OutExpr(expr[2]) + node[1:]
+            return self.OutExpr(child[0]) + ('++' if node == 'V++' else '--')
+
         if node in ('--V', '++V'):
-            return node[:-1] + self.OutExpr(expr[2])
+            return ('++' if node == '++V' else '--') + self.OutExpr(child[0])
 
         if node in self.extended_assignments:
-            op = self.OutExpr(expr[2])
-            return op + ' = ' + op + ' ' + node[:-1] + ' (' + self.OutExpr(expr[3]) + ')'
+            lvalue = self.OutExpr(child[0])
+            return lvalue + ' = ' + lvalue + ' ' + node[:-1] + ' (' + self.OutExpr(child[1]) + ')'
+
+        if node == 'EXPRLIST':
+            return self.OutExprList(child)
 
         assert False, 'Internal error: expression type "' + node + '" not handled' # pragma: no cover
 
     def OutCode(self, code):
-        #return self.dent() + '{\n' + self.dent() + '}\n'
-        node = code[0]
-        if node == '{}':
-            ret = self.dent() + '{\n'
-            self.indentlevel += 1
-            for stmt in code[2:]:
-                ret += self.OutCode(stmt)
-            self.indentlevel -= 1
-            return ret + self.dent() + '}\n'
+        node = code['node']
+        if 'br' in code:
+            child = code['br']
+        else:
+            child = None
+
         if node == 'IF':
             ret = self.dent()
             while True:
-                ret += 'if (' + self.OutExpr(code[2]) + ')\n' + self.OutIndented(code[3])
-                if len(code) < 5:
+                ret += 'if (' + self.OutExpr(child[0]) + ')\n' + self.OutIndented(child[1])
+                if len(child) < 3:
                     return ret
-                if code[4][0] != 'IF':
-                    ret += self.dent() + 'else\n' + self.OutIndented(code[4])
+                if child[2]['node'] != 'IF':
+                    ret += self.dent() + 'else\n' + self.OutIndented(child[2])
                     return ret
                 ret += self.dent() + 'else '
-                code = code[4]
+                code = child[2]
+                child = code['br']
         if node == 'WHILE':
-            ret = self.dent() + 'while (' + self.OutExpr(code[2]) + ')\n'
-            ret += self.OutIndented(code[3])
+            ret = self.dent() + 'while (' + self.OutExpr(child[0]) + ')\n'
+            ret += self.OutIndented(child[1])
             return ret
         if node == 'DO':
             ret = self.dent() + 'do\n'
-            ret += self.OutIndented(code[2])
-            return ret + self.dent() + 'while (' + self.OutExpr(code[3]) + ');\n'
+            ret += self.OutIndented(child[0])
+            return ret + self.dent() + 'while (' + self.OutExpr(child[1]) + ');\n'
         if node == 'FOR':
             ret = self.dent() + 'for ('
-            if code[2]:
-                ret += self.OutExpr(code[2][0])
-                if len(code[2]) > 1:
-                    for expr in code[2][1:]:
-                        ret += ', ' + self.OutExpr(expr)
-            ret += '; ' + self.OutExpr(code[3]) + '; '
-            if code[4]:
-                ret += self.OutExpr(code[4][0])
-                if len(code[4]) > 1:
-                    for expr in code[4][1:]:
-                        ret += ', ' + self.OutExpr(expr)
+            ret += self.OutExpr(child[0])
+            ret += '; ' + self.OutExpr(child[1]) + '; '
+            ret += self.OutExpr(child[2])
             ret += ')\n'
-            ret += self.OutIndented(code[5])
+            ret += self.OutIndented(child[3])
             return ret
         if node == '@':
-            return self.dent() + '@' + code[2] + ';\n'
+            return self.dent() + '@' + code['name'] + ';\n'
         if node == 'JUMP':
-            assert code[2][0:2] == ['IDENT', 'Label']
-            return self.dent() + 'jump ' + code[2][2] + ';\n'
+            return self.dent() + 'jump ' + code['name'] + ';\n'
         if node == 'STATE':
-            name = 'default'
-            if code[2] != 'DEFAULT':
-                assert code[2][0:2] == ['IDENT', 'State']
-                name = code[2][2]
-            return self.dent() + 'state ' + name + ';\n'
+            return self.dent() + 'state ' + code['name'] + ';\n'
         if node == 'RETURN':
-            if code[2] is None:
-                return self.dent() + 'return;\n'
-            return self.dent() + 'return ' + self.OutExpr(code[2]) + ';\n'
+            if child:
+                return self.dent() + 'return ' + self.OutExpr(child[0]) + ';\n'
+            return self.dent() + 'return;\n'
         if node == 'DECL':
-            sym = self.symtab[code[3]][code[2]]
-            ret = self.dent() + sym[1] + ' ' + code[2]
-            if sym[2] is not None:
-                ret += ' = ' + self.OutExpr(sym[2])
+            ret = self.dent() + code['type'] + ' ' + code['name']
+            if child:
+                ret += ' = ' + self.OutExpr(child[0])
             return ret + ';\n'
         if node == ';':
             return self.dent() + ';\n'
 
+        if node in ('STATEDEF', '{}'):
+            ret = ''
+            if node == 'STATEDEF':
+                if code['name'] == 'default':
+                    ret = self.dent() + 'default\n'
+                else:
+                    ret = self.dent() + 'state ' + code['name'] + '\n'
+
+            ret += self.dent() + '{\n'
+            self.indentlevel += 1
+            for stmt in code['br']:
+                ret += self.OutCode(stmt)
+            self.indentlevel -= 1
+            return ret + self.dent() + '}\n'
+
+        if node == 'FNDEF':
+            ret = self.dent()
+            if code['type'] is not None:
+                ret += code['type'] + ' '
+            ret += code['name'] + '('
+            ret += ', '.join(typ + ' ' + name for typ, name in zip(code['ptypes'], code['pnames']))
+            return ret + ')\n' + self.OutCode(child[0])
+
         return self.dent() + self.OutExpr(code) + ';\n'
 
-    def OutFunc(self, typ, name, paramlist, paramsymtab, code):
-        ret = self.dent()
-        if typ is not None:
-            ret += typ + ' '
-        ret += name + '('
-        first = True
-        if paramlist:
-            for name in paramlist:
-                if not first:
-                    ret += ', '
-                ret += paramsymtab[name][1] + ' ' + name
-                first = False
-        return ret + ')\n' + self.OutCode(code)
-
-    def output(self, symtab, options = ('optimizesigns',)):
+    def output(self, treesymtab, options = ('optsigns',)):
         # Build a sorted list of dict entries
-        order = []
-        self.symtab = symtab
+        self.tree, self.symtab = treesymtab
 
         # Optimize signs
-        self.optsigns = 'optimizesigns' in options
-
-        for i in symtab:
-            item = []
-            for j in sorted(i.items(), key=lambda k: -1 if k[0]==-1 else k[1][0]):
-                if j[0] != -1:
-                    item.append(j[0])
-            order.append(item)
+        self.optsigns = 'optsigns' in options
 
         ret = ''
         self.indent = '    '
         self.indentlevel = 0
         self.globalmode = False
         self.listmode = False
-        for name in order[0]:
-            sym = symtab[0][name]
-
-            ret += self.dent()
-            if sym[1] == 'State':
-                if name == 'default':
-                    ret += 'default\n{\n'
-                else:
-                    ret += 'state ' + name + '\n{\n'
-
-                self.indentlevel += 1
-                eventorder = []
-                for event in sorted(sym[2].items(), key=lambda k: k[1][0]):
-                    eventorder.append(event[0])
-                for name in eventorder:
-                    eventdef = sym[2][name]
-                    ret += self.OutFunc(eventdef[1], name, eventdef[3], symtab[eventdef[4]], eventdef[2])
-                self.indentlevel -= 1
-                ret += self.dent() + '}\n'
-
-            elif len(sym) > 3: # function definition
-                ret += self.OutFunc(sym[1], name, sym[3], symtab[sym[4]], sym[2])
-
-            else: # global var
-
+        for code in self.tree:
+            if code['node'] == 'DECL':
                 self.globalmode = True
-                ret += sym[1] + ' ' + name
-                if sym[2] is not None:
-                    ret += ' = '
-                    if type(sym[2]) == tuple:
-                        ret += self.OutExpr(sym[2])
-                    else:
-                        ret += self.Value2LSL(sym[2])
-
-                ret += ';\n'
+                ret += self.OutCode(code)
                 self.globalmode = False
+            else:
+                ret += self.OutCode(code)
 
         return ret

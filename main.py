@@ -64,7 +64,7 @@ means that e.g. a + 3 + 5 is not optimized to a + 8; however a + (3 + 5) is.
             return 1
         optchanges = sys.argv[2].split(',')
         for chg in optchanges:
-            if chg[0:1] != '+':
+            if chg[0:1] not in ('+', '-'):
                 chg = '+' + chg
             if chg[0] == '-':
                 options.discard(chg[1:])
@@ -78,24 +78,22 @@ means that e.g. a + 3 + 5 is not optimized to a + 8; however a + (3 + 5) is.
     try:
         if fname == '-':
             script = sys.stdin.read()
-            p.parse(script, options)
+            ts = p.parse(script, options)
         else:
-            p.parsefile(fname, options)
-        funcs = p.functions
-        symtab = p.symtab
+            ts = p.parsefile(fname, options)
     except EParse as e:
         print e.message
         return 1
     del p
 
     opt = optimizer()
-    opt.optimize(symtab, funcs, options)
+    ts = opt.optimize(ts, options)
     del opt
 
     outs = outscript()
-    script = outs.output(symtab, options)
+    script = outs.output(ts, options)
     del outs
-    del symtab
+    del ts
     sys.stdout.write(script)
     return 0
 

@@ -1,6 +1,6 @@
 from lslopt.lslparse import parser,EParseSyntax,EParseUEOF,EParseAlreadyDefined,\
     EParseUndefined,EParseTypeMismatch,EParseReturnShouldBeEmpty,EParseReturnIsEmpty,\
-    EParseInvalidField,EParseFunctionMismatch,EParseDeclarationScope,EParseUnexpected,\
+    EParseInvalidField,EParseFunctionMismatch,EParseDeclarationScope,\
     fieldpos
 from lslopt.lsloutput import outscript
 from lslopt.lsloptimizer import optimizer
@@ -69,8 +69,8 @@ class Test02_Compiler(UnitTestCase):
             float f;
             float ff = f;
             list L = [];
-            list L2 = [2,3,4,5,6];
-            list L3 = [2,3,f,5,6];
+            list L2 = [2,3,4,5,-6];
+            list L3 = [2,3,f,5,-6.0];
             rotation QQ = <f,f,f,f>;
             integer fn(integer x){
                 if (1) for (f=3,f=4,f=5;3;f++,f++) do while(0); while(0); else if (2) return 2; else;
@@ -88,7 +88,7 @@ class Test02_Compiler(UnitTestCase):
                 1e37;1.1e22;1.;
                 print(V *= 3);
                 fwd("","","");
-                L"\n\t\rxxxx";
+                L"\n\t\rxxxx";@lbl;jump lbl;
                 {f;}
                 [1,2,3];
             }
@@ -159,6 +159,8 @@ class Test02_Compiler(UnitTestCase):
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){""%4;}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){3%<2,3,4>;}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){""%4;}''')
+        self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){float i;i%=2;}''')
+        self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){float i;i&=2;}''', ['extendedassignment'])
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){(vector)4;}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){key k;k+=k;}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){string i;i++;}''')
@@ -213,7 +215,7 @@ class Test02_Compiler(UnitTestCase):
                 'skippreproc']
             ))
         print self.parser.scopeindex
-        self.assertRaises(EParseUnexpected, self.parser.PopScope)
+        #self.assertRaises(EParseUnexpected, self.parser.PopScope)
 
         self.assertEqual(fieldpos("a,b",",",3),-1)
         self.assertEqual(self.outscript.Value2LSL(lslfuncs.Key(u'')), '((key)"")')
@@ -235,8 +237,11 @@ class Test03_Optimizer(UnitTestCase):
             float g = f;
             string s = "1" "2";
             list L = [(key)""];
+            list L1 = L;
+            list L2 = [1,2,3,4,5,6.0];
+            list L3 = [];
             vector v=<1,2,f>;
-            float ffff2 = v.x; // This needs a bit of luck for coverage, as it's order-dependent.
+            float ffff2 = v.x;
             vector vvvv = <1,2,llGetNumberOfSides()>;
             float ffff=vvvv.x;
             vector vvvv2=vvvv;
@@ -269,14 +274,14 @@ class Test03_Optimizer(UnitTestCase):
             ['explicitcast','extendedtypecast','extendedassignment',
                 'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat']
             )
-        self.opt.optimize(p, self.parser.functions)
-        self.opt.optimize(p, self.parser.functions, ())
+        self.opt.optimize(p)
+        self.opt.optimize(p, ())
         print self.outscript.output(p)
         p = self.parser.parse('''string s = llUnescapeURL("%09");default{timer(){float f=llSqrt(-1);}}''',
             ['explicitcast','extendedtypecast','extendedassignment',
                 'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat']
             )
-        self.opt.optimize(p, self.parser.functions, ['optimize','foldtabs'])
+        self.opt.optimize(p, ['optimize','foldtabs'])
         print self.outscript.output(p)
     def test_regression(self):
         p = self.parser.parse('''
@@ -284,7 +289,7 @@ class Test03_Optimizer(UnitTestCase):
             x() { if (1) { string s = "x"; s = s + (string)a; } }
             default { timer() { } }
             ''', ['extendedassignment'])
-        self.opt.optimize(p, self.parser.functions)
+        self.opt.optimize(p)
         self.outscript.output(p)
         p = self.parser.parse('''
             key k = "blah";
@@ -294,10 +299,11 @@ class Test03_Optimizer(UnitTestCase):
 
             default{timer(){}}
             ''', ['extendedassignment'])
-        self.opt.optimize(p, self.parser.functions)
+        self.opt.optimize(p)
         out = self.outscript.output(p)
+        print out
         self.assertEqual(out, 'key k = "blah";\nlist L = [k, "xxxx", 1.];\n'
-            'float f;\nvector v = <f, 3, 4>;\ndefault\n{\n    timer()\n'
+            'float f;\nvector v = <0, 3, 4>;\ndefault\n{\n    timer()\n'
             '    {\n    }\n}\n')
 
     def tearDown(self):
