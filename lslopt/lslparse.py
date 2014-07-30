@@ -43,44 +43,51 @@ class EParse(Exception):
 class EParseUEOF(EParse):
     def __init__(self, parser):
         parser.errorpos = len(parser.script)
-        super(self.__class__, self).__init__(parser, u"Unexpected EOF")
+        super(EParseUEOF, self).__init__(parser, u"Unexpected EOF")
 
 class EParseSyntax(EParse):
     def __init__(self, parser):
-        super(self.__class__, self).__init__(parser, u"Syntax error")
+        super(EParseSyntax, self).__init__(parser, u"Syntax error")
 
 class EParseAlreadyDefined(EParse):
     def __init__(self, parser):
-        super(self.__class__, self).__init__(parser, u"Name previously declared within scope")
+        super(EParseAlreadyDefined, self).__init__(parser,
+            u"Name previously declared within scope")
 
 class EParseUndefined(EParse):
     def __init__(self, parser):
-        super(self.__class__, self).__init__(parser, u"Name not defined within scope")
+        super(EParseUndefined, self).__init__(parser,
+            u"Name not defined within scope")
 
 class EParseTypeMismatch(EParse):
     def __init__(self, parser):
-        super(self.__class__, self).__init__(parser, u"Type mismatch")
+        super(EParseTypeMismatch, self).__init__(parser, u"Type mismatch")
 
 class EParseReturnShouldBeEmpty(EParse):
     def __init__(self, parser):
-        super(self.__class__, self).__init__(parser, u"Return statement type doesn't match function return type")
+        super(EParseReturnShouldBeEmpty, self).__init__(parser,
+            u"Return statement type doesn't match function return type")
 
 class EParseReturnIsEmpty(EParse):
     def __init__(self, parser):
-        super(self.__class__, self).__init__(parser, u"Function returns a value but return statement doesn't")
+        super(EParseReturnIsEmtpy, self).__init__(parser,
+            u"Function returns a value but return statement doesn't")
 
 # This error message may sound funny, for good reasons.
 class EParseInvalidField(EParse):
     def __init__(self, parser):
-        super(self.__class__, self).__init__(parser, u"Use of vector or quaternion method on incorrect type")
+        super(EParseInvalidField, self).__init__(parser,
+            u"Use of vector or quaternion method on incorrect type")
 
 class EParseFunctionMismatch(EParse):
     def __init__(self, parser):
-        super(self.__class__, self).__init__(parser, u"Function type mismatches type or number of arguments")
+        super(EParseFunctionMismatch, self).__init__(parser,
+            u"Function type mismatches type or number of arguments")
 
 class EParseDeclarationScope(EParse):
     def __init__(self, parser):
-        super(self.__class__, self).__init__(parser, u"Declaration requires a new scope -- use { and }")
+        super(EParseDeclarationScope, self).__init__(parser,
+            u"Declaration requires a new scope -- use { and }")
 
 class EInternal(Exception):
     """This exception is a construct to allow a different function to cause an
@@ -453,7 +460,7 @@ class parser(object):
 
             self.expect(',')
             self.NextToken()
-        except EParseSyntax:
+        except EParse: # The errors can be varied, e.g. <0,0,0>-v; raises EParseTypeMismatch
             # Backtrack
             self.pos = pos
             self.errorpos = errorpos
@@ -1876,19 +1883,17 @@ class parser(object):
                     name = match.group(5)
                     if name in self.constants:
                         warning('Global already defined in bultins.txt, overwriting: ' + name)
-                    try:
-                        typ = match.group(4)
-                        if typ == 'quaternion':
-                            typ = 'rotation'
-                        value = match.group(6)
-                        if typ == 'integer':
-                            value = int(value, 0)
-                        elif typ == 'float':
-                            value = lslfuncs.F32(float(value))
-                        elif typ == 'string':
-                            value = value.decode('utf8')
-                            if not parse_str_re.match(value):
-                                raise EInternal
+                    typ = match.group(4)
+                    if typ == 'quaternion':
+                        typ = 'rotation'
+                    value = match.group(6)
+                    if typ == 'integer':
+                        value = int(value, 0)
+                    elif typ == 'float':
+                        value = lslfuncs.F32(float(value))
+                    elif typ == 'string':
+                        value = value.decode('utf8')
+                        if parse_str_re.match(value):
                             esc = False
                             tmp = value[1:-1]
                             value = u''
@@ -1906,10 +1911,14 @@ class parser(object):
                                     value += c
                             #if typ == 'key':
                             #    value = Key(value)
-                        elif typ == 'key':
-                            warning('Key constants not supported in builtins.txt: ' + line)
+                        else:
+                            warning('Invalid string in builtins.txt: ' + line)
                             value = None
-                        elif typ in ('vector', 'rotation'):
+                    elif typ == 'key':
+                        warning('Key constants not supported in builtins.txt: ' + line)
+                        value = None
+                    elif typ in ('vector', 'rotation'):
+                        try:
                             if value[0:1] != '<' or value[-1:] != '>':
                                 raise ValueError
                             value = value[1:-1].split(',')
@@ -1935,16 +1944,14 @@ class parser(object):
                                     raise ValueError
                                 value[3] = lslfuncs.F32(float(num.group(1)))
                                 value = Quaternion(value)
-                        else:
-                            assert typ == 'list'
-                            warning('List constants not supported in builtins.txt: ' + line)
-                            value = None
-                        if value is not None:
-                            self.constants[name] = value
+                        except ValueError:
+                            warning('Invalid vector/rotation syntax in builtins.txt: ' + line)
+                    else:
+                        assert typ == 'list'
+                        warning('List constants not supported in builtins.txt: ' + line)
+                        value = None
+                    if value is not None:
+                        self.constants[name] = value
 
-                    except EInternal:
-                        warning('Invalid string in builtins.txt: ' + line)
-                    except ValueError:
-                        warning('Invalid vector syntax in builtins.txt: ' + line)
         finally:
             f.close()
