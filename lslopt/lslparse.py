@@ -70,7 +70,7 @@ class EParseReturnShouldBeEmpty(EParse):
 
 class EParseReturnIsEmpty(EParse):
     def __init__(self, parser):
-        super(EParseReturnIsEmtpy, self).__init__(parser,
+        super(EParseReturnIsEmpty, self).__init__(parser,
             u"Function returns a value but return statement doesn't")
 
 # This error message may sound funny, for good reasons.
