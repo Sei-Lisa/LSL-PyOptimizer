@@ -14,41 +14,35 @@ Usage: %s [-O [+|-]option[,[+|-]option[,...]]] filename
 That's an upper case o, not the number zero.
 If filename is a dash (-) then standard input is used.
 
-Options (+ means default, * means not implemented):
-  +extendedglobalexpr  Enables arbitrary expressions in globals (as opposed to
+Options (+ means default):
+  extendedglobalexpr + Enables arbitrary expressions in globals (as opposed to
                        dull simple expressions allowed by regular LSL). Needs
                        the optimizer to run for the result to be compilable.
-  +extendedtypecast    Allows extended typecast syntax e.g. (string)(integer)a
+  extendedtypecast   + Allows extended typecast syntax e.g. (string)(integer)a
                        is valid with this option.
-  +extendedassignment  Enables &=, |=, ^=, <<=, >>= assignment operators.
-  -explicitcast        Add explicit casts where they are implicit. This option
+  extendedassignment + Enables &=, |=, ^=, <<=, >>= assignment operators.
+  explicitcast         Add explicit casts where they are implicit. This option
                        is useless with 'optimize' and 'optsigns', and is of
                        basically no use in general.
-  +allowkeyconcat      Allow string + key and key + string (both return string)
-  +allowmultistrings   Allow C-like string juxtaposition, e.g. "ab" "cd" means
+  allowkeyconcat     + Allow string + key and key + string (both return string)
+  allowmultistrings  + Allow C-like string juxtaposition, e.g. "ab" "cd" means
                        "abcd", no concatenation involved. Very useful when used
                        with a preprocessor (although the optimizer would
                        optimize concatenated strings if they are parenthesized
                        correctly, see note at the footer).
-  +skippreproc         Skip preprocessor directives in the source as if they
+  skippreproc        + Skip preprocessor directives in the source as if they
                        were comments. Not useful unless the script is itself
                        the output of a preprocessor like cpp, which inserts
                        directives like: # 123 "filename".
-  +optimize            Runs the optimizer.
-  +optsigns            Optimize signs in float and integer constants.
-  +optfloats           Optimize a float when it is an integral value.
+  optimize           + Runs the optimizer.
+  optsigns           + Optimize signs in float and integer constants.
+  optfloats          + Optimize a float when it is an integral value.
   foldtabs             Tabs can't be copy-pasted, so they aren't optimized by
                        default. But with support from the viewer, they can be
                        folded too and make it to the uploaded source. This
                        option overrides that check, enabling optimization of
                        strings with tabs. The resulting source isn't guaranteed
                        to be copy-paste-able to a different script, though.
-  * allowcescapes      Enables use of \r, \b, \xNN, \NNN, etc.
-  * enableswitch       Enables Firestorm-compatible switch statements
-                       (not recommended)
-  * lazylists          Enables Firestorm-compatible list syntax, e.g.
-                       mylist[3] = 5; v = (float)mylist[2]; (needs to know the
-                       type to work). Works better with extendedtypecast.
 
 Note that the optimizer doesn't reorder expressions to fold constants. This
 means that e.g. a + 3 + 5 is not optimized to a + 8; however a + (3 + 5) is.
