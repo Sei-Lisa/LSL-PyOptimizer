@@ -2,6 +2,8 @@
 from lslcommon import Key, Vector, Quaternion
 import lslfuncs
 import sys, re
+from base64 import b64encode
+import random
 
 # Note this module was basically written from bottom to top, which may help
 # reading it.
@@ -1156,15 +1158,38 @@ class parser(object):
             name = self.tok[1]
             if name in self.symtab[self.scopeindex]:
                 raise EParseAlreadyDefined(self)
-            if not self.duplabels and name in self.locallabels:
-                raise EParseDuplicateLabel(self)
-            # All labels go to a common pool local to the current function.
-            self.locallabels.add(name)
-            self.AddSymbol('l', self.scopeindex, name)
+            # shrinknames *needs* all labels renamed, so they are out of the way
+            if self.duplabels or self.shrinknames:
+                # Duplicate labels allowed.
+                if name in self.locallabels or self.shrinknames:
+                    # Generate a new unique name and attach it to the symbol.
+                    while True:
+                        x = random.randint(0, 16777215)
+                        unique = 'J_' + b64encode(chr(x>>16) + chr((x>>8)&255)
+                            + chr(x&255)).replace('+', '_')
+                        x = random.randint(0, 16777215)
+                        unique += b64encode(chr(x>>16) + chr((x>>8)&255)
+                            + chr(x&255)).replace('+', '_')
+                        if '/' not in unique and unique not in self.locallabels:
+                            break
+                else:
+                    # Use the existing name. Faster and more readable.
+                    unique = name
+
+                self.locallabels.add(unique)
+                self.AddSymbol('l', self.scopeindex, name, NewName=unique)
+            else:
+                # Duplicate labels disallowed.
+                # All labels go to a common pool local to the current function.
+                # Check if it's already there, and add it otherwise.
+                if name in self.locallabels:
+                    raise EParseDuplicateLabel(self)
+                self.locallabels.add(name)
+                self.AddSymbol('l', self.scopeindex, name)
             self.NextToken()
             self.expect(';')
             self.NextToken()
-            return {'nt':'@', 't':None, 'name':name}
+            return {'nt':'@', 't':None, 'name':name, 'scope':self.scopeindex}
         if tok0 == 'JUMP':
             self.NextToken()
             self.expect('IDENT')
@@ -1454,7 +1479,7 @@ class parser(object):
             self.locallabels = set()
             body = self.Parse_code_block(None)
             del self.locallabels
-            ret.append({'nt':'FNDEF', 't':None, 'name':name,
+            ret.append({'nt':'FNDEF', 't':None, 'name':name, # no scope as these are reserved words
                 'pscope':self.scopeindex, 'ptypes':params[0], 'pnames':params[1],
                 'ch':[body]})
             self.PopScope()
@@ -1537,7 +1562,7 @@ class parser(object):
                 paramscope = self.scopeindex
                 self.AddSymbol('f', 0, name, Loc=len(self.tree), Type=typ,
                     ParamTypes=params[0], ParamNames=params[1])
-                self.tree.append({'nt':'FNDEF', 't':typ, 'name':name,
+                self.tree.append({'nt':'FNDEF', 't':typ, 'name':name, 'scope':0,
                     'pscope':paramscope,
                     'ptypes':params[0], 'pnames':params[1], 'ch':[body]})
                 self.PopScope()
@@ -1765,6 +1790,9 @@ class parser(object):
         # Enable use of local labels with duplicate names
         self.duplabels = 'duplabels' in options
 
+        # Shrink names. Activates duplabels automatically.
+        self.shrinknames = 'shrinknames' in options
+
         # Symbol table:
         # This is a list of all local and global symbol tables.
         # The first element (0) is the global scope. Each symbol table is a
@@ -1822,7 +1850,8 @@ class parser(object):
         # Start the parsing proper
         self.Parse_script()
 
-        del self.globals # No longer needed. The data that is not in self.functions is in self.symtab[0].
+        # No longer needed. The data is already in self.symtab[0].
+        del self.globals
 
         # Insert library functions into symbol table
         self.symtab[0].update(self.functions)

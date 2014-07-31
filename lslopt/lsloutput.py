@@ -135,6 +135,12 @@ class outscript(object):
     def dent(self):
         return self.indent * self.indentlevel
 
+    def FindName(self, node):
+        try:
+            return self.symtab[node['scope']][node['name']]['NewName']
+        except KeyError:
+            return node['name']
+
     def OutIndented(self, node):
         if node['nt'] != '{}':
             self.indentlevel += 1
@@ -167,7 +173,7 @@ class outscript(object):
             return self.OutExpr(child[0]) + ' ' + nt + ' ' + self.OutExpr(child[1])
 
         if nt == 'IDENT':
-            return expr['name']
+            return self.FindName(expr)
 
         if nt == 'CONST':
             return self.Value2LSL(expr['value'])
@@ -254,17 +260,17 @@ class outscript(object):
             ret += self.OutIndented(child[3])
             return ret
         if nt == '@':
-            return self.dent() + '@' + node['name'] + ';\n'
+            return self.dent() + '@' + self.FindName(node) + ';\n'
         if nt == 'JUMP':
-            return self.dent() + 'jump ' + node['name'] + ';\n'
+            return self.dent() + 'jump ' + self.FindName(node) + ';\n'
         if nt == 'STSW':
-            return self.dent() + 'state ' + node['name'] + ';\n'
+            return self.dent() + 'state ' + self.FindName(node) + ';\n'
         if nt == 'RETURN':
             if child:
                 return self.dent() + 'return ' + self.OutExpr(child[0]) + ';\n'
             return self.dent() + 'return;\n'
         if nt == 'DECL':
-            ret = self.dent() + node['t'] + ' ' + node['name']
+            ret = self.dent() + node['t'] + ' ' + self.FindName(node)
             if child:
                 if 'orig' in child[0]:
                     ret += ' = ' + self.OutExpr(child[0]['orig'])
