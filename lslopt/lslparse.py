@@ -1198,21 +1198,25 @@ class parser(object):
             if value is None:
                 return {'nt':'RETURN', 't':None}
             return {'nt':'RETURN', 't':None, 'ch':[self.autocastcheck(value, ReturnType)]}
-        if tok0 == 'IF': # TODO: Convert this into a loop for ELSE IF's, saving recursion
-            self.NextToken()
-            self.expect('(')
-            self.NextToken()
-            condition = self.Parse_expression()
-            self.expect(')')
-            self.NextToken()
-            then_branch = self.Parse_statement(ReturnType)
-            else_branch = None
-            if self.tok[0] == 'ELSE':
+        if tok0 == 'IF':
+            ret = {'nt':'IF', 't':None, 'ch':[]}
+            cur = ret
+            while True:
                 self.NextToken()
-                else_branch = self.Parse_statement(ReturnType)
-            if else_branch is not None:
-                return {'nt':'IF', 't':None, 'ch':[condition, then_branch, else_branch]}
-            return {'nt':'IF', 't':None, 'ch':[condition, then_branch]}
+                self.expect('(')
+                self.NextToken()
+                cur['ch'].append(self.Parse_expression())
+                self.expect(')')
+                self.NextToken()
+                cur['ch'].append(self.Parse_statement(ReturnType))
+                if self.tok[0] == 'ELSE':
+                    self.NextToken()
+                    if self.tok[0] == 'IF':
+                        cur['ch'].append({'nt':'IF', 't':None, 'ch':[]})
+                        cur = cur['ch'][2]
+                        continue
+                    cur['ch'].append(self.Parse_statement(ReturnType))
+                return ret
 
         if tok0 == 'WHILE':
             self.NextToken()
