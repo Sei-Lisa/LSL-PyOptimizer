@@ -143,19 +143,11 @@ def InternalJsonF2S(f):
 def InternalJsonScanMatching(json, idx):
     """Shortcut: scan for a matching pair of {} or [] with proper nesting
     and string handling, with no validity check other than well-formedness,
-    meaning all {} and [] must match.
+    meaning all {} or [] must match.
     """
-    # TODO: InternalJsonScanMatching: Decide whether to use two nesting level variables rather than a stack.
-    # That would mean that a nested malformed string like [{]} would be valid. SL may accept that.
-    # (Or maybe even just ONE nesting level variable for the current element,
-    # disregarding the nesting of the other, e.g. if we're on an object,
-    # the [] are not tracked thus {[} would be valid. That sounds like LSL.
-    # Or track [] and {} as the same, distinguishing whether
-    # the one at nesting level 0 matches the first (e.g. {[{}}} would be valid)
-    # Or just track the current one and screw the other (e.g. {{]]][]{}][}}
-    # would be valid). That sounds even more like LSL.
-    # Experiments are advisable.
-    stk = [json[idx]]
+    matching = json[idx]
+    matching += '}' if json[idx] == '{' else ']'
+    level = 1
     str = False
     esc = False
     for i in xrange(idx+1, len(json)):
@@ -169,13 +161,12 @@ def InternalJsonScanMatching(json, idx):
                 str = False
         elif c == u'"':
             str = True
-        elif c in u'{[':
-            stk.append(c)
-        elif c in u']}':
-            if stk[-1] != (u'{' if c == u'}' else u'['):
-                return None # bad nesting
-            stk = stk[:-1]
-            if stk == []:
+        elif c in matching:
+            if c == matching[0]:
+                level += 1
+            else:
+                level -= 1
+            if not level:
                 return i+1
     return None
 

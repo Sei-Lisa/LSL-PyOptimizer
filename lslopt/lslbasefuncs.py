@@ -476,7 +476,7 @@ def add(a, b, f32=True):
     if ta == tb in (list, unicode):
         return a + b
     # string + key, key + string are allowed here
-    if ta in (unicode, Key) and tb in (unicode, Key):
+    if ta in (unicode, Key) and tb in (unicode, Key) and not (ta == tb == Key):
         return a + b
     if ta == list:
         return a + [b]
@@ -931,7 +931,7 @@ def llIntegerToBase64(x):
 def llList2CSV(lst):
     assert islist(lst)
     ret = []
-    for elem in val:
+    for elem in lst:
         # This always uses LSO rules for float to string.
         if type(elem) == float:
             ret.append(u'%.6f' % elem)

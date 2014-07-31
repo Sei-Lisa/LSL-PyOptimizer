@@ -62,7 +62,7 @@ def test(fn, expected):
         errors += 1
         #raise ETestFailed
     else:
-        sys.stdout.write("PASSED! %s == %s\n" % (fn, repr(expected)))
+        pass#sys.stdout.write("PASSED! %s == %s\n" % (fn, repr(expected)))
 
 def shouldexcept(txt, exc):
     global tests
@@ -78,7 +78,7 @@ def shouldexcept(txt, exc):
     try:
         eval(txt)
     except exc:
-        sys.stdout.write("PASSED! %s on %s\n" % (exc.__name__, txt))
+        #sys.stdout.write("PASSED! %s on %s\n" % (exc.__name__, txt))
         return
 
     werr = sys.stderr.write
@@ -130,7 +130,7 @@ def verify(msg, result, expected):
         werr("Expect: " + repr(expected) + '\n')
         #return 0
     else:
-        sys.stdout.write("PASSED! %s, expect=actual=%s\n" % (msg, repr(expected)))
+        pass#sys.stdout.write("PASSED! %s, expect=actual=%s\n" % (msg, repr(expected)))
     #return 1
 
 def verify_list(msg, result, expected):
@@ -642,7 +642,7 @@ def do_tests():
         u"9999999933815812510711506376257961984.000000, "
         u"99999996802856924650656260769173209088.000000")
 
-    test('llDumpList2String([F32(1e11)], "/")', u'100000000000.000000')
+    test('llDumpList2String([F32(1e11)], u"/")', u'100000000000.000000')
 
     # Inputs
     inp = [F32(i) for i in [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14,
