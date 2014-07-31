@@ -566,7 +566,7 @@ class optimizer(object):
         """
 
         if 'optimize' not in options:
-            return
+            return treesymtab
 
         self.foldtabs = 'foldtabs' in options
 
