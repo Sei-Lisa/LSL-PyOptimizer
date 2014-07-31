@@ -362,25 +362,15 @@ class optimizer(object):
                 # Assume we already were there
                 if 'ch' in defn:
                     val = defn['ch'][0]
-                    # TODO: We need some more analysis here.
-                    #    As is, it "optimizes"
-                    #       list A = [3,4,5,6,7,8,9];
-                    #       list B = A;
-                    #    to
-                    #       list A = [3,4,5,6,7,8,9];
-                    #       list B = [3,4,5,6,7,8,9];
-                    # which is counter-productive. But if we exclude lists,
-                    # we can't do this:
-                    #       list A = [3,4,5,6,7,8,9];
-                    #       list B = llList2List(A, 2, 3);
                     if val['nt'] != 'CONST' or ident['t'] == 'key':
                         return
+                    val = val.copy()
                 else:
                     val = {'nt':'CONST', 't':defn['t'],
                            'value':self.DefaultValues[defn['t']]}
                 if nt == 'FLD':
                     val = {'nt':'CONST', 't':'float',
-                        'value':val['value']['xyzs'.index(node['fld'])]}
+                           'value':val['value']['xyzs'.index(node['fld'])]}
                 parent[index] = val
             return
 
@@ -522,6 +512,9 @@ class optimizer(object):
 
         if nt == 'DECL':
             if child:
+                # TODO: Decide if child is a simple_expr.
+                # If it is, then we should keep the original
+                # attached to the folded node and use it in the output.
                 self.FoldTree(child, 0)
                 # Remove assignment if integer zero.
                 if node['t'] == 'integer' and child[0]['nt'] == 'CONST' \
