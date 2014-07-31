@@ -591,8 +591,6 @@ class optimizer(object):
 
         self.foldtabs = 'foldtabs' in options
 
-        # TODO: Add option to handle local jumps properly.
-
         tree, symtab = self.tree, self.symtab = treesymtab
 
         self.globalmode = False
