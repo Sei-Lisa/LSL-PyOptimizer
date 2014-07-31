@@ -521,13 +521,21 @@ class optimizer(object):
             return
 
         if nt == 'DECL':
-            # The expression code is elsewhere.
             if child:
                 self.FoldTree(child, 0)
-                # TODO: Remove assignment if integer zero.
+                # Remove assignment if integer zero.
+                if node['t'] == 'integer' and child[0]['nt'] == 'CONST' \
+                   and not child[0]['value']:
+                    del node['ch']
+                    child = None
             else:
-                # TODO: Add assignment if vector, rotation or float.
-                pass
+                # Add assignment if vector, rotation or float.
+                if node['t'] in ('float', 'vector', 'rotation'):
+                    typ = node['t']
+                    node['ch'] = [{'nt':'CONST', 't':typ, 'value':
+                        0.0 if typ == 'float' else
+                        lslfuncs.ZERO_VECTOR if typ == 'vector' else
+                        lslfuncs.ZERO_ROTATION}]
             return
 
         if nt in self.ignored_stmts:
