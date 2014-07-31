@@ -1,3 +1,4 @@
+
 from lslcommon import Key, Vector, Quaternion
 import lslfuncs
 import sys, re
@@ -88,6 +89,11 @@ class EParseDeclarationScope(EParse):
     def __init__(self, parser):
         super(EParseDeclarationScope, self).__init__(parser,
             u"Declaration requires a new scope -- use { and }")
+
+class EParseDuplicateLabel(EParse):
+    def __init__(self, parser):
+        super(EParseDuplicateLabel, self).__init__(parser,
+            u"Duplicate local label name. That won't allow the Mono script to be saved, and will not work as expected in LSO.")
 
 class EInternal(Exception):
     """This exception is a construct to allow a different function to cause an
@@ -1150,6 +1156,10 @@ class parser(object):
             name = self.tok[1]
             if name in self.symtab[self.scopeindex]:
                 raise EParseAlreadyDefined(self)
+            if not self.duplabels and name in self.locallabels:
+                raise EParseDuplicateLabel(self)
+            # All labels go to a common pool local to the current function.
+            self.locallabels.add(name)
             self.AddSymbol('l', self.scopeindex, name)
             self.NextToken()
             self.expect(';')
@@ -1441,7 +1451,9 @@ class parser(object):
                 raise EParseSyntax(self)
             self.expect(')')
             self.NextToken()
+            self.locallabels = set()
             body = self.Parse_code_block(None)
+            del self.locallabels
             ret.append({'nt':'FNDEF', 't':None, 'name':name,
                 'pscope':self.scopeindex, 'ptypes':params[0], 'pnames':params[1],
                 'ch':[body]})
@@ -1519,7 +1531,9 @@ class parser(object):
                 params = self.Parse_optional_param_list()
                 self.expect(')')
                 self.NextToken()
+                self.locallabels = set()
                 body = self.Parse_code_block(typ)
+                del self.locallabels
                 paramscope = self.scopeindex
                 self.AddSymbol('f', 0, name, Loc=len(self.tree), Type=typ,
                     ParamTypes=params[0], ParamNames=params[1])
@@ -1747,6 +1761,9 @@ class parser(object):
 
         # TODO: Enable brackets for list elements e.g. (float)mylist[3], or mylist[5]=4
         #self.lazylists = 'lazylists' in options
+
+        # Enable use of local labels with duplicate names
+        self.duplabels = 'duplabels' in options
 
         # Symbol table:
         # This is a list of all local and global symbol tables.

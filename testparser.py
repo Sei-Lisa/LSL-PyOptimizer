@@ -1,7 +1,7 @@
 from lslopt.lslparse import parser,EParseSyntax,EParseUEOF,EParseAlreadyDefined,\
     EParseUndefined,EParseTypeMismatch,EParseReturnShouldBeEmpty,EParseReturnIsEmpty,\
     EParseInvalidField,EParseFunctionMismatch,EParseDeclarationScope,\
-    fieldpos
+    EParseDuplicateLabel,fieldpos
 from lslopt.lsloutput import outscript
 from lslopt.lsloptimizer import optimizer
 from lslopt import lslfuncs
@@ -44,7 +44,7 @@ const string q="\t"
         parser()
 
 
-class Test02_Compiler(UnitTestCase):
+class Test02_Parser(UnitTestCase):
     def setUp(self):
         self.parser = parser()
         self.outscript = outscript()
@@ -171,13 +171,14 @@ class Test02_Compiler(UnitTestCase):
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){string i;!i;}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){string i;++i;}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''g(){integer k;k=g();}''')
-        self.assertRaises(EParseTypeMismatch, self.parser.parse, '''g(){@x;x;}state x{}''')
-        self.assertRaises(EParseTypeMismatch, self.parser.parse, '''g(){print(g());}state x{}''')
+        self.assertRaises(EParseTypeMismatch, self.parser.parse, '''g(){@x;x;}default{}state x{}''')
+        self.assertRaises(EParseTypeMismatch, self.parser.parse, '''g(){print(g());}default{}state x{}''')
         self.assertRaises(EParseUndefined, self.parser.parse, '''g(){integer k;k();}''')
         self.assertRaises(EParseUndefined, self.parser.parse, '''g(){++x;}state x{}''')
         self.assertRaises(EParseUndefined, self.parser.parse, '''g(){print(x);}state x{}''')
         self.assertRaises(EParseUEOF, self.parser.parse, '''f(){(integer)''')
         self.assertRaises(EParseInvalidField, self.parser.parse, '''f(){vector v;v.s;}''')
+        self.assertRaises(EParseDuplicateLabel, self.parser.parse, 'f(){@x;{@x;}}')
         self.assertRaises(EParseSyntax, self.parser.parse, '''f(){<1,2,3,4==5>;}''')
         self.assertRaises(EParseSyntax, self.parser.parse, '''#blah;\ndefault{timer(){}}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){<1,2,3,4>"">;}''')
@@ -209,11 +210,11 @@ class Test02_Compiler(UnitTestCase):
                 i |= i;
                 "a" "b" "c";
                 "a"+(key)"b"; (key)"a" + "b";
-                i>>=i;
+                i>>=i; {@x;{@x;jump x;}jump x;}
             }}''',
             ['explicitcast','extendedtypecast','extendedassignment',
                 'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat',
-                'skippreproc']
+                'skippreproc', 'duplabels']
             ))
         print self.parser.scopeindex
         #self.assertRaises(EParseUnexpected, self.parser.PopScope)
@@ -241,6 +242,7 @@ class Test03_Optimizer(UnitTestCase):
             list L1 = L;
             list L2 = [1,2,3,4,5,6.0];
             list L3 = [];
+            list L4 = [1,2,3,4,5,6.0,""]+[];
             integer RemovesInt = 0;
             vector AddsVector;
             vector v=<1,2,f>;
