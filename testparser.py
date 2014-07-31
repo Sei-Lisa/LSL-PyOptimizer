@@ -240,6 +240,8 @@ class Test03_Optimizer(UnitTestCase):
             list L1 = L;
             list L2 = [1,2,3,4,5,6.0];
             list L3 = [];
+            integer RemovesInt = 0;
+            vector AddsVector;
             vector v=<1,2,f>;
             float ffff2 = v.x;
             vector vvvv = <1,2,llGetNumberOfSides()>;
@@ -308,6 +310,7 @@ class Test03_Optimizer(UnitTestCase):
             '''key k = "blah";
             list L = [k, "xxxx", 1.0];
             float f;
+            integer i = 0;
             vector v = <f, 3, 4>;
 
             default{timer(){}}
@@ -315,7 +318,7 @@ class Test03_Optimizer(UnitTestCase):
         self.opt.optimize(p)
         out = self.outscript.output(p)
         self.assertEqual(out, 'key k = "blah";\nlist L = [k, "xxxx", 1.];\n'
-            'float f;\nvector v = <0, 3, 4>;\n'
+            'float f = 0;\ninteger i;\nvector v = <0, 3, 4>;\n'
             'default\n{\n    timer()\n    {\n    }\n}\n'
             )
 
