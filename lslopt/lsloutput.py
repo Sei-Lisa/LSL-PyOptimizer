@@ -82,15 +82,16 @@ class outscript(object):
                 # Repeat the operation with the incremented number
                 while news[-1] != '.' and lslfuncs.F32(float(neg+news[:-1]+exp)) == value:
                     news = news[:-1]
-                if len(neg+news) < len(s) and lslfuncs.F32(float(neg+news[:-1]+exp)) == value:
-                    # Success! But we try even harder.
+                if len(neg+news) < len(s) and lslfuncs.F32(float(neg+news+exp)) == value:
+                    # Success! But we try even harder. We may have converted
+                    # 9.9999e3 into 10.e3; that needs to be turned into 1.e4.
                     if exp != '':
                         if news[2:3] == '.': # we converted 9.9... into 10.
                             newexp = 'e' + str(int(exp[1:])+1) # increase exponent
                             news2 = news[0] + '.' + news[1] + news[3:] # move dot to the left
                             while news2[-1] == '0': # remove trailing zeros
                                 news2 = news2[:-1]
-                            if len(neg+news2) < len(s) and lslfuncs.F32(float(neg+news2[:-1]+newexp)) == value:
+                            if len(neg+news2) < len(s) and lslfuncs.F32(float(neg+news2+newexp)) == value:
                                 news = news2
                                 exp = newexp
                     s = neg+news
