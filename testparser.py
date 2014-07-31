@@ -199,16 +199,17 @@ class Test02_Compiler(UnitTestCase):
             string s = "1" "2";
             list L = [(key)""];
             default{timer(){
-            1+([]+(integer)~1);
-            list a;
-            float f;
-            a = 3; a += 3;
-            f += 4; f += -4.3;
-            integer i;
-            i |= i;
-            "a" "b" "c";
-            "a"+(key)"b"; (key)"a" + "b";
-            i>>=i;
+                1+([]+(integer)~1);
+                list a;
+                float f;
+                a = 3; a += 3;
+                f += 4; f += -4.3;
+                integer i;
+                i *= 1.3;
+                i |= i;
+                "a" "b" "c";
+                "a"+(key)"b"; (key)"a" + "b";
+                i>>=i;
             }}''',
             ['explicitcast','extendedtypecast','extendedassignment',
                 'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat',
@@ -264,6 +265,7 @@ class Test03_Optimizer(UnitTestCase):
                 f += 4; f += -4.3;
                 integer i;
                 i = llGetListLength(L);
+                i *= -3.0;
                 print(3+2);
                 for(i=3,i;1;){}
                 i |= !i;

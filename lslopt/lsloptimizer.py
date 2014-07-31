@@ -343,8 +343,8 @@ class optimizer(object):
                 else: # x << 0  -->  x
                     parent[index] = child[0]
             else:
-                pass # TODO: Eliminate redundancy (x+0, x*1, x*-1, v+ZERO_VECTOR, perhaps x-1=~-x, etc.)
-                    # Include != to ^  and || to | and maybe && to &
+                pass # TODO: Eliminate redundancy (x*1, x*-1, x|0, x&-1, etc.)
+                    # Include != to ^ and || to | and maybe && to &
                     # Note some cases e.g. x*0 can't be optimized away without side-effect analysis.
                     # But some cases like %1 can be turned into *0 to save bytes.
                     # Turn also % (power of 2) into & mask (oops, nope, negative doesn't work)
@@ -352,12 +352,27 @@ class optimizer(object):
             return
 
         if nt in self.assign_ops:
-            # TODO: Eliminate redundant operations, e.g. a += 0; etc.
-            # Consider also e.g. x -= 1 or x -= a transforming it into +=.
-            # Actually just consider transforming the whole thing into a
-            # regular assignment, as there are no gains and it simplifies the
-            # optimization.
-            self.FoldTree(child, 1)
+            # Transform the whole thing into a regular assignment, as there are
+            # no gains and it simplifies the optimization.
+
+            if nt != '=':
+                # Replace the node with the expression alone
+                child[1] = {'nt':'()', 't':child[1]['t'], 'ch':[child[1]]}
+                node['nt'] = nt[:-1]
+
+                # Linden Craziness: i += f; is valid (but not i -= f). It's
+                # actually performed as i = (integer)(i + (f)). This breaks
+                # regular equivalence of x op= y as x = x op (y) so we add
+                # the type cast here.
+                if nt == '*=' and child[0]['t'] == 'integer' and child[1]['t'] == 'float':
+                    node['t'] = 'float' # Addition returns float.
+                    node = self.Cast(node, 'integer')
+
+                # And wrap it in an assignment.
+                node = parent[index] = {'nt':'=', 't':child[0]['t'], 'ch':[child[0].copy(), node]}
+
+            # We have a regular assignment either way now. Simplify the RHS.
+            self.FoldTree(node['ch'], 1)
             return
 
         if nt == 'IDENT' or nt == 'FLD':
