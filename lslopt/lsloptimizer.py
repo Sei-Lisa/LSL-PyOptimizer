@@ -39,6 +39,13 @@ class optimizer(object):
         if parent[index]['nt'] in ('CONST', 'IDENT', 'FIELD'):
             parent[index] = {'nt':';','t':None}
 
+    def Cast(self, value, newtype):
+        # Return a CAST node if the types are not equal, otherwise the
+        # value unchanged
+        if value['t'] == newtype:
+            return value
+        return {'nt':'CAST', 't':newtype, 'ch':[value]}
+
     def FoldTree(self, parent, index):
         """Recursively traverse the tree to fold constants, changing it in
         place.
@@ -68,35 +75,53 @@ class optimizer(object):
 
         if nt == 'NEG':
             self.FoldTree(child, 0)
-            if child[0]['nt'] == 'CONST':
+            while child[0]['nt'] == '()' and child[0]['ch'][0]['nt'] == 'NEG':
+                child[0] = child[0]['ch'][0] # Remove parentheses
+            if child[0]['nt'] == 'NEG':
+                # Double negation: - - expr
+                parent[index] = child[0]['ch'][0]
+            elif child[0]['nt'] == 'CONST':
                 node = parent[index] = child[0]
                 node['value'] = lslfuncs.neg(node['value'])
             return
 
         if nt == '!':
             self.FoldTree(child, 0)
-            if child[0]['nt'] == 'CONST':
-                node = parent[index] = child[0]
+            # !! can *not* be simplified to !, but !!! can be simplified to !!
+            subexpr = child[0]
+            while subexpr['nt'] == '()' and subexpr['ch'][0]['nt'] in ('()', '~', '!', '++V', '--V'):
+                subexpr = child[0] = subexpr['ch'][0] # Remove parentheses
+            if subexpr['nt'] == '!' and subexpr['ch'][0]['nt'] == '!':
+                # Simplify !!! to !
+                subexpr = child[0] = subexpr['ch'][0]['ch'][0]
+            if subexpr['nt'] == 'CONST':
+                node = parent[index] = subexpr
                 node['value'] = int(not node['value'])
             return
 
         if nt == '~':
             self.FoldTree(child, 0)
-            if child[0]['nt'] == 'CONST':
+            subexpr = child[0]
+            while subexpr['nt'] == '()' and subexpr['ch'][0]['nt'] in ('()', '~', '!', '++V', '--V'):
+                subexpr = child[0] = subexpr['ch'][0] # Remove parentheses
+            if subexpr['nt'] == '~':
+                # Double negation: ~~expr
+                parent[index] = subexpr['ch'][0]
+            elif subexpr['nt'] == 'CONST':
                 node = parent[index] = child[0]
                 node['value'] = ~node['value']
             return
 
         if nt == '()':
             self.FoldTree(child, 0)
-            if child[0]['nt'] in ('CONST', 'VECTOR', 'ROTATION', 'LIST',
+            if child[0]['nt'] in ('()', 'CONST', 'VECTOR', 'ROTATION', 'LIST',
                'IDENT', 'FIELD', 'V++', 'V--', 'FUNCTION', 'PRINT'):
-                # Child is an unary postfix expression; parentheses are
-                # redundant and can be removed safely. Not strictly an
-                # optimization but it helps keep the output tidy-ish a bit.
-                # It's not done in general (e.g. (a * b) + c does not need
-                # parentheses but these are not eliminated). Only the cases
-                # like (myvar) are simplified.
+                # Child is an unary postfix expression (highest priority);
+                # parentheses are redundant and can be removed safely. Not
+                # strictly an optimization but it helps keeping the output
+                # tidy-ish a bit. It's not done in general (e.g. (a * b) + c
+                # does not need parentheses but these are not eliminated). Only
+                # cases like (3) or (myvar++) are simplified.
                 parent[index] = child[0]
             return
 
@@ -137,25 +162,163 @@ class optimizer(object):
                 elif nt == '&':
                     result = op1 & op2
                 elif nt == '||':
-                    result = int(op1 or op2)
+                    result = int(bool(op1) or bool(op2))
                 elif nt == '&&':
-                    result = int(op1 and op2)
+                    result = int(bool(op1) and bool(op2))
                 else:
-                    raise Exception(u'Internal error: Operator not found: ' + nt.decode('utf8')) # pragma: no cover
+                    assert False, 'Internal error: Operator not found: ' + nt # pragma: no cover
                 parent[index] = {'nt':'CONST', 't':node['t'], 'value':result}
-            elif nt == '-' and child[0]['t'] in ('integer', 'float') \
-                             and child[1]['t'] in ('integer', 'float'):
+                return
+
+            # Simplifications for particular operands
+            optype = node['t']
+            lval = child[0]
+            ltype = lval['t']
+            lnt = lval['nt']
+            rval = child[1]
+            rtype = rval['t']
+            rnt = rval['nt']
+            if nt == '-':
+                if optype in ('vector', 'rotation'):
+                    if lnt == 'CONST' and all(component == 0 for component in lval['value']):
+                        # Change <0,0,0[,0]>-expr  ->  -expr
+                        parent[index] = {'nt':'NEG', 't':node['t'], 'ch':[rval]}
+                    elif rnt == 'CONST' and all(component == 0 for component in rval['value']):
+                        # Change expr-<0,0,0[,0]>  ->  expr
+                        parent[index] = lval
+                    return
+
                 # Change - to + - for int/float
+                nt = node['nt'] = '+'
                 if child[1]['nt'] == 'CONST':
-                    if child[1]['value'] == 0:
-                        parent[index] = child[0]
-                    else:
-                        node['nt'] = '+'
-                        child[1]['value'] = lslfuncs.neg(child[1]['value'])
-                #TODO: Implement to transform 0-x into -x: elif child[0]['nt'] == 'CONST':
+                    rval['value'] = lslfuncs.neg(rval['value'])
                 else:
-                    node['nt'] = '+'
-                    child[1] = {'nt':'NEG', 't':child[1]['t'], 'ch':[child[1]]}
+                    rnt = 'NEG'
+                    rval = child[1] = {'nt':rnt, 't':rval['t'], 'ch':[rval]}
+                    # rtype unchanged
+
+                # Fall through to simplify it as '+'
+
+            if nt == '+':
+                # Tough one. Remove neutral elements for the diverse types,
+                # and more.
+                if optype == 'list' and not (ltype == rtype == 'list'):
+                    # Nothing to do with list + nonlist or nonlist + list.
+                    # FIXME: Not true. (list)"string" is a 5 byte saving vs.
+                    # [] + "string". Activating explicitcast forces the
+                    # conversion [] + (list)"string"  ->  (list)"string" which
+                    # is what we want here, but it is a loss for other types.
+                    # Further analysis needed.
+                    return
+
+                if optype in ('vector', 'rotation'):
+                    # not much to do with vectors or quaternions either
+                    if lnt == 'CONST' and all(component == 0 for component in lval['value']):
+                        # Change <0,0,0[,0]>+expr  ->  expr
+                        parent[index] = rval
+                    elif rnt == 'CONST' and all(component == 0 for component in rval['value']):
+                        # Change expr+<0,0,0[,0]>  ->  expr
+                        parent[index] = lval
+                    return
+
+                # Can't be key, as no combo of addition operands returns key
+                # All these types evaluate as boolean False when they are
+                # the neutral addition element.
+                if optype in ('string', 'float', 'list'):
+                    if lnt == 'CONST' and not lval['value']:
+                        # 0 + expr  ->  expr
+                        # "" + expr  ->  expr
+                        # [] + expr  ->  expr
+                        parent[index] = self.Cast(rval, optype)
+                    elif rnt == 'CONST' and not rval['value']:
+                        # expr + 0  ->  expr
+                        # expr + ""  ->  expr
+                        # expr + []  ->  expr
+                        parent[index] = self.Cast(lval, optype)
+                    return
+
+                # Must be two integers. This allows for a number of
+                # optimizations. First the most obvious ones.
+
+                if lnt == 'CONST' and lval['value'] == 0:
+                    parent[index] = rval
+                    return
+
+                if rnt == 'CONST' and rval['value'] == 0:
+                    parent[index] = lval
+                    return
+
+                # Remove parentheses if they enclose a NEG, to unhide their
+                # operators. Precedence rules allow us.
+                if lnt == '()' and lval['ch'][0]['nt'] == 'NEG':
+                    # (-expr) + expr  ->  -expr + expr
+                    lval = child[0] = lval['ch'][0]
+                if rnt == '()' and rval['ch'][0]['nt'] == 'NEG':
+                    # expr + (-expr)  ->  expr + -expr
+                    rval = child[1] = rval['ch'][0]
+
+                if lnt != 'CONST' != rnt:
+                    # Neither is const. Two chances to optimize.
+                    # 1. -expr + -expr  ->  -(expr + expr) (saves 1 byte)
+                    # 2. lvalue + -lvalue  ->  0
+                    # There may be other possibilities for optimization,
+                    # e.g. (type)ident + -(type)ident but we only do lvalues
+                    # here. Note these are integers, no NaN involved.
+                    if lnt == rnt == 'NEG':
+                        node = {'nt':'+', 't':optype, 'ch':[lval['ch'][0], rval['ch'][0]]}
+                        node = {'nt':'()', 't':optype, 'ch':[node]}
+                        parent[index] = {'nt':'NEG', 't':optype, 'ch':[node]}
+                        return
+
+                    if lnt == 'NEG':
+                        # Swap to treat always as expr + -expr for simplicity.
+                        lnt, lval, rnt, rval = rnt, rval, lnt, lval
+                    if lnt == 'IDENT' and rnt == 'NEG' and rval['ch'][0]['nt'] == 'IDENT' \
+                       and lval['name'] == rval['ch'][0]['name']:
+                        # Replace with 0
+                        parent[index] = {'nt':'CONST', 't':optype, 'value':0}
+
+                    return
+
+                if rnt == 'CONST':
+                    # Swap the vars to deal with const in lval always
+                    lval, lnt, rval, rnt = rval, rnt, lval, lnt
+                if lval['value'] == -1:
+                    if rnt == 'NEG':
+                        parent[index] = {'nt':'~', 't':optype, 'ch':rval['ch']}
+                    else:
+                        parent[index] = {'nt':'~', 't':optype,
+                            'ch':[{'nt':'NEG', 't':optype, 'ch':[rval]}]}
+                    return
+
+                if lval['value'] == -2:
+                    if rnt == 'NEG': # Cancel the NEG
+                        node = {'nt':'~', 't':optype, 'ch':rval['ch']}
+                        node = {'nt':'NEG', 't':optype, 'ch':[node]}
+                        parent[index] = {'nt':'~', 't':optype, 'ch':[node]}
+                    else: # Add the NEG
+                        node = {'nt':'NEG', 't':optype, 'ch':[rval]}
+                        node = {'nt':'~', 't':optype, 'ch':[node]}
+                        node = {'nt':'NEG', 't':optype, 'ch':[node]}
+                        parent[index] = {'nt':'~', 't':optype, 'ch':[node]}
+                    return
+
+                if lval['value'] == 1:
+                    parent[index] = {'nt':'NEG', 't':optype,
+                        'ch':[{'nt':'~', 't':optype, 'ch':[rval]}]}
+                    return
+
+                if lval['value'] == 2:
+                    node = {'nt':'NEG', 't':optype,
+                        'ch':[{'nt':'~', 't':optype, 'ch':[rval]}]}
+                    parent[index] = {'nt':'NEG', 't':optype,
+                        'ch':[{'nt':'~', 't':optype, 'ch':[node]}]}
+                    return
+
+                # More than 2 becomes counter-productive.
+
+                return
+
             elif nt == '<<' and child[1]['nt'] == 'CONST':
                 # Transforming << into multiply saves some bytes.
                 if child[1]['value'] & 31:
@@ -199,7 +362,18 @@ class optimizer(object):
                 # Assume we already were there
                 if 'ch' in defn:
                     val = defn['ch'][0]
-                    if val['nt'] != 'CONST' or ident['t'] in ('list', 'key'):
+                    # TODO: We need some more analysis here.
+                    #    As is, it "optimizes"
+                    #       list A = [3,4,5,6,7,8,9];
+                    #       list B = A;
+                    #    to
+                    #       list A = [3,4,5,6,7,8,9];
+                    #       list B = [3,4,5,6,7,8,9];
+                    # which is counter-productive. But if we exclude lists,
+                    # we can't do this:
+                    #       list A = [3,4,5,6,7,8,9];
+                    #       list B = llList2List(A, 2, 3);
+                    if val['nt'] != 'CONST' or ident['t'] == 'key':
                         return
                 else:
                     val = {'nt':'CONST', 't':defn['t'],
@@ -213,15 +387,20 @@ class optimizer(object):
         if nt == 'FNCALL':
             for idx in xrange(len(child)-1, -1, -1):
                 self.FoldTree(child, idx)
-            if 'fn' in self.symtab[0][node['name']]:
-                fn = self.symtab[0][node['name']]['fn']
+            if 'Fn' in self.symtab[0][node['name']]:
                 if all(arg['nt'] == 'CONST' for arg in child):
                     # Call it
+                    fn = self.symtab[0][node['name']]['Fn']
                     value = fn(*tuple(arg['value'] for arg in child))
                     if not self.foldtabs and isinstance(value, unicode) and '\t' in value:
                         warning('WARNING: Tab in function result and foldtabs option not used.')
                         return
                     parent[index] = {'nt':'CONST', 't':node['t'], 'value':value}
+                elif node['name'] == 'llGetListLength' and child[0]['nt'] == 'IDENT':
+                    # Convert llGetListLength(ident) to (ident != [])
+                    node = {'nt':'CONST', 't':'list', 'value':[]}
+                    node = {'nt':'!=', 't':'list', 'ch':[child[0], node]}
+                    parent[index] = {'nt':'()', 't':'list', 'ch':[node]}
             return
 
         if nt == 'PRINT':

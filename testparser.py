@@ -253,12 +253,15 @@ class Test03_Optimizer(UnitTestCase):
                 list a;
                 float f;
                 vector v=<1,2,f>;<1,2,3>;<1,2,3,4>;v.x;
+                v-<0,0,0>;<0,0,0>-v;v+<0,0,0>;<0,0,0>+v;
+                []+f;
                 integer j = 3||4&&5|6^7&8.==9!=10.e+01f<11<=12>13.>=14<<15>>16==0&&3==
                     ++f-f++-(3 + llFloor(f)<<3 << 32) - 2 - 0;
                 integer k = 2 + (3 * 25 - 4)/2 % 9;
                 a = 3; a += !3;
                 f += 4; f += -4.3;
                 integer i;
+                i = llGetListLength(L);
                 print(3+2);
                 for(i=3,i;1;){}
                 i |= !i;
@@ -270,6 +273,8 @@ class Test03_Optimizer(UnitTestCase):
                 if (i) if (i); else ; while (i) ; do ; while (i); for(;i;);
                 do while (1); while(1); for(;1;);
                 for (i=0,i;0;);for(i=0,i=0;0;);return;
+                (i-i)+(i-3)+(-i+i)+(-i-i)+(i+1)+(-i+1)+(i-1)+(-i-1)+(0.0+i);
+                ((-i)+j);((-i)+i);i-2;-i-2;2-i;
             }}''',
             ['explicitcast','extendedtypecast','extendedassignment',
                 'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat']
@@ -277,22 +282,30 @@ class Test03_Optimizer(UnitTestCase):
         self.opt.optimize(p)
         self.opt.optimize(p, ())
         print self.outscript.output(p)
-        p = self.parser.parse('''string s = llUnescapeURL("%09");default{timer(){float f=llSqrt(-1);}}''',
-            ['explicitcast','extendedtypecast','extendedassignment',
+        p = self.parser.parse('''string s = llUnescapeURL("%09");default{timer(){float f=llSqrt(-1);
+            integer i;-(-(0.0+i));!!(!~~(!(i)));[]+i;}}''',
+            ['extendedtypecast','extendedassignment',
                 'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat']
             )
         self.opt.optimize(p, ['optimize','foldtabs'])
         print self.outscript.output(p)
     def test_regression(self):
+
+
         p = self.parser.parse('''
             integer a;
             x() { if (1) { string s = "x"; s = s + (string)a; } }
             default { timer() { } }
             ''', ['extendedassignment'])
         self.opt.optimize(p)
-        self.outscript.output(p)
-        p = self.parser.parse('''
-            key k = "blah";
+        out = self.outscript.output(p)
+        self.assertEqual(out, 'integer a;\nx()\n{\n    {\n        '
+            'string s = "x";\n        s = s + (string)a;\n    }\n}\n'
+            'default\n{\n    timer()\n    {\n    }\n}\n'
+            )
+
+        p = self.parser.parse(
+            '''key k = "blah";
             list L = [k, "xxxx", 1.0];
             float f;
             vector v = <f, 3, 4>;
@@ -301,10 +314,20 @@ class Test03_Optimizer(UnitTestCase):
             ''', ['extendedassignment'])
         self.opt.optimize(p)
         out = self.outscript.output(p)
-        print out
         self.assertEqual(out, 'key k = "blah";\nlist L = [k, "xxxx", 1.];\n'
-            'float f;\nvector v = <0, 3, 4>;\ndefault\n{\n    timer()\n'
-            '    {\n    }\n}\n')
+            'float f;\nvector v = <0, 3, 4>;\n'
+            'default\n{\n    timer()\n    {\n    }\n}\n'
+            )
+
+
+        p = self.parser.parse('list L;float f=llList2Float(L, 0);default{timer(){}}',
+            ['extendedglobalexpr'])
+        self.opt.optimize(p)
+        out = self.outscript.output(p)
+        print out
+        self.assertEqual(out, 'list L;\nfloat f = 0;\n'
+            'default\n{\n    timer()\n    {\n    }\n}\n')
+
 
     def tearDown(self):
         del self.parser
