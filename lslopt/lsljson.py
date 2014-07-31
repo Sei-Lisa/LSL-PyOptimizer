@@ -149,7 +149,11 @@ def InternalJsonScanMatching(json, idx):
     # That would mean that a nested malformed string like [{]} would be valid. SL may accept that.
     # (Or maybe even just ONE nesting level variable for the current element,
     # disregarding the nesting of the other, e.g. if we're on an object,
-    # the [] are not tracked thus {[} would be valid. That sounds like LSL.)
+    # the [] are not tracked thus {[} would be valid. That sounds like LSL.
+    # Or track [] and {} as the same, distinguishing whether
+    # the one at nesting level 0 matches the first (e.g. {[{}}} would be valid)
+    # Or just track the current one and screw the other (e.g. {{]]][]{}][}}
+    # would be valid). That sounds even more like LSL.
     # Experiments are advisable.
     stk = [json[idx]]
     str = False
