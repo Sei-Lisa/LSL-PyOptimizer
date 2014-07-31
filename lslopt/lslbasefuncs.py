@@ -50,15 +50,15 @@ NaN = float('nan')
 
 class ELSLTypeMismatch(Exception):
     def __init__(self):
-        super(self.__class__, self).__init__("Type mismatch")
+        super(ELSLTypeMismatch, self).__init__("Type mismatch")
 
 class ELSLMathError(Exception):
     def __init__(self):
-        super(self.__class__, self).__init__("Math Error")
+        super(self.ELSLMathError, self).__init__("Math Error")
 
 class ELSLInvalidType(Exception):
     def __init__(self):
-        super(self.__class__, self).__init__("Internal error: Invalid type")
+        super(self.ELSLInvalidType, self).__init__("Internal error: Invalid type")
 
 # LSL types are translated to Python types as follows:
 # * LSL string -> Python unicode
