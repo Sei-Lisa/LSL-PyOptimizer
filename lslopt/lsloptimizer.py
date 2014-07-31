@@ -335,7 +335,13 @@ class optimizer(object):
                     # x << 3  -->  x * 8
                     # Do we need parentheses for *? It depends on x
                     # e.g. x+3<<3 needs parentheses when converted to (x+3)*8
-                    if child[0]['nt'] in ('+', '-', 'NEG'): # operands with priority between * and << #TODO: CHECK
+                    # We can have {<< {<< x y} 3} -> (x << y) * 8 but we can't
+                    # have e.g. {<< {& x y} 3}; there will be explicit
+                    # parentheses here always, so we don't need to worry.
+
+                    # Operands with priority between * (not included) and <<
+                    # (included).
+                    if child[0]['nt'] in ('+', '-', 'NEG', '<<', '>>'):
                         child[0] = {'nt':'()', 't':child[0]['t'], 'ch':[child[0]]}
                     # we have {<<, something, {CONST n}}, transform into {*, something, {CONST n}}
                     node['nt'] = '*'
@@ -360,12 +366,12 @@ class optimizer(object):
                 child[1] = {'nt':'()', 't':child[1]['t'], 'ch':[child[1]]}
                 node['nt'] = nt[:-1]
 
-                # Linden Craziness: i += f; is valid (but not i -= f). It's
-                # actually performed as i = (integer)(i + (f)). This breaks
+                # Linden Craziness: i *= f; is valid (but no other i op= f is).
+                # It's actually performed as i = (integer)(i + (f)). This breaks
                 # regular equivalence of x op= y as x = x op (y) so we add
                 # the type cast here.
                 if nt == '*=' and child[0]['t'] == 'integer' and child[1]['t'] == 'float':
-                    node['t'] = 'float' # Addition returns float.
+                    node['t'] = 'float' # Addition shall return float.
                     node = self.Cast(node, 'integer')
 
                 # And wrap it in an assignment.
