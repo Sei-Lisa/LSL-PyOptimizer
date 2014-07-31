@@ -1465,7 +1465,7 @@ class parser(object):
                 raise EParseAlreadyDefined(self)
             self.NextToken()
 
-            if self.tok[0] == '=' or self.tok[0] == ';':
+            if self.tok[0] in ('=', ';'):
                 # This is a variable definition
                 if typ is None: # Typeless variables are not allowed
                     raise EParseSyntax(self)
@@ -1474,11 +1474,27 @@ class parser(object):
                     self.NextToken()
                     if self.extendedglobalexpr:
                         self.globalmode = True # Disallow forward globals.
-                        value = self.Parse_expression() # Use advanced expression evaluation.
+                        # Mark backtracking position
+                        pos = self.pos
+                        errorpos = self.errorpos
+                        tok = self.tok
+                        try:
+                            value = self.Parse_simple_expr()
+                            self.expect(';')
+                            value['Simple'] = True # Success - mark it as simple
+                        except EParse:
+                            # Backtrack
+                            self.pos = pos
+                            self.errorpos = errorpos
+                            self.tok = tok
+                            # Use advanced expression evaluation.
+                            value = self.Parse_expression()
+                            self.expect(';')
                         self.globalmode = False # Allow forward globals again.
                     else:
-                        value = self.Parse_simple_expr() # Use LSL's dull global expression.
-                    self.expect(';')
+                        # Use LSL's dull global expression.
+                        value = self.Parse_simple_expr()
+                        self.expect(';')
                     self.NextToken()
                 else: # must be semicolon
                     self.NextToken()

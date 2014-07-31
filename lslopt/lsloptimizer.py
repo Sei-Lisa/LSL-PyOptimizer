@@ -46,6 +46,16 @@ class optimizer(object):
             return value
         return {'nt':'CAST', 't':newtype, 'ch':[value]}
 
+    def CopyNode(self, node):
+        # This is mainly for simple_expr so not a big deal.
+        ret = node.copy()
+        if 'ch' in ret:
+            new = []
+            for subnode in ret['ch']:
+                new.append(self.CopyNode(subnode))
+            ret['ch'] = new
+        return ret
+
     def FoldTree(self, parent, index):
         """Recursively traverse the tree to fold constants, changing it in
         place.
@@ -512,10 +522,14 @@ class optimizer(object):
 
         if nt == 'DECL':
             if child:
-                # TODO: Decide if child is a simple_expr.
-                # If it is, then we should keep the original
-                # attached to the folded node and use it in the output.
-                self.FoldTree(child, 0)
+                # Check if child is a simple_expr. If it is, then we keep the
+                # original attached to the folded node and use it in the output.
+                if child[0].pop('Simple', False):
+                    orig = self.CopyNode(child[0])
+                    self.FoldTree(child, 0)
+                    child[0]['orig'] = orig
+                else:
+                    self.FoldTree(child, 0)
                 # Remove assignment if integer zero.
                 if node['t'] == 'integer' and child[0]['nt'] == 'CONST' \
                    and not child[0]['value']:
@@ -569,7 +583,7 @@ class optimizer(object):
                 self.FoldTree(tree, idx)
                 self.globalmode = False
                 if not self.IsValidGlobalConstant(tree[idx]):
-                    warning('WARNING: Expression does not collapse to a single constant.')
+                    warning('WARNING: Expression does not resolve to a single constant.')
             else:
                 self.FoldTree(tree, idx)
 

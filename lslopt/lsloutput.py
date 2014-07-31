@@ -265,7 +265,10 @@ class outscript(object):
         if nt == 'DECL':
             ret = self.dent() + node['t'] + ' ' + node['name']
             if child:
-                ret += ' = ' + self.OutExpr(child[0])
+                if 'orig' in child[0]:
+                    ret += ' = ' + self.OutExpr(child[0]['orig'])
+                else:
+                    ret += ' = ' + self.OutExpr(child[0])
             return ret + ';\n'
         if nt == ';':
             return self.dent() + ';\n'
