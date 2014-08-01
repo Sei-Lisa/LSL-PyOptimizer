@@ -3,8 +3,9 @@ import lslfuncs
 from lslparse import warning
 
 from lslrenamer import renamer
+from lsldeadcode import deadcode
 
-class optimizer(renamer):
+class optimizer(renamer, deadcode):
 
     # Default values per type when declaring variables
     DefaultValues = {'integer': 0, 'float': 0.0, 'string': u'',
@@ -450,20 +451,30 @@ class optimizer(renamer):
             for idx in xrange(len(child)):
                 self.FoldTree(child, idx)
                 self.FoldStmt(child, idx)
+                if 'StSw' in child[idx]:
+                    node['StSw'] = True
             return
 
         if nt == 'IF':
             self.FoldTree(child, 0)
             if child[0]['nt'] == 'CONST':
-                # We can remove one of the branches safely.
+                # We might be able to remove one of the branches.
                 if lslfuncs.cond(child[0]['value']):
                     self.FoldTree(child, 1)
-                    parent[index] = child[1]
-                    self.FoldStmt(child, 1)
+                    # If it has a state switch, the if() must be preserved
+                    # (but the else branch may be removed).
+                    if 'StSw' in child[1]:
+                        if len(child) > 2:
+                            del child[2] # Delete ELSE if present
+                        child[0]['t'] = 'integer'
+                        child[0]['value'] = 1
+                    else:
+                        self.FoldStmt(child, 1)
+                        parent[index] = child[1]
                 elif len(child) > 2:
                     self.FoldTree(child, 2)
-                    parent[index] = child[2]
                     self.FoldStmt(child, 2)
+                    parent[index] = child[2]
                 else:
                     # No ELSE branch, replace the statement with an empty one.
                     parent[index] = {'nt':';', 't':None}
@@ -566,6 +577,10 @@ class optimizer(renamer):
                         0.0 if typ == 'float' else
                         lslfuncs.ZERO_VECTOR if typ == 'vector' else
                         lslfuncs.ZERO_ROTATION}]
+            return
+
+        if nt == 'STSW':
+            node['StSw'] = True
             return
 
         if nt in self.ignored_stmts:

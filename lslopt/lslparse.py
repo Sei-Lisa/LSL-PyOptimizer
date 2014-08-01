@@ -1,3 +1,4 @@
+# TODO: Check "Not All Code Paths return a Value"
 
 from lslcommon import Key, Vector, Quaternion
 import lslfuncs
@@ -91,6 +92,11 @@ class EParseDeclarationScope(EParse):
     def __init__(self, parser):
         super(EParseDeclarationScope, self).__init__(parser,
             u"Declaration requires a new scope -- use { and }")
+
+class EParseCantChangeState(EParse):
+    def __init__(self, parser):
+        super(EParseCantChangeState, self).__init__(parser,
+            u"Global functions can't change state")
 
 class EParseDuplicateLabel(EParse):
     def __init__(self, parser):
@@ -1127,7 +1133,7 @@ class parser(object):
             raise EParseFunctionMismatch(self)
         return ret
 
-    def Parse_statement(self, ReturnType, AllowDecl = False):
+    def Parse_statement(self, ReturnType, AllowDecl = False, AllowStSw = False):
         """Grammar parsed here:
 
         statement: ';' | single_statement | code_block
@@ -1219,6 +1225,8 @@ class parser(object):
             self.NextToken()
             self.expect(';')
             self.NextToken()
+            if self.localevents is None and not AllowStSw:
+                raise EParseCantChangeState(self)
             return {'nt':'STSW', 't':None, 'name':name, 'scope':0}
         if tok0 == 'RETURN':
             self.NextToken()
@@ -1245,7 +1253,12 @@ class parser(object):
                 cur['ch'].append(self.Parse_expression())
                 self.expect(')')
                 self.NextToken()
-                cur['ch'].append(self.Parse_statement(ReturnType))
+                # INCOMPATIBILITY NOTE: This is more permissive than LSL.
+                # In LSL, an if...then...else does NOT allow a state change
+                # in either branch. Only an if...then without else does.
+                # BUT we're not going to check the branch after the fact, just
+                # to report that error. The compiler will report it.
+                cur['ch'].append(self.Parse_statement(ReturnType, AllowStSw = True))
                 if self.tok[0] == 'ELSE':
                     self.NextToken()
                     if self.tok[0] == 'IF':
@@ -1262,10 +1275,11 @@ class parser(object):
             condition = self.Parse_expression()
             self.expect(')')
             self.NextToken()
-            return {'nt':'WHILE', 't':None, 'ch':[condition, self.Parse_statement(ReturnType)]}
+            return {'nt':'WHILE', 't':None, 'ch':[condition,
+                self.Parse_statement(ReturnType, AllowStSw = True)]}
         if tok0 == 'DO':
             self.NextToken()
-            stmt = self.Parse_statement(ReturnType)
+            stmt = self.Parse_statement(ReturnType, AllowStSw = True)
             self.expect('WHILE')
             self.NextToken()
             self.expect('(')
@@ -1289,7 +1303,7 @@ class parser(object):
             iterator = self.Parse_optional_expression_list()
             self.expect(')')
             self.NextToken()
-            stmt = self.Parse_statement(ReturnType)
+            stmt = self.Parse_statement(ReturnType, AllowStSw = True)
             return {'nt':'FOR', 't':None,
                 'ch':[{'nt':'EXPRLIST','t':None, 'ch':initializer},
                       condition,
@@ -1561,6 +1575,7 @@ class parser(object):
                 params = self.Parse_optional_param_list()
                 self.expect(')')
                 self.NextToken()
+                self.localevents = None
                 self.locallabels = set()
                 body = self.Parse_code_block(typ)
                 del self.locallabels
