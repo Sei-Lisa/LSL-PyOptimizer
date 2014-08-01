@@ -609,7 +609,7 @@ class optimizer(renamer):
                 self.FoldTree(tree, idx)
 
         if 'shrinknames' in options:
-            self.AssignNewNames()
+            self.ShrinkNames()
 
         treesymtab = (self.tree, self.symtab)
         del self.tree

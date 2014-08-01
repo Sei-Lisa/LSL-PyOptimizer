@@ -2,30 +2,40 @@ import random
 from base64 import b64encode
 
 class renamer(object):
-    CharSet1 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_'
-    CharSet2 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_0123456789'
+    CharSet1 = '_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+    CharSet2 = '0123456789_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
     # TODO: Derive these from builtins.txt somehow.
     KwByLen = ((), (), ('do', 'if', 'PI'), ('for', 'key', 'EOF'),
         ('jump', 'else', 'list', 'TRUE', 'LOOP'))
     def GetNextShortest(self):
         """Generate the next shortest possible identifier"""
         while True:
-            n = self.WordCntr
-            self.WordCntr += 1
-            ret = self.CharSet1[n % 53]
-            n //= 53
-            while n > 1:
-                ret += self.CharSet2[n % 63]
-                n //= 63
+            ret = self.CharSet1[self.WordFirstChar]
+            for idx in self.WordRestOfChars:
+                ret += self.CharSet2[idx]
+            self.WordFirstChar += 1
+            if self.WordFirstChar >= len(self.CharSet1):
+                self.WordFirstChar = 0
+                for idx in xrange(len(self.WordRestOfChars)):
+                    if self.WordRestOfChars[idx] < len(self.CharSet2)-1:
+                        self.WordRestOfChars[idx] += 1
+                        break
+                    self.WordRestOfChars[idx] = 0
+                else:
+                    self.WordRestOfChars.append(0)
+
             if ret not in self.KwByLen[len(ret)] and ret not in self.UsedNames:
                 return ret
 
-    def AssignNewNames(self):
-        self.WordCntr = 53 # Initialize to length 1
+    def ShrinkNames(self):
+        """Implements the shrinknames option."""
+        self.WordFirstChar = 0
+        self.WordRestOfChars = []
 
         # Names that can be reused without penalty. The initial set is there
-        # since the beginning. Others (e.g. Key) are created when some kinds
-        # of stuff are present, but we don't take so many risks.
+        # since the beginning. Others (e.g. Key) are created when certain
+        # stuff is present (e.g. Key when there are keys), but we don't take
+        # too many risks.
         ReusableNames = set(['LslLibrary', 'LslUserScript', 'System'])
 
         # Names from ReusableNames that have already been used
@@ -49,7 +59,7 @@ class renamer(object):
             elif kind == 'v':
                 globalvars.append(name)
             else:
-                assert False, 'Invalid kind at this scope: ' + kind
+                assert False, 'Invalid kind at this scope: ' + kind # pragma: no cover
 
         # We make three passes, one for states, then functions, then globals,
         # in that order.
@@ -111,11 +121,12 @@ class renamer(object):
                 if name == -1: continue
                 if sym['Kind'] != 'v':
                     assert sym['Kind'] == 'l'
+                    name = name # trick the optimizer
                     continue
                 if 'Param' in sym:
                     # Same procedure as for global vars
                     # Not the best strategy (using locally unique names would
-                    # work optimally) but hey. At the time of writing there's
+                    # do a better job) but hey. At the time of writing there's
                     # no reference analysis. TODO: Implement.
                     if ReusableNames:
                         short = ReusableNames.pop()
