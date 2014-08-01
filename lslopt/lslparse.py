@@ -638,8 +638,10 @@ class parser(object):
             args = self.Parse_optional_expression_list(sym['ParamTypes'])
             self.expect(')')
             self.NextToken()
-            return {'nt':'FNCALL', 't':sym['Type'], 'name':name,
-                'scope':self.scopeindex, 'ch':args}
+            ret = {'nt':'FNCALL', 't':sym['Type'], 'name':name, 'ch':args}
+            if 'Scope' in sym:
+                ret['scope'] = sym['Scope']
+            return ret
         if sym['Kind'] != 'v':
             raise EParseTypeMismatch(self)
         typ = sym['Type']
@@ -1170,7 +1172,7 @@ class parser(object):
                         x = random.randint(0, 16777215)
                         unique += b64encode(chr(x>>16) + chr((x>>8)&255)
                             + chr(x&255)).replace('+', '_')
-                        if '/' not in unique and unique not in self.locallabels:
+                        if '/' not in unique not in self.locallabels:
                             break
                 else:
                     # Use the existing name. Faster and more readable.
@@ -1200,11 +1202,11 @@ class parser(object):
                 # It might still be a forward reference, so we add it to the
                 # list of things to look up when done
                 self.jump_lookups.append((name, self.scopeindex, self.errorpos, jumpnode))
+            else:
+                jumpnode['scope'] = sym['Scope']
             self.NextToken()
             self.expect(';')
             self.NextToken()
-            if sym is not None:
-                jumpnode['scope'] = sym['Scope']
             return jumpnode
         if tok0 == 'STATE':
             self.NextToken()
@@ -1217,7 +1219,7 @@ class parser(object):
             self.NextToken()
             self.expect(';')
             self.NextToken()
-            return {'nt':'STSW', 't':None, 'name':name}
+            return {'nt':'STSW', 't':None, 'name':name, 'scope':0}
         if tok0 == 'RETURN':
             self.NextToken()
             if self.tok[0] == ';':
@@ -1609,7 +1611,7 @@ class parser(object):
             events = self.Parse_events()
 
             self.expect('}')
-            self.tree.append({'nt':'STDEF', 't':None, 'name':name, 'ch':events})
+            self.tree.append({'nt':'STDEF', 't':None, 'name':name, 'scope':0, 'ch':events})
             self.NextToken()
 
     def Parse_script(self):
@@ -1633,10 +1635,11 @@ class parser(object):
         # Check the pending jump targets
         for tgt in self.jump_lookups:
             self.scopeindex = tgt[1]
-            if self.FindSymbolPartial(tgt[0], MustBeLabel = True) is None:
+            sym = self.FindSymbolPartial(tgt[0], MustBeLabel = True)
+            if sym is None:
                 self.errorpos = tgt[2]
                 raise EParseUndefined(self)
-            tgt[3]['scope'] = tgt[1]
+            tgt[3]['scope'] = sym['Scope']
 
         del self.jump_lookups # Finished with it.
 

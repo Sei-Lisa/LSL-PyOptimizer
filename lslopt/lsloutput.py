@@ -135,11 +135,16 @@ class outscript(object):
     def dent(self):
         return self.indent * self.indentlevel
 
-    def FindName(self, node):
-        try:
-            return self.symtab[node['scope']][node['name']]['NewName']
-        except KeyError:
+    def FindName(self, node, scope = None):
+        if scope is None:
+            # node is a node
+            if 'scope' in node and'NewName' in self.symtab[node['scope']][node['name']]:
+                return self.symtab[node['scope']][node['name']]['NewName']
             return node['name']
+        # node is a name
+        if 'NewName' in self.symtab[scope][node]:
+            return self.symtab[scope][node]['NewName']
+        return node
 
     def OutIndented(self, node):
         if node['nt'] != '{}':
@@ -300,7 +305,9 @@ class outscript(object):
             if node['t'] is not None:
                 ret += node['t'] + ' '
             ret += self.FindName(node) + '('
-            ret += ', '.join(typ + ' ' + name for typ, name in zip(node['ptypes'], node['pnames']))
+            scope = node['pscope']
+            ret += ', '.join(typ + ' ' + self.FindName(name, scope)
+                             for typ, name in zip(node['ptypes'], node['pnames']))
             return ret + ')\n' + self.OutCode(child[0])
 
         return self.dent() + self.OutExpr(node) + ';\n'

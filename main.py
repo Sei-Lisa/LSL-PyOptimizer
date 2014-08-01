@@ -50,6 +50,10 @@ Options (+ means active by default, - means inactive by default):
                        will go to the last label with that name). This flag
                        works around that limitation by replacing the names of
                        the labels in the output with unique ones.
+  shrinknames        - Reduces script memory by shrinking identifiers. In the
+                       process, it turns the script into unreadable gibberish,
+                       hard to debug, but this gets big savings for complex
+                       scripts.
 
 Note that the optimizer doesn't reorder expressions to fold constants. This
 means that e.g. a + 3 + 5 is not optimized to a + 8; however a + (3 + 5) is.

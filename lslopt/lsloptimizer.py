@@ -2,7 +2,9 @@
 import lslfuncs
 from lslparse import warning
 
-class optimizer(object):
+from lslrenamer import renamer
+
+class optimizer(renamer):
 
     # Default values per type when declaring variables
     DefaultValues = {'integer': 0, 'float': 0.0, 'string': u'',
@@ -605,6 +607,9 @@ class optimizer(object):
                     warning('WARNING: Expression does not resolve to a single constant.')
             else:
                 self.FoldTree(tree, idx)
+
+        if 'shrinknames' in options:
+            self.AssignNewNames()
 
         treesymtab = (self.tree, self.symtab)
         del self.tree
