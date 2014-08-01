@@ -1467,17 +1467,20 @@ class parser(object):
         while self.tok[0] == 'EVENT_NAME':
             name = self.tok[1]
             self.NextToken()
+            if name in self.localevents:
+                raise EParseAlreadyDefined(self)
+            self.localevents.add(name)
             self.expect('(')
             self.NextToken()
             # Function parameters go to a dedicated symbol table.
             self.PushScope()
             params = self.Parse_optional_param_list()
+            self.expect(')')
+            self.NextToken()
             # NOTE: Parse_events: This is a bit crude, as the error is given at the end of the param list.
             # To do it correctly, we can pass the parameter list to Parse_optional_param_list().
             if tuple(params[0]) != self.events[name]:
                 raise EParseSyntax(self)
-            self.expect(')')
-            self.NextToken()
             self.locallabels = set()
             body = self.Parse_code_block(None)
             del self.locallabels
@@ -1608,7 +1611,9 @@ class parser(object):
             self.expect('{')
             self.NextToken()
 
+            self.localevents = set()
             events = self.Parse_events()
+            del self.localevents
 
             self.expect('}')
             self.tree.append({'nt':'STDEF', 't':None, 'name':name, 'scope':0, 'ch':events})
