@@ -139,7 +139,7 @@ class parser(object):
 
     def AddSymbol(self, kind, scope, name, **values):
         values['Kind'] = kind
-        if kind in 'vl':
+        if kind in 'vlf':
             values['Scope'] = scope
         self.symtab[scope][name] = values
 
@@ -1706,7 +1706,7 @@ class parser(object):
                         elif self.tok[0] == '}':
                             bracelevel -= 1
                         self.NextToken()
-                    ret[name] = {'Kind':'f','Type':typ,'ParamTypes':params}
+                    ret[name] = {'Kind':'f','Type':typ,'ParamTypes':params,'Scope':0}
 
                 elif typ is None:
                     return ret # A variable needs a type
