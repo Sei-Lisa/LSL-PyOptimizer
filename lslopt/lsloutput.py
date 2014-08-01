@@ -196,7 +196,7 @@ class outscript(object):
             return '<' + self.OutExprList(child) + '>'
 
         if nt == 'FNCALL':
-            return expr['name'] + '(' + self.OutExprList(child) + ')'
+            return self.FindName(expr) + '(' + self.OutExprList(child) + ')'
 
         if nt == 'PRINT':
             return 'print(' + self.OutExpr(child[0]) + ')'
@@ -286,7 +286,7 @@ class outscript(object):
                 if node['name'] == 'default':
                     ret = self.dent() + 'default\n'
                 else:
-                    ret = self.dent() + 'state ' + node['name'] + '\n'
+                    ret = self.dent() + 'state ' + self.FindName(node) + '\n'
 
             ret += self.dent() + '{\n'
             self.indentlevel += 1
@@ -299,7 +299,7 @@ class outscript(object):
             ret = self.dent()
             if node['t'] is not None:
                 ret += node['t'] + ' '
-            ret += node['name'] + '('
+            ret += self.FindName(node) + '('
             ret += ', '.join(typ + ' ' + name for typ, name in zip(node['ptypes'], node['pnames']))
             return ret + ')\n' + self.OutCode(child[0])
 
