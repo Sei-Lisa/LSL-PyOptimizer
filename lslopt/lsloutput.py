@@ -138,7 +138,7 @@ class outscript(object):
     def FindName(self, node, scope = None):
         if scope is None:
             # node is a node
-            if 'scope' in node and'NewName' in self.symtab[node['scope']][node['name']]:
+            if 'scope' in node and 'NewName' in self.symtab[node['scope']][node['name']]:
                 return self.symtab[node['scope']][node['name']]['NewName']
             return node['name']
         # node is a name
