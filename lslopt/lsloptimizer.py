@@ -447,12 +447,23 @@ class optimizer(renamer, deadcode):
                 parent[index] = {'nt':'CONST', 't':node['t'], 'value':value}
             return
 
-        if nt in ('{}', 'FNDEF', 'STDEF'):
+        if nt == 'STDEF':
             for idx in xrange(len(child)):
                 self.FoldTree(child, idx)
+            return
+
+        if nt in ('{}', 'FNDEF'):
+            idx = 0
+            while idx < len(child):
+                self.FoldTree(child, idx)
                 self.FoldStmt(child, idx)
-                if 'StSw' in child[idx]:
-                    node['StSw'] = True
+                if child[idx]['nt'] == ';' \
+                     or nt == '{}' and child[idx]['nt'] == '{}' and not child[idx]['ch']:
+                    del child[idx]
+                else:
+                    if 'StSw' in child[idx]:
+                        node['StSw'] = True
+                    idx += 1
             return
 
         if nt == 'IF':
@@ -484,6 +495,10 @@ class optimizer(renamer, deadcode):
                 if len(child) > 2:
                     self.FoldTree(child, 2)
                     self.FoldStmt(child, 2)
+                    if child[2]['nt'] == ';' \
+                       or child[2]['nt'] == '{}' and not child[2]['ch']:
+                        # no point in "... else ;" - remove else branch
+                        del child[2]
             return
 
         if nt == 'WHILE':
