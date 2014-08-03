@@ -1,4 +1,3 @@
-# TODO: Check "Not All Code Paths return a Value"
 
 from lslcommon import Key, Vector, Quaternion
 import lslfuncs
@@ -97,6 +96,11 @@ class EParseCantChangeState(EParse):
     def __init__(self, parser):
         super(EParseCantChangeState, self).__init__(parser,
             u"Global functions can't change state")
+
+class EParseCodePathWithoutRet(EParse):
+    def __init__(self, parser):
+        super(EParseCodePathWithoutRet, self).__init__(parser,
+            u"Not all code paths return a value")
 
 class EParseDuplicateLabel(EParse):
     def __init__(self, parser):
@@ -1156,7 +1160,7 @@ class parser(object):
         """
         tok0 = self.tok[0]
         if tok0 == '{':
-            return self.Parse_code_block(ReturnType)
+            return self.Parse_code_block(ReturnType, AllowStSw = AllowStSw)
         if tok0 == ';':
             self.NextToken()
             return {'nt':';', 't':None}
@@ -1242,31 +1246,30 @@ class parser(object):
                 raise EParseReturnIsEmpty(self)
             if value is None:
                 return {'nt':'RETURN', 't':None}
-            return {'nt':'RETURN', 't':None, 'ch':[self.autocastcheck(value, ReturnType)]}
+            # Sets LastIsReturn flag too
+            return {'nt':'RETURN', 't':None, 'LIR':True,
+                'ch':[self.autocastcheck(value, ReturnType)]}
         if tok0 == 'IF':
             ret = {'nt':'IF', 't':None, 'ch':[]}
-            cur = ret
-            while True:
+            self.NextToken()
+            self.expect('(')
+            self.NextToken()
+            ret['ch'].append(self.Parse_expression())
+            self.expect(')')
+            self.NextToken()
+            # INCOMPATIBILITY NOTE: This is more permissive than LSL.
+            # In LSL, an if...then...else does NOT allow a state change
+            # in either branch. Only an if...then without else does.
+            # BUT we're not going to check the branch after the fact, just
+            # to report that error. The compiler will report it.
+            ret['ch'].append(self.Parse_statement(ReturnType, AllowStSw = True))
+            if self.tok[0] == 'ELSE':
+                LastIsReturn = 'LIR' in ret['ch'][1]
                 self.NextToken()
-                self.expect('(')
-                self.NextToken()
-                cur['ch'].append(self.Parse_expression())
-                self.expect(')')
-                self.NextToken()
-                # INCOMPATIBILITY NOTE: This is more permissive than LSL.
-                # In LSL, an if...then...else does NOT allow a state change
-                # in either branch. Only an if...then without else does.
-                # BUT we're not going to check the branch after the fact, just
-                # to report that error. The compiler will report it.
-                cur['ch'].append(self.Parse_statement(ReturnType, AllowStSw = True))
-                if self.tok[0] == 'ELSE':
-                    self.NextToken()
-                    if self.tok[0] == 'IF':
-                        cur['ch'].append({'nt':'IF', 't':None, 'ch':[]})
-                        cur = cur['ch'][2]
-                        continue
-                    cur['ch'].append(self.Parse_statement(ReturnType))
-                return ret
+                ret['ch'].append(self.Parse_statement(ReturnType, AllowStSw = AllowStSw))
+                if LastIsReturn and 'LIR' in ret['ch'][2]:
+                    ret['LIR'] = True
+            return ret
 
         if tok0 == 'WHILE':
             self.NextToken()
@@ -1335,7 +1338,7 @@ class parser(object):
         self.NextToken()
         return value
 
-    def Parse_code_block(self, ReturnType):
+    def Parse_code_block(self, ReturnType, AllowStSw = False):
         """Grammar parsed here:
 
         code_block: '{' statements '}'
@@ -1349,17 +1352,23 @@ class parser(object):
         self.PushScope()
 
         body = []
+        LastIsReturn = False
         while True:
             if self.tok[0] == '}':
                 break
-            body.append(self.Parse_statement(ReturnType, AllowDecl = True))
+            stmt = self.Parse_statement(ReturnType, AllowDecl = True, AllowStSw = AllowStSw)
+            LastIsReturn = 'LIR' in stmt
+            body.append(stmt)
 
         self.PopScope()
 
         self.expect('}')
         self.NextToken()
 
-        return {'nt':'{}', 't':None, 'ch':body}
+        node = {'nt':'{}', 't':None, 'ch':body}
+        if LastIsReturn:
+            node['LIR'] = True
+        return node
 
     def Parse_simple_expr(self, ForbidList=False):
         """Grammar parsed here:
@@ -1579,6 +1588,8 @@ class parser(object):
                 self.locallabels = set()
                 body = self.Parse_code_block(typ)
                 del self.locallabels
+                if typ and 'LIR' not in body: # is LastIsReturn flag set?
+                    raise EParseCodePathWithoutRet(self)
                 paramscope = self.scopeindex
                 self.AddSymbol('f', 0, name, Loc=len(self.tree), Type=typ,
                     ParamTypes=params[0], ParamNames=params[1])
@@ -1935,6 +1946,7 @@ class parser(object):
             while True:
                 line = f.readline()
                 if not line: break
+                if line[-1] == '\n': line = line[:-1]
                 match = parse_lin_re.match(line)
                 if not match:
                     warning('Syntax error in builtins.txt: ' + line)
