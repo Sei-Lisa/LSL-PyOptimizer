@@ -42,6 +42,15 @@ class optimizer(renamer, deadcode):
         if parent[index]['nt'] in ('CONST', 'IDENT', 'FIELD'):
             parent[index] = {'nt':';','t':None}
 
+    def FoldCond(self, parent, index):
+        """When we know that the parent is interested only in the truth value
+        of the node, we can perform further optimizations. This function deals
+        with them.
+        """
+        if parent[index]['nt'] in ('CONST', 'IDENT', 'FIELD'):
+            return # Nothing to do if it's already simplified.
+        # TODO: Implement FoldCond
+
     def Cast(self, value, newtype):
         # Return a CAST node if the types are not equal, otherwise the
         # value unchanged
@@ -100,7 +109,8 @@ class optimizer(renamer, deadcode):
 
         if nt == '!':
             self.FoldTree(child, 0)
-            # !! can *not* be simplified to !, but !!! can be simplified to !!
+            self.FoldCond(child, 0)
+            # !! does *not* cancel out, but !!! can be simplified to !
             subexpr = child[0]
             while subexpr['nt'] == '()' and subexpr['ch'][0]['nt'] in ('()', '~', '!', '++V', '--V'):
                 subexpr = child[0] = subexpr['ch'][0] # Remove parentheses
@@ -427,8 +437,7 @@ class optimizer(renamer, deadcode):
                     parent[index] = {'nt':'()', 't':'list', 'ch':[node]}
             return
 
-        if nt == 'PRINT':
-            # useless but who knows
+        if nt in ('PRINT', 'EXPR'):
             self.FoldTree(child, 0)
             return
 
@@ -468,6 +477,7 @@ class optimizer(renamer, deadcode):
 
         if nt == 'IF':
             self.FoldTree(child, 0)
+            self.FoldCond(child, 0)
             if child[0]['nt'] == 'CONST':
                 # We might be able to remove one of the branches.
                 if lslfuncs.cond(child[0]['value']):
@@ -475,10 +485,15 @@ class optimizer(renamer, deadcode):
                     # If it has a state switch, the if() must be preserved
                     # (but the else branch may be removed).
                     if 'StSw' in child[1]:
+                        # TODO: Get rid of StSw craziness and make another pass
+                        # to put them under conditionals if present (if bald
+                        # state switches are present, it means they are the
+                        # result of optimization so they must be wrapped in an
+                        # IF statement). The current approach leaves unnecessary
+                        # IFs behind.
                         if len(child) > 2:
                             del child[2] # Delete ELSE if present
-                        child[0]['t'] = 'integer'
-                        child[0]['value'] = 1
+                        child[0].update({'t':'integer', 'value':-1})
                     else:
                         self.FoldStmt(child, 1)
                         parent[index] = child[1]
@@ -503,12 +518,13 @@ class optimizer(renamer, deadcode):
 
         if nt == 'WHILE':
             self.FoldTree(child, 0)
+            self.FoldCond(child, 0)
             if child[0]['nt'] == 'CONST':
                 # See if the whole WHILE can be eliminated.
                 if lslfuncs.cond(child[0]['value']):
                     # Endless loop which must be kept.
                     # First, replace the constant.
-                    child[0].update({'t':'integer', 'value':1})
+                    child[0].update({'t':'integer', 'value':-1})
                     # Recurse on the statement.
                     self.FoldTree(child, 1)
                     self.FoldStmt(child, 1)
@@ -524,11 +540,12 @@ class optimizer(renamer, deadcode):
             self.FoldTree(child, 0) # This one is always executed.
             self.FoldStmt(child, 0)
             self.FoldTree(child, 1)
+            self.FoldCond(child, 1)
             # See if the latest part is a constant.
             if child[1]['nt'] == 'CONST':
                 if lslfuncs.cond(child[1]['value']):
                     # Endless loop. Replace the constant.
-                    child[1].update({'t':'integer', 'value':1})
+                    child[1].update({'t':'integer', 'value':-1})
                 else:
                     # Only one go. Replace with the statement(s).
                     parent[index] = child[0]
@@ -540,6 +557,7 @@ class optimizer(renamer, deadcode):
             self.FoldAndRemoveEmptyStmts(child[0]['ch'])
 
             self.FoldTree(child, 1) # Condition.
+            self.FoldCond(child, 1)
             if child[1]['nt'] == 'CONST':
                 # FOR is delicate. It can have multiple expressions at start.
                 # And if there is more than one, these expressions will need a
@@ -548,7 +566,7 @@ class optimizer(renamer, deadcode):
                 # it feels creepy.
                 if lslfuncs.cond(child[1]['value']):
                     # Endless loop. Just replace the constant and traverse the rest.
-                    child[1].update({'t':'integer', 'value':1})
+                    child[1].update({'t':'integer', 'value':-1})
                     self.FoldAndRemoveEmptyStmts(child[2]['ch'])
                     self.FoldTree(child, 3)
                     self.FoldStmt(child, 3)

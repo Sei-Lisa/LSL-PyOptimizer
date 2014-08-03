@@ -310,7 +310,10 @@ class outscript(object):
                              for typ, name in zip(node['ptypes'], node['pnames']))
             return ret + ')\n' + self.OutCode(child[0])
 
-        return self.dent() + self.OutExpr(node) + ';\n'
+        if nt == 'EXPR':
+            return self.dent() + self.OutExpr(child[0]) + ';\n'
+
+        assert False, "Internal error: node type not handled: " + nt
 
     def output(self, treesymtab, options = ('optsigns','optfloats')):
         # Build a sorted list of dict entries

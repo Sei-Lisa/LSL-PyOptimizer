@@ -1336,7 +1336,7 @@ class parser(object):
         value = self.Parse_expression()
         self.expect(';')
         self.NextToken()
-        return value
+        return {'nt':'EXPR', 't':value['t'], 'ch':[value]}
 
     def Parse_code_block(self, ReturnType, AllowStSw = False):
         """Grammar parsed here:
