@@ -567,19 +567,23 @@ class optimizer(renamer, deadcode):
                 if lslfuncs.cond(child[1]['value']):
                     # Endless loop. Just replace the constant and traverse the rest.
                     child[1].update({'t':'integer', 'value':-1})
-                    self.FoldAndRemoveEmptyStmts(child[2]['ch'])
                     self.FoldTree(child, 3)
                     self.FoldStmt(child, 3)
-                elif len(child[0]['ch']) > 1:
-                    parent[index] = {'nt':'{}', 't':None, 'ch':child[0]['ch']}
+                    self.FoldAndRemoveEmptyStmts(child[2]['ch'])
                 elif child[0]['ch']:
-                    parent[index] = child[0]['ch'][0]
+                    # Convert expression list to code block.
+                    exprlist = []
+                    for expr in child[0]['ch']:
+                        # Fold into expression statements.
+                        exprlist.append({'nt':'EXPR', 't':expr['t'], 'ch':[expr]})
+                    # returns type None, as FOR does
+                    parent[index] = {'nt':'{}', 't':None, 'ch':exprlist}
                 else:
                     parent[index] = {'nt':';', 't':None}
             else:
-                self.FoldAndRemoveEmptyStmts(child[2]['ch'])
                 self.FoldTree(child, 3)
                 self.FoldStmt(child, 3)
+                self.FoldAndRemoveEmptyStmts(child[2]['ch'])
             return
 
         if nt == 'RETURN':
