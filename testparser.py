@@ -91,6 +91,7 @@ class Test02_Parser(UnitTestCase):
                 L"\n\t\rxxxx";@lbl;jump lbl;
                 {f;}
                 [1,2,3];
+                llOwnerSay((string)(L3+L2+QQ+Q+V+W+ff));
                 return 1;
             }
             fwd(string a,string b,string c){}
@@ -173,7 +174,7 @@ class Test02_Parser(UnitTestCase):
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){string i;++i;}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''g(){integer k;k=g();}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''g(){@x;x;}default{}state x{}''')
-        self.assertRaises(EParseTypeMismatch, self.parser.parse, '''g(){print(g());}default{}state x{}''')
+        self.assertRaises(EParseTypeMismatch, self.parser.parse, '''g(){print(g());}default{}''')
         self.assertRaises(EParseUndefined, self.parser.parse, '''g(){integer k;k();}''')
         self.assertRaises(EParseUndefined, self.parser.parse, '''g(){++x;}state x{}''')
         self.assertRaises(EParseUndefined, self.parser.parse, '''g(){print(x);}state x{}''')
@@ -280,19 +281,20 @@ class Test03_Optimizer(UnitTestCase):
                 i = llGetListLength(L);
                 i *= -3.0;
                 print(3+2);
-                for(i=3,i;1;){}
                 i |= !i;
+                llOwnerSay((string)(L3+L4+i+L2+L1+vvvv));
                 "a" "b" "c";
                 "a"+(key)"b"; (key)"a" + "b";
-                llUnescapeURL("%09");
+                llOwnerSay(llUnescapeURL("%09"));
                 i>>=i;
                 if (1) do while (0); while (0); if (0); if (0);else; for(;0;);
                 if (i) if (i); else ; while (i) ; do ; while (i); for(;i;);
                 if (1) state default; else ;
-                do while (1); while(1); for(;1;);
-                for (i=0,i;0;);for(i=0,i=0;0;);return;
                 (i-i)+(i-3)+(-i+i)+(-i-i)+(i+1)+(-i+1)+(i-1)+(-i-1)+(0.0+i);
                 ((-i)+j);((-i)+i);i-2;-i-2;2-i;
+                for(i=3,i;1;){}
+                do while (1); while(1); for(;1;);
+                for (i=0,i;0;);for(i=0,i=0;0;);return;
             }}''',
             ['explicitcast','extendedtypecast','extendedassignment',
                 'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat']
@@ -302,7 +304,7 @@ class Test03_Optimizer(UnitTestCase):
         print self.outscript.output(p)
 
         p = self.parser.parse('''string s = llUnescapeURL("%09");default{timer(){float f=llSqrt(-1);
-            integer i;-(-(0.0+i));!!(!~~(!(i)));[]+i;}}''',
+            integer i;-(-(0.0+i));!!(!~~(!(i)));[]+i+s;}}''',
             ['extendedtypecast','extendedassignment',
                 'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat']
             )
@@ -394,13 +396,14 @@ class Test03_Optimizer(UnitTestCase):
         p = self.parser.parse('''
             integer a;
             x() { if (1) { string s = "x"; s = s + (string)a; } }
-            default { timer() { } }
+            default { timer() { x();a=3;llOwnerSay((string)a); } }
             ''', ['extendedassignment'])
         self.opt.optimize(p)
         out = self.outscript.output(p)
         self.assertEqual(out, 'integer a;\nx()\n{\n    {\n        '
             'string s = "x";\n        s = s + (string)a;\n    }\n}\n'
-            'default\n{\n    timer()\n    {\n    }\n}\n'
+            'default\n{\n    timer()\n    {\n        x();\n        a = 3;\n'
+            '        llOwnerSay((string)a);\n    }\n}\n'
             )
 
         p = self.parser.parse(
@@ -410,23 +413,31 @@ class Test03_Optimizer(UnitTestCase):
             integer i = 0;
             vector v = <f, 3, 4>;
 
-            default{timer(){}}
+            default{timer(){f=4;k="";i=0;v=<0,0,0>;L=[];llOwnerSay((string)(L+f+i+v+k));}}
             ''', ['extendedassignment'])
         self.opt.optimize(p)
         out = self.outscript.output(p)
         self.assertEqual(out, 'key k = "blah";\nlist L = [k, "xxxx", 1.];\n'
             'float f = 0;\ninteger i;\nvector v = <0, 3, 4>;\n'
-            'default\n{\n    timer()\n    {\n    }\n}\n'
+            'default\n{\n    timer()\n    {\n'
+            '        f = 4;\n        k = "";\n        i = 0;\n'
+            '        v = <((float)0), ((float)0), ((float)0)>;\n        L = [];\n'
+            '        llOwnerSay((string)(L + f + i + v + k));\n'
+            '    }\n}\n'
             )
 
 
-        p = self.parser.parse('list L;float f=llList2Float(L, 0);default{timer(){}}',
+        p = self.parser.parse('list L;float f=llList2Float(L, 0);'
+            'default{timer(){L=[];f=3;llOwnerSay((string)(L+f));}}',
             ['extendedglobalexpr'])
         self.opt.optimize(p)
         out = self.outscript.output(p)
         print out
         self.assertEqual(out, 'list L;\nfloat f = 0;\n'
-            'default\n{\n    timer()\n    {\n    }\n}\n')
+            'default\n{\n    timer()\n    {\n'
+            '        L = [];\n        f = 3;\n'
+            '        llOwnerSay((string)(L + f));\n'
+            '    }\n}\n')
 
         self.assertRaises(EParseAlreadyDefined, self.parser.parse,
             'default { timer() {} timer() {} }')

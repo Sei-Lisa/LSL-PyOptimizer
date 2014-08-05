@@ -313,7 +313,7 @@ class outscript(object):
         if nt == 'EXPR':
             return self.dent() + self.OutExpr(child[0]) + ';\n'
 
-        assert False, "Internal error: node type not handled: " + nt
+        assert False, "Internal error: node type not handled: " + nt # pragma: no cover
 
     def output(self, treesymtab, options = ('optsigns','optfloats')):
         # Build a sorted list of dict entries

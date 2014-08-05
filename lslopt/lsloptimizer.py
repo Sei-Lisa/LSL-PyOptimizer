@@ -626,7 +626,8 @@ class optimizer(renamer, deadcode):
         if nt in self.ignored_stmts:
             return
 
-        assert False, 'Internal error: This should not happen, node type = ' + nt # pragma: no cover
+        assert False, 'Internal error: This should not happen,' \
+            ' node type = ' + nt # pragma: no cover
 
     def IsValidGlobalConstant(self, decl):
         if 'ch' not in decl:
@@ -648,6 +649,8 @@ class optimizer(renamer, deadcode):
 
         self.foldtabs = 'foldtabs' in options
 
+        self.shrinknames = 'shrinknames' in options
+
         tree, symtab = self.tree, self.symtab = treesymtab
 
         self.globalmode = False
@@ -665,6 +668,8 @@ class optimizer(renamer, deadcode):
 
         if 'shrinknames' in options:
             self.ShrinkNames()
+
+        #self.RemoveDeadCode()
 
         treesymtab = (self.tree, self.symtab)
         del self.tree
