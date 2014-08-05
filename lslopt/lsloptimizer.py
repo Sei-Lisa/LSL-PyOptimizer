@@ -430,7 +430,7 @@ class optimizer(renamer, deadcode):
                     fn = self.symtab[0][node['name']]['Fn']
                     value = fn(*tuple(arg['value'] for arg in child))
                     if not self.foldtabs and isinstance(value, unicode) and '\t' in value:
-                        warning('WARNING: Tab in function result and foldtabs option not used.')
+                        warning('Tab in function result and foldtabs option not used.')
                         return
                     parent[index] = {'nt':'CONST', 't':node['t'], 'value':value}
                 elif node['name'] == 'llGetListLength' and child[0]['nt'] == 'IDENT':
@@ -662,7 +662,7 @@ class optimizer(renamer, deadcode):
                 self.FoldTree(tree, idx)
                 self.globalmode = False
                 if not self.IsValidGlobalConstant(tree[idx]):
-                    warning('WARNING: Expression does not resolve to a single constant.')
+                    warning('Expression does not resolve to a single constant.')
             else:
                 self.FoldTree(tree, idx)
 

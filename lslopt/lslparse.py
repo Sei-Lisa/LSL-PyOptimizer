@@ -10,7 +10,7 @@ import random
 
 def warning(txt):
     assert type(txt) == str
-    sys.stderr.write(txt + '\n')
+    sys.stderr.write('WARNING: ' + txt + '\n')
 
 def isdigit(c):
     return '0' <= c <= '9'

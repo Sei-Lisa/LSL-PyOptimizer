@@ -23,7 +23,7 @@ class outscript(object):
                 # is lost. So we emit a warning instead, letting the compiler
                 # report the error in the generated source.
                 if self.globalmode and self.listmode:
-                    warning('WARNING: Illegal combo: Key type inside a global list')
+                    warning('Illegal combo: Key type inside a global list')
                 if self.listmode or not self.globalmode:
                     if self.globalmode:
                         pfx = '(key)'
@@ -31,7 +31,7 @@ class outscript(object):
                         pfx = '((key)'
                         sfx = ')'
             if '\t' in value:
-                warning('WARNING: A string contains a tab. Tabs are expanded to four'
+                warning('A string contains a tab. Tabs are expanded to four'
                         ' spaces by the viewer when copy-pasting the code.')
             return pfx + '"' + value.encode('utf8').replace('\\','\\\\') \
                 .replace('"','\\"').replace('\n','\\n') + '"' + sfx
