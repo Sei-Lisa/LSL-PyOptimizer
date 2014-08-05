@@ -39,7 +39,10 @@ class optimizer(renamer, deadcode):
         nothing.
         """
         # Ideally this should consider side effect analysis of the whole thing.
-        if parent[index]['nt'] in ('CONST', 'IDENT', 'FIELD'):
+        node = parent[index]
+        if node['nt'] == 'EXPR':
+            node = node['ch'][0]
+        if node['nt'] in ('CONST', 'IDENT', 'FLD'):
             parent[index] = {'nt':';','t':None}
 
     def FoldCond(self, parent, index):
