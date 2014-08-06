@@ -25,7 +25,9 @@ def ishex(c):
     return '0' <= c <= '9' or 'A' <= c <= 'F' or 'a' <= c <= 'f'
 
 def fieldpos(inp, sep, n):
-    "Return the starting position of field n in a string inp that has zero or more fields separated by sep"
+    """Return the starting position of field n in a string inp that has zero or
+    more fields separated by sep
+    """
     i = -1
     for n in xrange(n):
         i = inp.find(sep, i + 1)
@@ -222,17 +224,17 @@ class parser(object):
         raise EParseTypeMismatch(self)
 
     def ueof(self):
-        "Check for unexpected EOF"
+        """Check for unexpected EOF"""
         if self.pos >= self.length:
             raise EParseUEOF(self)
 
     def ceof(self):
-        "Check for normal EOF"
+        """Check for normal EOF"""
         if self.pos >= self.length:
             raise EInternal() # force GetToken to return EOF
 
     def GetToken(self):
-        "Lexer"
+        """Lexer"""
 
         # Keep track of the current position. If an error occurs, it will happen at the start of this token.
         self.errorpos = self.pos
@@ -1889,17 +1891,6 @@ class parser(object):
 
         # Insert library functions into symbol table
         self.symtab[0].update(self.functions)
-
-        #while self.tok[0] != 'EOF':
-        #    print self.tok
-        #    self.NextToken()
-
-        #for n in xrange(len(self.symtab)):
-        #    print n, '{',
-        #    i = self.symtab[n]
-        #    for j in sorted(i.items(), key=lambda k: -1 if k[0]==-1 else k[1][0]):
-        #        print repr(j[0]) + ':' + repr(j[1]) + ',',
-        #    print '}'
 
         treesymtab = self.tree, self.symtab
         del self.tree
