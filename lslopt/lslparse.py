@@ -38,8 +38,11 @@ def fieldpos(inp, sep, n):
 class EParse(Exception):
 
     def __init__(self, parser, msg):
-        lno = parser.script.count('\n', 0, parser.errorpos)
-        cno = parser.errorpos - fieldpos(parser.script, '\n', lno)
+        errorpos = parser.errorpos
+        if parser.script[errorpos:errorpos+1] == '\n':
+            errorpos += 1
+        lno = parser.script.count('\n', 0, errorpos)
+        cno = errorpos - fieldpos(parser.script, '\n', lno)
         # Note the column number reported is in bytes.
 
         msg = u"(Line %d char %d): ERROR: %s" % (lno + 1, cno + 1, msg)
