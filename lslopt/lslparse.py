@@ -2050,3 +2050,16 @@ class parser(object):
 
         finally:
             f.close()
+
+        # Load the side-effect-free table as well.
+        f = open('seftable.txt', 'rb')
+        try:
+            while True:
+                line = f.readline()
+                if line == '':
+                    break
+                line = line.strip()
+                if line and line[0] != '#' and line in self.functions:
+                    self.functions[line]['SEF'] = True
+        finally:
+            f.close()

@@ -20,8 +20,6 @@ class optimizer(renamer, deadcode):
     LSL2PythonType = {'integer':int, 'float':float, 'string':unicode, 'key':lslfuncs.Key,
         'vector':lslfuncs.Vector, 'rotation':lslfuncs.Quaternion, 'list':list}
 
-    ignored_stmts = frozenset(('V++','V--','--V','++V',';','STSW','JUMP','@'))
-
     def FoldAndRemoveEmptyStmts(self, lst):
         """Utility function for elimination of useless expressions in FOR"""
         idx = 0
@@ -35,22 +33,41 @@ class optimizer(renamer, deadcode):
                 idx += 1
 
     def FoldStmt(self, parent, index):
-        """If the statement is a constant or an identifier, remove it as it does
-        nothing.
-        """
-        # Ideally this should consider side effect analysis of the whole thing.
+        """Simplify a statement."""
         node = parent[index]
         if node['nt'] == 'EXPR':
             node = node['ch'][0]
-        if node['nt'] in ('CONST', 'IDENT', 'FLD'):
-            parent[index] = {'nt':';','t':None}
+        # If the statement is side-effect-free, remove it as it does nothing.
+        if 'SEF' in node:
+            # Side-effect free means that a statement does nothing except
+            # wasting CPU, and can thus be removed without affecting the
+            # program. But side effect freedom is propagated from the
+            # constituents of the statement, e.g. function calls in expressions
+            # or substatements in FOR, or even individual variables.
+            #
+            # Many library functions like llSameGroup or llGetVel() are
+            # side-effect free. Many other functions like llSleep() or
+            # llSetScale() are not. User functions may or may not be.
+            #
+            # Assignments do have side effects, except those of the form x = x.
+            # Pre- and post-increment and decrement also have side effects.
+            # Type casts do not add side effects. Neither do binary operators.
+            parent[index] = {'nt':';', 't':None, 'SEF': True}
+            return
+        # Post-increments take more space than pre-increments.
+        if node['nt'] in ('V++', 'V--'):
+            node['nt'] = '++V' if node['nt'] == 'V++' else '--V';
 
     def FoldCond(self, parent, index):
         """When we know that the parent is interested only in the truth value
         of the node, we can perform further optimizations. This function deals
         with them.
         """
-        if parent[index]['nt'] in ('CONST', 'IDENT', 'FIELD'):
+        node = parent[index]
+        if node['nt'] in ('CONST', 'IDENT', 'FLD'):
+            if node['nt'] == 'CONST':
+                node['t'] = 'integer'
+                node['value'] = -1 if lslfuncs.cond(node['value']) else 0
             return # Nothing to do if it's already simplified.
         # TODO: Implement FoldCond
 
@@ -83,11 +100,14 @@ class optimizer(renamer, deadcode):
         child = node['ch'] if 'ch' in node else None
 
         if nt == 'CONST':
-            # Job already done
+            # Job already done. But mark as side-effect free.
+            node['SEF'] = True
             return
 
         if nt == 'CAST':
             self.FoldTree(child, 0)
+            if 'SEF' in child[0]:
+                node['SEF'] = True
             if child[0]['nt'] == 'CONST':
                 # Enable key constants. We'll typecast them back on output, but
                 # this enables some optimizations.
@@ -101,13 +121,18 @@ class optimizer(renamer, deadcode):
         if nt == 'NEG':
             self.FoldTree(child, 0)
             while child[0]['nt'] == '()' and child[0]['ch'][0]['nt'] == 'NEG':
-                child[0] = child[0]['ch'][0] # Remove parentheses
+                # Remove parentheses: - ( - expr )  -->  - - expr
+                child[0] = child[0]['ch'][0]
             if child[0]['nt'] == 'NEG':
-                # Double negation: - - expr
+                # Double negation: - - expr  -->  expr
+                # NOTE: Not 100% sure this doesn't need parentheses around expr.
                 parent[index] = child[0]['ch'][0]
             elif child[0]['nt'] == 'CONST':
                 node = parent[index] = child[0]
                 node['value'] = lslfuncs.neg(node['value'])
+            elif 'SEF' in child[0]:
+                # propagate Side Effect Free flag
+                node['SEF'] = True
             return
 
         if nt == '!':
@@ -115,6 +140,8 @@ class optimizer(renamer, deadcode):
             self.FoldCond(child, 0)
             # !! does *not* cancel out, but !!! can be simplified to !
             subexpr = child[0]
+            if 'SEF' in subexpr:
+                node['SEF'] = True
             while subexpr['nt'] == '()' and subexpr['ch'][0]['nt'] in ('()', '~', '!', '++V', '--V'):
                 subexpr = child[0] = subexpr['ch'][0] # Remove parentheses
             if subexpr['nt'] == '!' and subexpr['ch'][0]['nt'] == '!':
@@ -128,7 +155,10 @@ class optimizer(renamer, deadcode):
         if nt == '~':
             self.FoldTree(child, 0)
             subexpr = child[0]
-            while subexpr['nt'] == '()' and subexpr['ch'][0]['nt'] in ('()', '~', '!', '++V', '--V'):
+            if 'SEF' in subexpr:
+                node['SEF'] = True
+            while subexpr['nt'] == '()' and subexpr['ch'][0]['nt'] in ('()',
+                '~', '!', '++V', '--V'):
                 subexpr = child[0] = subexpr['ch'][0] # Remove parentheses
             if subexpr['nt'] == '~':
                 # Double negation: ~~expr
@@ -140,6 +170,8 @@ class optimizer(renamer, deadcode):
 
         if nt == '()':
             self.FoldTree(child, 0)
+            if 'SEF' in child[0]:
+                node['SEF'] = True
             if child[0]['nt'] in ('()', 'CONST', 'VECTOR', 'ROTATION', 'LIST',
                'IDENT', 'FIELD', 'V++', 'V--', 'FUNCTION', 'PRINT'):
                 # Child is an unary postfix expression (highest priority);
@@ -155,6 +187,9 @@ class optimizer(renamer, deadcode):
             # RTL evaluation
             self.FoldTree(child, 1)
             self.FoldTree(child, 0)
+            if 'SEF' in child[0] and 'SEF' in child[1]:
+                # Propagate SEF flag if both sides are side-effect free.
+                node['SEF'] = True
             if child[0]['nt'] == child[1]['nt'] == 'CONST':
                 op1 = child[0]['value']
                 op2 = child[1]['value']
@@ -377,6 +412,8 @@ class optimizer(renamer, deadcode):
             # Transform the whole thing into a regular assignment, as there are
             # no gains and it simplifies the optimization.
 
+            # An assignment has no side effects only if it's of the form x = x.
+
             if nt != '=':
                 # Replace the node with the expression alone
                 child[1] = {'nt':'()', 't':child[1]['t'], 'ch':[child[1]]}
@@ -391,13 +428,19 @@ class optimizer(renamer, deadcode):
                     node = self.Cast(node, 'integer')
 
                 # And wrap it in an assignment.
-                node = parent[index] = {'nt':'=', 't':child[0]['t'], 'ch':[child[0].copy(), node]}
+                child = [child[0].copy(), node]
+                node = parent[index] = {'nt':'=', 't':child[0]['t'], 'ch':child}
 
             # We have a regular assignment either way now. Simplify the RHS.
             self.FoldTree(node['ch'], 1)
+            if child[1]['nt'] == 'IDENT' and child[1]['name'] == child[0]['name'] \
+               and child[1]['scope'] == child[0]['scope']:
+                node['SEF'] = True
+            self.FoldStmt(parent, index)
             return
 
         if nt == 'IDENT' or nt == 'FLD':
+            node['SEF'] = True
             if self.globalmode:
                 ident = child[0] if nt == 'FLD' else node
                 # Resolve constant values so they can be optimized
@@ -422,10 +465,22 @@ class optimizer(renamer, deadcode):
             return
 
         if nt == 'FNCALL':
+            SEFargs = True
+            CONSTargs = True
             for idx in xrange(len(child)-1, -1, -1):
                 self.FoldTree(child, idx)
+                # Function is not SEF if any argument is not SEF
+                if 'SEF' not in child[idx]:
+                    SEFargs = False
+                # Function is not a constant if any argument is not a constant
+                if child[idx]['nt'] != 'CONST':
+                    CONSTargs = False
+
             if 'Fn' in self.symtab[0][node['name']]:
-                if all(arg['nt'] == 'CONST' for arg in child):
+                # Guaranteed to be side-effect free if the children are.
+                if SEFargs:
+                    node['SEF'] = True
+                if CONSTargs:
                     # Call it
                     fn = self.symtab[0][node['name']]['Fn']
                     value = fn(*tuple(arg['value'] for arg in child))
@@ -438,18 +493,42 @@ class optimizer(renamer, deadcode):
                     node = {'nt':'CONST', 't':'list', 'value':[]}
                     node = {'nt':'!=', 't':'list', 'ch':[child[0], node]}
                     parent[index] = {'nt':'()', 't':'list', 'ch':[node]}
+            elif SEFargs and 'SEF' in self.symtab[0][node['name']]:
+                # The function is marked as SEF in the symbol table, and the
+                # arguments are all side-effect-free. The result is SEF.
+                node['SEF'] = True
             return
 
-        if nt in ('PRINT', 'EXPR'):
+        if nt == 'PRINT':
             self.FoldTree(child, 0)
+            # PRINT is considered to have side effects. If it's there, assume
+            # there's a reason.
+            return
+
+        if nt == 'EXPR':
+            self.FoldTree(child, 0)
+            if 'SEF' in child[0]:
+                node['SEF'] = True
+            return
+
+        if nt == 'FNDEF':
+            self.FoldTree(child, 0)
+            if 'SEF' in child[0]:
+                node['SEF'] = True
+                if node['name'] in self.symtab[0]:
+                    # Mark the symbol table entry if it's not an event.
+                    self.symtab[0][node['name']]['SEF'] = True
             return
 
         if nt in ('VECTOR', 'ROTATION', 'LIST'):
             isconst = True
+            issef = True
             for idx in xrange(len(child)-1, -1, -1):
                 self.FoldTree(child, idx)
                 if child[idx]['nt'] != 'CONST':
                     isconst = False
+                if 'SEF' not in child[idx]:
+                    issef = False
             if isconst:
                 value = [elem['value'] for elem in child]
                 if nt == 'VECTOR':
@@ -457,6 +536,8 @@ class optimizer(renamer, deadcode):
                 elif nt == 'ROTATION':
                     value = lslfuncs.Quaternion([lslfuncs.ff(x) for x in value])
                 parent[index] = {'nt':'CONST', 't':node['t'], 'value':value}
+            if issef:
+                node['SEF'] = True
             return
 
         if nt == 'STDEF':
@@ -464,11 +545,14 @@ class optimizer(renamer, deadcode):
                 self.FoldTree(child, idx)
             return
 
-        if nt in ('{}', 'FNDEF'):
+        if nt == '{}':
             idx = 0
+            issef = True
             while idx < len(child):
                 self.FoldTree(child, idx)
                 self.FoldStmt(child, idx)
+                if 'SEF' not in child[idx]:
+                    issef = False
                 if child[idx]['nt'] == ';' \
                      or nt == '{}' and child[idx]['nt'] == '{}' and not child[idx]['ch']:
                     del child[idx]
@@ -476,6 +560,8 @@ class optimizer(renamer, deadcode):
                     if 'StSw' in child[idx]:
                         node['StSw'] = True
                     idx += 1
+            if issef:
+                node['SEF'] = True
             return
 
         if nt == 'IF':
@@ -483,7 +569,7 @@ class optimizer(renamer, deadcode):
             self.FoldCond(child, 0)
             if child[0]['nt'] == 'CONST':
                 # We might be able to remove one of the branches.
-                if lslfuncs.cond(child[0]['value']):
+                if child[0]['value']:
                     self.FoldTree(child, 1)
                     # If it has a state switch, the if() must be preserved
                     # (but the else branch may be removed).
@@ -494,19 +580,22 @@ class optimizer(renamer, deadcode):
                         # result of optimization so they must be wrapped in an
                         # IF statement). The current approach leaves unnecessary
                         # IFs behind.
-                        if len(child) > 2:
+                        if len(child) == 3:
                             del child[2] # Delete ELSE if present
-                        child[0].update({'t':'integer', 'value':-1})
+                            return
                     else:
                         self.FoldStmt(child, 1)
                         parent[index] = child[1]
-                elif len(child) > 2:
+                        return
+                elif len(child) == 3:
                     self.FoldTree(child, 2)
                     self.FoldStmt(child, 2)
                     parent[index] = child[2]
+                    return
                 else:
                     # No ELSE branch, replace the statement with an empty one.
-                    parent[index] = {'nt':';', 't':None}
+                    parent[index] = {'nt':';', 't':None, 'SEF':True}
+                    return
             else:
                 self.FoldTree(child, 1)
                 self.FoldStmt(child, 1)
@@ -517,26 +606,32 @@ class optimizer(renamer, deadcode):
                        or child[2]['nt'] == '{}' and not child[2]['ch']:
                         # no point in "... else ;" - remove else branch
                         del child[2]
+            if all('SEF' in subnode for subnode in child):
+                node['SEF'] = True
             return
 
         if nt == 'WHILE':
             self.FoldTree(child, 0)
             self.FoldCond(child, 0)
+            allSEF = 'SEF' in child[0]
             if child[0]['nt'] == 'CONST':
                 # See if the whole WHILE can be eliminated.
-                if lslfuncs.cond(child[0]['value']):
+                if child[0]['value']:
                     # Endless loop which must be kept.
-                    # First, replace the constant.
-                    child[0].update({'t':'integer', 'value':-1})
                     # Recurse on the statement.
                     self.FoldTree(child, 1)
                     self.FoldStmt(child, 1)
+                    allSEF &= 'SEF' in child[1]
                 else:
                     # Can be removed.
-                    parent[index] = {'nt':';', 't':None}
+                    parent[index] = {'nt':';', 't':None, 'SEF':True}
+                    return
             else:
                 self.FoldTree(child, 1)
                 self.FoldStmt(child, 1)
+                allSEF &= 'SEF' in child[1]
+            if allSEF:
+                node['SEF'] = True
             return
 
         if nt == 'DO':
@@ -544,12 +639,11 @@ class optimizer(renamer, deadcode):
             self.FoldStmt(child, 0)
             self.FoldTree(child, 1)
             self.FoldCond(child, 1)
+            if 'SEF' in child[0] and 'SEF' in child[1]:
+                node['SEF'] = True
             # See if the latest part is a constant.
             if child[1]['nt'] == 'CONST':
-                if lslfuncs.cond(child[1]['value']):
-                    # Endless loop. Replace the constant.
-                    child[1].update({'t':'integer', 'value':-1})
-                else:
+                if not child[1]['value']:
                     # Only one go. Replace with the statement(s).
                     parent[index] = child[0]
             return
@@ -559,45 +653,59 @@ class optimizer(renamer, deadcode):
             assert child[2]['nt'] == 'EXPRLIST'
             self.FoldAndRemoveEmptyStmts(child[0]['ch'])
 
+            # If there were side-effect-free elements, they're already removed.
+            # So if there are remaining element, they're not SEF.
+            allSEF = bool(child[0]['ch'])
+
             self.FoldTree(child, 1) # Condition.
             self.FoldCond(child, 1)
             if child[1]['nt'] == 'CONST':
                 # FOR is delicate. It can have multiple expressions at start.
                 # And if there is more than one, these expressions will need a
                 # new block, which means new scope, which is dangerous.
-                # They are expressions, no declarations or labels allowed, but
-                # it feels creepy.
-                if lslfuncs.cond(child[1]['value']):
-                    # Endless loop. Just replace the constant and traverse the rest.
-                    child[1].update({'t':'integer', 'value':-1})
+                # They are expressions, no declarations or labels allowed, thus
+                # no new identifiers, but it still feels uneasy.
+                if child[1]['value']:
+                    # Endless loop. Traverse the loop and the iterator.
                     self.FoldTree(child, 3)
                     self.FoldStmt(child, 3)
                     self.FoldAndRemoveEmptyStmts(child[2]['ch'])
-                elif child[0]['ch']:
+                    allSEF &= bool(child[2]['ch']) and 'SEF' in child[3]
+                else:
                     # Convert expression list to code block.
                     exprlist = []
                     for expr in child[0]['ch']:
                         # Fold into expression statements.
                         exprlist.append({'nt':'EXPR', 't':expr['t'], 'ch':[expr]})
                     # returns type None, as FOR does
-                    parent[index] = {'nt':'{}', 't':None, 'ch':exprlist}
-                else:
-                    parent[index] = {'nt':';', 't':None}
+                    # We're in the case where there are expressions. If any
+                    # remain, they are not SEF (or they would have been
+                    # removed earlier) so don't mark this node as SEF.
+                    if exprlist:
+                        parent[index] = {'nt':'{}', 't':None, 'ch':exprlist}
+                    else:
+                        parent[index] = {'nt':';', 't':None, 'SEF': True}
+                    return
             else:
                 self.FoldTree(child, 3)
                 self.FoldStmt(child, 3)
                 self.FoldAndRemoveEmptyStmts(child[2]['ch'])
+                allSEF &= bool(child[2]['ch']) and 'SEF' in child[3]
+            if allSEF:
+                node['SEF'] = True
             return
 
         if nt == 'RETURN':
             if child:
                 self.FoldTree(child, 0)
+                if 'SEF' in child[0]:
+                    node['SEF'] = True
             return
 
         if nt == 'DECL':
             if child:
                 # Check if child is a simple_expr. If it is, then we keep the
-                # original attached to the folded node and use it in the output.
+                # original attached to the folded node to use it in the output.
                 if child[0].pop('Simple', False):
                     orig = self.CopyNode(child[0])
                     self.FoldTree(child, 0)
@@ -609,21 +717,30 @@ class optimizer(renamer, deadcode):
                    and not child[0]['value']:
                     del node['ch']
                     child = None
+                    return
             else:
                 # Add assignment if vector, rotation or float.
                 if node['t'] in ('float', 'vector', 'rotation'):
                     typ = node['t']
-                    node['ch'] = [{'nt':'CONST', 't':typ, 'value':
+                    node['ch'] = [{'nt':'CONST', 't':typ, 'SEF': True, 'value':
                         0.0 if typ == 'float' else
                         lslfuncs.ZERO_VECTOR if typ == 'vector' else
                         lslfuncs.ZERO_ROTATION}]
+                # Declarations always have side effects.
             return
 
         if nt == 'STSW':
+            # State switch always has side effects.
             node['StSw'] = True
             return
 
-        if nt in self.ignored_stmts:
+        if nt == ';':
+            node['SEF'] = True
+            return
+
+        if nt in ('JUMP', '@', 'V++', 'V--', '--V', '++V'):
+            # These all have side effects, as in, can't be eliminated as
+            # statements.
             return
 
         assert False, 'Internal error: This should not happen,' \
@@ -643,7 +760,6 @@ class optimizer(renamer, deadcode):
         """Optimize the symbolic table symtab in place. Requires a table of
         predefined functions for folding constants.
         """
-
         if 'optimize' not in options:
             return treesymtab
 
