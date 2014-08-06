@@ -1,3 +1,4 @@
+# TODO: Add info to be able to propagate error position to the source.
 
 from lslcommon import Key, Vector, Quaternion
 import lslfuncs
