@@ -390,6 +390,8 @@ class Test03_Optimizer(UnitTestCase):
         self.opt.optimize(p, ['optimize','shrinknames'])
         print self.outscript.output(p)
 
+        #
+
     def test_regression(self):
 
 
@@ -432,7 +434,6 @@ class Test03_Optimizer(UnitTestCase):
             ['extendedglobalexpr'])
         self.opt.optimize(p)
         out = self.outscript.output(p)
-        print out
         self.assertEqual(out, 'list L;\nfloat f = 0;\n'
             'default\n{\n    timer()\n    {\n'
             '        L = [];\n        f = 3;\n'

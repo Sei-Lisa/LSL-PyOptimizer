@@ -95,7 +95,6 @@ class optimizer(renamer, deadcode):
         Also optimizes away IF, WHILE, etc.
         """
         node = parent[index]
-        if node is None: return # Deleted statement
         nt = node['nt']
         child = node['ch'] if 'ch' in node else None
 
@@ -785,7 +784,7 @@ class optimizer(renamer, deadcode):
         if 'shrinknames' in options:
             self.ShrinkNames()
 
-        #self.RemoveDeadCode()
+        self.RemoveDeadCode()
 
         treesymtab = (self.tree, self.symtab)
         del self.tree
