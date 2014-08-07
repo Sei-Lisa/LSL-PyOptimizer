@@ -113,7 +113,7 @@ class optimizer(renamer, deadcode):
                 # this enables some optimizations.
                 #if node['t'] != 'key': # key constants not possible
 
-                    parent[index] = {'nt':'CONST', 't':node['t'],
+                    parent[index] = {'nt':'CONST', 't':node['t'], 'SEF':True,
                         'value':lslfuncs.typecast(
                             child[0]['value'], self.LSL2PythonType[node['t']])}
             return
