@@ -231,6 +231,7 @@ class Test02_Parser(UnitTestCase):
         self.assertRaises(EParseCodePathWithoutRet, self.parser.parse,
             '''key f() { if (1) ; else if (2) return ""; else return ""; }''')
         self.parser.parse('f(){if(1) {state default;}if (1) if (1) state default; else state default;}default{timer(){}}')
+        self.parser.parse('default{timer(){vector v;v.x=0;}}')
 
 
     def tearDown(self):

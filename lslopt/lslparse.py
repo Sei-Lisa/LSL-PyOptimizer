@@ -669,6 +669,7 @@ class parser(object):
             lvalue = {'nt':'FLD', 't':'float', 'ch':[lvalue], 'fld':self.tok[1]}
             self.NextToken()
             tok0 = self.tok[0]
+            typ = 'float'
 
         if tok0 in ('++', '--'):
             self.NextToken()
