@@ -284,15 +284,16 @@ class Test03_Optimizer(UnitTestCase):
                 i |= !i;
                 llOwnerSay((string)(L3+L4+i+L2+L1+vvvv));
                 "a" "b" "c";
+                <2, 3, llSetRegionPos(<4,5,6>)>;
                 "a"+(key)"b"; (key)"a" + "b";
                 llOwnerSay(llUnescapeURL("%09"));
                 i>>=i;
                 if (1) do while (0); while (0); if (0); if (0);else; for(;0;);
                 if (i) if (i); else ; while (i) ; do ; while (i); for(;i;);
-                if (1) state default; else ;
                 (i-i)+(i-3)+(-i+i)+(-i-i)+(i+1)+(-i+1)+(i-1)+(-i-1)+(0.0+i);
                 ((-i)+j);((-i)+i);i-2;-i-2;2-i;
                 for(i=3,i;1;){}
+                if (1) state default; else ;
                 do while (1); while(1); for(;1;);
                 for (i=0,i;0;);for(i=0,i=0;0;);return;
             }}''',
@@ -304,7 +305,7 @@ class Test03_Optimizer(UnitTestCase):
         print self.outscript.output(p)
 
         p = self.parser.parse('''string s = llUnescapeURL("%09");default{timer(){float f=llSqrt(-1);
-            integer i;-(-(0.0+i));!!(!~~(!(i)));[]+i+s;}}''',
+            integer i;i++;i=i;-(-(0.0+i));!!(!~~(!(i)));[]+i+s+f;}}''',
             ['extendedtypecast','extendedassignment',
                 'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat']
             )

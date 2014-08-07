@@ -76,7 +76,10 @@ class optimizer(renamer, deadcode):
         # value unchanged
         if value['t'] == newtype:
             return value
-        return {'nt':'CAST', 't':newtype, 'ch':[value]}
+        ret = {'nt':'CAST', 't':newtype, 'ch':[value]}
+        if 'SEF' in value:
+            ret['SEF'] = True
+        return ret
 
     def CopyNode(self, node):
         # This is mainly for simple_expr so not a big deal.
@@ -227,7 +230,7 @@ class optimizer(renamer, deadcode):
                     result = int(bool(op1) and bool(op2))
                 else:
                     assert False, 'Internal error: Operator not found: ' + nt # pragma: no cover
-                parent[index] = {'nt':'CONST', 't':node['t'], 'value':result}
+                parent[index] = {'nt':'CONST', 't':node['t'], 'SEF':True, 'value':result}
                 return
 
             # Simplifications for particular operands
@@ -243,6 +246,8 @@ class optimizer(renamer, deadcode):
                     if lnt == 'CONST' and all(component == 0 for component in lval['value']):
                         # Change <0,0,0[,0]>-expr  ->  -expr
                         parent[index] = {'nt':'NEG', 't':node['t'], 'ch':[rval]}
+                        if 'SEF' in rval:
+                            parent[index]['SEF'] = True
                     elif rnt == 'CONST' and all(component == 0 for component in rval['value']):
                         # Change expr-<0,0,0[,0]>  ->  expr
                         parent[index] = lval
@@ -254,7 +259,10 @@ class optimizer(renamer, deadcode):
                     rval['value'] = lslfuncs.neg(rval['value'])
                 else:
                     rnt = 'NEG'
+                    RSEF = 'SEF' in rval
                     rval = child[1] = {'nt':rnt, 't':rval['t'], 'ch':[rval]}
+                    if RSEF:
+                        rval['SEF'] = True
                     # rtype unchanged
 
                 # Fall through to simplify it as '+'
@@ -324,10 +332,20 @@ class optimizer(renamer, deadcode):
                     # There may be other possibilities for optimization,
                     # e.g. (type)ident + -(type)ident but we only do lvalues
                     # here. Note these are integers, no NaN involved.
+                    # TODO: Compare the subtrees if they are SEF. If they are
+                    # the same subtree, they can cancel out.
                     if lnt == rnt == 'NEG':
                         node = {'nt':'+', 't':optype, 'ch':[lval['ch'][0], rval['ch'][0]]}
+                        SEF = 'SEF' in lval['ch'][0] and 'SEF' in rval['ch'][0]
+                        if SEF:
+                            node['SEF'] = True
                         node = {'nt':'()', 't':optype, 'ch':[node]}
-                        parent[index] = {'nt':'NEG', 't':optype, 'ch':[node]}
+                        if SEF:
+                            node['SEF'] = True
+                        node = {'nt':'NEG', 't':optype, 'ch':[node]}
+                        if SEF:
+                            node['SEF'] = True
+                        parent[index] = node
                         return
 
                     if lnt == 'NEG':
@@ -336,43 +354,75 @@ class optimizer(renamer, deadcode):
                     if lnt == 'IDENT' and rnt == 'NEG' and rval['ch'][0]['nt'] == 'IDENT' \
                        and lval['name'] == rval['ch'][0]['name']:
                         # Replace with 0
-                        parent[index] = {'nt':'CONST', 't':optype, 'value':0}
+                        parent[index] = {'nt':'CONST', 'SEF': True, 't':optype, 'value':0}
 
                     return
 
                 if rnt == 'CONST':
                     # Swap the vars to deal with const in lval always
                     lval, lnt, rval, rnt = rval, rnt, lval, lnt
+                RSEF = 'SEF' in rval
                 if lval['value'] == -1:
                     if rnt == 'NEG':
-                        parent[index] = {'nt':'~', 't':optype, 'ch':rval['ch']}
+                        node = {'nt':'~', 't':optype, 'ch':rval['ch']}
+                        if RSEF:
+                            node['SEF'] = True
                     else:
-                        parent[index] = {'nt':'~', 't':optype,
-                            'ch':[{'nt':'NEG', 't':optype, 'ch':[rval]}]}
+                        node = {'nt':'NEG', 't':optype, 'ch':[rval]}
+                        if RSEF:
+                            node['SEF'] = True
+                        node = {'nt':'~', 't':optype, 'ch':[node]}
+                        if RSEF:
+                            node['SEF'] = True
+                    parent[index] = node
                     return
 
                 if lval['value'] == -2:
                     if rnt == 'NEG': # Cancel the NEG
                         node = {'nt':'~', 't':optype, 'ch':rval['ch']}
+                        if RSEF:
+                            node['SEF'] = True
                         node = {'nt':'NEG', 't':optype, 'ch':[node]}
-                        parent[index] = {'nt':'~', 't':optype, 'ch':[node]}
+                        if RSEF:
+                            node['SEF'] = True
+                        node = {'nt':'~', 't':optype, 'ch':[node]}
+                        if RSEF:
+                            node['SEF'] = True
                     else: # Add the NEG
                         node = {'nt':'NEG', 't':optype, 'ch':[rval]}
+                        if RSEF:
+                            node['SEF'] = True
                         node = {'nt':'~', 't':optype, 'ch':[node]}
+                        if RSEF:
+                            node['SEF'] = True
                         node = {'nt':'NEG', 't':optype, 'ch':[node]}
-                        parent[index] = {'nt':'~', 't':optype, 'ch':[node]}
+                        if RSEF:
+                            node['SEF'] = True
+                        node = {'nt':'~', 't':optype, 'ch':[node]}
+                        if RSEF:
+                            node['SEF'] = True
+                    parent[index] = node
                     return
 
                 if lval['value'] == 1:
-                    parent[index] = {'nt':'NEG', 't':optype,
+                    parent[index] = node = {'nt':'NEG', 't':optype,
                         'ch':[{'nt':'~', 't':optype, 'ch':[rval]}]}
+                    if RSEF:
+                        node['ch'][0]['SEF'] = True
+                        node['SEF'] = True
                     return
 
                 if lval['value'] == 2:
                     node = {'nt':'NEG', 't':optype,
                         'ch':[{'nt':'~', 't':optype, 'ch':[rval]}]}
-                    parent[index] = {'nt':'NEG', 't':optype,
+                    if RSEF:
+                        node['ch'][0]['SEF'] = True
+                        node['SEF'] = True
+                    parent[index] = node = {'nt':'NEG', 't':optype,
                         'ch':[{'nt':'~', 't':optype, 'ch':[node]}]}
+                    if RSEF:
+                        node['ch'][0]['SEF'] = True
+                        node['SEF'] = True
                     return
 
                 # More than 2 becomes counter-productive.
@@ -392,10 +442,13 @@ class optimizer(renamer, deadcode):
                     # Operands with priority between * (not included) and <<
                     # (included).
                     if child[0]['nt'] in ('+', '-', 'NEG', '<<', '>>'):
+                        SEF = 'SEF' in child[0]
                         child[0] = {'nt':'()', 't':child[0]['t'], 'ch':[child[0]]}
+                        if SEF:
+                            child[0]['SEF'] = True
                     # we have {<<, something, {CONST n}}, transform into {*, something, {CONST n}}
                     node['nt'] = '*'
-                    child[1]['value'] = 1<<(child[1]['value'] & 31)
+                    child[1]['value'] = 1 << (child[1]['value'] & 31)
                 else: # x << 0  -->  x
                     parent[index] = child[0]
             else:
@@ -534,7 +587,9 @@ class optimizer(renamer, deadcode):
                     value = lslfuncs.Vector([lslfuncs.ff(x) for x in value])
                 elif nt == 'ROTATION':
                     value = lslfuncs.Quaternion([lslfuncs.ff(x) for x in value])
-                parent[index] = {'nt':'CONST', 't':node['t'], 'value':value}
+                parent[index] = {'nt':'CONST', 'SEF':True, 't':node['t'],
+                    'value':value}
+                return
             if issef:
                 node['SEF'] = True
             return
@@ -610,9 +665,13 @@ class optimizer(renamer, deadcode):
             return
 
         if nt == 'WHILE':
+            # Loops are not considered side-effect free. If the expression is
+            # TRUE, it's definitely not SEF. If it's FALSE, it will be optimized
+            # anyway. Otherwise we just don't know if it may be infinite, even
+            # if every component is SEF.
+
             self.FoldTree(child, 0)
             self.FoldCond(child, 0)
-            allSEF = 'SEF' in child[0]
             if child[0]['nt'] == 'CONST':
                 # See if the whole WHILE can be eliminated.
                 if child[0]['value']:
@@ -620,7 +679,6 @@ class optimizer(renamer, deadcode):
                     # Recurse on the statement.
                     self.FoldTree(child, 1)
                     self.FoldStmt(child, 1)
-                    allSEF &= 'SEF' in child[1]
                 else:
                     # Can be removed.
                     parent[index] = {'nt':';', 't':None, 'SEF':True}
@@ -628,9 +686,6 @@ class optimizer(renamer, deadcode):
             else:
                 self.FoldTree(child, 1)
                 self.FoldStmt(child, 1)
-                allSEF &= 'SEF' in child[1]
-            if allSEF:
-                node['SEF'] = True
             return
 
         if nt == 'DO':
@@ -638,8 +693,6 @@ class optimizer(renamer, deadcode):
             self.FoldStmt(child, 0)
             self.FoldTree(child, 1)
             self.FoldCond(child, 1)
-            if 'SEF' in child[0] and 'SEF' in child[1]:
-                node['SEF'] = True
             # See if the latest part is a constant.
             if child[1]['nt'] == 'CONST':
                 if not child[1]['value']:
@@ -651,10 +704,6 @@ class optimizer(renamer, deadcode):
             assert child[0]['nt'] == 'EXPRLIST'
             assert child[2]['nt'] == 'EXPRLIST'
             self.FoldAndRemoveEmptyStmts(child[0]['ch'])
-
-            # If there were side-effect-free elements, they're already removed.
-            # So if there are remaining element, they're not SEF.
-            allSEF = bool(child[0]['ch'])
 
             self.FoldTree(child, 1) # Condition.
             self.FoldCond(child, 1)
@@ -669,7 +718,6 @@ class optimizer(renamer, deadcode):
                     self.FoldTree(child, 3)
                     self.FoldStmt(child, 3)
                     self.FoldAndRemoveEmptyStmts(child[2]['ch'])
-                    allSEF &= bool(child[2]['ch']) and 'SEF' in child[3]
                 else:
                     # Convert expression list to code block.
                     exprlist = []
@@ -677,10 +725,10 @@ class optimizer(renamer, deadcode):
                         # Fold into expression statements.
                         exprlist.append({'nt':'EXPR', 't':expr['t'], 'ch':[expr]})
                     # returns type None, as FOR does
-                    # We're in the case where there are expressions. If any
-                    # remain, they are not SEF (or they would have been
-                    # removed earlier) so don't mark this node as SEF.
                     if exprlist:
+                        # We're in the case where there are expressions. If any
+                        # remain, they are not SEF (or they would have been
+                        # removed earlier) so don't mark this node as SEF.
                         parent[index] = {'nt':'{}', 't':None, 'ch':exprlist}
                     else:
                         parent[index] = {'nt':';', 't':None, 'SEF': True}
@@ -689,16 +737,11 @@ class optimizer(renamer, deadcode):
                 self.FoldTree(child, 3)
                 self.FoldStmt(child, 3)
                 self.FoldAndRemoveEmptyStmts(child[2]['ch'])
-                allSEF &= bool(child[2]['ch']) and 'SEF' in child[3]
-            if allSEF:
-                node['SEF'] = True
             return
 
         if nt == 'RETURN':
             if child:
                 self.FoldTree(child, 0)
-                if 'SEF' in child[0]:
-                    node['SEF'] = True
             return
 
         if nt == 'DECL':
@@ -721,11 +764,11 @@ class optimizer(renamer, deadcode):
                 # Add assignment if vector, rotation or float.
                 if node['t'] in ('float', 'vector', 'rotation'):
                     typ = node['t']
-                    node['ch'] = [{'nt':'CONST', 't':typ, 'SEF': True, 'value':
-                        0.0 if typ == 'float' else
-                        lslfuncs.ZERO_VECTOR if typ == 'vector' else
-                        lslfuncs.ZERO_ROTATION}]
-                # Declarations always have side effects.
+                    node['ch'] = [{'nt':'CONST', 't':typ, 'SEF': True,
+                        'value': 0.0 if typ == 'float' else
+                                 lslfuncs.ZERO_VECTOR if typ == 'vector' else
+                                 lslfuncs.ZERO_ROTATION}]
+            # Declarations always have side effects.
             return
 
         if nt == 'STSW':
@@ -742,8 +785,8 @@ class optimizer(renamer, deadcode):
             # statements.
             return
 
-        assert False, 'Internal error: This should not happen,' \
-            ' node type = ' + nt # pragma: no cover
+        assert False, 'Internal error: This should not happen, node type = ' \
+            + nt # pragma: no cover
 
     def IsValidGlobalConstant(self, decl):
         if 'ch' not in decl:
