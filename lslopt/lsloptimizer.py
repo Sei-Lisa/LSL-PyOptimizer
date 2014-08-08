@@ -79,6 +79,8 @@ class optimizer(renamer, deadcode):
         ret = {'nt':'CAST', 't':newtype, 'ch':[value]}
         if 'SEF' in value:
             ret['SEF'] = True
+        if 'X' in value:
+            ret['X'] = value['X']
         return ret
 
     def CopyNode(self, node):
