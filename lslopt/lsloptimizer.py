@@ -485,8 +485,13 @@ class optimizer(renamer, deadcode):
 
             # We have a regular assignment either way now. Simplify the RHS.
             self.FoldTree(node['ch'], 1)
-            if child[1]['nt'] == 'IDENT' and child[1]['name'] == child[0]['name'] \
-               and child[1]['scope'] == child[0]['scope']:
+            if child[0]['nt'] == child[1]['nt'] == 'IDENT' \
+               and child[1]['name'] == child[0]['name'] \
+               and child[1]['scope'] == child[0]['scope'] \
+               or child[0]['nt'] == child[1]['nt'] == 'FLD' \
+               and child[1]['ch'][0]['name'] == child[0]['ch'][0]['name'] \
+               and child[1]['ch'][0]['scope'] == child[0]['ch'][0]['scope'] \
+               and child[1]['fld'] == child[0]['fld']:
                 node['SEF'] = True
             self.FoldStmt(parent, index)
             return
