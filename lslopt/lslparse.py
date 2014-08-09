@@ -1333,7 +1333,7 @@ class parser(object):
             decl = {'nt':'DECL','t':typ, 'name':name, 'scope':self.scopeindex}
             if self.tok[0] == '=':
                 self.NextToken()
-                decl['ch'] = [self.Parse_expression()]
+                decl['ch'] = [self.autocastcheck(self.Parse_expression(), typ)]
             self.expect(';')
             self.NextToken()
             self.AddSymbol('v', self.scopeindex, name, Type=typ)
