@@ -59,7 +59,8 @@ class renamer(object):
             elif kind == 'v':
                 globalvars.append(name)
             else:
-                assert False, 'Invalid kind at this scope: ' + kind # pragma: no cover
+                assert False, 'Invalid kind at this scope: ' \
+                    + kind # pragma: no cover
 
         # We make three passes, one for states, then functions, then globals,
         # in that order.
@@ -112,11 +113,13 @@ class renamer(object):
         # Do the same for function and event parameter names. Pure locals get
         # long distinct names.
         First = True
+        restart = self.WordFirstChar
         for table in self.symtab:
             if First:
                 First = False
                 # Skip globals
                 continue
+            InParams = False
             for name,sym in table.iteritems():
                 if name == -1: continue
                 if sym['Kind'] != 'v':
@@ -124,10 +127,14 @@ class renamer(object):
                     name = name # trick the optimizer
                     continue
                 if 'Param' in sym:
+                    if not InParams:
+                        # Restart at every new parameter table.
+                        # Parameter tables are isolated from each other.
+                        InParams = True
+                        self.WordFirstChar = restart
                     # Same procedure as for global vars
                     # Not the best strategy (using locally unique names would
-                    # do a better job) but hey. At the time of writing there's
-                    # no reference analysis. TODO: Implement.
+                    # do a better job) but hey.
                     if ReusableNames:
                         short = ReusableNames.pop()
                         self.UsedNames.add(short)
