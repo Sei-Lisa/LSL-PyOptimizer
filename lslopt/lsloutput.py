@@ -70,14 +70,17 @@ class outscript(object):
             while s[-1] != '.' and lslfuncs.F32(float(s[:-1]+exp)) == value:
                 s = s[:-1]
             if s[-1] != '.':
-                news = s
+                news = s[:-1]
                 neg = ''
                 if s[0] == '-':
-                    news = s[1:]
+                    news = news[1:]
                     neg = '-'
                 # Try harder
-                point = news.index('.') + 1 - len(news) # Remove point
-                news = str(int(news[:point-1] + news[point:]) + 1).zfill(len(news)-1) # Increment
+                point = news.index('.') + 1 - len(news)
+                if point:
+                    news = str(int(news[:point-1] + news[point:]) + 1).zfill(len(news)-1) # Increment
+                else:
+                    news = str(int(news[:-1])+1).zfill(len(news)-1)
                 news = news[:point + len(news)] + '.' + news[point + len(news):] # Reinsert point
                 # Repeat the operation with the incremented number
                 while news[-1] != '.' and lslfuncs.F32(float(neg+news[:-1]+exp)) == value:
