@@ -76,6 +76,13 @@ class optimizer(renamer, deadcode):
         # value unchanged
         if value['t'] == newtype:
             return value
+        if value not in ('CONST','()','FLD','IDENT','FNCALL','V++','V--',
+                         'VECTOR','ROTATION','LIST'):
+            value = {'nt':'()', 't':newtype, 'ch':[value]}
+            if 'SEF' in value['ch'][0]:
+                value['SEF'] = True
+            if 'X' in value['ch'][0]:
+                value['X'] = value['ch'][0]['X']
         ret = {'nt':'CAST', 't':newtype, 'ch':[value]}
         if 'SEF' in value:
             ret['SEF'] = True
