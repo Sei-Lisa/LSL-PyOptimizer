@@ -838,7 +838,7 @@ class optimizer(renamer, deadcode):
             else:
                 self.FoldTree(tree, idx)
 
-        if 'shrinknames' in options:
+        if self.shrinknames:
             self.ShrinkNames()
 
         self.RemoveDeadCode()
