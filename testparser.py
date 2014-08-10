@@ -302,12 +302,13 @@ class Test03_Optimizer(UnitTestCase):
                 'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat']
             )
         self.opt.optimize(p)
+        self.opt.optimize(p,['optimize','shrinknames'])
         self.opt.optimize(p, ())
         print self.outscript.output(p)
 
         p = self.parser.parse('''string s = llUnescapeURL("%09");default{timer(){float f=llSqrt(-1);
-            integer i;i++;i=i;-(-(0.0+i));!!(!~~(!(i)));[]+i+s+f;}}''',
-            ['extendedtypecast','extendedassignment',
+            integer i;i++;i=i;-(-(0.0+i));!!(!~~(!(i)));[]+i+s+f;llOwnerSay(s);}}''',
+            ['extendedtypecast', 'extendedassignment',
                 'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat']
             )
         self.opt.optimize(p, ['optimize','foldtabs'])
@@ -320,9 +321,7 @@ class Test03_Optimizer(UnitTestCase):
         if (1) state another;}
         default { timer() { state another; } }
         state another { timer() { state default; } touch(integer num_det) {} }
-        ''',
-            ['optimize', 'shrinknames']
-            )
+        ''')
         self.opt.optimize(p, ['optimize','shrinknames'])
         print self.outscript.output(p)
 
@@ -348,9 +347,7 @@ class Test03_Optimizer(UnitTestCase):
         if (1) state another;}
         default { timer() { state another; } state_exit() {} }
         state another { timer() { state default; } touch(integer num_det) {} }
-        ''',
-            ['optimize', 'shrinknames']
-            )
+        ''')
         self.opt.optimize(p, ['optimize','shrinknames'])
         print self.outscript.output(p)
 
@@ -377,37 +374,66 @@ class Test03_Optimizer(UnitTestCase):
         if (1) state another;}
         default { timer() { state another; } state_exit() {} }
         state another { timer() { state default; } touch(integer num_det) {} }
-        ''',
-            ['optimize', 'shrinknames']
-            )
+        ''')
         self.opt.optimize(p, ['optimize','shrinknames'])
 
         p = self.parser.parse(
         '''integer i1; integer i2;
         f(integer a, integer b, integer c, integer d, integer e){}
         default{timer(){}}
-        ''',
-            ['optimize', 'shrinknames']
-            )
+        ''')
         self.opt.optimize(p, ['optimize','shrinknames'])
+        out = self.outscript.output(p)
+        self.assertEqual(out, 'default\n{\n    timer()\n    {\n    }\n}\n')
+
+        p = self.parser.parse('integer j;integer f(){return 1;}'
+            'default{timer(){if (f()) jump x;jump x;@x;\n'
+            'if (j) jump x; else return;\n'
+            '}}',
+            ['extendedglobalexpr'])
+        self.opt.optimize(p)
         print self.outscript.output(p)
 
-        #
+        p = self.parser.parse(
+            'rotation v=<1,2,3,4>;rotation w=<v.z,0,0,0>;\n'
+            'integer f(integer x){return 1;}\n'
+            'float j=5;\n'
+            'default{touch(integer n){\n'
+            'v.x = 4; w.x;\n'
+            'vector u = llGetVel(); llOwnerSay((string)u.y);\n'
+            'vector v1=<llSetRegionPos(<1,1,1>),2,3>; float fq=v1.x;\n'
+            'rotation v2=<4,2,3,4>; v2.y;j;f(3);f(n);\n'
+            'while(1) do return; while(0);\n'
+            '}}',
+            ['extendedglobalexpr'])
+        self.opt.optimize(p,['optimize', 'shrinknames'])
+        print self.outscript.output(p)
+
+        p = self.parser.parse(
+            'integer i=2;\n'
+            'default{state_entry(){\n'
+            'integer j=i+1; integer i=4; llSleep(i+j);\n'
+            '}}',
+            ['extendedglobalexpr'])
+        self.opt.optimize(p, ['optimize', 'shrinknames'])
+        print self.outscript.output(p)
 
     def test_regression(self):
 
 
         p = self.parser.parse('''
-            integer a;
+            integer a; float f = 3;
             x() { if (1) { string s = "x"; s = s + (string)a; } }
-            default { timer() { x();a=3;llOwnerSay((string)a); } }
+            default { timer() { x();a=3;llOwnerSay((string)a); list L; L = [f];
+            } }
             ''', ['extendedassignment'])
         self.opt.optimize(p)
         out = self.outscript.output(p)
         self.assertEqual(out, 'integer a;\nx()\n{\n    {\n        '
             'string s = "x";\n        s = s + (string)a;\n    }\n}\n'
             'default\n{\n    timer()\n    {\n        x();\n        a = 3;\n'
-            '        llOwnerSay((string)a);\n    }\n}\n'
+            '        llOwnerSay((string)a);\n        [((float)(3))];\n'
+            '    }\n}\n'
             )
 
         p = self.parser.parse(
@@ -417,7 +443,8 @@ class Test03_Optimizer(UnitTestCase):
             integer i = 0;
             vector v = <f, 3, 4>;
 
-            default{timer(){f=4;k="";i=0;v=<0,0,0>;L=[];llOwnerSay((string)(L+f+i+v+k));}}
+            default{timer(){f=4;k="";i=0;v=<0,0,0>;L=[];
+            llOwnerSay((string)(L+f+i+v+k));}}
             ''', ['extendedassignment'])
         self.opt.optimize(p)
         out = self.outscript.output(p)
