@@ -1,30 +1,8 @@
 
 import lslfuncs
-from lslfuncs import Key, Vector, Quaternion
 from lslparse import warning
 
-from lslrenamer import renamer
-from lsldeadcode import deadcode
-
-class optimizer(renamer, deadcode):
-
-    # Default values per type when declaring variables
-    DefaultValues = {'integer': 0, 'float': 0.0, 'string': u'',
-        'key': lslfuncs.Key(u''), 'vector': lslfuncs.ZERO_VECTOR,
-        'rotation': lslfuncs.ZERO_ROTATION, 'list': []
-        }
-
-    # explicitly exclude assignments
-    binary_ops = frozenset(('+','-','*','/','%','<<','>>','<','<=','>','>=',
-        '==','!=','|','^','&','||','&&'))
-    assign_ops = frozenset(('=','+=','-=','*=','/=','%=','&=','|=','^=','<<=','>>='))
-
-    LSL2PythonType = {'integer':int, 'float':float, 'string':unicode, 'key':lslfuncs.Key,
-        'vector':lslfuncs.Vector, 'rotation':lslfuncs.Quaternion, 'list':list}
-
-    PythonType2LSL = {int: 'integer', float: 'float',
-        unicode: 'string', Key: 'key', Vector: 'vector',
-        Quaternion: 'rotation', list: 'list'}
+class foldconst(object):
 
     def FoldAndRemoveEmptyStmts(self, lst):
         """Utility function for elimination of useless expressions in FOR"""
@@ -77,27 +55,8 @@ class optimizer(renamer, deadcode):
             return # Nothing to do if it's already simplified.
         # TODO: Implement FoldCond
 
-    def Cast(self, value, newtype):
-        # Return a CAST node if the types are not equal, otherwise the
-        # value unchanged
-        if value['t'] == newtype:
-            return value
-        if value not in ('CONST','()','FLD','IDENT','FNCALL','V++','V--',
-                         'VECTOR','ROTATION','LIST'):
-            value = {'nt':'()', 't':newtype, 'ch':[value]}
-            if 'SEF' in value['ch'][0]:
-                value['SEF'] = True
-            if 'X' in value['ch'][0]:
-                value['X'] = value['ch'][0]['X']
-        ret = {'nt':'CAST', 't':newtype, 'ch':[value]}
-        if 'SEF' in value:
-            ret['SEF'] = True
-        if 'X' in value:
-            ret['X'] = value['X']
-        return ret
-
     def CopyNode(self, node):
-        # This is mainly for simple_expr so not a big deal.
+        # This is mainly for simple_expr so no need to go deeper than 1 level.
         ret = node.copy()
         if 'ch' in ret:
             new = []
@@ -818,20 +777,13 @@ class optimizer(renamer, deadcode):
             return False
         return all(elem['nt'] in ('CONST', 'IDENT') for elem in expr['ch'])
 
-    def optimize(self, treesymtab, options = ('optimize',)):
+    def FoldScript(self):
         """Optimize the symbolic table symtab in place. Requires a table of
         predefined functions for folding constants.
         """
-        if 'optimize' not in options:
-            return treesymtab
-
-        self.foldtabs = 'foldtabs' in options
-
-        self.shrinknames = 'shrinknames' in options
-
-        tree, symtab = self.tree, self.symtab = treesymtab
-
         self.globalmode = False
+
+        tree = self.tree
 
         # Constant folding pass. It does some other optimizations along the way.
         for idx in xrange(len(tree)):
@@ -843,13 +795,3 @@ class optimizer(renamer, deadcode):
                     warning('Expression does not resolve to a single constant.')
             else:
                 self.FoldTree(tree, idx)
-
-        if self.shrinknames:
-            self.ShrinkNames()
-
-        self.RemoveDeadCode()
-
-        treesymtab = (self.tree, self.symtab)
-        del self.tree
-        del self.symtab
-        return treesymtab

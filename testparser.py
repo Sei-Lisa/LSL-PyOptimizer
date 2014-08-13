@@ -382,7 +382,7 @@ class Test03_Optimizer(UnitTestCase):
         f(integer a, integer b, integer c, integer d, integer e){}
         default{timer(){}}
         ''')
-        self.opt.optimize(p, ['optimize','shrinknames'])
+        self.opt.optimize(p, ['optimize','shrinknames','dcr','constfold'])
         out = self.outscript.output(p)
         self.assertEqual(out, 'default\n{\n    timer()\n    {\n    }\n}\n')
 
