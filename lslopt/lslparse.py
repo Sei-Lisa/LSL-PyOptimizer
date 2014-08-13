@@ -121,12 +121,12 @@ class EInternal(Exception):
     pass
 
 class parser(object):
-    assignment_ops = frozenset(('=', '+=', '-=', '*=', '/=', '%='))
-    extassignment_ops = frozenset(('|=', '&=', '^=', '<<=', '>>='))
+    assignment_toks = frozenset(('=', '+=', '-=', '*=', '/=', '%='))
+    extassignment_toks = frozenset(('|=', '&=', '^=', '<<=', '>>='))
 
-    double_ops = frozenset(('++', '--', '+=', '-=', '*=', '/=', '%=', '==',
+    double_toks = frozenset(('++', '--', '+=', '-=', '*=', '/=', '%=', '==',
                                      '!=', '>=', '<=', '&&', '||', '<<', '>>'))
-    extdouble_ops = frozenset(('|=', '&=', '^='))
+    extdouble_toks = frozenset(('|=', '&=', '^='))
 
     # These are hardcoded because additions or modifications imply
     # important changes to the code anyway.
@@ -419,8 +419,8 @@ class parser(object):
 
                         return ('INTEGER_VALUE', number)
 
-                if self.script[self.pos-1:self.pos+1] in self.double_ops \
-                   or self.extendedassignment and self.script[self.pos-1:self.pos+1] in self.extdouble_ops:
+                if self.script[self.pos-1:self.pos+1] in self.double_toks \
+                   or self.extendedassignment and self.script[self.pos-1:self.pos+1] in self.extdouble_toks:
                     self.pos += 1
                     if self.extendedassignment and self.script[self.pos-2:self.pos+1] in ('<<=', '>>='):
                         self.pos += 1
@@ -676,8 +676,8 @@ class parser(object):
             if lvalue['t'] not in ('integer', 'float'):
                 raise EParseTypeMismatch(self)
             return {'nt':'V++' if tok0 == '++' else 'V--', 't':lvalue['t'], 'ch':[lvalue]}
-        if AllowAssignment and (tok0 in self.assignment_ops
-                                or self.extendedassignment and tok0 in self.extassignment_ops):
+        if AllowAssignment and (tok0 in self.assignment_toks
+                                or self.extendedassignment and tok0 in self.extassignment_toks):
             self.NextToken()
             expr = self.Parse_expression()
             rtyp = expr['t']
