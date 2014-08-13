@@ -432,7 +432,7 @@ class Test03_Optimizer(UnitTestCase):
         self.assertEqual(out, 'integer a;\nx()\n{\n    {\n        '
             'string s = "x";\n        s = s + (string)a;\n    }\n}\n'
             'default\n{\n    timer()\n    {\n        x();\n        a = 3;\n'
-            '        llOwnerSay((string)a);\n        [((float)(3))];\n'
+            '        llOwnerSay((string)a);\n'
             '    }\n}\n'
             )
 
