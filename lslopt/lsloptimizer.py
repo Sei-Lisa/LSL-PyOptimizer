@@ -1,5 +1,6 @@
 
 import lslfuncs
+from lslfuncs import Key, Vector, Quaternion
 from lslparse import warning
 
 from lslrenamer import renamer
@@ -17,8 +18,13 @@ class optimizer(renamer, deadcode):
     binary_ops = frozenset(('+','-','*','/','%','<<','>>','<','<=','>','>=',
         '==','!=','|','^','&','||','&&'))
     assign_ops = frozenset(('=','+=','-=','*=','/=','%=','&=','|=','^=','<<=','>>='))
+
     LSL2PythonType = {'integer':int, 'float':float, 'string':unicode, 'key':lslfuncs.Key,
         'vector':lslfuncs.Vector, 'rotation':lslfuncs.Quaternion, 'list':list}
+
+    PythonType2LSL = {int: 'integer', float: 'float',
+        unicode: 'string', Key: 'key', Vector: 'vector',
+        Quaternion: 'rotation', list: 'list'}
 
     def FoldAndRemoveEmptyStmts(self, lst):
         """Utility function for elimination of useless expressions in FOR"""

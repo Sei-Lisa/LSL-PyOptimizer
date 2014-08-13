@@ -1,6 +1,5 @@
 
 import lslfuncs
-from lslfuncs import Key, Vector, Quaternion
 
 class deadcode(object):
     # Functions that cause the rest of the current block to never be executed
@@ -13,11 +12,6 @@ class deadcode(object):
     # next isn't really dead code.
     # TODO: check if there are any more than this one.
     TerminatorFuncs = ('llResetScript',)
-
-    # TODO: Share with lsloptimizer.
-    PythonType2LSL = {int: 'integer', float: 'float',
-        unicode: 'string', Key: 'key', Vector: 'vector',
-        Quaternion: 'rotation', list: 'list'}
 
     def MarkReferences(self, node):
         """Marks each node it passes through as executed (X), and each variable
