@@ -245,12 +245,9 @@ class foldconst(object):
                 # Tough one. Remove neutral elements for the diverse types,
                 # and more.
                 if optype == 'list' and not (ltype == rtype == 'list'):
-                    # Nothing to do with list + nonlist or nonlist + list.
-                    # FIXME: Not true. (list)"string" is a 5 byte saving vs.
-                    # [] + "string". Activating explicitcast forces the
-                    # conversion [] + (list)"string"  ->  (list)"string" which
-                    # is what we want here, but it is a loss for other types.
-                    # Further analysis needed.
+                    if lnt == 'CONST' and not lval['value']:
+                        # [] + nonlist  ->  (list)nonlist
+                        parent[index] = self.Cast(rval, optype)
                     return
 
                 if optype in ('vector', 'rotation'):
@@ -264,16 +261,16 @@ class foldconst(object):
                     return
 
                 # Can't be key, as no combo of addition operands returns key
-                # All these types evaluate as boolean False when they are
+                # All these types evaluate to boolean False when they are
                 # the neutral addition element.
                 if optype in ('string', 'float', 'list'):
                     if lnt == 'CONST' and not lval['value']:
-                        # 0 + expr  ->  expr
+                        # 0. + expr  ->  expr
                         # "" + expr  ->  expr
                         # [] + expr  ->  expr
                         parent[index] = self.Cast(rval, optype)
                     elif rnt == 'CONST' and not rval['value']:
-                        # expr + 0  ->  expr
+                        # expr + 0.  ->  expr
                         # expr + ""  ->  expr
                         # expr + []  ->  expr
                         parent[index] = self.Cast(lval, optype)
