@@ -195,7 +195,8 @@ llListStatistics
 llLog
 llLog10
 llMD5String
-llModPow
+# 1 second delay so excluded
+#llModPow
 llOverMyLand
 llParseString2List
 llParseStringKeepNulls
