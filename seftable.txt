@@ -1,11 +1,13 @@
 # Side-effect-free table
-# This is a list of functions that can be optimized out if they appear
-# in side-effect-free expressions, e.g. alone as a statement.
+# This is a list of functions that can be optimized out if they appear in
+# side-effect-free expressions, e.g. alone as a statement, or assigned to
+# a never used variable.
 
-# Some of these functions actually consume "energy". That's considered
-# a misfeature that can be optimized out here.
+# Some of these functions actually have the side effect of consuming "energy".
+# That's considered a misfeature that can be optimized out here.
 llAbs
 llAcos
+llAgentInExperience
 llAngleBetween
 llAsin
 llAtan2
@@ -70,6 +72,9 @@ llGetDate
 llGetDisplayName
 llGetEnergy
 llGetEnv
+llGetExperienceDetails
+llGetExperienceErrorMessage
+llGetExperienceList
 llGetForce
 llGetFreeMemory
 llGetFreeURLs
@@ -96,7 +101,9 @@ llGetLocalPos
 llGetLocalRot
 llGetMass
 llGetMassMKS
+llGetMaxScaleFactor
 llGetMemoryLimit
+llGetMinScaleFactor
 llGetNumberOfPrims
 llGetNumberOfSides
 llGetObjectDesc
@@ -212,7 +219,6 @@ llStringToBase64
 llStringTrim
 llSubStringIndex
 llTakeCamera
-
 llTan
 llToLower
 llToUpper
