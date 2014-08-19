@@ -153,9 +153,10 @@ class foldconst(object):
                 # Child is an unary postfix expression (highest priority);
                 # parentheses are redundant and can be removed safely. Not
                 # strictly an optimization but it helps keeping the output
-                # tidy-ish a bit. It's not done in general (e.g. (a * b) + c
-                # does not need parentheses but these are not eliminated). Only
-                # cases like (3) or (myvar++) are simplified.
+                # tidy-ish a bit, and helps the optimizer do its work. It's not
+                # done in general (e.g. (a * b) + c does not need parentheses
+                # but these are not eliminated). Only cases like (3) or
+                # (myvar++) are simplified.
                 parent[index] = child[0]
             return
 
@@ -244,6 +245,14 @@ class foldconst(object):
             if nt == '+':
                 # Tough one. Remove neutral elements for the diverse types,
                 # and more.
+
+                # Remove redundant parentheses
+                if lnt == '()' and lval['ch'][0]['nt'] in ('+', '-', '*', '/', '%'):
+                    # (a op b) + c  ->  a op b + c
+                    # where op's priority is that of + or greater
+                    lval = child[0] = lval['ch'][0]
+                    lnt = '+'
+
                 if optype == 'list' and not (ltype == rtype == 'list'):
                     if lnt == 'CONST' and not lval['value']:
                         # [] + nonlist  ->  (list)nonlist
@@ -329,6 +338,19 @@ class foldconst(object):
 
                     return
 
+                if lnt == '+' and (lval['ch'][0]['nt'] == 'CONST'
+                                   or rval['ch'][0]['nt'] == 'CONST'):
+                    # We have var + const + const or const + var + const.
+                    # Addition of integers mod 2^32 is associative and
+                    # commutative, so constants can be merged.
+                    if lval['ch'][0]['nt'] == 'CONST':
+                        rval['value'] = lslfuncs.S32(rval['value'] + lval['ch'][0]['value'])
+                        lval = child[0] = lval['ch'][1]
+                    else:
+                        rval['value'] = lslfuncs.S32(rval['value'] + lval['ch'][1]['value'])
+                        lval = child[0] = lval['ch'][0]
+                    lnt = lval['nt']
+
                 if rnt == 'CONST':
                     # Swap the vars to deal with const in lval always
                     lval, lnt, rval, rnt = rval, rnt, lval, lnt
@@ -400,7 +422,7 @@ class foldconst(object):
 
                 return
 
-            elif nt == '<<' and child[1]['nt'] == 'CONST':
+            if nt == '<<' and child[1]['nt'] == 'CONST':
                 # Transforming << into multiply saves some bytes.
                 if child[1]['value'] & 31:
                     # x << 3  -->  x * 8
