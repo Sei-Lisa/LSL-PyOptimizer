@@ -798,6 +798,8 @@ class parser(object):
 
         if tok0 == '(':
             # Parenthesized expression or typecast
+            # TODO: Don't include parentheses in the tree, defer to the output
+            #       module to add them where necessary.
 
             self.NextToken()
             if self.tok[0] != 'TYPE':
@@ -1827,6 +1829,9 @@ class parser(object):
 
         # TODO: Enable brackets for list elements e.g. (float)mylist[3], or mylist[5]=4
         #self.lazylists = 'lazylists' in options
+
+        # TODO: Enable break/continue
+        #self.breakcont = 'breakcont' in options
 
         # Enable use of local labels with duplicate names
         self.duplabels = 'duplabels' in options
