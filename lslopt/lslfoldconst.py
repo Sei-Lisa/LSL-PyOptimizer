@@ -102,13 +102,31 @@ class foldconst(object):
             if child[0]['nt'] == 'NEG':
                 # Double negation: - - expr  -->  expr
                 # NOTE: Not 100% sure this doesn't need parentheses around expr.
-                parent[index] = child[0]['ch'][0]
+                node = parent[index] = child[0]['ch'][0]
+                child = node['ch'] if 'ch' in node else None
             elif child[0]['nt'] == 'CONST':
                 node = parent[index] = child[0]
                 node['value'] = lslfuncs.neg(node['value'])
+                child = None
             elif 'SEF' in child[0]:
                 # propagate Side Effect Free flag
                 node['SEF'] = True
+
+            if child and node['nt'] == 'NEG' and child[0]['nt'] == '~':
+                track = child[0]['ch'][0]
+                const = 1
+                while track['nt'] == 'NEG' and track['ch'][0]['nt'] == '~':
+                    const += 1
+                    track = track['ch'][0]['ch'][0]
+                if const > 2:
+                    # -~-~-~expr  ->  expr+3
+                    SEF = 'SEF' in track
+                    node = {'nt':'CONST', 't':'integer', 'SEF':True, 'value':const}
+                    node = {'nt':'+', 't':'integer', 'ch':[node, track]}
+                    parent[index] = node = {'nt':'()', 't':'integer', 'ch':[node]}
+                    if SEF:
+                        node['SEF'] = node['ch'][0]['SEF'] = True
+
             return
 
         if nt == '!':
@@ -339,8 +357,8 @@ class foldconst(object):
                     return
 
                 if lnt == '+' and (lval['ch'][0]['nt'] == 'CONST'
-                                   or rval['ch'][0]['nt'] == 'CONST'):
-                    # We have var + const + const or const + var + const.
+                                   or lval['ch'][1]['nt'] == 'CONST'):
+                    # We have expr + const + const or const + expr + const.
                     # Addition of integers mod 2^32 is associative and
                     # commutative, so constants can be merged.
                     if lval['ch'][0]['nt'] == 'CONST':
@@ -350,6 +368,14 @@ class foldconst(object):
                         rval['value'] = lslfuncs.S32(rval['value'] + lval['ch'][1]['value'])
                         lval = child[0] = lval['ch'][0]
                     lnt = lval['nt']
+
+                if rnt == '+' and rval['ch'][0]['nt'] == '()' and rval['ch'][0]['ch'][0]['nt'] == '+' \
+                              and (rval['ch'][0]['ch'][0]['nt'] == 'CONST'
+                                   or rval['ch'][0]['ch'][1]['nt'] == 'CONST'):
+                    # const + (expr + const) or const + (const + expr)
+                    # same as above, join them
+
+                    pass # TODO: implement
 
                 if rnt == 'CONST':
                     # Swap the vars to deal with const in lval always
