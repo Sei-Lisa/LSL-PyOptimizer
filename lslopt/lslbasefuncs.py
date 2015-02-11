@@ -688,10 +688,10 @@ def isrotation(x):
     return type(x) == Quaternion and len(x) == 4 and type(x[0]) == type(x[1]) == type(x[2]) == type(x[3]) == float
 
 def isstring(x):
-    return type(x) in (unicode, Key)
+    return type(x) == unicode
 
 def iskey(x):
-    return type(x) in (Key, unicode)
+    return type(x) == Key
 
 def islist(x):
     return type(x) == list
@@ -777,7 +777,7 @@ def llAxes2Rot(fwd, left, up):
 def llAxisAngle2Rot(axis, angle):
     assert isvector(axis)
     assert isfloat(angle)
-    axis = llVecNorm(axis, False)
+    axis = llVecNorm(axis, f32=False)
     if axis == ZERO_VECTOR:
         angle = 0.
     c = math.cos(ff(angle)*0.5)
