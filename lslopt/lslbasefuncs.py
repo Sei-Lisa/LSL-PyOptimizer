@@ -1662,9 +1662,6 @@ def llXorBase64Strings(s, xor):
             ret += B64[val1 ^ val2]
     return ret
 
-# NOTE: llXorBase64StringsCorrect returns garbage bytes if the input xor string
-# starts with zero or one valid Base64 characters. We don't emulate that here;
-# our output is deterministic.
 def llXorBase64StringsCorrect(s, xor):
     assert isstring(s)
     assert isstring(xor)
