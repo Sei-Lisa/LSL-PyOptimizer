@@ -1754,8 +1754,9 @@ class parser(object):
                     # No location info but none is necessary for forward
                     # declarations.
                     ret[name] = {'Kind':'v','Type':typ,'Scope':0}
-
                     while self.tok[0] != ';': # Don't stop to analyze what's before the ending ';'
+                        if self.tok[0] == 'EOF':
+                            return ret
                         self.NextToken()
                     self.NextToken()
         except EParseUEOF:

@@ -54,11 +54,14 @@ class ELSLTypeMismatch(Exception):
 
 class ELSLMathError(Exception):
     def __init__(self):
-        super(self.ELSLMathError, self).__init__("Math Error")
+        super(ELSLMathError, self).__init__("Math Error")
 
 class ELSLInvalidType(Exception):
     def __init__(self):
-        super(self.ELSLInvalidType, self).__init__("Internal error: Invalid type")
+        super(ELSLInvalidType, self).__init__("Internal error: Invalid type")
+
+class ELSLCantCompute(Exception):
+    pass
 
 # LSL types are translated to Python types as follows:
 # * LSL string -> Python unicode
@@ -604,12 +607,14 @@ def div(a, b, f32=True):
             return Vector(F32((a[0]/b, a[1]/b, a[2]/b), f32))
     if tb == Quaternion: # division by a rotation is multiplication by the conjugate of the rotation
         # defer the remaining type checks to mul()
-        return mul(a, (-b[0],-b[1],-b[2],b[3]), f32)
+        return mul(a, Quaternion((-b[0],-b[1],-b[2],b[3])), f32)
     raise ELSLTypeMismatch
 
 def mod(a, b, f32=True):
     # defined only for integers and vectors
     if type(a) == type(b) == int:
+        if b == 0:
+            raise ELSLMathError
         if a < 0:
             return int(-((-a) % abs(b)))
         return int(a % abs(b))
@@ -634,7 +639,7 @@ def compare(a, b, Eq = True):
         else:
             ret = a == b
         return int(ret) if Eq else 1-ret
-    if ta in (unicode, Key) and tb in (unicode, key):
+    if ta in (unicode, Key) and tb in (unicode, Key):
         ret = 0 if a == b else 1 if a > b or not lslcommon.LSO else -1
         return int(not ret) if Eq else ret
     if ta == tb in (Vector, Quaternion):
@@ -779,15 +784,19 @@ def llAxisAngle2Rot(axis, angle):
     s = math.sin(ff(angle)*0.5)
     return Quaternion(F32((axis[0]*s, axis[1]*s, axis[2]*s, c)))
 
-# NOTE: This one does not always return the same value in LSL, but no one should depend
-# on the garbage bytes returned. We implement it deterministically.
+# NOTE: This one does not always return the same value in LSL. When it isn't
+# deterministic, it raises ELSLCantCompute.
 def llBase64ToInteger(s):
     assert isstring(s)
     if len(s) > 8:
         return 0
     s = b64_re.match(s).group()
     i = len(s)
-    s = (b64decode(s + u'='*(-i & 3)) + b'\0\0\0\0')[:4] # actually the last 3 bytes should be garbage
+    s = b64decode(s + u'='*(-i & 3))
+    if len(s) < 3:
+        # not computable deterministically
+        raise ELSLCantCompute
+    s = (s + b'\0')[:4]
     i = ord(s[0]) if s[0] < b'\x80' else ord(s[0])-256
     return (i<<24)+(ord(s[1])<<16)+(ord(s[2])<<8)+ord(s[3])
 
@@ -1040,7 +1049,7 @@ def llList2Vector(lst, pos):
             # The list should not contain integer vector components, but
             # we don't control that here. Instead we return the integer-less
             # vector when asked.
-            return v2q(elem)
+            return v2f(elem)
     except IndexError:
         pass
     return ZERO_VECTOR
@@ -1341,7 +1350,7 @@ def llRot2Angle(r):
 def llRot2Axis(r):
     assert isrotation(r)
     r = q2f(r)
-    return llVecNorm((r[0], r[1], r[2]))
+    return llVecNorm(Vector((r[0], r[1], r[2])))
 
 def llRot2Euler(r):
     assert isrotation(r)
@@ -1553,7 +1562,11 @@ def llVecDist(v1, v2):
     assert isvector(v2)
     v1 = v2f(v1)
     v2 = v2f(v2)
-    return llVecMag((v1[0]-v2[0],v1[1]-v2[1],v1[2]-v2[2]))
+    # For improved accuracy, do the intermediate calcs as doubles
+    vx = v1[0]-v2[0]
+    vy = v1[1]-v2[1]
+    vz = v1[2]-v2[2]
+    return F32(math.sqrt(math.fsum((vx*vx, vy*vy, vz*vz))))
 
 def llVecMag(v):
     assert isvector(v)
@@ -1568,9 +1581,6 @@ def llVecNorm(v, f32 = True):
     f = math.sqrt(math.fsum((v[0]*v[0], v[1]*v[1], v[2]*v[2])))
     return F32(Vector((v[0]/f,v[1]/f,v[2]/f)), f32)
 
-# NOTE: llXorBase64 returns garbage bytes if the input xor string
-# starts with zero or one valid Base64 characters. We don't emulate that here;
-# our output is deterministic.
 def llXorBase64(s, xor):
     assert isstring(s)
     assert isstring(xor)
@@ -1586,9 +1596,10 @@ def llXorBase64(s, xor):
     L2 = len(xor)
 
     if L2 == 0:
-        # This is not accurate. This returns garbage (of undefined length) in LSL.
-        # The first returned byte seems to be zero always though.
-        xor = u'ABCD';
+        # The input xor string starts with zero or one valid Base64 characters.
+        # This produces garbage bytes (the first byte is zero though).
+        # We don't produce a result in this case.
+        raise ELSLCantCompute
 
     s = b64decode(s + u'='*(-L1 & 3))
     xor = b64decode(xor + u'='*(-L2 & 3))
@@ -1670,9 +1681,10 @@ def llXorBase64StringsCorrect(s, xor):
     L2 = len(xor)
 
     if L2 == 0:
-        # This is not accurate. This returns garbage (of length 4?) in LSL.
-        # The first returned byte seems to be zero always though.
-        xor = u'ABCD'
+        # The input xor string starts with zero or one valid Base64 characters.
+        # This produces garbage bytes (the first byte is zero though).
+        # We don't produce a result in this case.
+        raise ELSLCantCompute
 
     s = b64decode(s + u'='*(-L1 & 3))
     xor = b64decode(xor + u'='*(-L2 & 3)) + b'\x00'

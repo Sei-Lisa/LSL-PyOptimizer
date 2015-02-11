@@ -195,9 +195,15 @@ class foldconst(object):
                 elif nt == '*':
                     result = lslfuncs.mul(op1, op2)
                 elif nt == '/':
-                    result = lslfuncs.div(op1, op2)
+                    try:
+                        result = lslfuncs.div(op1, op2)
+                    except lslfuncs.ELSLMathError:
+                        return
                 elif nt == '%':
-                    result = lslfuncs.mod(op1, op2)
+                    try:
+                        result = lslfuncs.mod(op1, op2)
+                    except lslfuncs.ELSLMathError:
+                        return
                 elif nt == '<<':
                     result = lslfuncs.S32(op1 << (op2 & 31))
                 elif nt == '>>':
@@ -559,11 +565,19 @@ class foldconst(object):
                 if CONSTargs:
                     # Call it
                     fn = self.symtab[0][node['name']]['Fn']
-                    value = fn(*tuple(arg['value'] for arg in child))
-                    if not self.foldtabs and isinstance(value, unicode) and '\t' in value:
-                        warning('Tab in function result and foldtabs option not used.')
-                        return
-                    parent[index] = {'nt':'CONST', 't':node['t'], 'value':value}
+                    try:
+                        if node['name'][:10] == 'llDetected':
+                            value = fn(*tuple(arg['value'] for arg in child),
+                                       event=self.CurEvent)
+                        else:
+                            value = fn(*tuple(arg['value'] for arg in child))
+                        if not self.foldtabs and isinstance(value, unicode) and '\t' in value:
+                            warning('Tab in function result and foldtabs option not used.')
+                            return
+                        parent[index] = {'nt':'CONST', 't':node['t'], 'value':value}
+                    except lslfuncs.ELSLCantCompute:
+                        # Don't transform the tree if function is not computable
+                        pass
                 elif node['name'] == 'llGetListLength' and child[0]['nt'] == 'IDENT':
                     # Convert llGetListLength(ident) to (ident != [])
                     node = {'nt':'CONST', 't':'list', 'value':[]}
@@ -588,6 +602,13 @@ class foldconst(object):
             return
 
         if nt == 'FNDEF':
+            # used when folding llDetected* function calls
+            if 'scope' in node:
+                # function definition
+                self.CurEvent = None
+            else:
+                # event definition
+                self.CurEvent = node['name']
             self.FoldTree(child, 0)
             if 'SEF' in child[0]:
                 node['SEF'] = True
@@ -829,6 +850,7 @@ class foldconst(object):
         self.globalmode = False
 
         tree = self.tree
+        self.CurEvent = None
 
         # Constant folding pass. It does some other optimizations along the way.
         for idx in xrange(len(tree)):

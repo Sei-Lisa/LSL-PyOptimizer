@@ -37,6 +37,7 @@ Options (+ means active by default, - means inactive by default):
   optimize           + Runs the optimizer.
   optsigns           + Optimize signs in float and integer constants.
   optfloats          + Optimize a float when it is an integral value.
+  constfold          + Fold constant expressions to their values.
   foldtabs           - Tabs can't be copy-pasted, so they aren't optimized by
                        default. But with support from the viewer, they can be
                        folded too and make it to the uploaded source. This
@@ -62,7 +63,7 @@ means that e.g. a + 3 + 5 is not optimized to a + 8; however a + (3 + 5) is.
 
     options = set(('extendedglobalexpr','extendedtypecast','extendedassignment',
         'allowkeyconcat','allowmultistrings','skippreproc','optimize',
-        'optsigns','optfloats'
+        'optsigns','optfloats','constfold'
         ))
 
     if sys.argv[1] == '-O':
