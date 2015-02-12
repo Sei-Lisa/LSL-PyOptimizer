@@ -185,9 +185,18 @@ class foldconst(object):
             if 'SEF' in child[0] and 'SEF' in child[1]:
                 # Propagate SEF flag if both sides are side-effect free.
                 node['SEF'] = True
-            if child[0]['nt'] == child[1]['nt'] == 'CONST':
-                op1 = child[0]['value']
-                op2 = child[1]['value']
+
+            optype = node['t']
+            lval = child[0]
+            ltype = lval['t']
+            lnt = lval['nt']
+            rval = child[1]
+            rtype = rval['t']
+            rnt = rval['nt']
+
+            if lnt == rnt == 'CONST':
+                op1 = lval['value']
+                op2 = rval['value']
                 if nt == '+':
                     result = lslfuncs.add(op1, op2)
                 elif nt == '-':
@@ -233,13 +242,6 @@ class foldconst(object):
                 return
 
             # Simplifications for particular operands
-            optype = node['t']
-            lval = child[0]
-            ltype = lval['t']
-            lnt = lval['nt']
-            rval = child[1]
-            rtype = rval['t']
-            rnt = rval['nt']
             if nt == '-':
                 if optype in ('vector', 'rotation'):
                     if lnt == 'CONST' and all(component == 0 for component in lval['value']):
@@ -271,11 +273,31 @@ class foldconst(object):
                 # and more.
 
                 # Remove redundant parentheses
-                if lnt == '()' and lval['ch'][0]['nt'] in ('+', '-', '*', '/', '%'):
+                if lnt == '()' and lval['ch'][0]['nt'] in ('+', '-', '*', '/', '%', '~', '!', 'NEG', 'CAST', 'V++', 'V--', '++V', '--V'):
                     # (a op b) + c  ->  a op b + c
+                    # (op b) + c  ->  op b + c
                     # where op's priority is that of + or greater
                     lval = child[0] = lval['ch'][0]
                     lnt = '+'
+
+                # Addition of integers, strings, and lists is distributive
+                # Addition of floats, vectors and rotations would be, except
+                # for FP precision.
+                # TODO: distributive addition of lists
+                # Distributive lists are trickier, because unlike the others,
+                # the types of the operands may not be lists.
+                if optype in ('integer', 'string'):
+                    if lnt == '+' and rnt == 'CONST' and lval['ch'][1]['nt'] == 'CONST':
+                        # (var + ct1) + ct2  ->  var + (ct1 + ct2)
+                        child[1] = {'nt': '+', 't': optype, 'ch':[lval['ch'][1], rval], 'SEF':True}
+                        lval = child[0] = lval['ch'][0]
+                        lnt = lval['nt']
+                        ltype = lval['t']
+                        rtype = optype
+                        # Fold the RHS again now that we have it constant
+                        self.FoldTree(child, 1)
+                        rval = child[1]
+                        rnt = rval['nt']
 
                 if optype == 'list' and not (ltype == rtype == 'list'):
                     if lnt == 'CONST' and not lval['value']:
