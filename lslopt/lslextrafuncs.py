@@ -1,7 +1,7 @@
 from lslcommon import *
-from lslbasefuncs import ELSLCantCompute, isinteger, \
+from lslbasefuncs import ELSLCantCompute, isinteger, iskey, islist, \
   isvector, NULL_KEY, ZERO_VECTOR, ZERO_ROTATION
-#isfloat, isstring, iskey, isrotation, islist
+#isfloat, isstring, isrotation
 
 TouchEvents = ('touch', 'touch_start', 'touch_end')
 DetectionEvents = ('touch', 'touch_start', 'touch_end',
@@ -107,4 +107,78 @@ def llDetectedType(idx, event=None):
     if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
         raise ELSLCantCompute
     return 0
+
+def llDetectedVel(idx, event=None):
+    assert isinteger(idx)
+    if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
+        raise ELSLCantCompute
+    return ZERO_VECTOR
+
+def llEdgeOfWorld(v1, v2):
+    assert isvector(v1)
+    assert isvector(v2)
+    if v2.x == v2.y == 0:
+        return 1
+    raise ELSLCantCompute
+
+def llGetAgentInfo(id):
+    assert iskey(id)
+    if not cond(id):
+        return 0
+    raise ELSLCantCompute
+
+def llGetAgentLanguage(id):
+    assert iskey(id)
+    if not cond(id):
+        return u''
+    raise ELSLCantCompute
+
+def llGetListEntryType(scope, options):
+    assert isinteger(scope)
+    assert islist(options)
+    if scope == 0:
+        return [u'INVALID_SCOPE']
+    raise ELSLCantCompute
+
+def llGetAgentSize(id):
+    assert iskey(id)
+    if not cond(id):
+        return ZERO_VECTOR
+    raise ELSLCantCompute
+
+def llGetAlpha(face):
+    assert isinteger(face)
+    if face > 8:
+        return 1.0
+    raise ELSLCantCompute
+
+def llGetAnimation(id):
+    assert iskey(id)
+    if not cond(id):
+        return u''
+    raise ELSLCantCompute
+
+def llGetAnimationList(id):
+    assert iskey(id)
+    if not cond(id):
+        return []
+    raise ELSLCantCompute
+
+def llGetBoundingBox(id):
+    assert iskey(id)
+    if not cond(id):
+        return []
+    raise ELSLCantCompute
+
+def llGetColor(id):
+    assert isinteger(face)
+    if face > 8:
+        return ZERO_VECTOR
+    raise ELSLCantCompute
+
+def llGetDisplayName(id):
+    assert iskey(id)
+    if not cond(id):
+        return u''
+    raise ELSLCantCompute
 
