@@ -1451,7 +1451,7 @@ class parser(object):
         if tok[0] not in ('INTEGER_VALUE', 'FLOAT_VALUE'):
             raise EParseSyntax(self)
         value = tok[1]
-        if neg and (tok[0] != 'INTEGER_VALUE' or value == -2147483648):
+        if neg and (tok[0] != 'INTEGER_VALUE' or value != -2147483648):
             value = -value
         return {'nt':'CONST', 't':'float' if tok[0] == 'FLOAT_VALUE' else 'integer', 'value':value}
 
