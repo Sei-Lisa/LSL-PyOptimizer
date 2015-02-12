@@ -318,7 +318,9 @@ class deadcode(object):
             # Replacing j with i+1 in llOwnerSay will produce wrong code because
             # the name i is redefined after j is assigned. shrinknames prevents
             # that.
-            if not self.shrinknames or 'SEF' not in node:
+            # FIXME: EMERGENCY FIX: shrinknames is not enough guarantee. See nposerlv.lsl.
+            #if not self.shrinknames or 'SEF' not in node:
+            if True or 'SEF' not in node:
                 return False
 
             if nt not in ('VECTOR', 'ROTATION'):
