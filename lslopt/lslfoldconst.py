@@ -278,7 +278,7 @@ class foldconst(object):
                     # (op b) + c  ->  op b + c
                     # where op's priority is that of + or greater
                     lval = child[0] = lval['ch'][0]
-                    lnt = '+'
+                    lnt = lval['nt']
 
                 # Addition of integers, strings, and lists is distributive
                 # Addition of floats, vectors and rotations would be, except
