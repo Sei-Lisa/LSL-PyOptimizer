@@ -10,6 +10,11 @@ class outscript(object):
         ))
     extended_assignments = frozenset(('&=', '|=', '^=', '<<=', '>>='))
     unary_operands = frozenset(('NEG', '!', '~'))
+    op_priority = {'=':0, '+=':0, '-=':0, '*=':0, '/=':0, '%=':0, '&=':0,
+        '|=':0, '^=':0, '<<=':0, '>>=':0,
+        '||':1, '&&':1, '|':2, '^':3, '&':4, '==':5, '!=':5,
+        '<':6, '<=':6, '>':6, '>=':6, '<<':7, '>>':7, '+':8, '-':8,# 'NEG':8,
+        '*':9, '/':9, '%':9}#, '!':10, '~':10, '++':10, '--':10, }
 
     def Value2LSL(self, value):
         tvalue = type(value)
@@ -174,11 +179,33 @@ class outscript(object):
         if 'ch' in expr:
             child = expr['ch']
 
-        if nt == '()':
-            return '(' + self.OutExpr(child[0]) + ')'
-
         if nt in self.binary_operands:
-            return self.OutExpr(child[0]) + ' ' + nt + ' ' + self.OutExpr(child[1])
+            lnt = child[0]['nt']
+            lparen = False
+            rnt = child[1]['nt']
+            rparen = False
+            if nt in self.op_priority:
+                base_pri = self.op_priority[nt]
+                if lnt in self.op_priority:
+                    if self.op_priority[lnt] < base_pri:
+                        lparen = True
+                elif lnt == 'NEG' and base_pri > self.op_priority['-']:
+                    lparen = True
+
+                if rnt in self.op_priority:
+                    if self.op_priority[rnt] <= base_pri:
+                        rparen = True
+
+            if lparen:
+                ret = '(' + self.OutExpr(child[0]) + ')'
+            else:
+                ret = self.OutExpr(child[0])
+            ret += ' ' + nt + ' '
+            if rparen:
+                ret += '(' + self.OutExpr(child[1]) + ')'
+            else:
+                ret += self.OutExpr(child[1])
+            return ret
 
         if nt == 'IDENT':
             return self.FindName(expr)
@@ -190,7 +217,7 @@ class outscript(object):
             ret =  '(' + expr['t'] + ')'
             expr = child[0]
             if expr['nt'] in ('CONST', 'IDENT', 'V++', 'V--', 'VECTOR',
-               'ROTATION', 'LIST', 'FIELD', 'PRINT', 'FUNCTION', '()'):
+               'ROTATION', 'LIST', 'FIELD', 'PRINT', 'FUNCTION'):
                 return ret + self.OutExpr(expr)
             return ret + '(' + self.OutExpr(expr) + ')'
 
@@ -201,7 +228,17 @@ class outscript(object):
             return ret
 
         if nt in ('VECTOR', 'ROTATION'):
-            return '<' + self.OutExprList(child) + '>'
+            ret = ('<' + self.OutExpr(child[0]) + ','
+                   + self.OutExpr(child[1]) + ',')
+            if nt == 'ROTATION':
+                ret += self.OutExpr(child[2]) + ','
+            lnt = child[-1]['nt']
+            if lnt in self.op_priority \
+               and self.op_priority[lnt] <= self.op_priority['>']:
+                ret += '(' + self.OutExpr(child[-1]) + ')'
+            else:
+                ret += self.OutExpr(child[-1])
+            return ret + '>'
 
         if nt == 'FNCALL':
             return self.FindName(expr) + '(' + self.OutExprList(child) + ')'
@@ -210,9 +247,22 @@ class outscript(object):
             return 'print(' + self.OutExpr(child[0]) + ')'
 
         if nt in self.unary_operands:
+            ret = nt
+            lnt = child[0]['nt']
+            paren = False
             if nt == 'NEG':
-                nt = '- '
-            return nt + self.OutExpr(child[0])
+                ret = '- '
+                if lnt in self.op_priority:
+                    paren = self.op_priority[lnt] <= self.op_priority['-']
+            else:
+                if lnt in self.op_priority:
+                    paren = True
+
+            if paren:
+                ret += '(' + self.OutExpr(child[0]) + ')'
+            else:
+                ret += self.OutExpr(child[0])
+            return ret
 
         if nt == 'FLD':
             return self.OutExpr(child[0]) + '.' + expr['fld']

@@ -384,12 +384,8 @@ class deadcode(object):
                     else: # assumed VECTOR or ROTATION per SymbolReplacedOrDeleted
                         SEF = 'SEF' in value
                         value = self.Cast(value['ch'][fieldidx], 'float')
-                    # Replace it, in parentheses
-                    if value['nt'] not in ('CONST','()','FLD','IDENT','FNCALL'):
-                        node = curnode['ch'][index] = \
-                            {'nt':'()', 'X':True, 't':value['t'], 'ch':[value]}
-                    else:
-                        node = curnode['ch'][index] = value
+                    # Replace it
+                    node = curnode['ch'][index] = value
                     if SEF:
                         node['SEF'] = True
 
@@ -400,18 +396,11 @@ class deadcode(object):
                     new = sym['W']
                     new['X'] = True
 
-                    if new['nt'] not in ('CONST','()','FLD','IDENT','FNCALL'):
-                        new = {'nt':'()', 'X':True, 't':sym['W']['t'],
-                               'ch':[new]}
                     SEF = 'SEF' in sym['W']
                     if SEF:
                         new['SEF'] = True
                     if new['t'] != node['t']:
                         new = self.Cast(new, node['t'])
-                        if new['nt'] not in ('CONST','()','FLD','IDENT','FNCALL'):
-                            new = {'nt':'()', 'X':True, 't':node['t'], 'ch':[new]}
-                        if SEF:
-                            new['SEF'] = True
                     curnode['ch'][index] = node = new
                     # Delete orig if present, as we've eliminated the original
                     #if 'orig' in sym['W']:

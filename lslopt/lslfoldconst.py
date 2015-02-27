@@ -96,9 +96,6 @@ class foldconst(object):
 
         if nt == 'NEG':
             self.FoldTree(child, 0)
-            while child[0]['nt'] == '()' and child[0]['ch'][0]['nt'] == 'NEG':
-                # Remove parentheses: - ( - expr )  -->  - - expr
-                child[0] = child[0]['ch'][0]
             if child[0]['nt'] == 'NEG':
                 # Double negation: - - expr  -->  expr
                 # NOTE: Not 100% sure this doesn't need parentheses around expr.
@@ -120,12 +117,11 @@ class foldconst(object):
                     track = track['ch'][0]['ch'][0]
                 if const > 2:
                     # -~-~-~expr  ->  expr+3
-                    SEF = 'SEF' in track
                     node = {'nt':'CONST', 't':'integer', 'SEF':True, 'value':const}
                     node = {'nt':'+', 't':'integer', 'ch':[node, track]}
-                    parent[index] = node = {'nt':'()', 't':'integer', 'ch':[node]}
-                    if SEF:
-                        node['SEF'] = node['ch'][0]['SEF'] = True
+                    if 'SEF' in track:
+                        node['SEF'] = True
+                    parent[index] = node
 
             return
 
@@ -136,8 +132,6 @@ class foldconst(object):
             subexpr = child[0]
             if 'SEF' in subexpr:
                 node['SEF'] = True
-            while subexpr['nt'] == '()' and subexpr['ch'][0]['nt'] in ('()', '~', '!', '++V', '--V'):
-                subexpr = child[0] = subexpr['ch'][0] # Remove parentheses
             if subexpr['nt'] == '!' and subexpr['ch'][0]['nt'] == '!':
                 # Simplify !!! to !
                 subexpr = child[0] = subexpr['ch'][0]['ch'][0]
@@ -151,31 +145,12 @@ class foldconst(object):
             subexpr = child[0]
             if 'SEF' in subexpr:
                 node['SEF'] = True
-            while subexpr['nt'] == '()' and subexpr['ch'][0]['nt'] in ('()',
-                '~', '!', '++V', '--V'):
-                subexpr = child[0] = subexpr['ch'][0] # Remove parentheses
             if subexpr['nt'] == '~':
                 # Double negation: ~~expr
                 parent[index] = subexpr['ch'][0]
             elif subexpr['nt'] == 'CONST':
                 node = parent[index] = child[0]
                 node['value'] = ~node['value']
-            return
-
-        if nt == '()':
-            self.FoldTree(child, 0)
-            if 'SEF' in child[0]:
-                node['SEF'] = True
-            if child[0]['nt'] in ('()', 'CONST', 'VECTOR', 'ROTATION', 'LIST',
-               'IDENT', 'FIELD', 'V++', 'V--', 'FUNCTION', 'PRINT'):
-                # Child is an unary postfix expression (highest priority);
-                # parentheses are redundant and can be removed safely. Not
-                # strictly an optimization but it helps keeping the output
-                # tidy-ish a bit, and helps the optimizer do its work. It's not
-                # done in general (e.g. (a * b) + c does not need parentheses
-                # but these are not eliminated). Only cases like (3) or
-                # (myvar++) are simplified.
-                parent[index] = child[0]
             return
 
         if nt in self.binary_ops:
@@ -272,14 +247,6 @@ class foldconst(object):
                 # Tough one. Remove neutral elements for the diverse types,
                 # and more.
 
-                # Remove redundant parentheses
-                if lnt == '()' and lval['ch'][0]['nt'] in ('+', '-', '*', '/', '%', '~', '!', 'NEG', 'CAST', 'V++', 'V--', '++V', '--V'):
-                    # (a op b) + c  ->  a op b + c
-                    # (op b) + c  ->  op b + c
-                    # where op's priority is that of + or greater
-                    lval = child[0] = lval['ch'][0]
-                    lnt = lval['nt']
-
                 # Addition of integers, strings, and lists is associative
                 # Addition of floats, vectors and rotations would be, except
                 # for FP precision.
@@ -343,15 +310,6 @@ class foldconst(object):
                     parent[index] = lval
                     return
 
-                # Remove parentheses if they enclose a NEG, to unhide their
-                # operators. Precedence rules allow us.
-                if lnt == '()' and lval['ch'][0]['nt'] == 'NEG':
-                    # (-expr) + expr  ->  -expr + expr
-                    lval = child[0] = lval['ch'][0]
-                if rnt == '()' and rval['ch'][0]['nt'] == 'NEG':
-                    # expr + (-expr)  ->  expr + -expr
-                    rval = child[1] = rval['ch'][0]
-
                 if lnt != 'CONST' != rnt:
                     # Neither is const. Two chances to optimize.
                     # 1. -expr + -expr  ->  -(expr + expr) (saves 1 byte)
@@ -364,9 +322,6 @@ class foldconst(object):
                     if lnt == rnt == 'NEG':
                         node = {'nt':'+', 't':optype, 'ch':[lval['ch'][0], rval['ch'][0]]}
                         SEF = 'SEF' in lval['ch'][0] and 'SEF' in rval['ch'][0]
-                        if SEF:
-                            node['SEF'] = True
-                        node = {'nt':'()', 't':optype, 'ch':[node]}
                         if SEF:
                             node['SEF'] = True
                         node = {'nt':'NEG', 't':optype, 'ch':[node]}
@@ -398,9 +353,8 @@ class foldconst(object):
                         lval = child[0] = lval['ch'][0]
                     lnt = lval['nt']
 
-                if rnt == '+' and rval['ch'][0]['nt'] == '()' and rval['ch'][0]['ch'][0]['nt'] == '+' \
-                              and (rval['ch'][0]['ch'][0]['nt'] == 'CONST'
-                                   or rval['ch'][0]['ch'][1]['nt'] == 'CONST'):
+                if rnt == '+' and (rval['ch'][0]['nt'] == 'CONST'
+                                   or rval['ch'][1]['nt'] == 'CONST'):
                     # const + (expr + const) or const + (const + expr)
                     # same as above, join them
 
@@ -416,17 +370,10 @@ class foldconst(object):
                 # output rather than introducing the parens in the tree.
                 if lval['value'] == -1 or lval['value'] == -2:
                     if rnt == 'NEG': # Cancel the NEG
-                        node = {'nt':'()', 't':optype, 'ch':rval['ch']}
-                        if RSEF:
-                            node['SEF'] = True
-                        node = {'nt':'~', 't':optype, 'ch':[node]}
+                        node = {'nt':'~', 't':optype, 'ch':rval['ch']}
                         if RSEF:
                             node['SEF'] = True
                     else: # Add the NEG
-                        #node = {'nt':'()', 't':optype, 'ch':[rval]}
-                        #if RSEF:
-                        #    node['SEF'] = True
-                        #node = {'nt':'NEG', 't':optype, 'ch':[node]}
                         node = {'nt':'NEG', 't':optype, 'ch':[rval]}
                         if RSEF:
                             node['SEF'] = True
@@ -445,18 +392,11 @@ class foldconst(object):
 
                 if lval['value'] == 1 or lval['value'] == 2:
                     if rnt == '~': # Cancel the ~
-                        #node = {'nt':'()', 't':optype, 'ch':rval['ch']}
-                        #if RSEF:
-                        #    node['SEF'] = True
-                        #node = {'nt':'NEG', 't':optype, 'ch':[node]}
                         node = {'nt':'NEG', 't':optype, 'ch':rval['ch']}
                         if RSEF:
                             node['SEF'] = True
                     else:
-                        node = {'nt':'()', 't':optype, 'ch':[rval]}
-                        if RSEF:
-                            node['SEF'] = True
-                        node = {'nt':'~', 't':optype, 'ch':[node]}
+                        node = {'nt':'~', 't':optype, 'ch':[rval]}
                         if RSEF:
                             node['SEF'] = True
                         node = {'nt':'NEG', 't':optype, 'ch':[node]}
@@ -486,13 +426,6 @@ class foldconst(object):
                     # have e.g. {<< {& x y} 3}; there will be explicit
                     # parentheses here always, so we don't need to worry.
 
-                    # Operands with priority between * (not included) and <<
-                    # (included).
-                    if child[0]['nt'] in ('+', '-', 'NEG', '<<', '>>'):
-                        SEF = 'SEF' in child[0]
-                        child[0] = {'nt':'()', 't':child[0]['t'], 'ch':[child[0]]}
-                        if SEF:
-                            child[0]['SEF'] = True
                     # we have {<<, something, {CONST n}}, transform into {*, something, {CONST n}}
                     node['nt'] = '*'
                     child[1]['value'] = 1 << (child[1]['value'] & 31)
@@ -515,13 +448,14 @@ class foldconst(object):
 
             if nt != '=':
                 # Replace the node with the expression alone
-                child[1] = {'nt':'()', 't':child[1]['t'], 'ch':[child[1]]}
+                # e.g. a += b  ->  a + b
                 node['nt'] = nt[:-1]
 
-                # Linden Craziness: i *= f; is valid (but no other i op= f is).
-                # It's actually performed as i = (integer)(i + (f)). This breaks
-                # regular equivalence of x op= y as x = x op (y) so we add
-                # the type cast here.
+                # Linden Craziness: int *= float; is valid (but no other
+                # int op= float is). It's actually performed as
+                #    i = (integer)(i + (f));
+                # This breaks equivalence of x op= y as x = x op (y) so we add
+                # the explicit type cast here.
                 if nt == '*=' and child[0]['t'] == 'integer' and child[1]['t'] == 'float':
                     node['t'] = 'float' # Addition shall return float.
                     node = self.Cast(node, 'integer')
@@ -605,8 +539,7 @@ class foldconst(object):
                 elif node['name'] == 'llGetListLength' and child[0]['nt'] == 'IDENT':
                     # Convert llGetListLength(ident) to (ident != [])
                     node = {'nt':'CONST', 't':'list', 'value':[]}
-                    node = {'nt':'!=', 't':'list', 'ch':[child[0], node]}
-                    parent[index] = {'nt':'()', 't':'list', 'ch':[node]}
+                    parent[index] = node = {'nt':'!=', 't':'list', 'ch':[child[0], node]}
             elif SEFargs and 'SEF' in self.symtab[0][node['name']]:
                 # The function is marked as SEF in the symbol table, and the
                 # arguments are all side-effect-free. The result is SEF.

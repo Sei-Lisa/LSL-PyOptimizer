@@ -798,8 +798,6 @@ class parser(object):
 
         if tok0 == '(':
             # Parenthesized expression or typecast
-            # TODO: Don't include parentheses in the tree, defer to the output
-            #       module to add them where necessary.
 
             self.NextToken()
             if self.tok[0] != 'TYPE':
@@ -807,7 +805,7 @@ class parser(object):
                 expr = self.Parse_expression()
                 self.expect(')')
                 self.NextToken()
-                return {'nt':'()', 't':expr['t'], 'ch':[expr]}
+                return expr
 
             # Typecast
             typ = self.tok[1]
@@ -825,7 +823,6 @@ class parser(object):
                     expr = self.Parse_expression()
                     self.expect(')')
                     self.NextToken()
-                    expr = {'nt':'()', 't':expr['t'], 'ch':[expr]}
                 else:
                     expr = self.Parse_unary_postfix_expression(AllowAssignment = False)
             basetype = expr['t']
