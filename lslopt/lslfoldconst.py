@@ -423,10 +423,11 @@ class foldconst(object):
                         if RSEF:
                             node['SEF'] = True
                     else: # Add the NEG
-                        node = {'nt':'()', 't':optype, 'ch':[rval]}
-                        if RSEF:
-                            node['SEF'] = True
-                        node = {'nt':'NEG', 't':optype, 'ch':[node]}
+                        #node = {'nt':'()', 't':optype, 'ch':[rval]}
+                        #if RSEF:
+                        #    node['SEF'] = True
+                        #node = {'nt':'NEG', 't':optype, 'ch':[node]}
+                        node = {'nt':'NEG', 't':optype, 'ch':[rval]}
                         if RSEF:
                             node['SEF'] = True
                         node = {'nt':'~', 't':optype, 'ch':[node]}
@@ -444,10 +445,11 @@ class foldconst(object):
 
                 if lval['value'] == 1 or lval['value'] == 2:
                     if rnt == '~': # Cancel the ~
-                        node = {'nt':'()', 't':optype, 'ch':rval['ch']}
-                        if RSEF:
-                            node['SEF'] = True
-                        node = {'nt':'NEG', 't':optype, 'ch':[node]}
+                        #node = {'nt':'()', 't':optype, 'ch':rval['ch']}
+                        #if RSEF:
+                        #    node['SEF'] = True
+                        #node = {'nt':'NEG', 't':optype, 'ch':[node]}
+                        node = {'nt':'NEG', 't':optype, 'ch':rval['ch']}
                         if RSEF:
                             node['SEF'] = True
                     else:
