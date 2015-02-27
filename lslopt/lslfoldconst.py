@@ -581,6 +581,8 @@ class foldconst(object):
                 if child[idx]['nt'] != 'CONST':
                     CONSTargs = False
 
+            # TODO: Find some way to convert keys to "" e.g. llListen("", NULL_KEY, "")
+            # TODO: Find some way to convert PI to 4 in llSensor[Repeat]
             if 'Fn' in self.symtab[0][node['name']]:
                 # Guaranteed to be side-effect free if the children are.
                 if SEFargs:
