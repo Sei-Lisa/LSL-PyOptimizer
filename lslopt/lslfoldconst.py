@@ -410,39 +410,29 @@ class foldconst(object):
                     # Swap the vars to deal with const in lval always
                     lval, lnt, rval, rnt = rval, rnt, lval, lnt
                 RSEF = 'SEF' in rval
-                if lval['value'] == -1:
-                    if rnt == 'NEG':
-                        node = {'nt':'~', 't':optype, 'ch':rval['ch']}
-                        if RSEF:
-                            node['SEF'] = True
-                    else:
-                        node = {'nt':'NEG', 't':optype, 'ch':[rval]}
-                        if RSEF:
-                            node['SEF'] = True
-                        node = {'nt':'~', 't':optype, 'ch':[node]}
-                        if RSEF:
-                            node['SEF'] = True
-                    parent[index] = node
-                    return
 
-                if lval['value'] == -2:
+                # Fix n*5+1 outputing -~n*5 instead of -~(n*5).
+                # This would be ideally fixed through smart parentheses
+                # output rather than introducing the parens in the tree.
+                if lval['value'] == -1 or lval['value'] == -2:
                     if rnt == 'NEG': # Cancel the NEG
-                        node = {'nt':'~', 't':optype, 'ch':rval['ch']}
-                        if RSEF:
-                            node['SEF'] = True
-                        node = {'nt':'NEG', 't':optype, 'ch':[node]}
+                        node = {'nt':'()', 't':optype, 'ch':rval['ch']}
                         if RSEF:
                             node['SEF'] = True
                         node = {'nt':'~', 't':optype, 'ch':[node]}
                         if RSEF:
                             node['SEF'] = True
                     else: # Add the NEG
-                        node = {'nt':'NEG', 't':optype, 'ch':[rval]}
+                        node = {'nt':'()', 't':optype, 'ch':[rval]}
+                        if RSEF:
+                            node['SEF'] = True
+                        node = {'nt':'NEG', 't':optype, 'ch':[node]}
                         if RSEF:
                             node['SEF'] = True
                         node = {'nt':'~', 't':optype, 'ch':[node]}
                         if RSEF:
                             node['SEF'] = True
+                    if lval['value'] == -2:
                         node = {'nt':'NEG', 't':optype, 'ch':[node]}
                         if RSEF:
                             node['SEF'] = True
@@ -452,25 +442,32 @@ class foldconst(object):
                     parent[index] = node
                     return
 
-                if lval['value'] == 1:
-                    parent[index] = node = {'nt':'NEG', 't':optype,
-                        'ch':[{'nt':'~', 't':optype, 'ch':[rval]}]}
-                    if RSEF:
-                        node['ch'][0]['SEF'] = True
-                        node['SEF'] = True
-                    return
-
-                if lval['value'] == 2:
-                    node = {'nt':'NEG', 't':optype,
-                        'ch':[{'nt':'~', 't':optype, 'ch':[rval]}]}
-                    if RSEF:
-                        node['ch'][0]['SEF'] = True
-                        node['SEF'] = True
-                    parent[index] = node = {'nt':'NEG', 't':optype,
-                        'ch':[{'nt':'~', 't':optype, 'ch':[node]}]}
-                    if RSEF:
-                        node['ch'][0]['SEF'] = True
-                        node['SEF'] = True
+                if lval['value'] == 1 or lval['value'] == 2:
+                    if rnt == '~': # Cancel the ~
+                        node = {'nt':'()', 't':optype, 'ch':rval['ch']}
+                        if RSEF:
+                            node['SEF'] = True
+                        node = {'nt':'NEG', 't':optype, 'ch':[node]}
+                        if RSEF:
+                            node['SEF'] = True
+                    else:
+                        node = {'nt':'()', 't':optype, 'ch':[rval]}
+                        if RSEF:
+                            node['SEF'] = True
+                        node = {'nt':'~', 't':optype, 'ch':[node]}
+                        if RSEF:
+                            node['SEF'] = True
+                        node = {'nt':'NEG', 't':optype, 'ch':[node]}
+                        if RSEF:
+                            node['SEF'] = True
+                    if lval ['value'] == 2:
+                        node = {'nt':'~', 't':optype, 'ch':[node]}
+                        if RSEF:
+                            node['SEF'] = True
+                        node = {'nt':'NEG', 't':optype, 'ch':[node]}
+                        if RSEF:
+                            node['SEF'] = True
+                    parent[index] = node
                     return
 
                 # More than 2 becomes counter-productive.
