@@ -280,12 +280,13 @@ class foldconst(object):
                     lval = child[0] = lval['ch'][0]
                     lnt = lval['nt']
 
-                # Addition of integers, strings, and lists is distributive
+                # Addition of integers, strings, and lists is associative
                 # Addition of floats, vectors and rotations would be, except
                 # for FP precision.
-                # TODO: distributive addition of lists
-                # Distributive lists are trickier, because unlike the others,
-                # the types of the operands may not be lists.
+                # TODO: associative addition of lists
+                # Associative lists are trickier, because unlike the others,
+                # the types of the operands may not be lists
+                # so e.g. list+(integer+integer) != (list+integer)+integer.
                 if optype in ('integer', 'string'):
                     if lnt == '+' and rnt == 'CONST' and lval['ch'][1]['nt'] == 'CONST':
                         # (var + ct1) + ct2  ->  var + (ct1 + ct2)
