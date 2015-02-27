@@ -1822,7 +1822,7 @@ class parser(object):
         # Skip preprocessor directives (specifically #line).
         self.skippreproc = 'skippreproc' in options
 
-        # TODO: Allow pure C-style string parsing. This is low-priority.
+        # TODO: Allow pure C-style string escapes. This is low-priority.
         #self.allowcescapes = 'allowcescapes' in options
 
         # TODO: Enable switch statements.
