@@ -329,10 +329,10 @@ class foldconst(object):
 
                 if optype in ('vector', 'rotation'):
                     # not much to do with vectors or quaternions either
-                    if lnt == 'CONST' and all(component == 0 for component in lval['value']):
+                    if lnt == 'CONST' and all(x == 0 for x in lval['value']):
                         # Change <0,0,0[,0]>+expr  ->  expr
                         parent[index] = rval
-                    elif rnt == 'CONST' and all(component == 0 for component in rval['value']):
+                    elif rnt == 'CONST' and all(x == 0 for x in rval['value']):
                         # Change expr+<0,0,0[,0]>  ->  expr
                         parent[index] = lval
                     return
