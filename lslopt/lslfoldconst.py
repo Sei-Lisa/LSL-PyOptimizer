@@ -136,7 +136,7 @@ class foldconst(object):
             self.FoldTree(child, 0)
             if 'SEF' in child[0]:
                 node['SEF'] = True
-            if child[0]['nt'] == 'CONST':
+            if child[0]['nt'] == 'CONST' and (node['t'] != 'list' or self.globalmode):
                 # Enable key constants. We'll typecast them back on output, but
                 # this enables some optimizations.
                 #if node['t'] != 'key': # key constants not possible
@@ -791,11 +791,16 @@ class foldconst(object):
                 value = [elem['value'] for elem in child]
                 if nt == 'VECTOR':
                     value = lslfuncs.Vector([lslfuncs.ff(x) for x in value])
+                    parent[index] = {'nt':'CONST', 'SEF':True, 't':node['t'],
+                        'value':value}
+                    return
                 elif nt == 'ROTATION':
                     value = lslfuncs.Quaternion([lslfuncs.ff(x) for x in value])
-                parent[index] = {'nt':'CONST', 'SEF':True, 't':node['t'],
-                    'value':value}
-                return
+                    parent[index] = {'nt':'CONST', 'SEF':True, 't':node['t'],
+                        'value':value}
+                    return
+            if nt == 'LIST' and len(child) == 1:
+                node = parent[index] = self.Cast(child[0], 'list')
             if issef:
                 node['SEF'] = True
             return
