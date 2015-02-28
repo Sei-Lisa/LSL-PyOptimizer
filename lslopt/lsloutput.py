@@ -217,7 +217,7 @@ class outscript(object):
             ret =  '(' + expr['t'] + ')'
             expr = child[0]
             if expr['nt'] in ('CONST', 'IDENT', 'V++', 'V--', 'VECTOR',
-               'ROTATION', 'LIST', 'FIELD', 'PRINT', 'FUNCTION'):
+               'ROTATION', 'LIST', 'FIELD', 'PRINT', 'FNCALL'):
                 return ret + self.OutExpr(expr)
             return ret + '(' + self.OutExpr(expr) + ')'
 
