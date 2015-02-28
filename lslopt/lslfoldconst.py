@@ -42,18 +42,64 @@ class foldconst(object):
         if node['nt'] in ('V++', 'V--'):
             node['nt'] = '++V' if node['nt'] == 'V++' else '--V';
 
+    def IsBool(self, node):
+        """Some operators return 0 or 1, and that allows simplification of
+        boolean expressions. This function tells whether we know for sure
+        that the result is boolean."""
+        return False # TODO: implement IsBool
+        # Ideas include some functions like llSameGroup and llDetectedGroup.
+
     def FoldCond(self, parent, index):
         """When we know that the parent is interested only in the truth value
         of the node, we can perform further optimizations. This function deals
         with them.
         """
         node = parent[index]
-        if node['nt'] in ('CONST', 'IDENT', 'FLD'):
+        nt = node['nt']
+        if nt in ('CONST', 'IDENT', 'FLD'):
             if node['nt'] == 'CONST':
                 node['t'] = 'integer'
                 node['value'] = -1 if lslfuncs.cond(node['value']) else 0
             return # Nothing to do if it's already simplified.
-        # TODO: Implement FoldCond
+        child = node['ch'] if 'ch' in node else None
+
+        if nt == '!' and child[0]['nt'] == '!':
+            # bool(!!a) equals bool(a)
+            parent[index] = child[0]['ch'][0]
+            return
+
+        if nt == 'NEG':
+            # bool(-a) equals bool(a)
+            parent[index] = child[0]
+            return
+
+        if nt in self.binary_ops and child[0]['t'] == child[1]['t'] == 'integer':
+            if nt == '!=':
+                if child[0]['nt'] == 'CONST' and child[0]['value'] == 1 \
+                   or child[1]['nt'] == 'CONST' and child[1]['value'] == 1:
+                    # a != 1  ->  a - 1  (which FoldTree will transform to ~-a)
+                    node['nt'] = '-'
+                else:
+                    # This converts != to ^; FoldTree will simplify ^-1 to ~
+                    # and optimize out ^0.
+                    node['nt'] = '^'
+                self.FoldTree(parent, index)
+            elif nt == '==':
+                if child[0]['nt'] == 'CONST' and -1 <= child[0]['value'] <= 1 \
+                   or child[1]['nt'] == 'CONST' and -1 <= child[1]['value'] <= 1:
+                    # Transform a==b into !(a-b) if either a or b are in [-1, 1]
+                    parent[index] = {'nt':'!', 't':'integer', 'ch':[node]}
+                    node['nt'] = '-'
+                    self.FoldTree(parent, index)
+
+            # TODO: on bitwise OR, detect if the operands are negated.
+            # If so treat it as an AND, checking if the operands are boolean
+            # to try to simplify them to an expression of the form !(a&b)
+            # when possible. Or if one is bool and the other is not, to an
+            # expression of the form !(a&-b) (if b is bool).
+            # TODO: on bitwise OR, detect if one operand is nonzero.
+            # In that case, if SEF, it can be simplified out.
+
 
     def CopyNode(self, node):
         # This is mainly for simple_expr so no need to go deeper than 1 level.
@@ -128,7 +174,7 @@ class foldconst(object):
         if nt == '!':
             self.FoldTree(child, 0)
             self.FoldCond(child, 0)
-            # !! does *not* cancel out, but !!! can be simplified to !
+            # !! does *not* cancel out (unless in cond), but !!! can be simplified to !
             subexpr = child[0]
             if 'SEF' in subexpr:
                 node['SEF'] = True
@@ -426,18 +472,74 @@ class foldconst(object):
                     # have e.g. {<< {& x y} 3}; there will be explicit
                     # parentheses here always, so we don't need to worry.
 
-                    # we have {<<, something, {CONST n}}, transform into {*, something, {CONST n}}
+                    # we have {<<, something, {CONST n}}
+                    # we transform it into {*, something, {CONST n}}
                     node['nt'] = '*'
                     child[1]['value'] = 1 << (child[1]['value'] & 31)
+
+                    # Fall through to optimize product
+
                 else: # x << 0  -->  x
                     parent[index] = child[0]
-            else:
-                pass # TODO: Eliminate redundancy (x*1, x*-1, x|0, x&-1, etc.)
-                    # Include != to ^ and || to | and maybe && to &
-                    # Note some cases e.g. x*0 can't be optimized away without side-effect analysis.
-                    # But some cases like %1 can be turned into *0 to save bytes.
-                    # Turn also % (power of 2) into & mask (oops, nope, negative doesn't work)
-                    # Maybe turn != -1 into ~ in if()'s.
+                    return
+
+
+            # TODO: Eliminate redundancy (x*1, x*-1, x|0, x&-1, etc.)
+                # Note some cases e.g. x*0 can't be optimized away without side-effect analysis.
+                # But some cases like %1 can be turned into &0 to save bytes.
+                # Turn also % (power of 2) into & mask (oops, nope, negative doesn't work)
+                # Other optimizations:
+                # x&0  ->  0 (if SEF)
+                # x|-1 ->  -1 (if SEF)
+                # (a<=b) to !(a>b)
+                # (a>=b) to !(a<b)
+                # (a!=b) to !(a==b)
+                # !(a>const) to a<(const+1) if no overflow (4 variants)
+                # a>2147483647 to FALSE if SEF, otherwise convert to a&0
+                # a<-2147483648 to FALSE if SEF, otherwise convert to a&0
+                # a*2  =>  a+a
+
+            if nt == '^':
+                if child[0]['nt'] == 'CONST' and child[0]['value'] in (0, -1):
+                    if child[0]['value'] == 0:
+                        parent[index] = child[1]
+                    else:
+                        node['nt'] = '~'
+                        node['ch'] = [child[1]]
+                elif child[1]['nt'] == 'CONST' and child[1]['value'] in (0, -1):
+                    if child[1]['value'] == 0:
+                        parent[index] = child[0]
+                    else:
+                        node['nt'] = '~'
+                        node['ch'] = [child[0]]
+                return
+
+            if nt == '&&' or nt == '||':
+                SEF = 'SEF' in child[0] and 'SEF' in child[1]
+                if nt == '||':
+                    parent[index] = node = {'nt':'!', 't':'integer', 'ch':[
+                        {'nt':'!', 't':'integer', 'ch':[
+                            {'nt':'|',  't':'integer', 'ch':[child[0], child[1]]}
+                        ]}]}
+                    if SEF:
+                        node['SEF'] = node['ch'][0]['SEF'] = node['ch'][0]['ch'][0]['SEF'] = True
+                else:
+                    parent[index] = node = {'nt':'!', 't':'integer', 'ch':[
+                        {'nt':'|', 't':'integer', 'ch':[
+                            {'nt':'!',  't':'integer', 'ch':[child[0]]}
+                            ,
+                            {'nt':'!',  't':'integer', 'ch':[child[1]]}
+                        ]}]}
+                    if SEF:
+                        node['SEF'] = node['ch'][0]['SEF'] = True
+                        if 'SEF' in node['ch'][0]['ch'][0]['ch'][0]:
+                            node['ch'][0]['ch'][0]['SEF'] = True
+                        if 'SEF' in node['ch'][0]['ch'][1]['ch'][0]:
+                            node['ch'][0]['ch'][1]['SEF'] = True
+                # Make another pass
+                self.FoldTree(parent, index)
+                return
+
             return
 
         if nt in self.assign_ops:
