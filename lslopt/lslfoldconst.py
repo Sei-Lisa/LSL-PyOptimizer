@@ -225,8 +225,9 @@ class foldconst(object):
                 op1 = lval['value']
                 op2 = rval['value']
                 if nt == '+':
-                    if ltype != 'string' or rtype != 'string' or self.addstrings:
-                        result = lslfuncs.add(op1, op2)
+                    if ltype == rtype == 'string' and not self.addstrings:
+                        return
+                    result = lslfuncs.add(op1, op2)
                 elif nt == '-':
                     result = lslfuncs.sub(op1, op2)
                 elif nt == '*':
@@ -300,14 +301,14 @@ class foldconst(object):
                 # Tough one. Remove neutral elements for the diverse types,
                 # and more.
 
-                # Addition of integers, strings, and lists is associative
+                # Addition of integers, strings, and lists is associative.
                 # Addition of floats, vectors and rotations would be, except
                 # for FP precision.
                 # TODO: associative addition of lists
                 # Associative lists are trickier, because unlike the others,
                 # the types of the operands may not be lists
                 # so e.g. list+(integer+integer) != (list+integer)+integer.
-                if optype in ('integer', 'string'):
+                if optype == 'integer' or optype == 'string' and self.addstrings:
                     if lnt == '+' and rnt == 'CONST' and lval['ch'][1]['nt'] == 'CONST':
                         # (var + ct1) + ct2  ->  var + (ct1 + ct2)
                         child[1] = {'nt': '+', 't': optype, 'ch':[lval['ch'][1], rval], 'SEF':True}
