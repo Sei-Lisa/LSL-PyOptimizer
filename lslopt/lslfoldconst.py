@@ -411,6 +411,7 @@ class foldconst(object):
                                    or rval['ch'][1]['nt'] == 'CONST'):
                     # const + (expr + const) or const + (const + expr)
                     # same as above, join them
+                    # FIXME: Isn't this covered by the associative sum above?
 
                     pass # TODO: implement
 
@@ -419,7 +420,6 @@ class foldconst(object):
                     lval, lnt, rval, rnt = rval, rnt, lval, lnt
                 RSEF = 'SEF' in rval
 
-                # Fix n*5+1 outputing -~n*5 instead of -~(n*5).
                 if lval['value'] == -1 or lval['value'] == -2:
                     if rnt == 'NEG': # Cancel the NEG
                         node = {'nt':'~', 't':optype, 'ch':rval['ch']}
@@ -576,6 +576,13 @@ class foldconst(object):
                 # !(a>const) to a<(const+1) if no overflow (4 variants)
                 # a>2147483647 to FALSE if SEF, otherwise convert to a&0
                 # a<-2147483648 to FALSE if SEF, otherwise convert to a&0
+
+            # TODO: Try to optimize -(expr*-const).
+            # That would yield optimal ~(~expr*blah) from (expr+1)*blah-1.
+            # Also it would be cute if a*b+b would be optimized to (a+1)*b,
+            # which is the other form common in strided lists.
+
+            # TODO: See what can be done with bool(a|!!b)
 
             if nt in ('&', '|'):
                 # Deal with operands in any order
