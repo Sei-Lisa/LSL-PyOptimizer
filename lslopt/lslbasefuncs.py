@@ -32,6 +32,9 @@ from base64 import b64encode, b64decode
 # The lookahead (?!i) is essential for parsing them that way without extra code.
 # Note that '|' in REs is order-sensitive.
 float_re = re.compile(ur'^\s*[+-]?(?:0(x)(?:[0-9a-f]+(?:\.[0-9a-f]*)?|\.[0-9a-f]+)(?:p[+-]?[0-9]+)?'
+                      ur'|(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e[+-]?[0-9]+)?|inf|nan)',
+                      re.I)
+vfloat_re = re.compile(ur'^\s*[+-]?(?:0(x)(?:[0-9a-f]+(?:\.[0-9a-f]*)?|\.[0-9a-f]+)(?:p[+-]?[0-9]+)?'
                       ur'|(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e[+-]?[0-9]+)?|infinity|inf(?!i)|nan)',
                       re.I)
 
@@ -329,7 +332,7 @@ def InternalTypecast(val, out, InList, f32):
                 return Z
             val = val[1:]
             for _ in range(dim):
-                match = float_re.match(val)
+                match = vfloat_re.match(val)
                 if match is None:
                     return Z
                 if match.group(1):
