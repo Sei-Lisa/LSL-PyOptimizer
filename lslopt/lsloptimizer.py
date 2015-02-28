@@ -45,6 +45,9 @@ class optimizer(foldconst, renamer, deadcode):
         if 'optimize' not in options:
             return treesymtab
 
+        # Don't perform "a"+"b"  ->  "ab" unless explicitly requested.
+        self.addstrings = 'addstrings' in options
+
         self.foldtabs = 'foldtabs' in options
 
         self.shrinknames = 'shrinknames' in options

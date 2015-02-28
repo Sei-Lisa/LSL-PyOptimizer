@@ -27,9 +27,15 @@ Options (+ means active by default, - means inactive by default):
   allowkeyconcat     + Allow string + key and key + string (both return string)
   allowmultistrings  + Allow C-like string juxtaposition, e.g. "ab" "cd" means
                        "abcd", no concatenation involved. Very useful when used
-                       with a preprocessor (although the optimizer would
-                       optimize concatenated strings if they are parenthesized
-                       correctly, see note at the footer).
+                       with a preprocessor. Similar to addstrings, but this one
+                       is not an optimization, it introduces new syntax.
+  addstrings         - Concatenate strings together when possible. Note that
+                       such an optimization can be counter-productive in some
+                       cases, that's why it is unset by default. For example:
+                       string a="a"+"longstring"; string b="b"+"longstring";
+                       would keep a single copy of "longstring", while if the
+                       strings are added, "alongstring" and "blongstring" would
+                       both take memory.
   skippreproc        + Skip preprocessor directives in the source as if they
                        were comments. Not useful unless the script is itself
                        the output of a preprocessor like cpp, which inserts
@@ -55,9 +61,6 @@ Options (+ means active by default, - means inactive by default):
                        process, it turns the script into unreadable gibberish,
                        hard to debug, but this gets big savings for complex
                        scripts.
-
-Note that the optimizer doesn't reorder expressions to fold constants. This
-means that e.g. a + 3 + 5 is not optimized to a + 8; however a + (3 + 5) is.
 ''' % sys.argv[0])
         return 1
 

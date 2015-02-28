@@ -225,7 +225,8 @@ class foldconst(object):
                 op1 = lval['value']
                 op2 = rval['value']
                 if nt == '+':
-                    result = lslfuncs.add(op1, op2)
+                    if ltype != 'string' or rtype != 'string' or self.addstrings:
+                        result = lslfuncs.add(op1, op2)
                 elif nt == '-':
                     result = lslfuncs.sub(op1, op2)
                 elif nt == '*':
