@@ -92,13 +92,19 @@ class foldconst(object):
                     node['nt'] = '-'
                     self.FoldTree(parent, index)
 
-            # TODO: on bitwise OR, detect if the operands are negated.
+            if nt == '|':
+                a, b = 0, 1
+                if child[a]['nt'] == 'CONST':
+                    a, b = 1, 0
+                if child[b]['nt'] == 'CONST' and child[b]['value'] and 'SEF' in child[a]:
+                    parent[index] = child[b]
+                    child[b]['value'] = 1
+                    return
+            # TODO: on bitwise OR, detect if both operands are negated.
             # If so treat it as an AND, checking if the operands are boolean
             # to try to simplify them to an expression of the form !(a&b)
             # when possible. Or if one is bool and the other is not, to an
             # expression of the form !(a&-b) (if b is bool).
-            # TODO: on bitwise OR, detect if one operand is nonzero.
-            # In that case, if SEF, it can be simplified out.
 
 
     def CopyNode(self, node):
@@ -412,8 +418,6 @@ class foldconst(object):
                 RSEF = 'SEF' in rval
 
                 # Fix n*5+1 outputing -~n*5 instead of -~(n*5).
-                # This would be ideally fixed through smart parentheses
-                # output rather than introducing the parens in the tree.
                 if lval['value'] == -1 or lval['value'] == -2:
                     if rnt == 'NEG': # Cancel the NEG
                         node = {'nt':'~', 't':optype, 'ch':rval['ch']}
@@ -483,39 +487,128 @@ class foldconst(object):
                     parent[index] = child[0]
                     return
 
+            if nt == '%' \
+               and child[1]['nt'] == 'CONST' \
+               and child[1]['t'] == 'integer' \
+               and abs(child[1]['value']) == 1:
+                # a%1  ->  a&0
+                # a%-1  ->  a&0
+                # (SEF analysis performed below)
+                nt = node['nt'] = '&'
+                child[1]['value'] = 0
 
-            # TODO: Eliminate redundancy (x*1, x*-1, x|0, x&-1, etc.)
-                # Note some cases e.g. x*0 can't be optimized away without side-effect analysis.
-                # But some cases like %1 can be turned into &0 to save bytes.
-                # Turn also % (power of 2) into & mask (oops, nope, negative doesn't work)
-                # Other optimizations:
-                # x&0  ->  0 (if SEF)
-                # x|-1 ->  -1 (if SEF)
+
+            if nt in ('*', '/'):
+                # Optimize (-a)*(-b) and (-a)/(-b)
+                if child[0]['nt'] == 'NEG' and child[1]['nt'] == 'NEG':
+                    child[0] = child[0]['ch'][0]
+                    child[1] = child[1]['ch'][0]
+
+                # Deal with operands in any order
+                a, b = 0, 1
+                if child[a]['nt'] == 'CONST' and child[a]['t'] in ('float', 'integer'):
+                    a, b = 1, 0
+
+                if child[b]['nt'] == 'CONST':
+                    val = child[b]['value']
+
+                    # Optimize out signs if possible.
+                    # Note that (-intvar)*floatconst needs cornermath because
+                    # -intvar could equal intvar if intvar = -2147483648,
+                    # so the sign is a no-op and pushing it to floatconst would
+                    # make the result be different.
+                    if child[a]['nt'] == 'NEG' \
+                       and (self.cornermath
+                            or child[a]['t'] != 'integer'
+                            or child[b]['t'] != 'float'
+                       ):
+                        # Expression is of the form (-float)*const or (-float)/const or const/(-float)
+                        if val != -2147483648 or child[a]['t'] == 'integer': # can't be optimized otherwise
+                            child[a] = child[a]['ch'][0] # remove NEG
+                            child[b]['value'] = val = -val
+
+                    # Five optimizations corresponding to -2, -1, 0, 1, 2
+                    # for product, and two for division:
+                    # expr * 1  ->  expr
+                    # expr * 0  ->  0  if side-effect free
+                    # expr * -1  -> -expr
+                    # ident * 2  ->  ident+ident
+                    # ident * -2  ->  -(ident + ident) (this can turn out to be counter-productive if ident is not a local)
+                    # expr/1  ->  expr
+                    # expr/-1  ->  -expr
+                    if nt == '*' and child[b]['t'] in ('float', 'integer') \
+                       and val in (-2, -1, 0, 1, 2) \
+                       or nt == '/' and b == 1 and val in (-1, 1):
+                        if val == 1:
+                            parent[index] = child[a]
+                            return
+                        if val == 0:
+                            if 'SEF' in child[a]:
+                                parent[index] = child[b]
+                            return
+                        if val == -1:
+                            # Note 0.0*-1 equals -0.0 in LSL, so this is safe
+                            node = parent[index] = {'nt':'NEG', 't':node['t'], 'ch':[child[a]]}
+                            if 'SEF' in child[a]:
+                                node['SEF'] = True
+                            return
+                        # only -2, 2 remain
+                        if child[a]['nt'] == 'IDENT':
+                            # FIXME: The -2 case is counter-productive if the var is not local.
+                            # We don't have info on whether a variable is local yet.
+                            # Or maybe we do; got to check. Disabled for now.
+                            if val != -2:
+                                child[b] = child[a].copy()
+                                node['nt'] = '+'
+                                if val == -2:
+                                    parent[index] = {'nt':'NEG', 't':node['t'], 'ch':[node]}
+                                    if 'SEF' in node:
+                                        parent[index]['SEF'] = True
+                            return
+                return
+
+            # TODO: Missing comparison optimization
                 # (a<=b) to !(a>b)
                 # (a>=b) to !(a<b)
                 # (a!=b) to !(a==b)
                 # !(a>const) to a<(const+1) if no overflow (4 variants)
                 # a>2147483647 to FALSE if SEF, otherwise convert to a&0
                 # a<-2147483648 to FALSE if SEF, otherwise convert to a&0
-                # a*2  =>  a+a
+
+            if nt in ('&', '|'):
+                # Deal with operands in any order
+                a, b = 0, 1
+                if child[a]['nt'] == 'CONST' and child[a]['t'] in ('float', 'integer'):
+                    a, b = 1, 0
+
+                if child[b]['nt'] == 'CONST':
+                    val = child[b]['value']
+                    if val == 0 and nt == '|' or val == -1 and nt == '&':
+                        # a|0  ->  a
+                        # a&-1  ->  a
+                        parent[index] = child[a]
+                        return
+                    if val == -1 and nt == '|' or val == 0 and nt == '&':
+                        # a|-1  ->  -1 if a is SEF
+                        # a&0  ->  0 if a is SEF
+                        if 'SEF' in child[a]:
+                            parent[index] = child[b]
+                            return
 
             if nt == '^':
-                if child[0]['nt'] == 'CONST' and child[0]['value'] in (0, -1):
-                    if child[0]['value'] == 0:
-                        parent[index] = child[1]
+                a, b = 0, 1
+                if child[a]['nt'] == 'CONST':
+                    a, b = 1, 0
+                if child[b]['nt'] == 'CONST' and child[b]['value'] in (0, -1):
+                    if child[b]['value'] == 0:
+                        parent[index] = child[a]
                     else:
                         node['nt'] = '~'
-                        node['ch'] = [child[1]]
-                elif child[1]['nt'] == 'CONST' and child[1]['value'] in (0, -1):
-                    if child[1]['value'] == 0:
-                        parent[index] = child[0]
-                    else:
-                        node['nt'] = '~'
-                        node['ch'] = [child[0]]
+                        node['ch'] = [child[a]]
                 return
 
             if nt == '&&' or nt == '||':
-                SEF = 'SEF' in child[0] and 'SEF' in child[1]
+                SEF = 'SEF' in node
                 if nt == '||':
                     parent[index] = node = {'nt':'!', 't':'integer', 'ch':[
                         {'nt':'!', 't':'integer', 'ch':[
@@ -532,11 +625,11 @@ class foldconst(object):
                         ]}]}
                     if SEF:
                         node['SEF'] = node['ch'][0]['SEF'] = True
-                        if 'SEF' in node['ch'][0]['ch'][0]['ch'][0]:
-                            node['ch'][0]['ch'][0]['SEF'] = True
-                        if 'SEF' in node['ch'][0]['ch'][1]['ch'][0]:
-                            node['ch'][0]['ch'][1]['SEF'] = True
-                # Make another pass
+                    if 'SEF' in node['ch'][0]['ch'][0]['ch'][0]:
+                        node['ch'][0]['ch'][0]['SEF'] = True
+                    if 'SEF' in node['ch'][0]['ch'][1]['ch'][0]:
+                        node['ch'][0]['ch'][1]['SEF'] = True
+                # Make another pass with the substitution
                 self.FoldTree(parent, index)
                 return
 

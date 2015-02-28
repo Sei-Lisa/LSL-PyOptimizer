@@ -52,6 +52,9 @@ class optimizer(foldconst, renamer, deadcode):
         self.constfold = 'constfold' in options
         self.dcr = 'dcr' in options
 
+        # Math that works fine except in rare corner-cases can be optimized.
+        self.cornermath = 'cornermath' in options
+
         tree, symtab = self.tree, self.symtab = treesymtab
 
         self.globalmode = False
