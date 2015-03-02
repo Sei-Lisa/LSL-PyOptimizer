@@ -540,8 +540,8 @@ class foldconst(object):
                     # expr * 1  ->  expr
                     # expr * 0  ->  0  if side-effect free
                     # expr * -1  -> -expr
-                    # ident * 2  ->  ident+ident
-                    # ident * -2  ->  -(ident + ident) (this can turn out to be counter-productive if ident is not a local)
+                    # ident * 2  ->  ident + ident (no gain except if ident is local)
+                    # ident * -2  ->  -(ident + ident) (this is counter-productive if ident is not local)
                     # expr/1  ->  expr
                     # expr/-1  ->  -expr
                     if nt == '*' and child[b]['t'] in ('float', 'integer') \
@@ -561,17 +561,13 @@ class foldconst(object):
                                 node['SEF'] = True
                             return
                         # only -2, 2 remain
-                        if child[a]['nt'] == 'IDENT':
-                            # FIXME: The -2 case is counter-productive if the var is not local.
-                            # We don't have info on whether a variable is local yet.
-                            # Or maybe we do; got to check. Disabled for now.
-                            if val != -2:
-                                child[b] = child[a].copy()
-                                node['nt'] = '+'
-                                if val == -2:
-                                    parent[index] = {'nt':'NEG', 't':node['t'], 'ch':[node]}
-                                    if 'SEF' in node:
-                                        parent[index]['SEF'] = True
+                        if child[a]['nt'] == 'IDENT' and 'Local' in self.symtab[child[a]['scope']][child[a]['name']]:
+                            child[b] = child[a].copy()
+                            node['nt'] = '+'
+                            if val == -2:
+                                parent[index] = {'nt':'NEG', 't':node['t'], 'ch':[node]}
+                                if 'SEF' in node:
+                                    parent[index]['SEF'] = True
                             return
                 return
 

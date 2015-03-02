@@ -1335,7 +1335,7 @@ class parser(object):
                 decl['ch'] = [self.autocastcheck(self.Parse_expression(), typ)]
             self.expect(';')
             self.NextToken()
-            self.AddSymbol('v', self.scopeindex, name, Type=typ)
+            self.AddSymbol('v', self.scopeindex, name, Type=typ, Local=True)
             return decl
 
         # If none of the above, it must be an expression.
