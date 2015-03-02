@@ -1844,7 +1844,7 @@ class parser(object):
         # rest of entries are dictionaries. Each has a 'Kind', which can be
         # 'v' for variable, 'f' for function, 'l' for label, 's' for state,
         # or 'e' for event.
-        #   Variables have 'Scope', 'Type', and if global, 'Loc'.
+        #   Variables have 'Scope', 'Type', 'Loc' (if global), 'Local' (if local).
         #   Functions have 'Type', 'Loc', 'ParamTypes' and 'ParamNames'.
         #   Labels only have 'Scope'.
         #   States only have 'Loc'.
