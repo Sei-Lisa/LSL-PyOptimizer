@@ -44,8 +44,9 @@ class foldconst(object):
 
     def IsBool(self, node):
         """Some operators return 0 or 1, and that allows simplification of
-        boolean expressions. This function tells whether we know for sure
-        that the result is boolean."""
+        boolean expressions. This function returns whether we know for sure
+        that the result is boolean.
+        """
         return False # TODO: implement IsBool
         # Ideas include some functions like llSameGroup and llDetectedGroup.
 
@@ -93,6 +94,7 @@ class foldconst(object):
                     self.FoldTree(parent, index)
 
             if nt == '|':
+                #TODO: simplify !!a|b or a|!!b -> a|b
                 a, b = 0, 1
                 if child[a]['nt'] == 'CONST':
                     a, b = 1, 0
@@ -506,6 +508,11 @@ class foldconst(object):
                     child[0] = child[0]['ch'][0]
                     child[1] = child[1]['ch'][0]
 
+                # TODO: Try to optimize -(expr*-const).
+                # That would yield optimal ~(~expr*blah) from (expr+1)*blah-1.
+                # Also it would be cute if a*b+b would be optimized to (a+1)*b,
+                # which is the other form common in strided lists.
+
                 # Deal with operands in any order
                 a, b = 0, 1
                 if child[a]['nt'] == 'CONST' and child[a]['t'] in ('float', 'integer'):
@@ -573,16 +580,9 @@ class foldconst(object):
                 # (a<=b) to !(a>b)
                 # (a>=b) to !(a<b)
                 # (a!=b) to !(a==b)
-                # !(a>const) to a<(const+1) if no overflow (4 variants)
-                # a>2147483647 to FALSE if SEF, otherwise convert to a&0
-                # a<-2147483648 to FALSE if SEF, otherwise convert to a&0
-
-            # TODO: Try to optimize -(expr*-const).
-            # That would yield optimal ~(~expr*blah) from (expr+1)*blah-1.
-            # Also it would be cute if a*b+b would be optimized to (a+1)*b,
-            # which is the other form common in strided lists.
-
-            # TODO: See what can be done with bool(a|!!b)
+                # !(i>const) to i<(const+1) if no overflow (4 variants)
+                # i>2147483647 to FALSE if SEF, otherwise convert to a&0
+                # i<-2147483648 to FALSE if SEF, otherwise convert to a&0
 
             if nt in ('&', '|'):
                 # Deal with operands in any order
