@@ -152,7 +152,6 @@ class foldconst(object):
             self.FoldTree(child, 0)
             if child[0]['nt'] == 'NEG':
                 # Double negation: - - expr  -->  expr
-                # NOTE: Not 100% sure this doesn't need parentheses around expr.
                 node = parent[index] = child[0]['ch'][0]
                 child = node['ch'] if 'ch' in node else None
             elif child[0]['nt'] == 'CONST':
