@@ -62,8 +62,12 @@ Options (+ means active by default, - means inactive by default):
                        hard to debug, but this gets big savings for complex
                        scripts.
   lazylists          - Support syntax like mylist[index] = 5; rather than using
-                       llListReplaceList. Not recommended, as it adds a new
-                       function.
+                       llListReplaceList. Only assignment supported. The list
+                       is extended when the argument is greater than the list
+                       length, by inserting integer zeros. This is implemented
+                       for compatibility with Firestorm, but its use is not
+                       recommended, as it adds a new function, wasting memory
+                       against the very spirit of this program.
 ''' % sys.argv[0])
         return 1
 

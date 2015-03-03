@@ -1877,6 +1877,14 @@ class parser(object):
         # Allow brackets for assignment of list elements e.g. mylist[5]=4
         self.lazylists = 'lazylists' in options
 
+        # This was once an idea, but it has been discarded because
+        # llListReplaceList requires the argument to be evaluated twice,
+        # so the function is unavoidable. Consider e.g. L[x++] = 3 expanded to
+        # L = llListReplaceList(L, [3], x++, x++).
+        # # Extend the list with integer zeros when lazylists is active and the
+        # # index is greater than the end of the list.
+        # self.lazylistcompat = 'lazylistcompat' in options
+
         # TODO: Enable break/continue
         #self.breakcont = 'breakcont' in options
 
