@@ -581,7 +581,7 @@ class foldconst(object):
                                     and child[1]['t'] in ('float', 'integer'):
                 SEF = 'SEF' in node
                 node['nt'] = {'<=':'>', '>=':'<', '!=':'=='}[nt]
-                node = parent[index] = {'nt':'NEG', 't':node['t'], 'ch':[node]}
+                node = parent[index] = {'nt':'!', 't':node['t'], 'ch':[node]}
                 if SEF:
                     node['SEF'] = True
                 # Fold the new node
