@@ -46,7 +46,7 @@ Options (+ means active by default, - means inactive by default):
   constfold          + Fold constant expressions to their values, and simplify
                        some expressions.
   foldtabs           - Tabs can't be copy-pasted, so expressions that produce
-                       tabs (like llUnescapeURL("%09") aren't optimized by
+                       tabs (like llUnescapeURL("%%09") aren't optimized by
                        default. This option overrides that check, enabling
                        optimization of strings with tabs. The resulting source
                        isn't guaranteed to be copy-paste-able to the viewer.
