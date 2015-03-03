@@ -1120,12 +1120,16 @@ def llListReplaceList(lst, elems, start, end):
     assert isinteger(start)
     assert isinteger(end)
     L = len(lst)
+    if start < -L:
+        # llListReplaceList([0,1,2,3],[5],-5,-5) should return [0,1,2,3]
+        # llListReplaceList([0,1,2,3],[5],-5,-4) should return [1,2,3]
+        # llListReplaceList([0,1,2,3],[5],-5,-7) should return []
+        elems = []
     if (start + L if start < 0 else start) > (end + L if end < 0 else end):
         # Exclusion range. Appends elems at 'start' i.e. at end :)
         if end == -1: end += L
         return lst[end+1:start] + elems
     if end == -1: end += L
-    # BUG: llListReplaceList([1,2,3,4],[5],-5,-5) should return [1,2,3,4]
     return lst[:start] + elems + lst[end+1:]
 
 def llListSort(lst, stride, asc):
