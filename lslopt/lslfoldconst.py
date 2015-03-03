@@ -191,6 +191,8 @@ class foldconst(object):
             if subexpr['nt'] == 'CONST':
                 node = parent[index] = subexpr
                 node['value'] = int(not node['value'])
+            # TODO: Missing comparison optimization
+                # !(i>const) to i<(const+1) if no overflow (4 variants)
             return
 
         if nt == '~':
@@ -543,8 +545,8 @@ class foldconst(object):
                     # expr * 1  ->  expr
                     # expr * 0  ->  0  if side-effect free
                     # expr * -1  -> -expr
-                    # ident * 2  ->  ident + ident (no gain except if ident is local)
-                    # ident * -2  ->  -(ident + ident) (this is counter-productive if ident is not local)
+                    # ident * 2  ->  ident + ident (only if ident is local)
+                    # ident * -2  ->  -(ident + ident) (only if ident is local)
                     # expr/1  ->  expr
                     # expr/-1  ->  -expr
                     if nt == '*' and child[b]['t'] in ('float', 'integer') \
@@ -574,13 +576,34 @@ class foldconst(object):
                             return
                 return
 
-            # TODO: Missing comparison optimization
-                # (a<=b) to !(a>b)
-                # (a>=b) to !(a<b)
-                # (a!=b) to !(a==b)
-                # !(i>const) to i<(const+1) if no overflow (4 variants)
+            if nt in ('<=', '>=') or nt == '!=' \
+                                    and child[0]['t'] in ('float', 'integer') \
+                                    and child[1]['t'] in ('float', 'integer'):
+                SEF = 'SEF' in node
+                node['nt'] = {'<=':'>', '>=':'<', '!=':'=='}[nt]
+                node = parent[index] = {'nt':'NEG', 't':node['t'], 'ch':[node]}
+                if SEF:
+                    node['SEF'] = True
+                # Fold the new node
+                self.FoldTree(parent, index)
+                return
+
+            if nt in ('<', '>'):
                 # i>2147483647 to FALSE if SEF, otherwise convert to a&0
                 # i<-2147483648 to FALSE if SEF, otherwise convert to a&0
+                a, b = 0, 1
+                if child[a]['nt'] == 'CONST':
+                    a,b = 1,0
+                if child[b]['nt'] == 'CONST' and child[a]['t'] == child[b]['t'] == 'integer' \
+                   and (nt == '>' and child[b]['value'] == 2147483647
+                        or nt == '<' and child[b]['value'] == -2147483648):
+                    if 'SEF' in child[a]:
+                        parent[index] = node = child[b]
+                        node['value'] = 0
+                        return
+                    nt = node['nt'] = '&'
+                    child[b]['value'] = 0
+                    # fall through to check for '&'
 
             if nt in ('&', '|'):
                 # Deal with operands in any order
