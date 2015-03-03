@@ -1015,9 +1015,10 @@ class foldconst(object):
             node['SEF'] = True
             return
 
-        if nt in ('JUMP', '@', 'V++', 'V--', '--V', '++V'):
-            # These all have side effects, as in, can't be eliminated as
-            # statements.
+        if nt in ('JUMP', '@', 'V++', 'V--', '--V', '++V', 'LAMBDA'):
+            # Except LAMBDA, these all have side effects, as in, can't be
+            # eliminated as statements.
+            # LAMBDA can't be eliminated without scrolling Loc's.
             return
 
         assert False, 'Internal error: This should not happen, node type = ' \

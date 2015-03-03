@@ -366,6 +366,9 @@ class outscript(object):
         if nt == 'EXPR':
             return self.dent() + self.OutExpr(child[0]) + ';\n'
 
+        if nt == 'LAMBDA':
+            return ''
+
         assert False, "Internal error: node type not handled: " + nt # pragma: no cover
 
     def output(self, treesymtab, options = ('optsigns','optfloats')):

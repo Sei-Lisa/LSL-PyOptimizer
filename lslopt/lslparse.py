@@ -544,12 +544,14 @@ class parser(object):
         rotation_literal: '<' expression ',' expression ',' expression
             ',' expression '>'
         list_literal: '[' optional_expression_list ']'
-        assignment: lvalue '=' expression | lvalue '+=' expression
+        assignment: xlvalue '=' expression | lvalue '+=' expression
             | lvalue '-=' expression | lvalue '*=' expression
             | lvalue '/=' expression | lvalue '%=' expression
-            %EXTENDED RULES:
-            | lvalue '|=' expression | lvalue '&=' expression
-            | lvalue '<<=' expression | lvalue '>>=' expression
+            | lvalue '|=' expression %if extendedassignment
+            | lvalue '&=' expression %if extendedassignment
+            | lvalue '<<=' expression %if extendedassignment
+            | lvalue '>>=' expression %if extendedassignment
+        xlvalue: lvalue | IDENT '[' expression ']' %if lazylists
         lvalue: IDENT | IDENT '.' IDENT
         """
         tok0 = self.tok[0]
@@ -677,7 +679,21 @@ class parser(object):
                 raise EParseTypeMismatch(self)
             return {'nt':'V++' if tok0 == '++' else 'V--', 't':lvalue['t'], 'ch':[lvalue]}
         if AllowAssignment and (tok0 in self.assignment_toks
-                                or self.extendedassignment and tok0 in self.extassignment_toks):
+                                or self.extendedassignment and tok0 in self.extassignment_toks
+                                or self.lazylists and tok0 == '['):
+            if tok0 == '[':
+                if lvalue['nt'] != 'IDENT':
+                    raise EParseSyntax(self)
+                if lvalue['t'] != 'list':
+                    raise EParseTypeMismatch(self)
+                self.NextToken()
+                idxexpr = self.Parse_expression()
+                if idxexpr['t'] != 'integer':
+                    raise EParseTypeMismatch(self)
+                self.expect(']')
+                self.NextToken()
+                self.expect('=')
+
             self.NextToken()
             expr = self.Parse_expression()
             rtyp = expr['t']
@@ -690,6 +706,37 @@ class parser(object):
                 if tok0 != '*=' or typ == 'float':
                     expr = self.autocastcheck(expr, typ)
                     rtyp = typ
+            # Lazy list handler
+            if tok0 == '[':
+                # Define aux function if it doesn't exist
+                # (leaves users room for writing their own replacement, e.g.
+                # one that fills with something other than zeros)
+                if 'lazy_list_set' not in self.symtab[0]:
+                    self.PushScope()
+                    paramscope = self.scopeindex
+                    params = (['list', 'integer', 'list'],
+                              ['L', 'i', 'v'])
+                    self.AddSymbol('f', 0, 'lazy_list_set', Loc=self.usedspots,
+                        Type='list', ParamTypes=params[0], ParamNames=params[1])
+                    self.AddSymbol('v', paramscope, 'L', Type='list')
+                    self.AddSymbol('v', paramscope, 'i', Type='integer')
+                    self.AddSymbol('v', paramscope, 'v', Type='list')
+                    self.PushScope()
+                    localscope = self.scopeindex
+                    self.AddSymbol('v', localscope, 'ins', Type='integer',
+                                   Local=True)
+                    # Add body (apologies for the wall of text)
+                    self.tree[self.usedspots] = {'ch': [{'ch': [{'scope':localscope, 'ch': [{'ch': [{'scope':paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'scope':paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'v'}], 'nt': '!=', 't': 'integer'}], 'nt': 'DECL', 't': 'integer', 'name': 'ins'}, {'ch': [{'ch': [{'ch': [{'scope':localscope, 'nt': 'IDENT', 't': 'integer', 'name': 'ins'}], 'nt': '++V', 't': 'integer'}, {'scope':paramscope, 'nt': 'IDENT', 't': 'integer', 'name': 'i'}], 'nt': '<', 't': 'integer'}, {'ch': [{'ch': [{'scope':paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'ch': [{'scope':paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'ch': [{'scope':localscope, 'nt': 'IDENT', 't': 'integer', 'name': 'ins'}, {'scope':localscope, 'nt': 'IDENT', 't': 'integer', 'name': 'ins'}], 'nt': '^', 't': 'integer'}], 'nt': '+', 't': 'list'}], 'nt': '=', 't': 'list'}], 'nt': 'EXPR', 't': 'list'}], 'nt': 'WHILE', 't': None}, {'ch': [{'ch': [{'scope':paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'scope':paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'v'}, {'ch': [{'scope':localscope, 'nt': 'IDENT', 't': 'integer', 'name': 'ins'}, {'scope':paramscope, 'nt': 'IDENT', 't': 'integer', 'name': 'i'}], 'nt': '=', 't': 'integer'}, {'scope':localscope, 'nt': 'IDENT', 't': 'integer', 'name': 'ins'}], 'nt': 'FNCALL', 't': 'list', 'name': 'llListReplaceList'}], 'nt': 'RETURN', 't': None, 'LIR': True}], 'nt': '{}', 't': None, 'LIR': True}], 't': 'list', 'pnames': ['L', 'i', 'v'], 'scope': 0, 'pscope': 1, 'nt': 'FNDEF', 'ptypes': ['list', 'integer', 'list'], 'name': 'lazy_list_set'}
+                    self.usedspots += 1
+                    self.PopScope()
+                    self.PopScope()
+
+                return {'nt':'=', 't':'list', 'ch':[lvalue, {
+                        'nt':'FNCALL', 't':'list', 'name':'lazy_list_set',
+                        'ch':[lvalue.copy(), idxexpr,
+                              {'nt':'LIST','t':'list', 'ch':[expr]}]
+                    }]}
+
             # Lots of drama for checking types. This is pretty much like
             # addition, subtraction, multiply, divide, etc. all in one go.
             if tok0 == '=':
@@ -1825,8 +1872,8 @@ class parser(object):
         # TODO: Enable switch statements.
         #self.enableswitch = 'enableswitch' in options
 
-        # TODO: Enable brackets for list elements e.g. (float)mylist[3], or mylist[5]=4
-        #self.lazylists = 'lazylists' in options
+        # Allow brackets for assignment of list elements e.g. mylist[5]=4
+        self.lazylists = 'lazylists' in options
 
         # TODO: Enable break/continue
         #self.breakcont = 'breakcont' in options
@@ -1889,7 +1936,9 @@ class parser(object):
         self.pos = 0
         self.tok = self.GetToken()
 
-        self.tree = []
+        # Reserve spots at the beginning for functions we add
+        self.tree = [{'nt':'LAMBDA','t':None}]
+        self.usedspots = 0
 
         # Start the parsing proper
         self.Parse_script()

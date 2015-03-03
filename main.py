@@ -42,14 +42,14 @@ Options (+ means active by default, - means inactive by default):
                        directives like: # 123 "filename".
   optimize           + Runs the optimizer.
   optsigns           + Optimize signs in float and integer constants.
-  optfloats          + Optimize a float when it is an integral value.
-  constfold          + Fold constant expressions to their values.
-  foldtabs           - Tabs can't be copy-pasted, so they aren't optimized by
-                       default. But with support from the viewer, they can be
-                       folded too and make it to the uploaded source. This
-                       option overrides that check, enabling optimization of
-                       strings with tabs. The resulting source isn't guaranteed
-                       to be copy-paste-able to a different script, though.
+  optfloats          + Optimize floats that represent an integral value.
+  constfold          + Fold constant expressions to their values, and simplify
+                       some expressions.
+  foldtabs           - Tabs can't be copy-pasted, so expressions that produce
+                       tabs (like llUnescapeURL("%09") aren't optimized by
+                       default. This option overrides that check, enabling
+                       optimization of strings with tabs. The resulting source
+                       isn't guaranteed to be copy-paste-able to the viewer.
   duplabels          - Normally, a duplicate label within a function is allowed
                        by the syntax by using {} blocks; however, the server
                        will just refuse to save the script (under Mono) or do
@@ -61,6 +61,9 @@ Options (+ means active by default, - means inactive by default):
                        process, it turns the script into unreadable gibberish,
                        hard to debug, but this gets big savings for complex
                        scripts.
+  lazylists          - Support syntax like mylist[index] = 5; rather than using
+                       llListReplaceList. Not recommended, as it adds a new
+                       function.
 ''' % sys.argv[0])
         return 1
 
