@@ -108,6 +108,8 @@ class foldconst(object):
             # when possible. Or if one is bool and the other is not, to an
             # expression of the form !(a&-b) (if b is bool).
 
+            # TODO: Convert bool(x < 0) to bool(x & 0x80000000)
+
 
     def CopyNode(self, node):
         # This is mainly for simple_expr so no need to go deeper than 1 level.
@@ -851,6 +853,7 @@ class foldconst(object):
             return
 
         if nt == 'IF':
+            # TODO: Swap IF/ELSE if both present and nonempty and cond starts with !
             self.FoldTree(child, 0)
             self.FoldCond(child, 0)
             if child[0]['nt'] == 'CONST':
