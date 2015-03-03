@@ -1125,6 +1125,7 @@ def llListReplaceList(lst, elems, start, end):
         if end == -1: end += L
         return lst[end+1:start] + elems
     if end == -1: end += L
+    # BUG: llListReplaceList([1,2,3,4],[5],-5,-5) should return [1,2,3,4]
     return lst[:start] + elems + lst[end+1:]
 
 def llListSort(lst, stride, asc):
