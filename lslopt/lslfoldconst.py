@@ -502,15 +502,18 @@ class foldconst(object):
 
 
             if nt in ('*', '/'):
-                # Optimize (-a)*(-b) and (-a)/(-b)
-                if child[0]['nt'] == 'NEG' and child[1]['nt'] == 'NEG':
-                    child[0] = child[0]['ch'][0]
-                    child[1] = child[1]['ch'][0]
-
-                # TODO: Try to optimize -(expr*-const).
-                # That would yield optimal ~(~expr*blah) from (expr+1)*blah-1.
-                # Also it would be cute if a*b+b would be optimized to (a+1)*b,
-                # which is the other form common in strided lists.
+                # Extract signs outside
+                if child[0]['nt'] == 'NEG' or child[1]['nt'] == 'NEG':
+                    a, b = 0, 1
+                    if child[b]['nt'] == 'NEG':
+                        a, b = 1, 0
+                    child[a] = child[a]['ch'][0]
+                    parent[index] = node = {'nt':'NEG', 't':node['t'], 'ch':[node]}
+                    if 'SEF' in node['ch'][0]:
+                        node['SEF'] = True
+                    # Fold the new expression
+                    self.FoldTree(parent, index)
+                    return
 
                 # Deal with operands in any order
                 a, b = 0, 1
