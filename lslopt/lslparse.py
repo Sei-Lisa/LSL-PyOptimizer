@@ -721,15 +721,21 @@ class parser(object):
                     self.AddSymbol('v', paramscope, 'L', Type='list')
                     self.AddSymbol('v', paramscope, 'i', Type='integer')
                     self.AddSymbol('v', paramscope, 'v', Type='list')
-                    #self.PushScope()
-                    #localscope = self.scopeindex
-                    #self.AddSymbol('v', localscope, 'ins', Type='integer',
-                    #               Local=True)
+                    #self.PushScope() # no locals
 
                     # Add body (apologies for the wall of text)
+                    # Generated from this source:
+                    '''
+list lazy_list_set(list L, integer i, list v)
+{
+    while (llGetListLength(L) < i)
+        L = L + 0;
+    return llListReplaceList(L, v, i, i);
+}
+                    '''
                     self.tree[self.usedspots] = {'ch': [{'ch': [{'ch': [{'ch': [{'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}], 'nt': 'FNCALL', 't': 'integer', 'name': 'llGetListLength'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'integer', 'name': 'i'}], 'nt': '<', 't': 'integer'}, {'ch': [{'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'nt': 'CONST', 't': 'integer', 'value': 0}], 'nt': '+', 't': 'list'}], 'nt': '=', 't': 'list'}], 'nt': 'EXPR', 't': 'list'}], 'nt': 'WHILE', 't': None}, {'ch': [{'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'v'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'integer', 'name': 'i'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'integer', 'name': 'i'}], 'nt': 'FNCALL', 't': 'list', 'name': 'llListReplaceList'}], 'nt': 'RETURN', 't': None, 'LIR': True}], 'nt': '{}', 't': None, 'LIR': True}], 't': 'list', 'pnames': params[1], 'scope': 0, 'pscope': paramscope, 'nt': 'FNDEF', 'ptypes': params[0], 'name': 'lazy_list_set'}
                     self.usedspots += 1
-                    #self.PopScope()
+                    #self.PopScope() # no locals
                     self.PopScope()
 
                 return {'nt':'=', 't':'list', 'ch':[lvalue, {
