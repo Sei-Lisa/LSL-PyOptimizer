@@ -15,6 +15,9 @@ That's an upper case o, not the number zero.
 If filename is a dash (-) then standard input is used.
 
 Options (+ means active by default, - means inactive by default):
+
+  Syntax extensions options:
+
   extendedglobalexpr + Enables arbitrary expressions in globals (as opposed to
                        dull simple expressions allowed by regular LSL). Needs
                        the optimizer to run for the result to be compilable.
@@ -29,38 +32,9 @@ Options (+ means active by default, - means inactive by default):
                        "abcd", no concatenation involved. Very useful when used
                        with a preprocessor. Similar to addstrings, but this one
                        is not an optimization, it introduces new syntax.
-  addstrings         - Concatenate strings together when possible. Note that
-                       such an optimization can be counter-productive in some
-                       cases, that's why it is unset by default. For example:
-                       string a="a"+"longstring"; string b="b"+"longstring";
-                       would keep a single copy of "longstring", while if the
-                       strings are added, "alongstring" and "blongstring" would
-                       both take memory.
-  skippreproc        + Skip preprocessor directives in the source as if they
-                       were comments. Not useful unless the script is itself
-                       the output of a preprocessor like cpp, which inserts
-                       directives like: # 123 "filename".
-  optimize           + Runs the optimizer.
-  optsigns           + Optimize signs in float and integer constants.
-  optfloats          + Optimize floats that represent an integral value.
-  constfold          + Fold constant expressions to their values, and simplify
-                       some expressions.
-  foldtabs           - Tabs can't be copy-pasted, so expressions that produce
-                       tabs (like llUnescapeURL("%%09") aren't optimized by
-                       default. This option overrides that check, enabling
-                       optimization of strings with tabs. The resulting source
-                       isn't guaranteed to be copy-paste-able to the viewer.
-  duplabels          - Normally, a duplicate label within a function is allowed
-                       by the syntax by using {} blocks; however, the server
-                       will just refuse to save the script (under Mono) or do
-                       something completely unexpected (under LSO: all jumps
-                       will go to the last label with that name). This flag
-                       works around that limitation by replacing the names of
-                       the labels in the output with unique ones.
-  shrinknames        - Reduces script memory by shrinking identifiers. In the
-                       process, it turns the script into unreadable gibberish,
-                       hard to debug, but this gets big savings for complex
-                       scripts.
+  breakcont          - Allow break/continue statements for loops. Note that
+                       when active, 'break' and 'continue' become reserved
+                       words, but when inactive they can be used as variables.
   lazylists          - Support syntax like mylist[index] = 5; rather than using
                        llListReplaceList. Only assignment supported. The list
                        is extended when the argument is greater than the list
@@ -68,12 +42,58 @@ Options (+ means active by default, - means inactive by default):
                        for compatibility with Firestorm, but its use is not
                        recommended, as it adds a new function, wasting memory
                        against the very spirit of this program.
+  enableswitch       - Support C-like switch syntax, with some limitations.
+                       Like lazylists, it's implemented for compatibility with
+                       Firestorm, but not recommended. Note that the operand to
+                       switch() may be evaluated more than once.
+  duplabels          - Normally, a duplicate label within a function is allowed
+                       by the syntax by using {} blocks; however, the server
+                       will just refuse to save the script (under Mono) or do
+                       something completely unexpected (under LSO: all jumps
+                       will go to the last label with that name). This flag
+                       works around that limitation by replacing the names of
+                       the labels in the output with unique ones.
+
+  Optimization options
+
+  optimize           + Runs the optimizer.
+  optsigns           + Optimize signs in float and integer constants.
+  optfloats          + Optimize floats that represent an integral value.
+  constfold          + Fold constant expressions to their values, and simplify
+                       some expressions.
+  dcr                + Dead code removal. This option removes several instances
+                       of code that will never execute, and performs other
+                       optimizations like removal of unused variables,
+                       functions or expressions.
+  shrinknames        - Reduces script memory by shrinking identifiers. In the
+                       process, it turns the script into unreadable gibberish,
+                       hard to debug, but this gets big savings for complex
+                       scripts.
+  addstrings         - Concatenate strings together when possible. Note that
+                       such an optimization can be counter-productive in some
+                       cases, that's why it is unset by default. For example:
+                       string a="a"+"longstring"; string b="b"+"longstring";
+                       would keep a single copy of "longstring", while if the
+                       strings are added, both "alongstring" and "blongstring"
+                       take memory.
+
+  Miscellaneous options
+
+  foldtabs           - Tabs can't be copy-pasted, so expressions that produce
+                       tabs (like llUnescapeURL("%%09") aren't optimized by
+                       default. This option overrides that check, enabling
+                       optimization of strings with tabs. The resulting source
+                       isn't guaranteed to be copy-paste-able to the viewer.
+  skippreproc        + Skip preprocessor directives in the source as if they
+                       were comments. Not useful unless the script is itself
+                       the output of a preprocessor like cpp, which inserts
+                       directives like: # 123 "filename".
 ''' % sys.argv[0])
         return 1
 
     options = set(('extendedglobalexpr','extendedtypecast','extendedassignment',
         'allowkeyconcat','allowmultistrings','skippreproc','optimize',
-        'optsigns','optfloats','constfold'
+        'optsigns','optfloats','constfold','dcr'
         ))
 
     if sys.argv[1] == '-O':

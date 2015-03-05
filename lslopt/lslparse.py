@@ -111,7 +111,37 @@ class EParseCodePathWithoutRet(EParse):
 class EParseDuplicateLabel(EParse):
     def __init__(self, parser):
         super(EParseDuplicateLabel, self).__init__(parser,
-            u"Duplicate local label name. That won't allow the Mono script to be saved, and will not work as expected in LSO.")
+            u"Duplicate local label name. That won't allow the Mono script"
+            u" to be saved, and will not work as expected in LSO.")
+
+class EParseInvalidCase(EParse):
+    def __init__(self, parser, kind):
+        super(EParseInvalidCase, self).__init__(parser,
+            u"'%s' used outside a 'switch' statement" % kind)
+
+class EParseCaseNotAllowed(EParse):
+    def __init__(self, parser, kind):
+        super(EParseCaseNotAllowed, self).__init__(parser,
+            u"'%s' label only allowed at the main 'switch' block" % kind)
+
+class EParseManyDefaults(EParse):
+    def __init__(self, parser):
+        super(EParseManyDefaults, self).__init__(parser,
+            u"multiple 'default' labels inside 'switch' statement")
+
+class EParseInvalidBreak(EParse):
+    def __init__(self, parser):
+        super(EParseInvalidBreak, self).__init__(parser,
+            u"'break' used outside a loop or switch"
+            if parser.enableswitch and parser.breakcont
+            else u"'break' used outside a switch"
+            if parser.enableswitch
+            else u"'break' used outside a loop")
+
+class EParseInvalidCont(EParse):
+    def __init__(self, parser):
+        super(EParseInvalidCont, self).__init__(parser,
+            u"'continue' used outside a loop")
 
 class EInternal(Exception):
     """This exception is a construct to allow a different function to cause an
@@ -142,6 +172,20 @@ class parser(object):
         unicode:'STRING_VALUE', Key:'KEY_VALUE', Vector:'VECTOR_VALUE',
         Quaternion:'ROTATION_VALUE', list:'LIST_VALUE'}
 
+
+    # Utility function
+    def GenerateLabel(self):
+        while True:
+            x = random.randint(0, 16777215)
+            unique = 'J_' + b64encode(chr(x>>16) + chr((x>>8)&255)
+                + chr(x&255)).replace('+', '_')
+            x = random.randint(0, 16777215)
+            unique += b64encode(chr(x>>16) + chr((x>>8)&255)
+                + chr(x&255)).replace('+', '_')
+            if '/' not in unique not in self.locallabels:
+                break
+        self.locallabels.add(unique)
+        return unique
 
     def PushScope(self):
         """Create a new symbol table / scope level"""
@@ -1197,13 +1241,18 @@ list lazy_list_set(list L, integer i, list v)
             raise EParseFunctionMismatch(self)
         return ret
 
-    def Parse_statement(self, ReturnType, AllowDecl = False, AllowStSw = False):
+    def Parse_statement(self, ReturnType, AllowDecl = False, AllowStSw = False,
+        InsideSwitch = False, InsideLoop = False):
         """Grammar parsed here:
 
         statement: ';' | single_statement | code_block
         single_statement: if_statement | while_statement | do_statement
             | for_statement | jump_statement | state_statement | label_statement
             | return_statement | declaration_statement | expression ';'
+            | switch_statement %if enableswitch
+            | case_statement %if enableswitch and InsideSwitch
+            | break_statement %if enableswitch and InsideSwitch or breakcont and InsideLoop
+            | continue_statement %if breakcont and InsideLoop
         if_statement: IF '(' expression ')' statement ELSE statement
             | IF '(' expression ')' statement
         while_statement: WHILE '(' expression ')' statement
@@ -1215,15 +1264,29 @@ list lazy_list_set(list L, integer i, list v)
         label_statement: '@' IDENT ';'
         return_statement: RETURN ';' | RETURN expression ';'
         declaration_statement: TYPE lvalue ';' | TYPE lvalue '=' expression ';'
+        switch_statement: SWITCH '(' expression ')' code_block
+        case_statement: CASE expression ':' | DEFAULT ':'
+        break_statement: BREAK ';'
+        continue_statement: CONTINUE ';'
 
         There's a restriction: a *single* statement can not be a declaration.
+        For example: if (1) integer x; is not allowed.
+
+        Note that SWITCH expects a code block because CASE is a full statement
+        for us, rather than a label. So for example this wouldn't work:
+        switch (expr) case expr: stmt; // works in C but not in this processor
+        but this works in both: switch (expr) { case expr: stmt; }
         """
         tok0 = self.tok[0]
+
         if tok0 == '{':
-            return self.Parse_code_block(ReturnType, AllowStSw = AllowStSw)
+            return self.Parse_code_block(ReturnType, AllowStSw = AllowStSw,
+                InsideSwitch = InsideSwitch, InsideLoop = InsideLoop)
+
         if tok0 == ';':
             self.NextToken()
             return {'nt':';', 't':None}
+
         if tok0 == '@':
             self.NextToken()
             self.expect('IDENT')
@@ -1235,21 +1298,14 @@ list lazy_list_set(list L, integer i, list v)
                 # Duplicate labels allowed.
                 if name in self.locallabels or self.shrinknames:
                     # Generate a new unique name and attach it to the symbol.
-                    while True:
-                        x = random.randint(0, 16777215)
-                        unique = 'J_' + b64encode(chr(x>>16) + chr((x>>8)&255)
-                            + chr(x&255)).replace('+', '_')
-                        x = random.randint(0, 16777215)
-                        unique += b64encode(chr(x>>16) + chr((x>>8)&255)
-                            + chr(x&255)).replace('+', '_')
-                        if '/' not in unique not in self.locallabels:
-                            break
+                    unique = self.GenerateLabel()
+                    self.AddSymbol('l', self.scopeindex, name, NewName=unique)
                 else:
                     # Use the existing name. Faster and more readable.
                     unique = name
+                    self.locallabels.add(name)
+                    self.AddSymbol('l', self.scopeindex, name)
 
-                self.locallabels.add(unique)
-                self.AddSymbol('l', self.scopeindex, name, NewName=unique)
             else:
                 # Duplicate labels disallowed.
                 # All labels go to a common pool local to the current function.
@@ -1262,6 +1318,7 @@ list lazy_list_set(list L, integer i, list v)
             self.expect(';')
             self.NextToken()
             return {'nt':'@', 't':None, 'name':name, 'scope':self.scopeindex}
+
         if tok0 == 'JUMP':
             self.NextToken()
             self.expect('IDENT')
@@ -1292,6 +1349,7 @@ list lazy_list_set(list L, integer i, list v)
             if self.localevents is None and not AllowStSw:
                 raise EParseCantChangeState(self)
             return {'nt':'STSW', 't':None, 'name':name, 'scope':0}
+
         if tok0 == 'RETURN':
             self.NextToken()
             if self.tok[0] == ';':
@@ -1309,6 +1367,7 @@ list lazy_list_set(list L, integer i, list v)
             # Sets LastIsReturn flag too
             return {'nt':'RETURN', 't':None, 'LIR':True,
                 'ch':[self.autocastcheck(value, ReturnType)]}
+
         if tok0 == 'IF':
             ret = {'nt':'IF', 't':None, 'ch':[]}
             self.NextToken()
@@ -1320,29 +1379,77 @@ list lazy_list_set(list L, integer i, list v)
             # INCOMPATIBILITY NOTE: This is more permissive than LSL.
             # In LSL, an if...then...else does NOT allow a state change
             # in either branch. Only an if...then without else does.
-            # BUT we're not going to check the branch after the fact, just
-            # to report that error. The compiler will report it.
-            ret['ch'].append(self.Parse_statement(ReturnType, AllowStSw = True))
+            # BUT since the decision to allow or not needs to be taken before
+            # the 'else' is found, we're not going to check the branch after
+            # parsing, only for the sake of reporting that error. The compiler
+            # will report it.
+            ret['ch'].append(self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = InsideLoop))
             if self.tok[0] == 'ELSE':
                 LastIsReturn = 'LIR' in ret['ch'][1]
                 self.NextToken()
-                ret['ch'].append(self.Parse_statement(ReturnType, AllowStSw = AllowStSw))
+                ret['ch'].append(self.Parse_statement(ReturnType, AllowStSw = AllowStSw, InsideLoop = InsideLoop))
                 if LastIsReturn and 'LIR' in ret['ch'][2]:
                     ret['LIR'] = True
             return ret
 
         if tok0 == 'WHILE':
             self.NextToken()
+            if self.breakcont:
+                # We may add braces - or not. The safe approach is to assume
+                # we always do and open a new scope for it. At worst it will be
+                # empty. At least it is not reflected as brackets in the code
+                # if braces are not used.
+                self.PushScope()
+
+                brk = self.GenerateLabel()
+                self.breaktargets.append(brk)
+                self.breakscopes.append(self.scopeindex)
+                self.breaksused.append(False)
+                cnt = self.GenerateLabel()
+                self.continuetargets.append(cnt)
+                self.continuescopes.append(None)
+                self.continuesused.append(False)
             self.expect('(')
             self.NextToken()
             condition = self.Parse_expression()
             self.expect(')')
             self.NextToken()
-            return {'nt':'WHILE', 't':None, 'ch':[condition,
-                self.Parse_statement(ReturnType, AllowStSw = True)]}
+            ret = {'nt':'WHILE', 't':None, 'ch':[condition,
+                self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)]}
+            if self.breakcont:
+                if self.continuesused.pop():
+                    assert ret['ch'][0]['nt'] == '{}'
+                    ret['ch'][0]['ch'].append(
+                        {'nt':'@', 't':None, 'name':cnt, 'scope':self.continuescopes[-1]}
+                        )
+                    self.AddSymbol('l', self.continuescopes[-1], cnt)
+                self.continuescopes.pop()
+                self.continuetargets.pop()
+
+                if self.breaksused.pop():
+                    ret = {'nt':'{}', 't':None, 'ch':[ret,
+                        {'nt':'@', 't':None, 'name':brk, 'scope':self.scopeindex}
+                        ]}
+                    self.AddSymbol('l', self.scopeindex, brk)
+                self.breakscopes.pop()
+                self.breaktargets.pop()
+                self.PopScope()
+            return ret
+
         if tok0 == 'DO':
             self.NextToken()
-            stmt = self.Parse_statement(ReturnType, AllowStSw = True)
+            if self.breakcont:
+                self.PushScope()
+
+                brk = self.GenerateLabel()
+                self.breaktargets.append(brk)
+                self.breakscopes.append(self.scopeindex)
+                self.breaksused.append(False)
+                cnt = self.GenerateLabel()
+                self.continuetargets.append(cnt)
+                self.continuescopes.append(None)
+                self.continuesused.append(False)
+            stmt = self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)
             self.expect('WHILE')
             self.NextToken()
             self.expect('(')
@@ -1352,9 +1459,40 @@ list lazy_list_set(list L, integer i, list v)
             self.NextToken()
             self.expect(';')
             self.NextToken()
-            return {'nt':'DO', 't':None, 'ch':[stmt, condition]}
+            ret = {'nt':'DO', 't':None, 'ch':[stmt, condition]}
+            if self.breakcont:
+                if self.continuesused.pop():
+                    assert ret['ch'][0]['nt'] == '{}'
+                    ret['ch'][0]['ch'].append(
+                        {'nt':'@', 't':None, 'name':cnt, 'scope':self.continuescopes[-1]}
+                        )
+                    self.AddSymbol('l', self.continuescopes[-1], cnt)
+                self.continuescopes.pop()
+                self.continuetargets.pop()
+
+                if self.breaksused.pop():
+                    ret = {'nt':'{}', 't':None, 'ch':[ret,
+                        {'nt':'@', 't':None, 'name':brk, 'scope':self.scopeindex}
+                        ]}
+                    self.AddSymbol('l', self.scopeindex, brk)
+                self.breakscopes.pop()
+                self.breaktargets.pop()
+                self.PopScope()
+            return ret
+
         if tok0 == 'FOR':
             self.NextToken()
+            if self.breakcont:
+                self.PushScope()
+
+                brk = self.GenerateLabel()
+                self.breaktargets.append(brk)
+                self.breakscopes.append(self.scopeindex)
+                self.breaksused.append(False)
+                cnt = self.GenerateLabel()
+                self.continuetargets.append(cnt)
+                self.continuescopes.append(None)
+                self.continuesused.append(False)
             self.expect('(')
             self.NextToken()
             initializer = self.Parse_optional_expression_list()
@@ -1366,12 +1504,163 @@ list lazy_list_set(list L, integer i, list v)
             iterator = self.Parse_optional_expression_list()
             self.expect(')')
             self.NextToken()
-            stmt = self.Parse_statement(ReturnType, AllowStSw = True)
-            return {'nt':'FOR', 't':None,
+            stmt = self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)
+            ret = {'nt':'FOR', 't':None,
                 'ch':[{'nt':'EXPRLIST','t':None, 'ch':initializer},
                       condition,
                       {'nt':'EXPRLIST','t':None, 'ch':iterator},
                       stmt]}
+            if self.breakcont:
+                if self.continuesused.pop():
+                    assert ret['ch'][0]['nt'] == '{}'
+                    ret['ch'][0]['ch'].append(
+                        {'nt':'@', 't':None, 'name':cnt, 'scope':self.continuescopes[-1]}
+                        )
+                    self.AddSymbol('l', self.continuescopes[-1], cnt)
+                self.continuescopes.pop()
+                self.continuetargets.pop()
+
+                if self.breaksused.pop():
+                    ret = {'nt':'{}', 't':None, 'ch':[ret,
+                        {'nt':'@', 't':None, 'name':brk, 'scope':self.scopeindex}
+                        ]}
+                    self.AddSymbol('l', self.scopeindex, brk)
+                self.breakscopes.pop()
+                self.breaktargets.pop()
+                self.PopScope()
+            return ret
+
+        if tok0 == 'SWITCH':
+            self.NextToken()
+            self.expect('(')
+            self.NextToken()
+            expr = self.Parse_expression()
+            self.expect(')')
+            self.NextToken()
+            brk = self.GenerateLabel()
+            self.breaktargets.append(brk)
+            self.breakscopes.append(None) # not known yet - entering the block will tell us
+            self.breaksused.append(False)
+            blk = self.Parse_code_block(ReturnType, AllowStSw = AllowStSw,
+                InsideSwitch = True, InsideLoop = InsideLoop)
+            blkscope  = self.breakscopes[-1]
+            self.AddSymbol('l', blkscope, brk)
+
+            # Replace the block
+            #   switch (expr1) { case expr2: stmts1; break; default: stmts2; }
+            # is translated to:
+            #   {
+            #       if (expr1==expr2) jump label1;
+            #       jump labeldef;
+            #
+            #       @label1;
+            #       stmts1;
+            #       jump labelbrk;
+            #       @labeldef;
+            #       stmts2;
+            #       @labelbrk;
+            #   }
+            # The prelude is the ifs and the jumps.
+            # The block gets the cases replaced with labels,
+            # and the breaks replaced with jumps.
+
+            switchcaselist = []
+            switchcasedefault = None
+            # Since label scope rules prevent us from being able to jump inside
+            # a nested block, only one nesting level is considered.
+            assert blk['nt'] == '{}'
+            blk = blk['ch']
+            for idx in xrange(len(blk)):
+                if blk[idx]['nt'] == 'CASE':
+                    lbl = self.GenerateLabel()
+                    switchcaselist.append((lbl, blk[idx]['ch'][0]))
+                    self.AddSymbol('l', blkscope, lbl)
+                    blk[idx] = {'nt':'@', 'name':lbl, 'scope':blkscope}
+                elif blk[idx]['nt'] == 'DEFAULTCASE':
+                    if switchcasedefault is not None:
+                        raise EParseManyDefaults(self)
+                    lbl = self.GenerateLabel()
+                    switchcasedefault = lbl
+                    self.AddSymbol('l', blkscope, lbl)
+                    blk[idx] = {'nt':'@', 'name':lbl, 'scope':blkscope}
+
+            prelude = []
+            ltype = expr['t']
+            for case in switchcaselist:
+                rexpr = case[1]
+                lexpr = expr
+                if ltype == 'float':
+                    rexpr = self.autocastcheck(rexpr, ltype)
+                else:
+                    # For string & key, RHS (rtype) mandates the conversion
+                    # (that's room for optimization: always compare strings)
+                    lexpr = self.autocastcheck(lexpr, rexpr['t'])
+                prelude.append({'nt':'IF', 't':None, 'ch':[
+                    {'nt':'==', 't':'integer', 'ch':[lexpr, rexpr]},
+                    {'nt':'JUMP', 't':None, 'name':case[0], 'scope':blkscope}
+                    ]})
+
+            if switchcasedefault is None:
+                switchcasedefault = brk
+                self.breaksused[-1] = True
+            prelude.append({'nt':'JUMP', 't':None, 'name':switchcasedefault,
+                'scope':blkscope})
+            self.breaktargets.pop()
+            self.breakscopes.pop()
+            if self.breaksused.pop():
+                blk.append({'nt':'@', 'name':brk, 'scope':blkscope})
+            return {'nt':'{}', 't':None, 'ch':prelude + blk}
+
+        if tok0 == 'CASE':
+            if not InsideSwitch:
+                raise EParseInvalidCase(self, u"case")
+            if self.scopeindex != self.breakscopes[-1]:
+                # If this block is nested and not the main switch block, this
+                # won't work. Label scope rules don't expose the nested labels.
+                raise EParseCaseNotAllowed(self, u"case")
+            self.NextToken()
+            expr = self.Parse_expression()
+            self.expect(':')
+            self.NextToken()
+            return {'nt':'CASE', 't':None, 'ch':[expr]}
+
+        if tok0 == 'DEFAULT':
+            if self.enableswitch:
+                if not InsideSwitch:
+                    raise EParseInvalidCase(self, u"default")
+                if self.scopeindex != self.breakscopes[-1]:
+                    # If this block is nested and not the main switch block, this
+                    # won't work. Label scope rules don't expose the nested labels.
+                    raise EParseCaseNotAllowed(self, u"default")
+                self.NextToken()
+                self.expect(':')
+                self.NextToken()
+                return {'nt':'DEFAULTCASE', 't':None}
+            # else fall through to eventually fail
+
+        if tok0 == 'BREAK':
+            if not self.breaktargets:
+                raise EParseInvalidBreak(self)
+            self.breaksused[-1] = True
+            self.NextToken()
+            self.expect(';')
+            self.NextToken()
+            return {'nt':'JUMP', 't':None, 'name':self.breaktargets[-1],
+                'scope':self.breakscopes[-1]}
+
+        if tok0 == 'CONTINUE':
+            if not self.continuetargets:
+                raise EParseInvalidCont(self)
+            if self.continuescopes[-1] is None:
+                # We're not inside a block - 'continue' is essentially a nop
+                return {'nt':';', 't':'None'}
+            self.continuesused[-1] = True
+            self.NextToken()
+            self.expect(';')
+            self.NextToken()
+            return {'nt':'JUMP', 't':None, 'name':self.continuetargets[-1],
+                'scope':self.continuescopes[-1]}
+
         if tok0 == 'TYPE':
             if not AllowDecl:
                 raise EParseDeclarationScope(self)
@@ -1398,7 +1687,8 @@ list lazy_list_set(list L, integer i, list v)
         self.NextToken()
         return {'nt':'EXPR', 't':value['t'], 'ch':[value]}
 
-    def Parse_code_block(self, ReturnType, AllowStSw = False):
+    def Parse_code_block(self, ReturnType, AllowStSw = False, InsideSwitch = False,
+        InsideLoop = False):
         """Grammar parsed here:
 
         code_block: '{' statements '}'
@@ -1411,12 +1701,22 @@ list lazy_list_set(list L, integer i, list v)
 
         self.PushScope()
 
+        # Kludge to find the scope of the break (for switch) /
+        # continue (for loops) labels.
+        if self.breakscopes: # non-empty iff inside loop or switch
+            if InsideSwitch and self.breakscopes[-1] is None:
+                self.breakscopes[-1] = self.scopeindex
+            if InsideLoop and self.continuescopes[-1] is None:
+                self.continuescopes[-1] = self.scopeindex
+
         body = []
         LastIsReturn = False
         while True:
             if self.tok[0] == '}':
                 break
-            stmt = self.Parse_statement(ReturnType, AllowDecl = True, AllowStSw = AllowStSw)
+            stmt = self.Parse_statement(ReturnType, AllowDecl = True,
+                AllowStSw = AllowStSw, InsideSwitch = InsideSwitch,
+                InsideLoop = InsideLoop)
             LastIsReturn = 'LIR' in stmt
             body.append(stmt)
 
@@ -1876,8 +2176,10 @@ list lazy_list_set(list L, integer i, list v)
         # TODO: Allow pure C-style string escapes. This is low-priority.
         #self.allowcescapes = 'allowcescapes' in options
 
-        # TODO: Enable switch statements.
-        #self.enableswitch = 'enableswitch' in options
+        # Enable switch statements.
+        self.enableswitch = 'enableswitch' in options
+        if self.enableswitch:
+            self.keywords |= frozenset(('switch', 'case', 'break'))
 
         # Allow brackets for assignment of list elements e.g. mylist[5]=4
         self.lazylists = 'lazylists' in options
@@ -1890,8 +2192,23 @@ list lazy_list_set(list L, integer i, list v)
         # # index is greater than the end of the list.
         # self.lazylistcompat = 'lazylistcompat' in options
 
-        # TODO: Enable break/continue
-        #self.breakcont = 'breakcont' in options
+        # Enable break/continue
+        self.breakcont = 'breakcont' in options
+        if self.breakcont:
+            self.keywords |= frozenset(('break', 'continue'))
+
+        # Stack to track the labels for break targets.
+        self.breaktargets = []
+        # Stack to track the scope of the break label.
+        self.breakscopes = []
+        # Stack to track whether the break target label is used.
+        self.breaksused = []
+        # Stack to track the labels for continue targets.
+        self.continuetargets = []
+        # Stack to track the scope for continue targets.
+        self.continuescopes = []
+        # Stack to track whether the continue target label is used.
+        self.continuesused = []
 
         # Enable use of local labels with duplicate names
         self.duplabels = 'duplabels' in options
