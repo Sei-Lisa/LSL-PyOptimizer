@@ -597,7 +597,7 @@ def llJsonSetValue(json, lst, val):
     # Recursive works best here
     return InternalJsonRecursiveSetValue(json, lst, val)
 
-    return u"----unimplemented----" # TODO: Implement llJsonSetValue.
+    return u"----unimplemented----"
 '''
 
 def llJsonValueType(json, lst):

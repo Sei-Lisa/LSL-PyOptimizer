@@ -193,8 +193,7 @@ class foldconst(object):
             if subexpr['nt'] == 'CONST':
                 node = parent[index] = subexpr
                 node['value'] = int(not node['value'])
-            # TODO: Missing comparison optimization
-                # !(i>const) to i<(const+1) if no overflow (4 variants)
+            # TODO: !(i>const) to i<(const+1) if no overflow (4 variants)
             return
 
         if nt == '~':
@@ -418,7 +417,7 @@ class foldconst(object):
                     # same as above, join them
                     # FIXME: Isn't this covered by the associative sum above?
 
-                    pass # TODO: implement
+                    pass # TODO: implement const + (expr + const) or const + (const + expr)
 
                 if rnt == 'CONST':
                     # Swap the vars to deal with const in lval always
@@ -853,7 +852,7 @@ class foldconst(object):
             return
 
         if nt == 'IF':
-            # TODO: Swap IF/ELSE if both present and nonempty and cond starts with !
+            # TODO: Swap IF/ELSE if both present and cond starts with !
             self.FoldTree(child, 0)
             self.FoldCond(child, 0)
             if child[0]['nt'] == 'CONST':
