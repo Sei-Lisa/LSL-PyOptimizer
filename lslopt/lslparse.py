@@ -1397,8 +1397,8 @@ list lazy_list_set(list L, integer i, list v)
             if self.breakcont:
                 # We may add braces - or not. The safe approach is to assume
                 # we always do and open a new scope for it. At worst it will be
-                # empty. At least it is not reflected as brackets in the code
-                # if braces are not used.
+                # empty. At least it is not reflected as braces in the code if
+                # braces are not used.
                 self.PushScope()
 
                 self.breakstack.append([self.GenerateLabel(), self.scopeindex, False])
