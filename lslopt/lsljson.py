@@ -3,6 +3,15 @@ import math
 from lslcommon import *
 from lslbasefuncs import llStringTrim, isstring, islist, InternalTypecast
 
+# INCOMPATIBILITY NOTE: The JSON functions in SL have very weird behaviour
+# in corner cases. Despite our best efforts, that behaviour is not replicated
+# here, as doing so proved to be too difficult to investigate and implement.
+# The functions in here behave somewhat more sanely in these corner cases than
+# in SL, and may therefore fail to reproduce the same results as SL does.
+
+# If you wish to maintain compatibility, you can disable the JSON functions
+# by commenting out the 'from lsljson import *' line in lslfuncs.py.
+
 JSON_INVALID = u'\uFDD0'
 JSON_OBJECT  = u'\uFDD1'
 JSON_ARRAY   = u'\uFDD2'
@@ -553,6 +562,8 @@ def llJsonGetValue(json, lst):
     assert islist(lst)
     return InternalJsonFindValue(json, lst, ReturnsToken=False)
 
+# llJsonSetValue was finally not implemented. This is a failed attempt
+# at tackling it in the way that LSL does it.
 '''def InternalJsonRecuriveSetValue(json, lst, val):
     # We give up and make it recursive
 
