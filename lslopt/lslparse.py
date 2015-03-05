@@ -1401,14 +1401,8 @@ list lazy_list_set(list L, integer i, list v)
                 # if braces are not used.
                 self.PushScope()
 
-                brk = self.GenerateLabel()
-                self.breaktargets.append(brk)
-                self.breakscopes.append(self.scopeindex)
-                self.breaksused.append(False)
-                cnt = self.GenerateLabel()
-                self.continuetargets.append(cnt)
-                self.continuescopes.append(None)
-                self.continuesused.append(False)
+                self.breakstack.append([self.GenerateLabel(), self.scopeindex, False])
+                self.continuestack.append([self.GenerateLabel(), None, False])
             self.expect('(')
             self.NextToken()
             condition = self.Parse_expression()
@@ -1417,22 +1411,16 @@ list lazy_list_set(list L, integer i, list v)
             ret = {'nt':'WHILE', 't':None, 'ch':[condition,
                 self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)]}
             if self.breakcont:
-                if self.continuesused.pop():
-                    assert ret['ch'][0]['nt'] == '{}'
-                    ret['ch'][0]['ch'].append(
-                        {'nt':'@', 't':None, 'name':cnt, 'scope':self.continuescopes[-1]}
-                        )
-                    self.AddSymbol('l', self.continuescopes[-1], cnt)
-                self.continuescopes.pop()
-                self.continuetargets.pop()
+                last = self.continuestack.pop()
+                if last[2]:
+                    assert ret['ch'][1]['nt'] == '{}'
+                    ret['ch'][1]['ch'].append({'nt':'@', 't':None, 'name':last[0], 'scope':last[1]})
+                    self.AddSymbol('l', last[1], last[0])
 
-                if self.breaksused.pop():
-                    ret = {'nt':'{}', 't':None, 'ch':[ret,
-                        {'nt':'@', 't':None, 'name':brk, 'scope':self.scopeindex}
-                        ]}
-                    self.AddSymbol('l', self.scopeindex, brk)
-                self.breakscopes.pop()
-                self.breaktargets.pop()
+                last = self.breakstack.pop()
+                if last[2]:
+                    ret = {'nt':'{}', 't':None, 'ch':[ret, {'nt':'@', 't':None, 'name':last[0], 'scope':last[1]}]}
+                    self.AddSymbol('l', last[1], last[0])
                 self.PopScope()
             return ret
 
@@ -1441,14 +1429,8 @@ list lazy_list_set(list L, integer i, list v)
             if self.breakcont:
                 self.PushScope()
 
-                brk = self.GenerateLabel()
-                self.breaktargets.append(brk)
-                self.breakscopes.append(self.scopeindex)
-                self.breaksused.append(False)
-                cnt = self.GenerateLabel()
-                self.continuetargets.append(cnt)
-                self.continuescopes.append(None)
-                self.continuesused.append(False)
+                self.breakstack.append([self.GenerateLabel(), self.scopeindex, False])
+                self.continuestack.append([self.GenerateLabel(), None, False])
             stmt = self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)
             self.expect('WHILE')
             self.NextToken()
@@ -1461,22 +1443,16 @@ list lazy_list_set(list L, integer i, list v)
             self.NextToken()
             ret = {'nt':'DO', 't':None, 'ch':[stmt, condition]}
             if self.breakcont:
-                if self.continuesused.pop():
+                last = self.continuestack.pop()
+                if last[2]:
                     assert ret['ch'][0]['nt'] == '{}'
-                    ret['ch'][0]['ch'].append(
-                        {'nt':'@', 't':None, 'name':cnt, 'scope':self.continuescopes[-1]}
-                        )
-                    self.AddSymbol('l', self.continuescopes[-1], cnt)
-                self.continuescopes.pop()
-                self.continuetargets.pop()
+                    ret['ch'][0]['ch'].append({'nt':'@', 't':None, 'name':last[0], 'scope':last[1]})
+                    self.AddSymbol('l', last[1], last[0])
 
-                if self.breaksused.pop():
-                    ret = {'nt':'{}', 't':None, 'ch':[ret,
-                        {'nt':'@', 't':None, 'name':brk, 'scope':self.scopeindex}
-                        ]}
-                    self.AddSymbol('l', self.scopeindex, brk)
-                self.breakscopes.pop()
-                self.breaktargets.pop()
+                last = self.breakstack.pop()
+                if last[2]:
+                    ret = {'nt':'{}', 't':None, 'ch':[ret, {'nt':'@', 't':None, 'name':last[0], 'scope':last[1]}]}
+                    self.AddSymbol('l', last[1], last[0])
                 self.PopScope()
             return ret
 
@@ -1485,14 +1461,8 @@ list lazy_list_set(list L, integer i, list v)
             if self.breakcont:
                 self.PushScope()
 
-                brk = self.GenerateLabel()
-                self.breaktargets.append(brk)
-                self.breakscopes.append(self.scopeindex)
-                self.breaksused.append(False)
-                cnt = self.GenerateLabel()
-                self.continuetargets.append(cnt)
-                self.continuescopes.append(None)
-                self.continuesused.append(False)
+                self.breakstack.append([self.GenerateLabel(), self.scopeindex, False])
+                self.continuestack.append([self.GenerateLabel(), None, False])
             self.expect('(')
             self.NextToken()
             initializer = self.Parse_optional_expression_list()
@@ -1511,22 +1481,16 @@ list lazy_list_set(list L, integer i, list v)
                       {'nt':'EXPRLIST','t':None, 'ch':iterator},
                       stmt]}
             if self.breakcont:
-                if self.continuesused.pop():
-                    assert ret['ch'][0]['nt'] == '{}'
-                    ret['ch'][0]['ch'].append(
-                        {'nt':'@', 't':None, 'name':cnt, 'scope':self.continuescopes[-1]}
-                        )
-                    self.AddSymbol('l', self.continuescopes[-1], cnt)
-                self.continuescopes.pop()
-                self.continuetargets.pop()
+                last = self.continuestack.pop()
+                if last[2]:
+                    assert ret['ch'][3]['nt'] == '{}'
+                    ret['ch'][3]['ch'].append({'nt':'@', 't':None, 'name':last[0], 'scope':last[1]})
+                    self.AddSymbol('l', last[1], last[0])
 
-                if self.breaksused.pop():
-                    ret = {'nt':'{}', 't':None, 'ch':[ret,
-                        {'nt':'@', 't':None, 'name':brk, 'scope':self.scopeindex}
-                        ]}
-                    self.AddSymbol('l', self.scopeindex, brk)
-                self.breakscopes.pop()
-                self.breaktargets.pop()
+                last = self.breakstack.pop()
+                if last[2]:
+                    ret = {'nt':'{}', 't':None, 'ch':[ret, {'nt':'@', 't':None, 'name':last[0], 'scope':last[1]}]}
+                    self.AddSymbol('l', last[1], last[0])
                 self.PopScope()
             return ret
 
@@ -1538,13 +1502,10 @@ list lazy_list_set(list L, integer i, list v)
             self.expect(')')
             self.NextToken()
             brk = self.GenerateLabel()
-            self.breaktargets.append(brk)
-            self.breakscopes.append(None) # not known yet - entering the block will tell us
-            self.breaksused.append(False)
+            self.breakstack.append([brk, None, False])
             blk = self.Parse_code_block(ReturnType, AllowStSw = AllowStSw,
                 InsideSwitch = True, InsideLoop = InsideLoop)
-            blkscope  = self.breakscopes[-1]
-            self.AddSymbol('l', blkscope, brk)
+            blkscope  = self.breakstack[-1][1]
 
             # Replace the block
             #   switch (expr1) { case expr2: stmts1; break; default: stmts2; }
@@ -1569,7 +1530,7 @@ list lazy_list_set(list L, integer i, list v)
             # Since label scope rules prevent us from being able to jump inside
             # a nested block, only one nesting level is considered.
             assert blk['nt'] == '{}'
-            blk = blk['ch']
+            blk = blk['ch'] # Disregard the '{}' - we'll add it back later
             for idx in xrange(len(blk)):
                 if blk[idx]['nt'] == 'CASE':
                     lbl = self.GenerateLabel()
@@ -1602,21 +1563,22 @@ list lazy_list_set(list L, integer i, list v)
 
             if switchcasedefault is None:
                 switchcasedefault = brk
-                self.breaksused[-1] = True
+                self.breakstack[-1][2] = True
             prelude.append({'nt':'JUMP', 't':None, 'name':switchcasedefault,
                 'scope':blkscope})
-            self.breaktargets.pop()
-            self.breakscopes.pop()
-            if self.breaksused.pop():
+            last = self.breakstack.pop()
+            if last[2]:
                 blk.append({'nt':'@', 'name':brk, 'scope':blkscope})
+                self.AddSymbol('l', blkscope, brk)
             return {'nt':'{}', 't':None, 'ch':prelude + blk}
 
         if tok0 == 'CASE':
             if not InsideSwitch:
                 raise EParseInvalidCase(self, u"case")
-            if self.scopeindex != self.breakscopes[-1]:
+            if self.scopeindex != self.breakstack[-1][1]:
                 # If this block is nested and not the main switch block, this
-                # won't work. Label scope rules don't expose the nested labels.
+                # won't work. LSL label scope rules don't expose the nested
+                # labels. Nothing we can do about that.
                 raise EParseCaseNotAllowed(self, u"case")
             self.NextToken()
             expr = self.Parse_expression()
@@ -1628,9 +1590,10 @@ list lazy_list_set(list L, integer i, list v)
             if self.enableswitch:
                 if not InsideSwitch:
                     raise EParseInvalidCase(self, u"default")
-                if self.scopeindex != self.breakscopes[-1]:
+                if self.scopeindex != self.breakstack[-1][1]:
                     # If this block is nested and not the main switch block, this
-                    # won't work. Label scope rules don't expose the nested labels.
+                    # won't work. Label scope rules don't expose the nested
+                    # labels. Nothing we can do about that.
                     raise EParseCaseNotAllowed(self, u"default")
                 self.NextToken()
                 self.expect(':')
@@ -1639,27 +1602,55 @@ list lazy_list_set(list L, integer i, list v)
             # else fall through to eventually fail
 
         if tok0 == 'BREAK':
-            if not self.breaktargets:
+            if not self.breakstack:
                 raise EParseInvalidBreak(self)
-            self.breaksused[-1] = True
             self.NextToken()
+            n = -1
+            if self.tok[0] == 'INTEGER_VALUE':
+                if self.tok[1] <= 0:
+                    raise EParseInvalidBreak(self)
+                n = -self.tok[1]
+                self.NextToken()
             self.expect(';')
             self.NextToken()
-            return {'nt':'JUMP', 't':None, 'name':self.breaktargets[-1],
-                'scope':self.breakscopes[-1]}
+            try:
+                self.breakstack[n][2] = True
+            except IndexError:
+                raise EParseInvalidBreak(self)
+            return {'nt':'JUMP', 't':None, 'name':self.breakstack[n][0],
+                'scope':self.breakstack[n][1]}
 
         if tok0 == 'CONTINUE':
-            if not self.continuetargets:
+            if not self.continuestack:
                 raise EParseInvalidCont(self)
-            if self.continuescopes[-1] is None:
-                # We're not inside a block - 'continue' is essentially a nop
-                return {'nt':';', 't':'None'}
-            self.continuesused[-1] = True
             self.NextToken()
+            n = -1
+            if self.tok[0] == 'INTEGER_VALUE':
+                if self.tok[1] <= 0:
+                    raise EParseInvalidCont(self)
+                n = -self.tok[1]
+                self.NextToken()
             self.expect(';')
             self.NextToken()
-            return {'nt':'JUMP', 't':None, 'name':self.continuetargets[-1],
-                'scope':self.continuescopes[-1]}
+            if n == -1 and self.continuestack[-1][1] is None:
+                # We're not inside a block - 'continue' is essentially a nop
+                # e.g. while (cond) continue; is the same as while (cond) ;
+                return {'nt':';', 't':'None'}
+            try:
+                if self.continuestack[n][1] is None:
+                    # this can happen with e.g.:
+                    # while (cond) while (cond) while (cond) continue 3;
+                    # Transform to while(cond) while(cond) while(cond) break 2;
+                    # which is equivalent since there are no {}.
+                    n += 1 # e.g. -3 -> -2
+                    self.breakstack[n][2] = True # mark the break as used
+                    return {'nt':'JUMP', 't':None, 'name':self.breakstack[n][0],
+                        'scope':self.breakstack[n][1]}
+            except IndexError:
+                raise EParseInvalidCont(self)
+            self.continuestack[n][2] = True
+            return {'nt':'JUMP', 't':None, 'name':self.continuestack[n][0],
+                'scope':self.continuestack[n][1]}
 
         if tok0 == 'TYPE':
             if not AllowDecl:
@@ -1703,11 +1694,11 @@ list lazy_list_set(list L, integer i, list v)
 
         # Kludge to find the scope of the break (for switch) /
         # continue (for loops) labels.
-        if self.breakscopes: # non-empty iff inside loop or switch
-            if InsideSwitch and self.breakscopes[-1] is None:
-                self.breakscopes[-1] = self.scopeindex
-            if InsideLoop and self.continuescopes[-1] is None:
-                self.continuescopes[-1] = self.scopeindex
+        if self.breakstack: # non-empty iff inside loop or switch
+            if InsideSwitch and self.breakstack[-1][1] is None:
+                self.breakstack[-1][1] = self.scopeindex
+            if InsideLoop and self.continuestack[-1][1] is None:
+                self.continuestack[-1][1] = self.scopeindex
 
         body = []
         LastIsReturn = False
@@ -2197,18 +2188,12 @@ list lazy_list_set(list L, integer i, list v)
         if self.breakcont:
             self.keywords |= frozenset(('break', 'continue'))
 
-        # Stack to track the labels for break targets.
-        self.breaktargets = []
-        # Stack to track the scope of the break label.
-        self.breakscopes = []
-        # Stack to track whether the break target label is used.
-        self.breaksused = []
-        # Stack to track the labels for continue targets.
-        self.continuetargets = []
-        # Stack to track the scope for continue targets.
-        self.continuescopes = []
-        # Stack to track whether the continue target label is used.
-        self.continuesused = []
+        # Stack to track the labels for break targets, their scope table index,
+        # and whether they are used.
+        self.breakstack = []
+        # Stack to track the labels for continue targets, their scope index,
+        # and whether they are used.
+        self.continuestack = []
 
         # Enable use of local labels with duplicate names
         self.duplabels = 'duplabels' in options
