@@ -1,3 +1,21 @@
+#    (C) Copyright 2015 Sei Lisa. All rights reserved.
+#
+#    This file is part of LSL PyOptimizer.
+#
+#    LSL PyOptimizer is free software: you can redistribute it and/or
+#    modify it under the terms of the GNU General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    LSL PyOptimizer is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with LSL PyOptimizer. If not, see <http://www.gnu.org/licenses/>.
+
+# Optimizer class that wraps and calls the other parts.
 
 import lslfuncs
 from lslfuncs import Key, Vector, Quaternion
@@ -27,8 +45,9 @@ class optimizer(foldconst, renamer, deadcode):
         Quaternion: 'rotation', list: 'list'}
 
     def Cast(self, value, newtype):
-        # Return a CAST node if the types are not equal, otherwise the
-        # value unchanged
+        """Return a CAST node if the types are not equal, otherwise the
+        value unchanged.
+        """
         if value['t'] == newtype:
             return value
         ret = {'nt':'CAST', 't':newtype, 'ch':[value]}

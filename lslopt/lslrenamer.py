@@ -1,3 +1,30 @@
+#    (C) Copyright 2015 Sei Lisa. All rights reserved.
+#
+#    This file is part of LSL PyOptimizer.
+#
+#    LSL PyOptimizer is free software: you can redistribute it and/or
+#    modify it under the terms of the GNU General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    LSL PyOptimizer is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with LSL PyOptimizer. If not, see <http://www.gnu.org/licenses/>.
+
+# This module renames all kinds of variables. Globals and function/event
+# parameters take memory space, so shrinking the identifiers as much as
+# possible ensures their memory usage will be minimized. It also reuses some
+# preexisting names when possible. Locals are renamed also so that they don't
+# stand in the way of globals.
+#
+# A side effect of this change is that the script becomes unreadable gibberish.
+
+# TODO: Rename locals to loc_<identifier> rather than random names.
+
 import random
 from base64 import b64encode
 

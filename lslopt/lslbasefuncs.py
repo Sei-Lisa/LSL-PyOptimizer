@@ -1,10 +1,37 @@
+#    (C) Copyright 2015 Sei Lisa. All rights reserved.
+#
+#    This file is part of LSL PyOptimizer.
+#
+#    LSL PyOptimizer is free software: you can redistribute it and/or
+#    modify it under the terms of the GNU General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    LSL PyOptimizer is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with LSL PyOptimizer. If not, see <http://www.gnu.org/licenses/>.
+
 # This module is used by the optimizer for resolving constant values.
-
-# The functions it implements are all functions that always return the same result when given the same input, and that have no side effects.
-
-# For example, llAbs() is here, but llFrand() is not, because it doesn't always return the same result.
-
-# This implies that functions present in this module can be precomputed if their arguments are constants.
+#
+# The functions it implements are all functions that always return the same
+# result when given the same input, and that have no side effects.
+#
+# For example, llAbs() is here, but llFrand() is not, because it doesn't always
+# return the same result.
+#
+# This implies that functions present in this module can be precomputed if
+# their arguments are constants.
+#
+# In some instances, the result can't be computed; in these cases the function
+# raises a LSLCantCompute exception that is caught by the optimizer to leave
+# the expression unchanged. For example, llBase64ToInteger("AA") returns
+# unpredictable garbage in the low bytes in LSL, so it is left unchanged.
+#
+# The JSON functions have been separated to their own module.
 
 import re
 from lslcommon import *
@@ -102,9 +129,15 @@ def F32(f, f32=True):
     #from array import array
     #return array('f',(f,))[0]
 
+    # Using struct:
+    #from struct import pack, unpack
+    #return unpack('f', pack('f', f))[0]
+
     # Using ctypes:
     #from ctypes import c_float
     return c_float(f).value
+
+# These are other approaches that are not fully debugged:
 
 #    # Another alternative. frexp and ldexp solve a lot (but are still troublesome):
 #    m, x = math.frexp(abs(f))
