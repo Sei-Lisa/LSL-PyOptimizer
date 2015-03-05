@@ -7,7 +7,9 @@ import sys
 
 def main():
     if len(sys.argv) < 2:
-        sys.stderr.write(r'''LSL optimizer v0.1
+        sys.stderr.write(
+r'''LSL optimizer v0.1
+Copyright (C) 2015 Sei Lisa. All rights reserved.
 
 Usage: %s [-O [+|-]option[,[+|-]option[,...]]] filename
 
@@ -26,7 +28,8 @@ Options (+ means active by default, - means inactive by default):
   extendedassignment + Enables &=, |=, ^=, <<=, >>= assignment operators.
   explicitcast       - Add explicit casts where they are implicit. This option
                        is useless with 'optimize' and 'optsigns', and is of
-                       basically no use in general.
+                       basically no use in general, other than to see where
+                       automatic casts happen.
   allowkeyconcat     + Allow string + key and key + string (both return string)
   allowmultistrings  + Allow C-like string juxtaposition, e.g. "ab" "cd" means
                        "abcd", no concatenation involved. Very useful when used
@@ -42,7 +45,7 @@ Options (+ means active by default, - means inactive by default):
                        for compatibility with Firestorm, but its use is not
                        recommended, as it adds a new function, wasting memory
                        against the very spirit of this program.
-  enableswitch       - Support C-like switch syntax, with some limitations.
+  enableswitch       - Support C-like switch() syntax, with some limitations.
                        Like lazylists, it's implemented for compatibility with
                        Firestorm, but not recommended. Note that the operand to
                        switch() may be evaluated more than once.
@@ -60,7 +63,7 @@ Options (+ means active by default, - means inactive by default):
   optsigns           + Optimize signs in float and integer constants.
   optfloats          + Optimize floats that represent an integral value.
   constfold          + Fold constant expressions to their values, and simplify
-                       some expressions.
+                       some expressions and statements.
   dcr                + Dead code removal. This option removes several instances
                        of code that will never execute, and performs other
                        optimizations like removal of unused variables,
@@ -71,7 +74,7 @@ Options (+ means active by default, - means inactive by default):
                        scripts.
   addstrings         - Concatenate strings together when possible. Note that
                        such an optimization can be counter-productive in some
-                       cases, that's why it is unset by default. For example:
+                       cases, that's why it's disabled by default. For example:
                        string a="a"+"longstring"; string b="b"+"longstring";
                        would keep a single copy of "longstring", while if the
                        strings are added, both "alongstring" and "blongstring"
@@ -80,10 +83,11 @@ Options (+ means active by default, - means inactive by default):
   Miscellaneous options
 
   foldtabs           - Tabs can't be copy-pasted, so expressions that produce
-                       tabs (like llUnescapeURL("%%09") aren't optimized by
+                       tabs, e.g. llUnescapeURL("%%09"), aren't optimized by
                        default. This option overrides that check, enabling
-                       optimization of strings with tabs. The resulting source
-                       isn't guaranteed to be copy-paste-able to the viewer.
+                       expansion of functions that produce strings with tabs.
+                       The resulting source isn't guaranteed to be
+                       copy-paste-able to the viewer.
   skippreproc        + Skip preprocessor directives in the source as if they
                        were comments. Not useful unless the script is itself
                        the output of a preprocessor like cpp, which inserts
