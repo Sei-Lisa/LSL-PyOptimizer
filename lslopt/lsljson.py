@@ -53,7 +53,7 @@ jsonnumbug_re = re.compile(ur'-?(?:[0-9]*([Ee])-?[0-9]*\.?[0-9]*|(?=[0-9Ee.])[0-
 # disallowing zeros, sometimes even when legal (e.g. 0e0)
 #jsonnum_re = re.compile(ur'-?(?:(?=[1-9]|\.(?:[^e]|$)|0(?:[^0-9e]|$))[0-9]*([Ee])[+-]?[0-9]*\.?[0-9]*|(?=[1-9]|\.(?:[^e]|$)|0(?:[^0-9e]|$))[0-9]*(\.?[0-9]*(?:[Ee][+-]?)?[0-9]*))')
 # They've fixed BUG-6657 by bringing BUG-6466 back to life.
-jsonnumbug_re = re.compile(ur'-?(?:[0-9]*([Ee])-?[0-9]*\.?[0-9]*|(?=[0-9Ee.])[0-9]*(\.?[0-9]*(?:[Ee]-?)?[0-9]*))')
+jsonnum_re = re.compile(ur'-?(?:[0-9]*([Ee])-?[0-9]*\.?[0-9]*|(?=[0-9Ee.])[0-9]*(\.?[0-9]*(?:[Ee]-?)?[0-9]*))')
 
 jsonstring_re = re.compile(ur'"(?:[^"\\]|\\.)*"')
 
