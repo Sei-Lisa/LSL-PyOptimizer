@@ -130,8 +130,8 @@ Of course this optimizer performs proper syntax analysis and compiles the above 
 
 The syntax of the `switch` statement as implemented, has two restrictions over its C counterpart:
 
-1. It needs to be followed by a block, not by a single statement; for example, whiile this works in C, it won't work in this compiler: `switch(1) case 1: break;`. The reason is that `case` is treated by the parser as a statement, rather than as a label. This limitation is probably only of theoretical importance and will not have any practical one.
-2. `case` labels can't appear in nested blocks. That's because they are replaced by LSL labels, and as discussed above, label scope rules prevent their visibility in an outer block, so the syntax translator would not be able to find it. This limitation means that [Duff's device](http://en.wikipedia.org/wiki/Duff's_device) or similar constructs can't be implemented with this optimizer.
+1. `case` labels can't appear in nested blocks. That's because they are replaced by LSL labels, and as discussed in the *Multiple labels with the same name* section above, label scope rules prevent their visibility in an outer block, so once converted to labels, the corresponding `jump` instructions would not be able to find them. This limitation means that [Duff's device](http://en.wikipedia.org/wiki/Duff's_device) or similar constructs can't be implemented with this optimizer.
+2. `switch()` needs to be followed by a block, not by a single statement; for example, whiile this works in C, it won't work in this compiler: `switch(1) case 1: break;`. The reason is that `case` is treated by this parser as a statement, rather than as a label. This limitation is probably only of theoretical importance and will not have any practical implication.
 
 ### Lazy lists
 
@@ -147,7 +147,7 @@ However, the implementation includes creating a function that performs the repla
 ```
 list lazy_list_set(list target, integer index, list value)
 ```
-then the optimizer will use yours rather than defining it twice as Firestorm does.
+then the optimizer will use yours rather than defining it twice as Firestorm does (leading to a duplicate identifier error).
 
 For compatibility with Firestorm, when the index is greater than the number of elements in the list, the intermediate values are filled with integer zeros. If you don't want that, you may have a reason to override it. But best is to stay away from this syntax altogether, as the counterpart of using `mylist[index]` to read an element doesn't work, because the system doesn't know what type to extract it as (i.e. which of the `llList2XXX` functions to use to do the extraction).
 
@@ -157,7 +157,7 @@ The program is designed to work as a filter. It can read from standard input if 
 
 Running it by hand to optimize your scripts can be cumbersome. The intention is for it to act as a transparent filter; however, as of this writing there's no support for any viewer known to the author. Run it without parameters to see the invocation help.
 
-Future plans include writing a patch for Firestorm that allows running external script filtering programs instead of the internal preprocessor and optimizer. That would allow this program to be run using Firestorm's integrated machinery, making usage pretty transparent to the programmer.
+Future plans include writing a patch for Firestorm to allow it to run external script filtering programs instead of the internal preprocessor and optimizer. That would allow this program to be run using Firestorm's integrated machinery, making usage pretty transparent to the programmer.
 
 Extensions for other IDEs like Eclipse are not planned, but the author encourages others to write them. Please notify Sei Lisa if you write one, so that it can be listed in this page.
 
