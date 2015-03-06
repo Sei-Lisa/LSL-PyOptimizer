@@ -10,7 +10,7 @@ The aim of this program is to act as a filter that performs the optimizations au
 
 It also implements several syntax extensions to help improving the readability of scripts and the productivity of the programmer. It works well when combined with a C preprocessor such as _Boost::Wave_ (the one embedded in Firestorm) or `cpp`.
 
-Firestorm does already incorporate something that it calls "optimizer". However it is limited to removing unused global variables and functions, and does so by simple string analysis, not by syntactic analysis. It also sorts the globals in reverse alphabetical order, leading to compilation errors when one global depends on another that has been moved after it. In contrast, the program presented here does full syntax analysis and implements many more optimizations, including removing unused locals, simplifying many expressions, removing dead code, and more.
+Firestorm does already incorporate something that it calls "optimizer". However it is limited to removing unused global variables and functions, and does so by simple string analysis, not by syntactic analysis. It also sorts the globals in reverse alphabetical order, leading to compilation errors when one global depends on another that has been moved after it or removed. In contrast, the program presented here does full syntax analysis and implements many more optimizations, including removing unused locals, simplifying many expressions, removing dead code, and more.
 
 ## Syntax extensions
 
@@ -164,7 +164,20 @@ For compatibility with Firestorm, when the index is greater than the number of e
 
 This program is designed to work as a filter. It can read from standard input if the file name argument is "-"; in any case it currently outputs the result to standard output and any errors to standard error.
 
-Running it by hand to optimize your scripts can be cumbersome. The intention is for it to act as a transparent filter; however, as of this writing there's no support for any viewer or IDE as it has just been released. Run it without parameters to see the invocation help, for example with `python main.py`.
+Running it by hand to optimize your scripts can be cumbersome. The intention is for it to act as a transparent filter; however, as of this writing there's no support for any viewer or IDE, as it has just been released. Run it without parameters to see the invocation help, for example with `python main.py`. Redirect the output to a file if you want to store the result, possibly to open it with an editor and copy it to the clipboard. Or under _X Window_, you can pipe the output directly to `xclip -quiet -selection clipboard` to copy it to the clipboard, rather than using a file, so you can paste it directly into the viewer. Examples:
+```
+python main.py myscript.lsl | xclip -quiet -selection clipboard
+```
+will, under _X Window_, read `myscript.lsl`, optimize it, and copy the optimized result to the clipboard, ready to be pasted into the viewer.
+```
+python main.py myscript.lsl > temp.opt
+notepad temp.opt
+```
+will, under any system which has an editor called `notepad`, read `myscript.lsl`, optimize it, and write the optimized result to `temp.opt`, then open it in the editor, enabling you to copy it and paste it into the viewer. Under Windows Vista and above, apparently there's a command line appication called `clip` that does the same as `xclip` does for _X Window_, enabling you to use this:
+```
+python main.py myscript.lsl | clip
+```
+to copy the optimized output to the clipboard.
 
 Future plans include writing a patch for Firestorm to enable it to run external script filtering programs instead of the internal preprocessor and optimizer. That would allow this program to be run using Firestorm's integrated machinery, making usage pretty transparent to the programmer.
 
