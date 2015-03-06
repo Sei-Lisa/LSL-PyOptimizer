@@ -173,11 +173,11 @@ will, under _X Window_, read `myscript.lsl`, optimize it, and copy the optimized
 python main.py myscript.lsl > temp.opt
 notepad temp.opt
 ```
-will, under any system which has an editor called `notepad`, read `myscript.lsl`, optimize it, and write the optimized result to `temp.opt`, then open it in the editor, enabling you to copy it and paste it into the viewer. Under Windows Vista and above, apparently there's a command line appication called `clip` that does the same as `xclip` does for _X Window_, enabling you to use this:
+will, under any system which has an editor called `notepad`, read `myscript.lsl`, optimize it, and write the optimized result to `temp.opt`, then open it in the editor, enabling you to copy it and paste it into the viewer. Under _Windows_ version _Vista_ and above, apparently there's a command line application called `clip` that does the same as `xclip` does for _X Window_, enabling you to use this:
 ```
 python main.py myscript.lsl | clip
 ```
-to copy the optimized output to the clipboard.
+to copy the optimized output to the clipboard. Under OS X, it seems `pbcopy` does the same as `xclip` and `clip`.
 
 Future plans include writing a patch for Firestorm to enable it to run external script filtering programs instead of the internal preprocessor and optimizer. That would allow this program to be run using Firestorm's integrated machinery, making usage pretty transparent to the programmer.
 
