@@ -130,7 +130,7 @@ Of course this optimizer performs proper syntax analysis and compiles the above 
 
 The syntax of the `switch` statement as implemented, has two restrictions over its C counterpart:
 
-1. `case` labels can't appear in nested blocks. That's because they are replaced by LSL labels, and as discussed in the *Multiple labels with the same name* section above, label scope rules prevent their visibility in an outer block, so once converted to labels, the corresponding `jump` instructions would not be able to find them. This limitation means that [Duff's device](http://en.wikipedia.org/wiki/Duff's_device) or similar constructs can't be implemented with this optimizer.
+1. `case` labels can't appear in nested blocks. That's because they are replaced by LSL labels, and as discussed in the *Multiple labels with the same name* section above, label scope rules prevent their visibility in an outer block, so once converted to labels, the corresponding `jump` instructions would not be able to find them. This limitation means that [Duff's device](https://en.wikipedia.org/wiki/Duff's_device) or similar constructs can't be implemented with this optimizer.
 2. `switch()` needs to be followed by a block, not by a single statement; for example, whiile this works in C, it won't work in this compiler: `switch(1) case 1: break;`. The reason is that `case` is treated by this parser as a statement, rather than as a label. This limitation is probably only of theoretical importance and will not have any practical implication.
 
 ### Lazy lists
@@ -161,9 +161,11 @@ Future plans include writing a patch for Firestorm to allow it to run external s
 
 Extensions for other IDEs like Eclipse are not planned, but the author encourages others to write them. Please notify Sei Lisa if you write one, so that it can be listed in this page.
 
+The program uses two external files. One is `builtins.txt`, which is in the same format as needed by [lslint](https://github.com/pclewis/lslint), and an up-to-date copy can be obtained from the _kwdb_ project: [https://bitbucket.org/Sei_Lisa/kwdb/raw/tip/outputs/builtins.txt](https://bitbucket.org/Sei_Lisa/kwdb/raw/tip/outputs/builtins.txt). The other is `seftable.txt`, which is a list of functions that have no side effects (SEF stands for side-effect free), allowing them to be removed (optimized out) if nothing else has side effects in an expression.
+
 ## Other future plans
 
-Making the optimizer smarter is one primary objective. Conversion to [SSA](http://en.wikipedia.org/wiki/Static_single_assignment_form) is currently not performed, and would be nice to have, for one.
+Making the optimizer smarter is one primary objective. Conversion to [SSA](https://en.wikipedia.org/wiki/Static_single_assignment_form) is currently not performed, and would be nice to have, for one.
 
 Another goal is to add the possibility to link each output line with its source counterpart, so that in case of a server side compilation error, the source line corresponding to the actual line where the error happened can be displayed. Currently, server-side compilation errors should be very rare (unless there are bugs in the optimizer) as there will be very few situations in which they won't be caught by the parser first.
 
