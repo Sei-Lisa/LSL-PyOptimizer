@@ -839,7 +839,7 @@ class foldconst(object):
                     parent[index] = {'nt':'CONST', 'SEF':True, 't':node['t'],
                         'value':value}
                     return
-            if nt == 'LIST' and len(child) == 1:
+            if nt == 'LIST' and len(child) == 1 and not self.globalmode:
                 node = parent[index] = self.Cast(child[0], 'list')
             if issef:
                 node['SEF'] = True
