@@ -39,12 +39,12 @@ Allow arbitrary expressions in globals, as long as they resolve to a single cons
 
 ### Concatenation of key and string
 
-You can write for example:
+It allows you to write for example:
 ```
-llOwnerSay("My key is: " + llGetKey());
+llOwnerSay("Your key is: " + llGetOwner());
 ```
 
-which confusingly produces a type mismatch error in LSL, while `llOwnerSay(llGetKey());` doesn't.
+which confusingly produces a type mismatch error in LSL, even though `llOwnerSay(llGetOwner());` doesn't.
 
 ### C-like string juxtaposition.
 
