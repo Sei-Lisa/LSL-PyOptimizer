@@ -23,6 +23,8 @@ from lslopt.lslparse import parser,EParse
 from lslopt.lsloutput import outscript
 from lslopt.lsloptimizer import optimizer
 import sys
+import os
+import lslopt.lslcommon
 
 def main():
     if len(sys.argv) < 2:
@@ -128,6 +130,10 @@ Options (+ means active by default, - means inactive by default):
         'allowkeyconcat','allowmultistrings','skippreproc','optimize',
         'optsigns','optfloats','constfold','dcr'
         ))
+
+    # If it's good to append the basename to it, it's good to append the
+    # auxiliary files' names to it.
+    lslopt.lslcommon.DataPath = __file__[:-len(os.path.basename(__file__))]
 
     if sys.argv[1] == '-O':
         if len(sys.argv) < 4:

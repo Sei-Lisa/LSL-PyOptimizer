@@ -21,6 +21,7 @@
 # TODO: Add info to be able to propagate error position to the source.
 
 from lslcommon import Key, Vector, Quaternion
+import lslcommon
 import lslfuncs
 import sys, re
 from base64 import b64encode
@@ -2326,7 +2327,7 @@ list lazy_list_set(list L, integer i, list v)
         parse_num_re = re.compile(r'^\s*(-?(?=[0-9]|\.[0-9])[0-9]*((?:\.[0-9]*)?(?:[Ee][+-]?[0-9]+)?))\s*$')
         parse_str_re = re.compile(ur'^"((?:[^"\\]|\\.)*)"$')
 
-        f = open('builtins.txt', 'rb')
+        f = open(lslcommon.DataPath + 'builtins.txt', 'rb')
         try:
             while True:
                 line = f.readline()
@@ -2443,7 +2444,7 @@ list lazy_list_set(list L, integer i, list v)
             f.close()
 
         # Load the side-effect-free table as well.
-        f = open('seftable.txt', 'rb')
+        f = open(lslcommon.DataPath + 'seftable.txt', 'rb')
         try:
             while True:
                 line = f.readline()
