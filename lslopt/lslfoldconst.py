@@ -18,6 +18,7 @@
 # Constant folding and simplification of expressions and statements.
 
 import lslfuncs
+import math
 from lslparse import warning
 
 class foldconst(object):
@@ -1041,17 +1042,25 @@ class foldconst(object):
         assert False, 'Internal error: This should not happen, node type = ' \
             + nt # pragma: no cover
 
+    def IsValidGlobalIdOrConst(self, node):
+        # inf and nan can't be represented as a simple constant
+        return not (node['nt'] == 'CONST' and node['t'] == 'float'
+                    and (math.isinf(node['value'])
+                         or math.isnan(node['value'])))
+
     def IsValidGlobalConstant(self, decl):
         if 'ch' not in decl:
             return True
         expr = decl['ch'][0]
         if expr['nt'] in ('CONST', 'IDENT'):
-            return True
+            return self.IsValidGlobalIdOrConst(expr)
         if expr['nt'] not in ('VECTOR', 'ROTATION', 'LIST'):
             return False
-        return all(elem['nt'] in ('CONST', 'IDENT') for elem in expr['ch'])
+        return all(elem['nt'] in ('CONST', 'IDENT')
+                   and self.IsValidGlobalIdOrConst(elem)
+                   for elem in expr['ch'])
 
-    def FoldScript(self):
+    def FoldScript(self, warningpass = True):
         """Optimize the symbolic table symtab in place. Requires a table of
         predefined functions for folding constants.
         """
@@ -1066,7 +1075,7 @@ class foldconst(object):
                 self.globalmode = True
                 self.FoldTree(tree, idx)
                 self.globalmode = False
-                if not self.IsValidGlobalConstant(tree[idx]):
-                    warning('Expression does not resolve to a single constant.')
+                if warningpass and not self.IsValidGlobalConstant(tree[idx]):
+                    warning('Expression does not resolve to a simple constant.')
             else:
                 self.FoldTree(tree, idx)

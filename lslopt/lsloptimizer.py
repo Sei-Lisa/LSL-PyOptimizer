@@ -82,7 +82,7 @@ class optimizer(foldconst, renamer, deadcode):
         self.globalmode = False
 
         if self.constfold:
-            self.FoldScript()
+            self.FoldScript(warningpass=False)
 
         if self.dcr:
             self.RemoveDeadCode()
@@ -90,7 +90,7 @@ class optimizer(foldconst, renamer, deadcode):
         # Make another fold pass, since RemoveDeadCode can embed expressions
         # into other expressions and generate unoptimized code.
         if self.constfold:
-            self.FoldScript()
+            self.FoldScript(warningpass=True)
 
         if self.shrinknames:
             self.ShrinkNames()
