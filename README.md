@@ -181,7 +181,7 @@ to copy the optimized output to the clipboard. Under OS X, it seems `pbcopy` doe
 
 Future plans include writing a patch for Firestorm to enable it to run external script filtering programs instead of the internal preprocessor and optimizer. That would allow this program to be run using Firestorm's integrated machinery, making usage pretty transparent to the programmer.
 
-Extensions for other IDEs like Eclipse are not planned, but the author encourages others to write them. Please notify Sei Lisa if you write one, so that it can be listed in this page.
+Support for other IDEs like Eclipse is not planned, but the author encourages others to write it. Please notify Sei Lisa if you write one, so that it can be listed in this page.
 
 The program uses two external files. One is `builtins.txt`, which is in the same format as needed by [lslint](https://github.com/pclewis/lslint), and an up-to-date copy can be obtained from the _kwdb_ project: [https://bitbucket.org/Sei_Lisa/kwdb/raw/tip/outputs/builtins.txt](https://bitbucket.org/Sei_Lisa/kwdb/raw/tip/outputs/builtins.txt). The other is `seftable.txt`, which is a list of functions that have no side effects (SEF stands for side-effect free), allowing them to be removed (optimized out) if nothing else has side effects in an expression and the result of the expression is not used.
 
