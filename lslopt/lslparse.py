@@ -805,6 +805,7 @@ list lazy_list_set(list L, integer i, list v)
 
                 return {'nt':'=', 't':'list', 'ch':[lvalue, {
                         'nt':'FNCALL', 't':'list', 'name':'lazy_list_set',
+                        'scope':0,
                         'ch':[lvalue.copy(), idxexpr,
                               {'nt':'LIST','t':'list', 'ch':[expr]}]
                     }]}
