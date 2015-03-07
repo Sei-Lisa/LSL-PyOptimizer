@@ -189,7 +189,7 @@ The program uses two external files. One is `builtins.txt`, which is in the same
 
 Making the optimizer smarter is one primary objective. Conversion to [SSA](https://en.wikipedia.org/wiki/Static_single_assignment_form) form is currently not performed, and would be nice to have, for one, to enable more optimizations where values are not used.
 
-Another goal is to add the possibility to link each output line with its source counterpart, so that in case of a server side compilation error, the source line corresponding to the actual line where the error happened can be displayed. Currently, server-side compilation errors should be rare (unless there are bugs in the optimizer) as there will be few situations in which they won't be caught by the optimizer's parser first.
+Another goal is to add the possibility to link each output line with its source counterpart, so that in case of a server side compilation error, the source line corresponding to the actual line where the error happened can be displayed. Currently, server-side compilation errors should be rare (unless there are bugs in the optimizer) as there will be few situations in which they won't be caught by the optimizer's parser first. This would also allow warnings output by the optimizer (e.g. an expression in globals not resolving to a constant) to be related to a source line. Currently those warnings don't tell where the error occurred.
 
 Lastly, implementation of some kind of machine-readable way to inform the invoker about the available options, is also in the plans. That would allow the plugin or viewer or whatever to present a dialog with the options for invoking the optimizer.
 
