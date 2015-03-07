@@ -70,7 +70,7 @@ Options (+ means active by default, - means inactive by default):
                        works around that limitation by replacing the names of
                        the labels in the output with unique ones.
 
-  Deprecated / compatibility syntax extension options:
+  Deprecated / compatibility syntax extensions options:
 
   lazylists          - Support syntax like mylist[index] = 5; rather than using
                        llListReplaceList. Only assignment supported. The list
