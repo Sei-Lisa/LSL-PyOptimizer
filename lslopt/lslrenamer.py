@@ -25,9 +25,6 @@
 
 # TODO: Rename locals to loc_<identifier> rather than random names.
 
-import random
-from base64 import b64encode
-
 class renamer(object):
     CharSet1 = '_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
     CharSet2 = '0123456789_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
@@ -67,8 +64,6 @@ class renamer(object):
         # Names from ReusableNames that have already been used
         self.UsedNames = set()
 
-        UsedLocals = set()
-
         # Make a first pass to separate the symbols into three categories.
         globalvars = []
         states = []
@@ -97,7 +92,7 @@ class renamer(object):
             # the event name, e.g. edefaultstate_entry. Since a new identifier
             # having part of the state name is created for every event in that
             # state, the shortest the state name, the least bytes it will use.
-            # Furthermore, a state switch instruction further adds an Unicode
+            # Furthermore, a state switch instruction further adds a Unicode
             # string (all other identifier names use one-byte strings), which
             # is the more reason to shorten it as much as possible.
             #
@@ -117,7 +112,7 @@ class renamer(object):
         del states
 
         for name in functions:
-            # Assign a new name. Internal function names get a 'g' prepended
+            # Assign a new name. Internally, function names get a 'g' prepended
             # to them, so these are candidates for reuse too.
 
             # Unfortunately, we won't find any reusable name starting with 'g'
@@ -150,7 +145,7 @@ class renamer(object):
                 if name == -1: continue
                 if sym['Kind'] != 'v':
                     assert sym['Kind'] == 'l'
-                    name = name # trick the optimizer
+                    name = name # trick python to not optimize out the jump
                     continue
                 if 'Param' in sym:
                     if not InParams:
@@ -168,17 +163,12 @@ class renamer(object):
                         short = self.GetNextShortest()
                     table[name]['NewName'] = short
                 else:
-                    # Generate new identifier
-                    while True:
-                        x = random.randint(0, 16777215)
-                        unique = 'L_' + b64encode(chr(x>>16) + chr((x>>8)&255)
-                            + chr(x&255)).replace('+', '_')
-                        x = random.randint(0, 16777215)
-                        unique += b64encode(chr(x>>16) + chr((x>>8)&255)
-                            + chr(x&255)).replace('+', '_')
-                        if '/' not in unique not in UsedLocals:
-                            break
-                    UsedLocals.add(unique)
+                    # Generate new identifier, by prepending the four character
+                    # string 'loc_'. This generates identifiers with five chars
+                    # or more. We assume that is enough for them to stay safe
+                    # from name collisions with globals and parameter names.
+                    # Four letters allow for more than 1.4 million identifiers.
+                    unique = 'loc_' + name
                     table[name]['NewName'] = unique
 
         del globalvars
