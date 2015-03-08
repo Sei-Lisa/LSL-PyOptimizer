@@ -356,8 +356,16 @@ class parser(object):
                         self.pos += 1
                         strliteral = '"'
 
+                    savepos = self.pos # we may need to backtrack
+                    is_string = True # by default
+
                     while self.script[self.pos:self.pos+1] != '"':
-                        self.ueof()
+                        # per the grammar, on EOF, it's not considered a string
+                        if self.pos >= self.length:
+                            self.pos = savepos
+                            is_string = False
+                            break
+
                         if self.script[self.pos] == '\\':
                             self.pos += 1
                             self.ueof()
@@ -365,14 +373,21 @@ class parser(object):
                                 strliteral += '\n'
                             elif self.script[self.pos] == 't':
                                 strliteral += '    '
+                            elif self.script[self.pos] == '\n':
+                                # '\' followed by a newline; it's not a string.
+                                self.pos = savepos
+                                is_string = False
+                                break
                             else:
                                 strliteral += self.script[self.pos]
                         else:
                             strliteral += self.script[self.pos]
                         self.pos += 1
 
-                    self.pos += 1
-                    return ('STRING_VALUE', strliteral.decode('utf8'))
+                    if is_string:
+                        self.pos += 1
+                        return ('STRING_VALUE', strliteral.decode('utf8'))
+                    # fall through (to consider the L or to ignore the ")
 
                 if isalpha_(c):
                     # Identifier or reserved
