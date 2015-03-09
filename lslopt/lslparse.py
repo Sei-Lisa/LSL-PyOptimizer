@@ -321,7 +321,7 @@ class parser(object):
                     self.ceof()
                     while self.script[self.pos] != '\n':
                         self.pos += 1
-                        self.ceof() # A single-line comment at EOF is not unexpected EOF.
+                        self.ceof() # A preprocessor command at EOF is not unexpected EOF.
 
                     self.pos += 1
                     self.ceof()
@@ -510,7 +510,7 @@ class parser(object):
                 if c in '.;{},=()-+*/%@:<>[]&|^~!' and c != '':
                     return (c,)
 
-                # We eat spacers AND any other character so the following is not needed,
+                # We eat spacers AND any other character, so the following is not needed,
                 # although the lex file includes it (the lex file does not count() invalid characters
                 # for the purpose of error reporting).
                 #if c in ' \n\r\x0B':
@@ -853,7 +853,7 @@ list lazy_list_set(list L, integer i, list v)
                 raise EParseTypeMismatch(self)
 
             if tok0 in ('*=', '/='):
-                # There is a special case dealt with in advance.
+                # There is a special case that was dealt with before.
                 if tok0 == '*=' and typ == 'integer' and rtyp == 'float':
                     return {'nt':tok0, 't':typ, 'ch':[lvalue, expr]}
 
