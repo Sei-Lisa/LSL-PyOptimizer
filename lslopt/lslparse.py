@@ -525,7 +525,7 @@ class parser(object):
         """Calls GetToken and sets the internal token."""
         self.tok = self.GetToken()
 
-    # Recursive-descendent parser. The result is a symbol table.
+    # Recursive-descendent parser. The result is an AST and a symbol table.
 
     def expect(self, toktype):
         """Raise exception if the current token is not the given one."""
