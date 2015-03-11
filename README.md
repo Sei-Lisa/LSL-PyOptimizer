@@ -10,7 +10,7 @@ The aim of this program is to act as a filter that performs the optimizations au
 
 It also implements several syntax extensions to help improving the readability of scripts and the productivity of the programmer. It works well when combined with a C preprocessor such as _Boost::Wave_ (the one embedded in Firestorm) or `cpp`.
 
-Firestorm does already incorporate something that it calls "optimizer". However it is limited to removing unused global variables and functions, and does so by simple string analysis, not by syntactic analysis. It also sorts the globals in reverse alphabetical order, leading to compilation errors when one global depends on another that has been moved after it or removed. In contrast, the program presented here does full syntax analysis and implements many more optimizations, including removing unused locals, simplifying many expressions, removing dead code, and more.
+Firestorm does already incorporate an optimizer. However it is limited to removing unused global variables and functions, and does so by simple string analysis, not by syntactic analysis. In contrast, the program presented here does full syntax analysis and implements many more optimizations, including removing unused locals, simplifying many expressions, removing dead code, and more.
 
 ## Syntax extensions
 
@@ -160,6 +160,15 @@ then the optimizer will use yours rather than defining it twice.
 
 For compatibility with Firestorm, when the index is greater than the number of elements in the list, the intermediate values are filled with integer zeros. If you don't want that, you may have a reason to override it. But best is to stay away from this syntax altogether, as the counterpart of using `mylist[index]` to read an element doesn't work, because the system doesn't know what type to extract it as (i.e. which of the `llList2XXX` functions to use to do the extraction).
 
+Note that the value of the assignment as an expression is the whole list, not the element. For example, this will fail because it's assigning a list to an integer:
+```
+  list a; integer b = a[5] = 4;
+```
+But this will work:
+```
+  list a; integer b; a[5] = b = 4;
+```
+
 ## Using the program
 
 This program is designed to work as a filter. It can read from standard input if the file name argument is "-"; in any case it currently outputs the result to standard output and any errors to standard error.
@@ -187,7 +196,7 @@ The program uses two external files. One is `builtins.txt`, which is in the same
 
 ## Other future plans
 
-Making the optimizer smarter is one primary objective. Conversion to [SSA](https://en.wikipedia.org/wiki/Static_single_assignment_form) form is currently not performed, and would be nice to have, for one, to enable more optimizations where values are not used.
+Making the optimizer smarter is one primary objective. Conversion to [SSA](https://en.wikipedia.org/wiki/Static_single_assignment_form) form is currently not performed, and would be nice to have, for one, to enable more optimizations where values are not used. There are a number of TODO items in the code about optimizations pending to implement.
 
 Another goal is to add the possibility to link each output line with its source counterpart, so that in case of a server side compilation error, the source line corresponding to the actual line where the error happened can be displayed. Currently, server-side compilation errors should be rare (unless there are bugs in the optimizer) as there will be few situations in which they won't be caught by the optimizer's parser first. This would also allow warnings output by the optimizer (e.g. an expression in globals not resolving to a constant) to be related to a source line. Currently those warnings don't tell where the error occurred.
 
