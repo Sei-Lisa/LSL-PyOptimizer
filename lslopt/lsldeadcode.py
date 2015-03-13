@@ -475,6 +475,8 @@ class deadcode(object):
         # Track removal of global lines, to reasign locations later.
         LocMap = range(len(self.tree))
 
+        GlobalDeletions = []
+
         # Perform the removal
         idx = 0
         while idx < len(self.tree):
@@ -489,15 +491,23 @@ class deadcode(object):
                 delete = self.SymbolReplacedOrDeleted(node)
 
             if delete:
-                # FIXME: This makes sense but it doesn't work. Analyze why and fix.
-                #if node['nt'] in ('DECL', 'STDEF', 'FNDEF'):
-                #    # Delete the symbol table entry too
-                #    del self.symtab[0][node['name']]
+                # Mark the symbol for later deletion from symbol table.
+                # We can't remove it here because there may be more references
+                # that we will remove in CleanNode later, that hold the
+                # original value.
+                if node['nt'] == 'DECL':
+                    GlobalDeletions.append(node['name'])
                 del self.tree[idx]
                 del LocMap[idx]
             else:
                 idx += 1
                 self.CleanNode(node)
+
+        # Remove the globals now.
+        for name in GlobalDeletions:
+            del self.symtab[0][name]
+
+        del GlobalDeletions
 
         # Reassign locations
         for name in self.symtab[0]:
