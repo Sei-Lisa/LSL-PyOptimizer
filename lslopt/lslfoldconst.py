@@ -61,6 +61,16 @@ class foldconst(object):
         if node['nt'] in ('V++', 'V--'):
             node['nt'] = '++V' if node['nt'] == 'V++' else '--V';
 
+        # Function calls are SEF if both the function and the args are SEF.
+        # If the statement is a function call and the function is marked as SEF
+        # at this point, it means the arguments are not SEF. Replace the node
+        # in that case with a block.
+        if node['nt'] == 'FNCALL' and 'SEF' in self.symtab[0][node['name']] and 'Loc' in self.symtab[0][node['name']]:
+            parent[index] = {'nt':'{}', 't':None, 'ch':
+                [{'nt':'EXPR','t':x['t'],'ch':[x]} for x in node['ch']]}
+            self.FoldTree(parent, index)
+            return
+
     def IsBool(self, node):
         """Some operators return 0 or 1, and that allows simplification of
         boolean expressions. This function returns whether we know for sure
