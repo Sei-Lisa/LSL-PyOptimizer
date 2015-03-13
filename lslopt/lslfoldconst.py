@@ -855,7 +855,7 @@ class foldconst(object):
                 if 'SEF' not in child[idx]:
                     issef = False
                 if child[idx]['nt'] == ';' \
-                     or nt == '{}' and child[idx]['nt'] == '{}' and not child[idx]['ch']:
+                     or child[idx]['nt'] == '{}' and not child[idx]['ch']:
                     del child[idx]
                 else:
                     if 'StSw' in child[idx]:
