@@ -1029,6 +1029,19 @@ class foldconst(object):
             node['StSw'] = True
             return
 
+        if nt == 'SUBIDX':
+            # Recurse to every child. It's SEF if all children are.
+            idx = 0
+            issef = True
+            while idx < len(child):
+                self.FoldTree(child, idx)
+                if 'SEF' not in child[idx]:
+                    issef = False
+                idx += 1
+            if issef:
+                node['SEF'] = True
+            return
+
         if nt == ';':
             node['SEF'] = True
             return

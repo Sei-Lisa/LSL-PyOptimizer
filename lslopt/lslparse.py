@@ -193,6 +193,9 @@ class parser(object):
         unicode:'STRING_VALUE', Key:'KEY_VALUE', Vector:'VECTOR_VALUE',
         Quaternion:'ROTATION_VALUE', list:'LIST_VALUE'}
 
+    TypeToExtractionFunction = {'integer':'llList2Integer',
+        'float':'llList2Float', 'string':'llList2String', 'key':'llList2Key',
+        'vector':'llList2Vector', 'rotation':'llList2Rot', 'list':'llList2List'}
 
     # Utility function
     def GenerateLabel(self):
@@ -619,19 +622,20 @@ class parser(object):
             | LIST_VALUE | TRUE | FALSE | vector_literal | rotation_literal | list_literal
             | PRINT '(' expression ')' | IDENT '(' expression_list ')'
             | lvalue '++' | lvalue '--' | assignment %if allowed
+            | IDENT '[' expression ']' '=' expression %if lazylists
+            | IDENT '[' expression ']' %if lazylists
             | lvalue
         vector_literal: '<' expression ',' expression ',' expression '>'
         rotation_literal: '<' expression ',' expression ',' expression
             ',' expression '>'
         list_literal: '[' optional_expression_list ']'
-        assignment: xlvalue '=' expression | lvalue '+=' expression
+        assignment: lvalue '=' expression | lvalue '+=' expression
             | lvalue '-=' expression | lvalue '*=' expression
             | lvalue '/=' expression | lvalue '%=' expression
             | lvalue '|=' expression %if extendedassignment
             | lvalue '&=' expression %if extendedassignment
             | lvalue '<<=' expression %if extendedassignment
             | lvalue '>>=' expression %if extendedassignment
-        xlvalue: lvalue | IDENT '[' expression ']' %if lazylists
         lvalue: IDENT | IDENT '.' IDENT
         """
         tok0 = self.tok[0]
@@ -741,6 +745,68 @@ class parser(object):
             raise EParseTypeMismatch(self)
         typ = sym['Type']
         lvalue = {'nt':'IDENT', 't':typ, 'name':name, 'scope':sym['Scope']}
+
+        # Lazy lists
+        if self.lazylists and tok0 == '[':
+            self.NextToken()
+            if typ != 'list':
+                raise EParseTypeMismatch(self)
+            idxexpr = self.Parse_optional_expression_list()
+            self.expect(']')
+            self.NextToken()
+            if self.tok[0] != '=' or not AllowAssignment:
+                return {'nt':'SUBIDX', 't':None, 'ch':[lvalue] + idxexpr}
+
+            # Lazy list assignment
+            if len(idxexpr) != 1:
+                raise EParseFunctionMismatch(self)
+            if idxexpr[0]['t'] != 'integer':
+                raise EParseTypeMismatch(self)
+            idxexpr = idxexpr[0]
+            self.NextToken()
+            expr = self.Parse_expression()
+            rtyp = expr['t']
+            # Define aux function if it doesn't exist
+            # (leaves users room for writing their own replacement, e.g.
+            # one that fills with something other than zeros)
+            if 'lazy_list_set' not in self.symtab[0]:
+                self.PushScope()
+                paramscope = self.scopeindex
+                params = (['list', 'integer', 'list'],
+                          ['L', 'i', 'v'])
+                self.AddSymbol('f', 0, 'lazy_list_set', Loc=self.usedspots,
+                    Type='list', ParamTypes=params[0], ParamNames=params[1])
+                self.AddSymbol('v', paramscope, 'L', Type='list')
+                self.AddSymbol('v', paramscope, 'i', Type='integer')
+                self.AddSymbol('v', paramscope, 'v', Type='list')
+                #self.PushScope() # no locals
+
+                # Add body (apologies for the wall of text)
+                # Generated from this source:
+                '''
+list lazy_list_set(list L, integer i, list v)
+{
+    while (llGetListLength(L) < i)
+        L = L + 0;
+    return llListReplaceList(L, v, i, i);
+}
+                '''
+                self.tree[self.usedspots] = {'ch': [{'ch': [{'ch': [{'ch': [{'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}], 'nt': 'FNCALL', 't': 'integer', 'name': 'llGetListLength'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'integer', 'name': 'i'}], 'nt': '<', 't': 'integer'}, {'ch': [{'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'nt': 'CONST', 't': 'integer', 'value': 0}], 'nt': '+', 't': 'list'}], 'nt': '=', 't': 'list'}], 'nt': 'EXPR', 't': 'list'}], 'nt': 'WHILE', 't': None}, {'ch': [{'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'v'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'integer', 'name': 'i'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'integer', 'name': 'i'}], 'nt': 'FNCALL', 't': 'list', 'name': 'llListReplaceList'}], 'nt': 'RETURN', 't': None, 'LIR': True}], 'nt': '{}', 't': None, 'LIR': True}], 't': 'list', 'pnames': params[1], 'scope': 0, 'pscope': paramscope, 'nt': 'FNDEF', 'ptypes': params[0], 'name': 'lazy_list_set'}
+                self.usedspots += 1
+                #self.PopScope() # no locals
+                self.PopScope()
+
+            if expr['t'] is None:
+                raise EParseTypeMismatch(self)
+            if expr['t'] != 'list':
+                expr = {'nt':'CAST', 't':'list', 'ch':[expr]}
+
+            return {'nt':'=', 't':'list', 'ch':[lvalue, {
+                    'nt':'FNCALL', 't':'list', 'name':'lazy_list_set',
+                    'scope':0,
+                    'ch':[lvalue.copy(), idxexpr, expr]
+                }]}
+
         if tok0 == '.':
             self.NextToken()
             self.expect('IDENT')
@@ -756,8 +822,8 @@ class parser(object):
                 raise EParseTypeMismatch(self)
             return {'nt':'V++' if tok0 == '++' else 'V--', 't':lvalue['t'], 'ch':[lvalue]}
         if AllowAssignment and (tok0 in self.assignment_toks
-                                or self.extendedassignment and tok0 in self.extassignment_toks
-                                or self.lazylists and tok0 == '['):
+                                or self.extendedassignment
+                                   and tok0 in self.extassignment_toks):
             if tok0 == '[':
                 if lvalue['nt'] != 'IDENT':
                     raise EParseSyntax(self)
@@ -783,44 +849,6 @@ class parser(object):
                 if tok0 != '*=' or typ == 'float':
                     expr = self.autocastcheck(expr, typ)
                     rtyp = typ
-            # Lazy list handler
-            if tok0 == '[':
-                # Define aux function if it doesn't exist
-                # (leaves users room for writing their own replacement, e.g.
-                # one that fills with something other than zeros)
-                if 'lazy_list_set' not in self.symtab[0]:
-                    self.PushScope()
-                    paramscope = self.scopeindex
-                    params = (['list', 'integer', 'list'],
-                              ['L', 'i', 'v'])
-                    self.AddSymbol('f', 0, 'lazy_list_set', Loc=self.usedspots,
-                        Type='list', ParamTypes=params[0], ParamNames=params[1])
-                    self.AddSymbol('v', paramscope, 'L', Type='list')
-                    self.AddSymbol('v', paramscope, 'i', Type='integer')
-                    self.AddSymbol('v', paramscope, 'v', Type='list')
-                    #self.PushScope() # no locals
-
-                    # Add body (apologies for the wall of text)
-                    # Generated from this source:
-                    '''
-list lazy_list_set(list L, integer i, list v)
-{
-    while (llGetListLength(L) < i)
-        L = L + 0;
-    return llListReplaceList(L, v, i, i);
-}
-                    '''
-                    self.tree[self.usedspots] = {'ch': [{'ch': [{'ch': [{'ch': [{'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}], 'nt': 'FNCALL', 't': 'integer', 'name': 'llGetListLength'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'integer', 'name': 'i'}], 'nt': '<', 't': 'integer'}, {'ch': [{'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'nt': 'CONST', 't': 'integer', 'value': 0}], 'nt': '+', 't': 'list'}], 'nt': '=', 't': 'list'}], 'nt': 'EXPR', 't': 'list'}], 'nt': 'WHILE', 't': None}, {'ch': [{'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'v'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'integer', 'name': 'i'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'integer', 'name': 'i'}], 'nt': 'FNCALL', 't': 'list', 'name': 'llListReplaceList'}], 'nt': 'RETURN', 't': None, 'LIR': True}], 'nt': '{}', 't': None, 'LIR': True}], 't': 'list', 'pnames': params[1], 'scope': 0, 'pscope': paramscope, 'nt': 'FNDEF', 'ptypes': params[0], 'name': 'lazy_list_set'}
-                    self.usedspots += 1
-                    #self.PopScope() # no locals
-                    self.PopScope()
-
-                return {'nt':'=', 't':'list', 'ch':[lvalue, {
-                        'nt':'FNCALL', 't':'list', 'name':'lazy_list_set',
-                        'scope':0,
-                        'ch':[lvalue.copy(), idxexpr,
-                              {'nt':'LIST','t':'list', 'ch':[expr]}]
-                    }]}
 
             # Lots of drama for checking types. This is pretty much like
             # addition, subtraction, multiply, divide, etc. all in one go.
@@ -958,6 +986,22 @@ list lazy_list_set(list L, integer i, list v)
                 else:
                     expr = self.Parse_unary_postfix_expression(AllowAssignment = False)
             basetype = expr['t']
+            if self.lazylists and basetype is None and expr['nt'] == 'SUBIDX':
+                fn = self.TypeToExtractionFunction[typ]
+                sym = self.FindSymbolFull(fn)
+                if sym is None:
+                    # in the unlikely event that the underlying function is not
+                    # defined in builtins.txt, throw a syntax error (making a
+                    # new exception just for this seems overkill, and throwing
+                    # an unknown identifier error would be confusing)
+                    raise EParseSyntax(self)
+                fnparamtypes = sym['ParamTypes']
+                subparamtypes = [x['t'] for x in expr['ch']]
+                if fnparamtypes != subparamtypes:
+                    raise EParseFunctionMismatch(self)
+                return {'nt':'FNCALL', 't':sym['Type'], 'name':fn, 'scope':0,
+                    'ch':expr['ch']}
+
             if typ == 'list' and basetype in self.types \
                or basetype in ('integer', 'float') and typ in ('integer', 'float', 'string') \
                or basetype == 'string' and typ in self.types \

@@ -298,6 +298,9 @@ class outscript(object):
         if nt == 'EXPRLIST':
             return self.OutExprList(child)
 
+        if nt == 'SUBIDX':
+            return '(MISSING TYPE)' + self.OutExpr(child[0]) + '[' + self.OutExprList(child[1:]) + ']'
+
         assert False, 'Internal error: expression type "' + nt + '" not handled' # pragma: no cover
 
     def OutCode(self, node):
