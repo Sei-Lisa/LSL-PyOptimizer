@@ -112,7 +112,7 @@ class EParseInvalidField(EParse):
 class EParseFunctionMismatch(EParse):
     def __init__(self, parser):
         super(EParseFunctionMismatch, self).__init__(parser,
-            u"Function type mismatches type or number of arguments")
+            u"Function call mismatches type or number of arguments")
 
 class EParseDeclarationScope(EParse):
     def __init__(self, parser):
