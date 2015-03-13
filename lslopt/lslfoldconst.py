@@ -812,6 +812,13 @@ class foldconst(object):
                 # event definition
                 self.CurEvent = node['name']
             self.FoldTree(child, 0)
+            # TODO: This works, but analysis of code paths is DCR's thing
+            # and this is incomplete, e.g. x(){{return;}} is not detected.
+            while 'ch' in child[0] and child[0]['ch']:
+                last = child[0]['ch'][-1]
+                if last['nt'] != 'RETURN' or 'ch' in last:
+                    break
+                del child[0]['ch'][-1]
             if 'SEF' in child[0]:
                 node['SEF'] = True
                 if node['name'] in self.symtab[0]:
