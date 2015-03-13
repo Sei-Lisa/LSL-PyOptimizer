@@ -220,7 +220,7 @@ class parser(object):
 
     def AddSymbol(self, kind, scope, name, **values):
         values['Kind'] = kind
-        if kind in 'vlf':
+        if kind in 'vl':
             values['Scope'] = scope
         self.symtab[scope][name] = values
 
@@ -736,10 +736,7 @@ class parser(object):
             args = self.Parse_optional_expression_list(sym['ParamTypes'])
             self.expect(')')
             self.NextToken()
-            ret = {'nt':'FNCALL', 't':sym['Type'], 'name':name, 'ch':args}
-            if 'Scope' in sym:
-                ret['scope'] = sym['Scope']
-            return ret
+            return {'nt':'FNCALL', 't':sym['Type'], 'name':name, 'ch':args}
         if sym['Kind'] != 'v':
             raise EParseTypeMismatch(self)
         typ = sym['Type']
@@ -2125,7 +2122,7 @@ list lazy_list_set(list L, integer i, list v)
                         elif self.tok[0] == '}':
                             bracelevel -= 1
                         self.NextToken()
-                    ret[name] = {'Kind':'f','Type':typ,'ParamTypes':params,'Scope':0}
+                    ret[name] = {'Kind':'f','Type':typ,'ParamTypes':params}
 
                 elif typ is None:
                     return ret # A variable needs a type
@@ -2246,7 +2243,7 @@ list lazy_list_set(list L, integer i, list v)
         # 'v' for variable, 'f' for function, 'l' for label, 's' for state,
         # or 'e' for event.
         #   Variables have 'Scope', 'Type', 'Loc' (if global), 'Local' (if local).
-        #   Functions have 'Type', 'Loc', 'ParamTypes' and 'ParamNames'.
+        #   Functions have 'Type' and 'ParamTypes'; UDFs also have 'Loc' and'ParamNames'.
         #   Labels only have 'Scope'.
         #   States only have 'Loc'.
         #   Events have 'ParamTypes' and 'ParamNames'.
