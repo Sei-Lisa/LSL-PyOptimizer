@@ -27,6 +27,7 @@ from lslopt.lsloptimizer import optimizer
 from lslopt import lslfuncs
 import unittest
 import os
+import lslopt.lslcommon
 
 class UnitTestCase(unittest.TestCase):
     pass
@@ -497,6 +498,8 @@ class Test03_Optimizer(UnitTestCase):
         del self.opt
         del self.outscript
 
+
+lslopt.lslcommon.DataPath = __file__[:-len(os.path.basename(__file__))]
 
 if __name__ == '__main__':
     unittest.main()
