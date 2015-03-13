@@ -489,9 +489,10 @@ class deadcode(object):
                 delete = self.SymbolReplacedOrDeleted(node)
 
             if delete:
-                if node['nt'] in ('DECL', 'STDEF', 'FNDEF'):
-                    # Delete the symbol table entry too
-                    del self.symtab[0][node['name']]
+                # FIXME: This makes sense but it doesn't work. Analyze why and fix.
+                #if node['nt'] in ('DECL', 'STDEF', 'FNDEF'):
+                #    # Delete the symbol table entry too
+                #    del self.symtab[0][node['name']]
                 del self.tree[idx]
                 del LocMap[idx]
             else:
