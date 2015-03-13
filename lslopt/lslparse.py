@@ -1299,7 +1299,8 @@ list lazy_list_set(list L, integer i, list v)
         return_statement: RETURN ';' | RETURN expression ';'
         declaration_statement: TYPE lvalue ';' | TYPE lvalue '=' expression ';'
         switch_statement: SWITCH '(' expression ')' code_block
-        case_statement: CASE expression ':' | DEFAULT ':'
+        case_statement: CASE expression ':' | CASE expression code_block
+            | DEFAULT ':' | DEFAULT code_block
         break_statement: BREAK ';'
         continue_statement: CONTINUE ';'
 
@@ -1616,8 +1617,10 @@ list lazy_list_set(list L, integer i, list v)
                 raise EParseCaseNotAllowed(self, u"case")
             self.NextToken()
             expr = self.Parse_expression()
-            self.expect(':')
-            self.NextToken()
+            if self.tok[0] == ':':
+                self.NextToken()
+            elif self.tok[0] != '{':
+                raise EParseSyntax(self)
             return {'nt':'CASE', 't':None, 'ch':[expr]}
 
         if tok0 == 'DEFAULT':
@@ -1630,8 +1633,10 @@ list lazy_list_set(list L, integer i, list v)
                     # labels. Nothing we can do about that.
                     raise EParseCaseNotAllowed(self, u"default")
                 self.NextToken()
-                self.expect(':')
-                self.NextToken()
+                if self.tok[0] == ':':
+                    self.NextToken()
+                elif self.tok[0] != '{':
+                    raise EParseSyntax(self)
                 return {'nt':'DEFAULTCASE', 't':None}
             # else fall through to eventually fail
 
