@@ -229,9 +229,11 @@ class outscript(object):
             return self.FindName(expr)
 
         if nt == 'CONST':
+            if self.foldconst and expr['t'] == 'list' and len(expr['value'])==1 and not self.globalmode:
+                return '(list)' + self.Value2LSL(expr['value'][0])
             return self.Value2LSL(expr['value'])
 
-        if nt == 'CAST':
+        if nt == 'CAST' or self.foldconst and nt in ('LIST', 'CONST') and len(child)==1 and not self.globalmode:
             ret =  '(' + expr['t'] + ')'
             expr = child[0]
             if expr['nt'] in ('CONST', 'IDENT', 'V++', 'V--', 'VECTOR',
@@ -399,6 +401,7 @@ class outscript(object):
         # Optimize signs
         self.optsigns = 'optsigns' in options
         self.optfloats = 'optfloats' in options
+        self.foldconst = 'constfold' in options
 
         ret = ''
         self.indent = '    '
