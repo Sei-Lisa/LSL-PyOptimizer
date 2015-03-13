@@ -12,6 +12,34 @@ It also implements several syntax extensions to help improving the readability o
 
 Firestorm does already incorporate an optimizer. However it is limited to removing unused global variables and functions, and does so by simple string analysis, not by syntactic analysis (e.g. if a local variable with the same name as a global is defined, the global isn't optimized out even if not used). In contrast, the program presented here does full syntax analysis and implements many more optimizations, including removing unused locals, simplifying many expressions, removing dead code, and more.
 
+## Status
+
+It is still considered alpha code. Please help by reporting any bugs you find.
+
+## Features
+
+Syntax extensions supported:
+
+* `break` and `continue` statements.
+* Expressions in globals.
+* Extended assignment operators `&=`, `|=`, `^=`, `<<=`, `>>=`.
+* Concatenation of key and string.
+* C-like string juxtaposition: "str1" "str2" produces "str1str2".
+* Allow type-cast of unary expressions that are not postfix, e.g. `(string)++x`.
+* Allow multiple labels with the same name in the same function.
+* `switch()` statements, for compatibility with Firestorm.
+* Lazy list syntax (`identifier[index]`), for compatibility with Firestorm.
+
+Optimizations supported:
+
+* Constant folding, expression and statement simplification.
+* Dead code removal, including unused global and local variables.
+* Shrinking identifiers.
+* Floats to integers where possible.
+* Signs in numbers.
+
+The next sections explain these features in detail.
+
 ## Syntax extensions
 
 ### `break` and `continue`
@@ -40,7 +68,7 @@ In LSL, keys are automatically cast to string in most cases. For example:
 ```
     llOwnerSay(llGetOwner());
 ```
-works perfectly. However, one case where that does not happen automatically is in string concatenation. Confusingly, while the above works, this doesn't:
+works perfectly. However, one prominent case where that does not happen automatically is in string concatenation. Confusingly, while the above works, this doesn't:
 ```
     llOwnerSay("Your key is: " + llGetOwner());
 ```
@@ -182,6 +210,69 @@ If the type it's cast to is list, it needs two parameters (starting and ending i
   list a; a = (list)a[3, 3];
 ```
 That is a requirement of the underlying `llList2List` function used in this case.
+
+## Optimizations
+
+### Constant folding and expression simplification
+
+The optimizer simplifies expressions as much as it knows, which is a fair amount, though there's still room for improvement in this area. Expressions that evaluate to a constant will be replaced with that constant. Other expressions such as a+3+1 are replaced with a+4, and so on. Note, however, that for floats, `(a+b)+c` may not equal `a+(b+c)`, so that optimization is not always done for floats. Also, as of this writing this optimization is only partial, so some expressions may not be optimized, e.g. `2+a+b+3` is not optimized to `a+b+5`. Many boolean expressions are simplified too (more are in the way). For example, `(TRUE&&(expression))` is simplified to `(expression)`, and `(FALSE&&(expression))` is simplified to `(FALSE)`. The famous `if (llListFindList(...)!=-1)` to `if (~llListFindList(...))` replacement is also performed automatically.
+
+The constant folder is also responsible for simplifying certain statements, e.g. `if (FALSE) { statements; } ` is completely removed, and `if (TRUE) { statements1; } else { statements2; }` is replaced with just `{ statements1; }`, removing `{ statements2; }`. Similarly, `do...while(constant)` loops and other loops are optimized too.
+
+This enables lots of things, like creating an `assert()` macro similar to that in C:
+```
+#define assert(x) do { if (DEBUG && !(x)) \
+  llOwnerSay("ASSERTION FAILED: " #x); } while (0)
+```
+without worrying about the extra memory that it will take in production code once DEBUG is switched off, or about the loop taking actual code memory.
+
+### Dead code removal
+
+This part of the optimizer tracks execution and usage of statements and variables, and removes the ones that aren't used. It performs a function similar to that of the Firestorm optimizer, and much more. It can remove also unused locals, and isn't confused by having a global and a local with the same name.
+
+It also replaces references to integer variables that are not written to (global or local), with their value. For example:
+```
+integer ANSWER = 42;
+default
+{
+    state_entry()
+    {
+        llOwnerSay((string)X);
+    }
+}
+```
+will produce:
+```
+default
+{
+    state_entry()
+    {
+        llOwnerSay("42");
+    }
+}
+```
+after DCR and constant folding. This optimization has one of the largest impacts, as variables and parameters in general seem to take a lot of memory in Mono, and removing as much of them as possible produces good savings.
+
+### Shrinking Identifiers
+
+Long variable and parameter names are nice and readable, but when used as part of the globals or as function parameters, each character in the identifier takes at least one byte of code memory. In large programs, this can add up to a significant amount. This option replaces global and parameter identifiers with the shortest possible ones, also reusing as many as it can. The savings from this alone can be very significant in programs with a large number of globals or states.
+
+### Floats
+
+Floats under Mono are internally double precision, so float constants take four more bytes than integers. On the other hand, type cast from integer to float takes only one byte. This optimization substitutes floats with integers where possible, for an overall saving of three bytes per number.
+
+### Signs
+
+The sign at the beginning of a number (except in globals) takes one byte of code, unless prefixed by a type cast (which does not, under Mono, take code memory in itself if the destination type is the same). Small saving, but it adds up to the overall. Numbers are thus output with a type cast and surrounded by parentheses, e.g. `((float)-1.5)` instead of `-1.5`.
+
+### String constant folding
+
+This optimization is turned off by default, as it can be counter-productive. It enables concatenating constants together. However, consider this situation:
+```
+string a = "A very long string that only appears once" + ", or not";
+string b = "A very long string that only appears once" + " or twice";
+```
+Since Mono keeps only one copy of each constant string in the code, making the optimizer concatenate them would be counter-productive, generating two long strings that take more code than the original string plus the shorter ones.
 
 ## Using the program
 
