@@ -256,9 +256,11 @@ class parser(object):
         return None
 
     # No labels or states allowed here (but functions are)
-    def FindSymbolFull(self, symbol):
+    def FindSymbolFull(self, symbol, scopelevel = None):
         """Returns the symbol table entry for the given symbol."""
-        scopelevel = self.scopeindex
+        if scopelevel is None:
+            # unspecified scope level means to look in the current scope
+            scopelevel = self.scopeindex
         while scopelevel: # Loop over all local scopes
             symtab = self.symtab[scopelevel]
             if symbol in symtab:
@@ -725,9 +727,6 @@ class parser(object):
             if tok0 == 'EOF':
                 raise EParseUEOF(self)
             raise EParseSyntax(self)
-        sym = self.FindSymbolFull(val)
-        if sym is None:
-            raise EParseUndefined(self)
         name = val
 
         # Course of action decided here.
@@ -735,12 +734,23 @@ class parser(object):
         if tok0 == '(':
             # Function call
             self.NextToken()
+
+            # Functions are looked up in the global scope only.
+            sym = self.FindSymbolFull(val, 0)
+            if sym is None:
+                raise EParseUndefined(self)
+
             if sym['Kind'] != 'f':
                 raise EParseUndefined(self)
             args = self.Parse_optional_expression_list(sym['ParamTypes'])
             self.expect(')')
             self.NextToken()
             return {'nt':'FNCALL', 't':sym['Type'], 'name':name, 'ch':args}
+
+        sym = self.FindSymbolFull(val)
+        if sym is None:
+            raise EParseUndefined(self)
+
         if sym['Kind'] != 'v':
             raise EParseTypeMismatch(self)
         typ = sym['Type']
@@ -988,7 +998,7 @@ list lazy_list_set(list L, integer i, list v)
             basetype = expr['t']
             if self.lazylists and basetype is None and expr['nt'] == 'SUBIDX':
                 fn = self.TypeToExtractionFunction[typ]
-                sym = self.FindSymbolFull(fn)
+                sym = self.FindSymbolFull(fn, 0)
                 if sym is None:
                     # in the unlikely event that the underlying function is not
                     # defined in builtins.txt, throw a syntax error (making a
