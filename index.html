@@ -6,7 +6,7 @@ body {background:#f0fcff;}
 a {text-decoration:none;color:blue;}
 a:hover {text-decoration:underline;}
 a:visited {color:#8000c0;}
-pre, code { background:#e8e8f8; }
+pre, code { background:#e8e8f8; padding:2px; }
 pre { padding:4px; }
 </style>
 </head><body>
@@ -300,9 +300,9 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
 
 <h3><a id="optimizations-dead-code-removal"></a>Dead code removal</h3>
 
-<p>This part of the optimizer tracks execution and usage of statements and variables, removing the ones that aren't used. It performs a function similar to that of the Firestorm optimizer, but it can remove also unused locals, and isn't confused by having a global and a local with the same name.</p>
+<p>This part of the optimizer tracks execution and usage of statements and variables, removing the ones that aren't used. It performs a function similar to that of the Firestorm optimizer, but it can remove also unused locals and dead code after a <code>return</code> or <code>jump</code>, and isn't confused by having a global and a local with the same name.</p>
 
-<p>It also replaces references to integer variables that are not written to (global or local), with their value. For example:</p>
+<p>It also replaces references to integer, string and key variables that are not written to (global or local), with their value. For example:</p>
 
 <pre><code>integer ANSWER = 42;
 default
@@ -333,7 +333,7 @@ default
 
 <h3><a id="optimizations-floats"></a>Floats</h3>
 
-<p>Floats under Mono are internally double precision, so float constants take four more bytes than integers. On the other hand, type cast from integer to float takes only one byte. This optimization substitutes floats with integers where possible, for an overall saving of three bytes per number.</p>
+<p>Floats under Mono are internally double precision, so float constants take four more bytes than integers. On the other hand, type cast from integer to float takes only one byte. This optimization substitutes floats with integers where possible, for an overall saving of three bytes per number. For example, it transforms <code>llSetTimerEvent(0.0)</code> into <code>llSetTimerEvent(0)</code>.</p>
 
 <h3><a id="optimizations-signs"></a>Signs</h3>
 
