@@ -204,10 +204,8 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
 <p>The syntax of the <code>switch</code> statement as implemented, has two restrictions over its C counterpart:</p>
 
 <ol>
-<li>
-<code>case</code> labels can't appear in nested blocks. That's because they are replaced by LSL labels, and as discussed in the <i>Multiple labels with the same name</i> section above, label scope rules prevent their visibility in an outer block, so once converted to labels, the corresponding <code>jump</code> instructions would not be able to find them. This limitation means that <a href="https://en.wikipedia.org/wiki/Duff's_device">Duff's device</a> or similar constructs can't be implemented with this optimizer.</li>
-<li>
-<code><div>switch()</code> needs to be followed by a block, not by a single statement. For example, whiile this works in C, it won't work in this optimizer:<div>
+<li><code>case</code> labels can't appear in nested blocks. That's because they are replaced by LSL labels, and as discussed in the <i>Multiple labels with the same name</i> section above, label scope rules prevent their visibility in an outer block, so once converted to labels, the corresponding <code>jump</code> instructions would not be able to find them. This limitation means that <a href="https://en.wikipedia.org/wiki/Duff's_device">Duff's device</a> or similar constructs can't be implemented with this optimizer.</li>
+<li><div><code>switch()</code> needs to be followed by a block, not by a single statement. For example, whiile this works in C, it won't work in this optimizer:<div>
 <pre><code>    switch(1) case 1: break;</code></pre>
 <div>The reason is that <code>case</code> is treated by this parser as a statement, rather than as a label prefix, making <code>break</code> be outside the <code>switch</code>. This limitation is probably only of theoretical importance and will not have any practical implication, since single-statement <code>switch</code> clauses are of little no practical use (known to the author). Of course it works perfectly when enclosed in braces:</div>
 <pre><code>    switch(1) { case 1: break; }</code></pre></li>
