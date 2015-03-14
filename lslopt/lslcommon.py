@@ -34,3 +34,5 @@ class Quaternion(tuple):
 Bugs = set([6495])
 
 LSO = False
+
+DataPath = ''

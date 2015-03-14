@@ -22,14 +22,17 @@
 from lslopt.lslparse import parser,EParse
 from lslopt.lsloutput import outscript
 from lslopt.lsloptimizer import optimizer
-import sys
-import os
+import sys, os, getopt
 import lslopt.lslcommon
 
-def main():
-    if len(sys.argv) < 2:
+
+VERSION = '0.1.1'
+
+
+def Usage(about = None):
+    if about is None:
         sys.stderr.write(
-r'''LSL optimizer v0.1
+r'''LSL optimizer v{version}
 
     (C) Copyright 2015 Sei Lisa. All rights reserved.
 
@@ -39,12 +42,23 @@ r'''LSL optimizer v0.1
     This program is licensed under the GNU General Public License
     version 3.
 
-Usage: %s [-O [+|-]option[,[+|-]option[,...]]] filename
+Usage: {progname}
+    [{{-O|--optimizer-options}} [+|-]option[,[+|-]option[,...]]]
+    [-h|--help]
+    [--version]
+    [{{-o|--output=}} filename]
+    filename
 
-That's an upper case o, not the number zero.
 If filename is a dash (-) then standard input is used.
+Use: {progname} -O help for help on the command line options.
 
-Options (+ means active by default, - means inactive by default):
+'''.format(progname=sys.argv[0], version=VERSION))
+        return
+
+    if about == 'optimizer-options':
+        sys.stderr.write(
+r'''
+Optimizer options (+ means active by default, - means inactive by default):
 
   Syntax extensions options:
 
@@ -110,7 +124,7 @@ Options (+ means active by default, - means inactive by default):
   Miscellaneous options
 
   foldtabs           - Tabs can't be copy-pasted, so expressions that produce
-                       tabs, e.g. llUnescapeURL("%%09"), aren't optimized by
+                       tabs, e.g. llUnescapeURL("%09"), aren't optimized by
                        default. This option overrides that check, enabling
                        expansion of functions that produce strings with tabs.
                        The resulting source isn't guaranteed to be
@@ -123,33 +137,63 @@ Options (+ means active by default, - means inactive by default):
                        is useless with 'optimize' and 'optsigns', and is of
                        basically no use in general, other than to see where
                        automatic casts happen.
-''' % sys.argv[0])
-        return 1
+''')
+        return
 
+def main():
+    # If it's good to append the basename to it, it's good to append the
+    # auxiliary files' names to it, which should be located where this file is.
+    lslopt.lslcommon.DataPath = __file__[:-len(os.path.basename(__file__))]
+
+    # Default options
     options = set(('extendedglobalexpr','extendedtypecast','extendedassignment',
         'allowkeyconcat','allowmultistrings','skippreproc','optimize',
         'optsigns','optfloats','constfold','dcr'
         ))
 
-    # If it's good to append the basename to it, it's good to append the
-    # auxiliary files' names to it.
-    lslopt.lslcommon.DataPath = __file__[:-len(os.path.basename(__file__))]
+    try:
+        opts, args = getopt.gnu_getopt(sys.argv[1:], 'hO:o:',
+            ("help", "version", "optimizer-options=", "output="))
+    except getopt.GetoptError:
+        Usage()
+        return 1
 
-    if sys.argv[1] == '-O':
-        if len(sys.argv) < 4:
-            sys.stderr.write('Command line: Not enough parameters\n')
-            return 1
-        optchanges = sys.argv[2].split(',')
-        for chg in optchanges:
-            if chg[0:1] not in ('+', '-'):
-                chg = '+' + chg
-            if chg[0] == '-':
-                options.discard(chg[1:])
-            else:
-                options.add(chg[1:])
-        fname = sys.argv[3]
-    else:
-        fname = sys.argv[1]
+    outfile = '-'
+
+    for opt, arg in opts:
+
+        if opt in ('-O', '--optimizer-options'):
+            if arg == 'help':
+                Usage('optimizer-options')
+                return 0
+
+            optchanges = arg.split(',')
+            for chg in optchanges:
+                if chg[0:1] not in ('+', '-'):
+                    chg = '+' + chg
+                if chg[0] == '-':
+                    options.discard(chg[1:])
+                else:
+                    options.add(chg[1:])
+
+        elif opt in ('-h', '--help'):
+            Usage()
+            return 0
+
+        elif opt in ('-v', '--version'):
+            sys.stdout.write('LSL PyOptimizer v%s\n' % VERSION)
+            return 0
+
+        elif opt in ('-o', '--output'):
+            outfile = arg
+    del opts
+
+    fname = args[0] if args else None
+    if fname is None:
+        Usage()
+        return 1
+
+    del args
 
     p = parser()
     try:
@@ -159,7 +203,7 @@ Options (+ means active by default, - means inactive by default):
         else:
             ts = p.parsefile(fname, options)
     except EParse as e:
-        print e.message
+        sys.stderr.write(e.message + '\n')
         return 1
     del p
 
@@ -171,9 +215,17 @@ Options (+ means active by default, - means inactive by default):
     script = outs.output(ts, options)
     del outs
     del ts
-    sys.stdout.write(script)
+    if outfile == '-':
+        sys.stdout.write(script)
+    else:
+        outf = open(outfile, 'w')
+        try:
+            outf.write(script)
+        finally:
+            outf.close()
     return 0
 
-ret = main()
-if ret:
-    sys.exit(ret)
+if __name__ == '__main__':
+    ret = main()
+    if ret:
+        sys.exit(ret)
