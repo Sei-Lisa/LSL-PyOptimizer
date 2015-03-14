@@ -1,13 +1,21 @@
 <!DOCTYPE html>
 <html><head>
 <title>LSL PyOptimizer project</title>
+<style type="text/css">
+body {background:#f0fcff;}
+a {text-decoration:none;color:blue;}
+a:hover {text-decoration:underline;}
+a:visited {color:#8000c0;}
+pre, code { background:#e8e8f8; }
+pre { padding:4px; }
+</style>
 </head><body>
 
 <h1><a id="lsl-pyoptimizer"></a>LSL PyOptimizer</h1>
 
 <h2><a id="introduction"></a>Introduction</h2>
 
-<p>LSL PyOptimizer is a LSL2 script optimizer written for Python 2. Currently it only supports code memory optimization (no speed optimization), only for Mono (no LSO), and only for the Second Life flavour of LSL (no OpenSim etc.).</p>
+<p><b>LSL PyOptimizer</b> is a LSL2 script optimizer written in Python 2. Currently it only supports code memory optimization (no speed optimization), only for Mono (no LSO), and only for the Second Life flavour of LSL (no OpenSim etc.).</p>
 
 <p>The original LSL compiler does not do any optimizations whatsoever. Either the programmer does the optimization, or the scripts take more memory than necessary when writing something as simple as <code>a = -1;</code> (yes, the sign takes code memory!).</p>
 
@@ -189,8 +197,7 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
 
 <p>These extensions are implemented for compatibility with the syntax extensions originally integrated in Emerald and currently in Firestorm. Their use is discouraged and they are considered legacy extensions.</p>
 
-<h3><a id="extensions-switch-statements"></a>
-<code>switch()</code> statements</h3>
+<h3><a id="extensions-switch-statements"></a><code>switch()</code> statements</h3>
 
 <p>Enables use of C-like <code>switch</code> statements. These produce very awkward code, hard to optimize, and the argument is evaluated multiple times (as many as <code>case</code> labels are present).</p>
 
@@ -279,7 +286,9 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
 
 <h3><a id="optimizations-constant-folding-and-expression-simplification"></a>Constant folding and expression simplification</h3>
 
-<p>The optimizer simplifies expressions as much as it knows, which is a fair amount, though there's still room for improvement in this area. Expressions that evaluate to a constant will be replaced with that constant. Other expressions such as a+3+1 are replaced with a+4, and so on. Note, however, that for floats, <code>(a+b)+c</code> may not equal <code>a+(b+c)</code>, so that optimization is not always done for floats. Also, as of this writing this optimization is only partial, so some expressions may not be optimized, e.g. <code>2+a+b+3</code> is not optimized to <code>a+b+5</code>. Many boolean expressions are simplified too (more are on the way). For example, <code>(TRUE&amp;&amp;(expression))</code> is simplified to <code>(expression)</code>, and <code>(FALSE&amp;&amp;(expression))</code> is simplified to <code>(FALSE)</code> provided the expression has no side effects. The famous <code>if (llListFindList(...)!=-1)</code> to <code>if (~llListFindList(...))</code> replacement is also performed automatically.</p>
+<p>The optimizer simplifies expressions as much as it knows, which is a fair amount, though there's still room for improvement in this area. Expressions that evaluate to a constant will be replaced with that constant. Most calculation functions are implemented; note, however, that the JSON functions in particular do not follow the broken LSL behaviour too closely, and that <code>llJsonSetValue</code> is not implemented as of yet.</p>
+
+<p>Other expressions such as a+3+1 are replaced with a+4, and so on. Note, however, that for floats, <code>(a+b)+c</code> may not equal <code>a+(b+c)</code>, so that optimization is not always done for floats. Also, as of this writing this optimization is only partial, so some expressions may not be optimized, e.g. <code>2+a+b+3</code> is not optimized to <code>a+b+5</code>. Many boolean expressions are simplified too (more are on the way). For example, <code>(TRUE&amp;&amp;(expression))</code> is simplified to <code>(expression)</code>, and <code>(FALSE&amp;&amp;(expression))</code> is simplified to <code>(FALSE)</code> provided the expression has no side effects. The famous <code>if (llListFindList(...)!=-1)</code> to <code>if (~llListFindList(...))</code> replacement is also performed automatically.</p>
 
 <p>The constant folding optimizer is also responsible for simplifying certain statements, e.g. <code>if (FALSE) { statements; }</code> is completely removed, and <code>if (TRUE) { statements1; } else { statements2; }</code> is replaced with just <code>{ statements1; }</code>, removing <code>{ statements2; }</code>. Similarly, <code>do...while(constant)</code> loops and other loops are optimized too.</p>
 
@@ -289,7 +298,7 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
   llOwnerSay("ASSERTION FAILED: " #x); } while (0)
 </code></pre>
 
-<p>without worrying about the extra memory that it will take in production code once DEBUG is switched off, or about the loop taking actual code memory.</p>
+<p>without worrying about the extra memory that it will take in production code once DEBUG is switched off, or about the loop taking up actual code memory.</p>
 
 <h3><a id="optimizations-dead-code-removal"></a>Dead code removal</h3>
 
