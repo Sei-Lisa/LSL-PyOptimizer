@@ -2232,7 +2232,15 @@ list lazy_list_set(list L, integer i, list v)
 
         This function also builds the temporary globals table.
         """
+
         self.script = script
+        if type(script) is not unicode:
+            try:
+                self.script = script.decode('utf8')
+            except UnicodeDecodeError as E:
+                self.errorpos = E.start
+                raise EParse(self, 'Invalid UTF-8 in script')
+
         self.length = len(script)
 
         # Extended expressions in globals (needs support from the optimizer to work)
