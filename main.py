@@ -22,12 +22,95 @@
 from lslopt.lslparse import parser,EParse
 from lslopt.lsloutput import outscript
 from lslopt.lsloptimizer import optimizer
-import sys, os, getopt
+import sys, os, getopt, re
 import lslopt.lslcommon
 
 
-VERSION = '0.1.1'
+VERSION = '0.1.1alpha'
 
+
+def PreparePreproc(script):
+    s = ''
+    nlines = 0
+    col = 0
+
+    # Trigraphs make our life really difficult.
+    # We join lines with \<return> or ??/<return> inside strings,
+    # and count <return>s to add them back at the end of the string,
+    # as well as spaces.
+    # We skip as much as possible in one go every time, only stopping to
+    # analyze critical substrings.
+    tok = re.compile(r'[^"/]+|"|/(?:\?\?\/\n)*\*.*?\*(?:\?\?\/\n)*/'
+        r'|/(?:\?\?\/\n)*/(?:\?\?\/.|\\.|.)*?\n'
+        , re.S)
+    #tok2 = re.compile(r'(?:(?!\?\?/.|\\.|"|\n).)+|\\.|\?\?/.|.', re.S)
+    tok2 = re.compile(
+        r"\\\n|\?\?/\n|" '"' r"|\n|"
+        r"(?:"
+            # negative match for the above - tough
+            # eat as a unit:
+            # - a backslash or corresponding trigraph followed by any trigraph
+            #   or by any non-newline character
+            # - any trigraph other than ??/
+            # - any character that is not a newline, double quote, backslash
+            #   or the start of a trigraph
+            # - any trigraph-like sequence that is not a trigraph
+            r"(?:\\|\?\?/)(?:\?\?[=/'()!<>\-]|[^\n])"
+            r"|\?\?[='()!<>\-]"
+            r"|[^\n" '"' r"\\?]|\?(?!\?[=/'()!<>\-])"
+        r")+"
+        )
+
+    pos = 0
+    match = tok.search(script, pos)
+    while match:
+        matched = match.group(0)
+        pos += len(matched)
+        if matched == '"':
+            s += matched
+            nlines = col = 0
+            match2 = tok2.search(script, pos)
+            while match2:
+                matched2 = match2.group(0)
+                pos += len(matched2)
+
+                if matched2 == '\\\n' or matched2 == '??/\n':
+                    nlines += 1
+                    col = 0
+                    match2 = tok2.search(script, pos)
+                    continue
+                if matched2 == '"':
+                    if nlines:
+                        if script[pos:pos+1] == '\n':
+                            col = -1 # don't add spaces if not necessary
+                        # col misses the quote added here, so add 1
+                        s += '"' + '\n'*nlines + ' '*(col+1)
+                    else:
+                        s += '"'
+                    break
+                if matched2 == '\n':
+                    nlines += 1
+                    col = 0
+                    s += '\\n'
+                else:
+                    col += len(matched2)
+                    s += matched2
+                match2 = tok2.search(script, pos)
+
+        else:
+            s += matched
+        match = tok.search(script, pos)
+
+    return s
+
+def ScriptHeader(script, avname):
+    if avname:
+        avname = ' - ' + avname
+    return ('//start_unprocessed_text\n/*'
+        + re.sub(r'([*/])(?=[*|/])', r'\1|', script)
+        + '*/\n//end_unprocessed_text\n//nfo_preprocessor_version 0\n'
+          '//program_version LSL PyOptimizer v' + VERSION + avname
+        + '\n//mono\n\n')
 
 def Usage(about = None):
     if about is None:
@@ -43,14 +126,29 @@ r'''LSL optimizer v{version}
     version 3.
 
 Usage: {progname}
-    [{{-O|--optimizer-options}} [+|-]option[,[+|-]option[,...]]]
-    [-h|--help]
-    [--version]
-    [{{-o|--output=}} filename]
-    filename
+    [-O|--optimizer-options=[+|-]option[,[+|-]option[,...]]]
+                                optimizer options (use '-O help' for help)
+    [-h|--help]                 print this help
+    [--version]                 print this program's version
+    [-o|--output=<filename>]    output to file rather than stdout
+    [-H|--header]               Add the script as a comment in Firestorm format
+    [-p|--preproc=mode]         run external preprocessor (default is GNU cpp)
+    [-P|--prearg=<arg>]         add parameter to preprocessor's command line
+                                (or command name if first after --prereset)
+    [--prereset]                reset the preprocessor cmd/arg list
+    [--avid=<UUID>]             specify UUID of avatar saving the script
+    [--avname=<name>]           specify name of avatar saving the script
+    [--assetid=<UUID>]          specify the asset UUID of the script
+    [--scriptname=<name>]       specify the script's file name
+    filename                    input file
 
 If filename is a dash (-) then standard input is used.
 Use: {progname} -O help for help on the command line options.
+
+Preprocessor modes:
+    external: Invoke GNU cpp
+    extnodef: Invoke GNU cpp, don't add extra defines
+    none:     No preprocessing (default)
 
 '''.format(progname=sys.argv[0], version=VERSION))
         return
@@ -152,13 +250,28 @@ def main():
         ))
 
     try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], 'hO:o:',
-            ("help", "version", "optimizer-options=", "output="))
+        opts, args = getopt.gnu_getopt(sys.argv[1:], 'hO:o:pP:H',
+            ('optimizer-options=', 'help', 'version', 'output=', 'header',
+            'preproc=', 'prereset', 'prearg=',
+            'avid=', 'avname=', 'assetid=', 'scriptname='))
     except getopt.GetoptError:
         Usage()
         return 1
 
     outfile = '-'
+    avid = '00000000-0000-0000-0000-000000000000'
+    avname = ''
+    shortname = ''
+    assetid = '00000000-0000-0000-0000-000000000000'
+    preproc_cmdline = [
+        'cpp', '-undef', '-x', 'c', '-std=c99', '-nostdinc', '-trigraphs',
+        '-dN', '-fno-extended-identifiers',
+        '-Dinteger(x)=((integer)(x))', '-Dfloat(x)=((float)(x))',
+        '-Dstring(x)=((string)(x))', '-Dkey(x)=((key)(x))',
+        '-Drotation(x)=((rotation)(x))', '-Dquaternion(x)=((quaternion)(x))',
+        '-Dvector(x)=((vector)(x))', '-Dlist(x)=((list)(x))']
+    preproc = False
+    script_header = False
 
     for opt, arg in opts:
 
@@ -180,12 +293,39 @@ def main():
             Usage()
             return 0
 
-        elif opt in ('-v', '--version'):
+        elif opt == '--version':
             sys.stdout.write('LSL PyOptimizer v%s\n' % VERSION)
             return 0
 
         elif opt in ('-o', '--output'):
             outfile = arg
+
+        elif opt in ('-p', '--preproc'):
+            preproc = arg.lower()
+            if preproc not in ('external', 'extnodef', 'none'):
+                Usage()
+                return 1
+
+        elif opt == '--prereset':
+            preproc_cmdline = []
+
+        elif opt in ('-P', '--prearg'):
+            preproc_cmdline.append(arg)
+
+        elif opt in ('-H', '--header'):
+            script_header = True
+
+        elif opt == '--avid':
+            avid = arg
+
+        elif opt == '--avname':
+            avname = arg
+
+        elif opt == '--assetid':
+            assetid = arg
+
+        elif opt == '--shortname':
+            shortname = arg
     del opts
 
     fname = args[0] if args else None
@@ -195,13 +335,65 @@ def main():
 
     del args
 
+    if fname == '-':
+        script = sys.stdin.read()
+    else:
+        f = open(fname, 'r')
+        try:
+            script = f.read()
+        finally:
+            f.close()
+            del f
+
+    if script_header:
+        script_header = ScriptHeader(script, avname)
+
+    if shortname == '':
+        shortname = os.path.basename(fname)
+
+    if preproc == 'external':
+        preproc_cmdline.append('-D__AGENTKEY__="' + avid + '"')
+        preproc_cmdline.append('-D__AGENTID__="' + avid + '"')
+        preproc_cmdline.append('-D__AGENTIDRAW__=' + avid)
+        preproc_cmdline.append('-D__AGENTNAME__="' + avname + '"')
+        preproc_cmdline.append('-D__ASSETID__=' + assetid)
+        preproc_cmdline.append('-D__SHORTFILE__="' + shortname + '"')
+        preproc_cmdline.append('-D__OPTIMIZER__=LSL PyOptimizer')
+        preproc_cmdline.append('-D__OPTIMIZER_VERSION__=' + VERSION)
+
+    if preproc in ('external', 'extnodef'):
+        \
+print PreparePreproc(script)
+        import subprocess
+        import time
+
+        stdout = ''
+        p = subprocess.Popen(preproc_cmdline, stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p.stdin.write(PreparePreproc(script))
+        p.stdin.close()
+        while True:
+            status = p.poll()
+            if status is not None:
+                break
+            stdout += p.stdout.read()
+            sys.stderr.write(p.stderr.read())
+            time.sleep(0.1)
+        sys.stderr.write(p.stderr.read())
+        stdout += p.stdout.read()
+        if status:
+            return status
+        script = stdout
+        del p, status, stdout
+
+        if ('\n'+script).find('\n#define USE_SWITCHES\n') != -1:
+            options.add('enableswitch')
+        if ('\n'+script).find('\n#define USE_LAZY_LISTS\n') != -1:
+            options.add('lazylists')
+
     p = parser()
     try:
-        if fname == '-':
-            script = sys.stdin.read()
-            ts = p.parse(script, options)
-        else:
-            ts = p.parsefile(fname, options)
+        ts = p.parse(script, options)
     except EParse as e:
         sys.stderr.write(e.message + '\n')
         return 1
@@ -215,6 +407,11 @@ def main():
     script = outs.output(ts, options)
     del outs
     del ts
+
+    if script_header is not False:
+        script = script_header + script
+        del script_header
+
     if outfile == '-':
         sys.stdout.write(script)
     else:
