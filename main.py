@@ -29,6 +29,22 @@ import lslopt.lslcommon
 VERSION = '0.1.1alpha'
 
 
+class UniConvScript(object):
+    '''Converts the script to Unicode, setting the properties required by
+    EParse to report a meaningful error position.
+    '''
+    def __init__(self, script):
+        self.script = script
+
+    def to_unicode(self):
+        if type(self.script) is not unicode:
+            try:
+                self.script = self.script.decode('utf8')
+            except UnicodeDecodeError as e:
+                self.errorpos = e.start
+                raise EParse(self, 'Invalid UTF-8 in script')
+        return self.script
+
 def PreparePreproc(script):
     s = ''
     nlines = 0
@@ -274,6 +290,10 @@ def main():
     script_header = False
 
     for opt, arg in opts:
+        if type(opt) is unicode:
+            opt = opt.encode('utf8')
+        if type(arg) is unicode:
+            arg = arg.encode('utf8')
 
         if opt in ('-O', '--optimizer-options'):
             if arg == 'help':
@@ -335,6 +355,7 @@ def main():
 
     del args
 
+    script = ''
     if fname == '-':
         script = sys.stdin.read()
     else:
@@ -362,23 +383,37 @@ def main():
         preproc_cmdline.append('-D__OPTIMIZER_VERSION__=' + VERSION)
 
     if preproc in ('external', 'extnodef'):
+        # At this point, for the external preprocessor to work we need the
+        # script as a byte array, not as unicode, but it should be valid UTF-8.
+        if type(script) is unicode:
+            script = script.encode('utf8')
+        else:
+            try:
+                # Try converting the script to Unicode, to report any encoding
+                # errors with accurate line information. At this point we don't
+                # need the result.
+                UniConvScript(script).to_unicode()
+            except EParse as e:
+                sys.stderr.write(e.message + '\n')
+                return 1
+        script = PreparePreproc(script)
+
+        # Invoke the external preprocessor
         import subprocess
         import time
 
         stdout = ''
         p = subprocess.Popen(preproc_cmdline, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        p.stdin.write(PreparePreproc(script))
+        p.stdin.write(script)
         p.stdin.close()
         while True:
+            time.sleep(0.1)
             status = p.poll()
-            if status is not None:
-                break
             stdout += p.stdout.read()
             sys.stderr.write(p.stderr.read())
-            time.sleep(0.1)
-        sys.stderr.write(p.stderr.read())
-        stdout += p.stdout.read()
+            if status is not None:
+                break
         if status:
             return status
         script = stdout
