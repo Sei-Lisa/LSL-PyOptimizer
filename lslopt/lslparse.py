@@ -2233,7 +2233,7 @@ list lazy_list_set(list L, integer i, list v)
         This function also builds the temporary globals table.
         """
 
-        self.script = script
+        self.script = script # needed here so there's a .script property for EParse in case of exception in decode()
         if type(script) is not unicode:
             try:
                 self.script = script.decode('utf8')
