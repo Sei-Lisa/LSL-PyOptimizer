@@ -26,7 +26,7 @@ import sys, os, getopt, re
 import lslopt.lslcommon
 
 
-VERSION = '0.1.1alpha'
+VERSION = '0.1.2alpha'
 
 
 class UniConvScript(object):
@@ -151,6 +151,8 @@ Usage: {progname}
     [-p|--preproc=mode]         run external preprocessor (default is GNU cpp)
     [-P|--prearg=<arg>]         add parameter to preprocessor's command line
                                 (or command name if first after --prereset)
+    [--precmd=<cmd>]            Preprocessor command. By default, 'cpp'.
+                                Useful mainly if it's not in the path.
     [--prereset]                reset the preprocessor cmd/arg list
     [--avid=<UUID>]             specify UUID of avatar saving the script
     [--avname=<name>]           specify name of avatar saving the script
@@ -268,7 +270,7 @@ def main():
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], 'hO:o:pP:H',
             ('optimizer-options=', 'help', 'version', 'output=', 'header',
-            'preproc=', 'prereset', 'prearg=',
+            'preproc=', 'prereset', 'precmd=', 'prearg=',
             'avid=', 'avname=', 'assetid=', 'scriptname='))
     except getopt.GetoptError:
         Usage()
@@ -314,7 +316,7 @@ def main():
             return 0
 
         elif opt == '--version':
-            sys.stdout.write('LSL PyOptimizer v%s\n' % VERSION)
+            sys.stdout.write('LSL PyOptimizer version %s\n' % VERSION)
             return 0
 
         elif opt in ('-o', '--output'):
@@ -325,6 +327,12 @@ def main():
             if preproc not in ('external', 'extnodef', 'none'):
                 Usage()
                 return 1
+
+        elif opt == '--precmd':
+            if preproc_cmdline:
+                preproc_cmdline[0] = arg
+            else:
+                preproc_cmdline.append(arg)
 
         elif opt == '--prereset':
             preproc_cmdline = []
