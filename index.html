@@ -20,7 +20,7 @@ pre code { padding: 0px; }
 
 <p>The original LSL compiler does not do any optimizations whatsoever. Either the programmer does the optimization, or the scripts take more memory than necessary when writing something as simple as <code>a = -1;</code> (yes, the sign takes code memory!).</p>
 
-<p>Given the 64K memory limit that applies to Mono scripts, this becomes a problem, leading to either difficult to read scripts, if optimized by hand, or in case of large scripts, to code taking valuable memory that could be used to embed more code or data.</p>
+<p>Given the 64K total code+data memory limit that applies to Mono scripts, this becomes a problem, leading to either difficult to read scripts, if optimized by hand, or in case of large scripts, to code taking valuable memory that could be used to embed more code or data.</p>
 
 <p>The aim of this program is to act as a filter that performs the optimizations automatically, letting the programmer focus on writing readable code.</p>
 
@@ -46,6 +46,7 @@ pre code { padding: 0px; }
 <li><a href="#extensions-multiple-labels-with-the-same-name">Allow multiple labels with the same name in the same function.</a></li>
 <li><a href="#extensions-switch-statements"><code>switch()</code> statements</a>, for compatibility with Firestorm.</li>
 <li><a href="#extensions-lazy-lists">Lazy list syntax</a> (<code>identifier[index]</code>), for compatibility with Firestorm.</li>
+<li> As of version 0.1.2alpha, it can invoke the preprocessor on its own (the default parameters require the GNU C preprocessor <code>cpp</code> to be installed, but other preprocessors can be used).</li>
 </ul>
 
 <p><a href="#optimizations">Optimizations supported:</a></p>
