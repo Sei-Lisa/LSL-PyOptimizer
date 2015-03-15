@@ -362,8 +362,6 @@ def main():
         preproc_cmdline.append('-D__OPTIMIZER_VERSION__=' + VERSION)
 
     if preproc in ('external', 'extnodef'):
-        \
-print PreparePreproc(script)
         import subprocess
         import time
 
