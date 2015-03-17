@@ -284,10 +284,15 @@ def main():
     preproc_cmdline = [
         'cpp', '-undef', '-x', 'c', '-std=c99', '-nostdinc', '-trigraphs',
         '-dN', '-fno-extended-identifiers',
-        '-Dinteger(x)=((integer)(x))', '-Dfloat(x)=((float)(x))',
-        '-Dstring(x)=((string)(x))', '-Dkey(x)=((key)(x))',
-        '-Drotation(x)=((rotation)(x))', '-Dquaternion(x)=((quaternion)(x))',
-        '-Dvector(x)=((vector)(x))', '-Dlist(x)=((list)(x))']
+        '-Dinteger(...)=((integer)(__VA_ARGS__))',
+        '-Dfloat(...)=((float)(__VA_ARGS__))',
+        '-Dstring(...)=((string)(__VA_ARGS__))',
+        '-Dkey(...)=((key)(__VA_ARGS__))',
+        '-Drotation(...)=((rotation)(__VA_ARGS__))',
+        '-Dquaternion(...)=((quaternion)(__VA_ARGS__))',
+        '-Dvector(...)=((vector)(__VA_ARGS__))',
+        '-Dlist(...)=((list)(__VA_ARGS__))'
+        ]
     preproc = False
     script_header = False
 
