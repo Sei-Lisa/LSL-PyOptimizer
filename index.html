@@ -355,16 +355,16 @@ string b = "A very long string that appears in this script once" + " or twice";
 
 <h2><a id="using-the-program"></a>Using the program</h2>
 
-<p>This program is designed to work as a filter. It can read from standard input if the file name argument is "-"; in any case it currently outputs the result to standard output and any errors to standard error.</p>
+<p>This program is designed to work as a filter. It can read from standard input if the file name argument is "-", and it can (and does by default) output the result to standard output. Any errors and warnings go to standard error always, to not interfere with the script being output.</p>
 
-<p>Running it by hand to optimize your scripts can be cumbersome. The intention is for it to act as a transparent filter; however, as of this writing there's no support for any viewer or IDE, as it has just been released. Run it without parameters to see the invocation help, for example with <code>python main.py</code>. Redirect the output to a file if you want to store the result, possibly to open it with an editor and copy it to the clipboard. Or under <i>X Window</i>, you can pipe the output directly to <code>xclip -quiet -selection clipboard</code> to copy it to the clipboard, rather than using a file, so you can paste it directly into the viewer. Examples:</p>
+<p>Running it by hand to optimize your scripts can be cumbersome. The intention is for it to act as a filter that is transparent to the user; however, as of this writing there's no support for any viewer or IDE, as it has just been released. Run it without parameters to see the invocation help, for example with <code>python main.py</code>. Redirect the output to a file if you want to store the result, possibly to open it with an editor and copy it to the clipboard. Or under <i>X Window</i>, you can pipe the output directly to <code>xclip -quiet -selection clipboard</code> to copy it to the clipboard, rather than using a file, so you can paste it directly into the viewer. Examples:</p>
 
 <pre><code>python main.py myscript.lsl | xclip -quiet -selection clipboard
 </code></pre>
 
 <p>will, under <i>X Window</i>, read <code>myscript.lsl</code>, optimize it, and copy the optimized result to the clipboard, ready to be pasted into the viewer.</p>
 
-<pre><code>python main.py myscript.lsl &gt; temp.opt
+<pre><code>python main.py myscript.lsl -o temp.opt
 notepad temp.opt
 </code></pre>
 
@@ -379,7 +379,7 @@ notepad temp.opt
 
 <p>Support for other IDEs like Eclipse is not planned, but the author encourages others to write it. Please notify Sei Lisa if you write one, so that it can be listed in this page.</p>
 
-<p>The program uses two external files. One is <code>builtins.txt</code>, which is in the same format as needed by <a href="https://github.com/pclewis/lslint">lslint</a>, and an up-to-date copy can be obtained from the <i>kwdb</i> project: <a href="https://bitbucket.org/Sei_Lisa/kwdb/raw/tip/outputs/builtins.txt">https://bitbucket.org/Sei_Lisa/kwdb/raw/tip/outputs/builtins.txt</a>. The other is <code>seftable.txt</code>, which is a list of functions that have no side effects (SEF stands for Side-Effect Free), allowing them to be removed (optimized out) if nothing else has side effects in an expression and the result of the expression is not used.</p>
+<p>The program uses two external files. One is <code>builtins.txt</code>, which is in the same format as needed by <a href="https://github.com/pclewis/lslint"><i>lslint</i></a>, and an up-to-date copy can be obtained from the <a href="https://bitbucket.org/Sei_Lisa/kwdb/"><i>kwdb</i></a> project: <a href="https://bitbucket.org/Sei_Lisa/kwdb/raw/tip/outputs/builtins.txt">https://bitbucket.org/Sei_Lisa/kwdb/raw/tip/outputs/builtins.txt</a>. The other is <code>seftable.txt</code>, which is a list of functions that have no side effects (SEF stands for Side-Effect Free), allowing them to be removed (optimized out) if nothing else has side effects in an expression and the result of the expression is not used.</p>
 
 <hr>
 
