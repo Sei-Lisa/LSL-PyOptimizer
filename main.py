@@ -26,7 +26,7 @@ import sys, os, getopt, re
 import lslopt.lslcommon
 
 
-VERSION = '0.1.2alpha'
+VERSION = '0.1.3alpha'
 
 
 class UniConvScript(object):
