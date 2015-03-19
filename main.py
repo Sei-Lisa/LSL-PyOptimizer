@@ -147,13 +147,12 @@ Usage: {progname}
     [-h|--help]                 print this help
     [--version]                 print this program's version
     [-o|--output=<filename>]    output to file rather than stdout
-    [-H|--header]               Add the script as a comment in Firestorm format
-    [-p|--preproc=mode]         run external preprocessor (default is GNU cpp)
+    [-H|--header]               add the script as a comment in Firestorm format
+    [-p|--preproc=mode]         run external preprocessor (see below for modes)
+                                (resets the preprocessor command line so far)
     [-P|--prearg=<arg>]         add parameter to preprocessor's command line
-                                (or command name if first after --prereset)
-    [--precmd=<cmd>]            Preprocessor command. By default, 'cpp'.
-                                Useful mainly if it's not in the path.
-    [--prereset]                reset the preprocessor cmd/arg list
+    [--precmd=<cmd>]            preprocessor command ('cpp' by default)
+    [--prenodef]                no LSL specific defines (__AGENTKEY__ etc.)
     [--avid=<UUID>]             specify UUID of avatar saving the script
     [--avname=<name>]           specify name of avatar saving the script
     [--assetid=<UUID>]          specify the asset UUID of the script
@@ -164,8 +163,11 @@ If filename is a dash (-) then standard input is used.
 Use: {progname} -O help for help on the command line options.
 
 Preprocessor modes:
-    external: Invoke GNU cpp
-    extnodef: Invoke GNU cpp, don't add extra defines
+    ext       Invoke preprocessor
+    mcpp      Invoke mcpp as preprocessor, setting default parameters pertinent
+              to it. Implies --precmd=mcpp
+    gcpp      Invoke GNU cpp as preprocessor, setting default parameters
+              pertinent to it. Implies --precmd=cpp
     none:     No preprocessing (default)
 
 '''.format(progname=sys.argv[0], version=VERSION))
@@ -257,6 +259,8 @@ Optimizer options (+ means active by default, - means inactive by default):
         return
 
 def main():
+    '''Main executable.'''
+
     # If it's good to append the basename to it, it's good to append the
     # auxiliary files' names to it, which should be located where this file is.
     lslopt.lslcommon.DataPath = __file__[:-len(os.path.basename(__file__))]
@@ -270,7 +274,7 @@ def main():
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], 'hO:o:pP:H',
             ('optimizer-options=', 'help', 'version', 'output=', 'header',
-            'preproc=', 'prereset', 'precmd=', 'prearg=',
+            'preproc=', 'precmd=', 'prearg=', 'prenodef',
             'avid=', 'avname=', 'assetid=', 'scriptname='))
     except getopt.GetoptError:
         Usage()
@@ -281,20 +285,11 @@ def main():
     avname = ''
     shortname = ''
     assetid = '00000000-0000-0000-0000-000000000000'
-    preproc_cmdline = [
-        'cpp', '-undef', '-x', 'c', '-std=c99', '-nostdinc', '-trigraphs',
-        '-dN', '-fno-extended-identifiers',
-        '-Dinteger(...)=((integer)(__VA_ARGS__))',
-        '-Dfloat(...)=((float)(__VA_ARGS__))',
-        '-Dstring(...)=((string)(__VA_ARGS__))',
-        '-Dkey(...)=((key)(__VA_ARGS__))',
-        '-Drotation(...)=((rotation)(__VA_ARGS__))',
-        '-Dquaternion(...)=((quaternion)(__VA_ARGS__))',
-        '-Dvector(...)=((vector)(__VA_ARGS__))',
-        '-Dlist(...)=((list)(__VA_ARGS__))'
-        ]
-    preproc = False
-    script_header = False
+    preproc_cmdline = ['cpp']
+    preproc = 'none'
+    predefines = True
+    script_header = ''
+    mcpp_mode = False
 
     for opt, arg in opts:
         if type(opt) is unicode:
@@ -329,21 +324,45 @@ def main():
 
         elif opt in ('-p', '--preproc'):
             preproc = arg.lower()
-            if preproc not in ('external', 'extnodef', 'none'):
+            if preproc not in ('ext', 'gcpp', 'mcpp', 'none'):
                 Usage()
                 return 1
 
-        elif opt == '--precmd':
-            if preproc_cmdline:
-                preproc_cmdline[0] = arg
-            else:
-                preproc_cmdline.append(arg)
+            mcpp_mode = False
+            del preproc_cmdline[1:]
 
-        elif opt == '--prereset':
-            preproc_cmdline = []
+            if preproc == 'gcpp':
+                preproc_cmdline = [
+                    'cpp', '-undef', '-x', 'c', '-std=c99', '-nostdinc',
+                    '-trigraphs', '-dN', '-fno-extended-identifiers',
+                    ]
+
+            elif preproc == 'mcpp':
+                mcpp_mode = True
+                preproc_cmdline = [
+                    'mcpp', '-e', 'UTF-8', '-I-', '-N', '-3', '-j',
+                    ]
+
+            if predefines:
+                preproc_cmdline += [
+                    '-Dinteger(...)=((integer)(__VA_ARGS__))',
+                    '-Dfloat(...)=((float)(__VA_ARGS__))',
+                    '-Dstring(...)=((string)(__VA_ARGS__))',
+                    '-Dkey(...)=((key)(__VA_ARGS__))',
+                    '-Drotation(...)=((rotation)(__VA_ARGS__))',
+                    '-Dquaternion(...)=((quaternion)(__VA_ARGS__))',
+                    '-Dvector(...)=((vector)(__VA_ARGS__))',
+                    '-Dlist(...)=((list)(__VA_ARGS__))',
+                    ]
+
+        elif opt == '--precmd':
+            preproc_cmdline[0] = arg
 
         elif opt in ('-P', '--prearg'):
             preproc_cmdline.append(arg)
+
+        elif opt == '--prenodef':
+            predefines = False
 
         elif opt in ('-H', '--header'):
             script_header = True
@@ -385,7 +404,7 @@ def main():
     if shortname == '':
         shortname = os.path.basename(fname)
 
-    if preproc == 'external':
+    if predefines:
         preproc_cmdline.append('-D__AGENTKEY__="' + avid + '"')
         preproc_cmdline.append('-D__AGENTID__="' + avid + '"')
         preproc_cmdline.append('-D__AGENTIDRAW__=' + avid)
@@ -395,7 +414,7 @@ def main():
         preproc_cmdline.append('-D__OPTIMIZER__=LSL PyOptimizer')
         preproc_cmdline.append('-D__OPTIMIZER_VERSION__=' + VERSION)
 
-    if preproc in ('external', 'extnodef'):
+    if preproc != 'none':
         # At this point, for the external preprocessor to work we need the
         # script as a byte array, not as unicode, but it should be valid UTF-8.
         if type(script) is unicode:
@@ -410,6 +429,11 @@ def main():
                 sys.stderr.write(e.message + '\n')
                 return 1
         script = PreparePreproc(script)
+        if mcpp_mode:
+            # As a special treatment for mcpp, we force it to output its macros
+            # so we can read if USE_xxx are defined. With GCC that is achieved
+            # with -dN but with mcpp there's no command line option.
+            script += '\n#pragma MCPP put_defines\n'
 
         # Invoke the external preprocessor
         import subprocess
@@ -417,14 +441,13 @@ def main():
 
         stdout = ''
         p = subprocess.Popen(preproc_cmdline, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            stdout=subprocess.PIPE)
         p.stdin.write(script)
         p.stdin.close()
         while True:
             time.sleep(0.1)
             status = p.poll()
             stdout += p.stdout.read()
-            sys.stderr.write(p.stderr.read())
             if status is not None:
                 break
         if status:
@@ -432,10 +455,14 @@ def main():
         script = stdout
         del p, status, stdout
 
-        if ('\n'+script).find('\n#define USE_SWITCHES\n') != -1:
-            options.add('enableswitch')
-        if ('\n'+script).find('\n#define USE_LAZY_LISTS\n') != -1:
-            options.add('lazylists')
+        for x in re.findall(r'(?:(?<=\n)|^)\s*#\s*define\s+('
+                            r'USE_SWITCHES'
+                            r'|USE_LAZY_LISTS'
+                            r')(?:$|[^A-Za-z0-9_])', script, re.S):
+            if x == 'USE_SWITCHES':
+                options.add('enableswitch')
+            elif x == 'USE_LAZY_LISTS':
+                options.add('lazylists')
 
     p = parser()
     try:
@@ -450,13 +477,10 @@ def main():
     del opt
 
     outs = outscript()
-    script = outs.output(ts, options)
+    script = script_header + outs.output(ts, options)
     del outs
     del ts
-
-    if script_header is not False:
-        script = script_header + script
-        del script_header
+    del script_header
 
     if outfile == '-':
         sys.stdout.write(script)
