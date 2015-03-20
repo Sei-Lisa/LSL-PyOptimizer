@@ -51,30 +51,39 @@ def PreparePreproc(script):
     col = 0
 
     # Trigraphs make our life really difficult.
-    # We join lines with \<return> or ??/<return> inside strings,
-    # and count <return>s to add them back at the end of the string,
-    # as well as spaces.
-    # We skip as much as possible in one go every time, only stopping to
-    # analyze critical substrings.
-    tok = re.compile(r'[^"/]+|"|/(?:\?\?\/\n)*\*.*?\*(?:\?\?\/\n)*/'
-        r'|/(?:\?\?\/\n)*/(?:\?\?\/.|\\.|.)*?\n'
+    # We join lines that have \<return> or ??/<return> inside strings,
+    # and we also replace regular <return> inside strings with \n, counting how
+    # many lines we join, to add them back at the end of the string in order to
+    # keep the line count exact prior to preprocessing. We also preserve the
+    # original column after the string, by adding as many spaces as necessary.
+    # We could let the preprocessor do the line joining on backslash-newline,
+    # but by eliminating all newlines, we have control over the output column
+    # of the text that follows the string and can report an accurate column
+    # position in case of error.
+    # The REs skip as much as possible in one go every time, only stopping to
+    # analyze critical tokens.
+    tok = re.compile(
+        r'(?:'
+            r'/(?:\?\?/\n|\\\n)*\*.*?\*(?:\?\?/\n|\\\n)*/'
+            r'|/(?:\?\?/\n|\\\n)*/(?:\?\?/\n|\\\n|[^\n])*\n'
+            r'|[^"]'
+        r')+'
+        r'|"'
         , re.S)
-    #tok2 = re.compile(r'(?:(?!\?\?/.|\\.|"|\n).)+|\\.|\?\?/.|.', re.S)
+    # RE used inside strings.
     tok2 = re.compile(
-        r"\\\n|\?\?/\n|" '"' r"|\n|"
-        r"(?:"
-            # negative match for the above - tough
-            # eat as a unit:
-            # - a backslash or corresponding trigraph followed by any trigraph
-            #   or by any non-newline character
-            # - any trigraph other than ??/
-            # - any character that is not a newline, double quote, backslash
-            #   or the start of a trigraph
-            # - any trigraph-like sequence that is not a trigraph
-            r"(?:\\|\?\?/)(?:\?\?[=/'()!<>\-]|[^\n])"
-            r"|\?\?[='()!<>\-]"
-            r"|[^\n" '"' r"\\?]|\?(?!\?[=/'()!<>\-])"
-        r")+"
+        r'(?:'
+            r"\?\?[='()!<>-]"   # valid trigraph except ??/ (backslash)
+            r"|(?:\?\?/|\\)(?:\?\?[/='()!<>-]|[^\n])"
+                                # backslash trigraph or actual backslash,
+                                # followed by any trigraph or non-newline
+            r'|(?!\?\?/\n|\\\n|"|\n).'
+                                # any character that doesn't start a trigraph/
+                                # backslash escape followed by a newline
+                                # or is a newline or double quote, as we're
+                                # interested in all those individually.
+        r')+'                   # as many of those as possible
+        r'|\?\?/\n|\\\n|\n|"'   # or any of those individually
         )
 
     pos = 0
