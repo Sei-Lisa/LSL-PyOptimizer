@@ -55,13 +55,20 @@ def PreparePreproc(script):
     # and we also replace regular <return> inside strings with \n, counting how
     # many lines we join, to add them back at the end of the string in order to
     # keep the line count exact prior to preprocessing. We also preserve the
-    # original column after the string, by adding as many spaces as necessary.
+    # original column of the text after the string, by adding as many spaces as
+    # necessary.
     # We could let the preprocessor do the line joining on backslash-newline,
     # but by eliminating all newlines, we have control over the output column
     # of the text that follows the string and can report an accurate column
-    # position in case of error.
+    # and line position in case of error.
     # The REs skip as much as possible in one go every time, only stopping to
     # analyze critical tokens.
+    # We don't follow the C convention that backslash-return is analyzed first.
+    # In c, the string "a\\<return>nb" is the same as "a\nb" which prints as
+    # a<return>b. But in LSL, forgetting about the preprocessor, the string
+    # "a\\<return>nb" is valid and stands for a\<return>nb. The principle of
+    # least surprise seems to suggest to accept valid LSL strings as LSL
+    # instead of reproducing that C quirk.
     tok = re.compile(
         r'(?:'
             r'/(?:\?\?/\n|\\\n)*\*.*?\*(?:\?\?/\n|\\\n)*/'
@@ -177,7 +184,10 @@ Preprocessor modes:
               to it. Implies --precmd=mcpp
     gcpp      Invoke GNU cpp as preprocessor, setting default parameters
               pertinent to it. Implies --precmd=cpp
-    none:     No preprocessing (default)
+    none      No preprocessing (default)
+
+Normally, running the preprocessor needs -O skippreproc to make the output
+readable by the optimizer.
 
 '''.format(progname=sys.argv[0], version=VERSION))
         return
