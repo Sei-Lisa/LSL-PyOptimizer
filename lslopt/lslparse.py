@@ -2393,13 +2393,13 @@ list lazy_list_set(list L, integer i, list v)
         # Library read code
 
         parse_lin_re = re.compile(
-            r'^\s*(event|void|integer|float|string|key|vector|quaternion|rotation|list)\s+'
+            r'^\s*([a-z]+)\s+'
             r'([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*('
-                r'(?:integer|float|string|key|vector|quaternion|rotation|list)\s+[a-zA-Z_][a-zA-Z0-9_]*'
-                r'(?:\s*,\s*(?:integer|float|string|key|vector|quaternion|rotation|list)\s+[a-zA-Z_][a-zA-Z0-9_]*)*'
+                r'[a-z]+\s+[a-zA-Z_][a-zA-Z0-9_]*'
+                r'(?:\s*,\s*[a-z]+\s+[a-zA-Z_][a-zA-Z0-9_]*)*'
             r')?\s*\)\s*$'
             r'|'
-            r'^\s*const\s+(integer|float|string|key|vector|quaternion|rotation|list)'
+            r'^\s*const\s+([a-z]+)'
             r'\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.*?)\s*$'
             r'|'
             r'^\s*(?:#.*|//.*)?$')
@@ -2415,7 +2415,7 @@ list lazy_list_set(list L, integer i, list v)
                 if line[-1] == '\n': line = line[:-1]
                 match = parse_lin_re.match(line)
                 if not match:
-                    warning('Syntax error in builtins.txt: ' + line)
+                    warning('Syntax error in builtins.txt, line ' + line)
                     continue
                 if match.group(1):
                     # event or function
@@ -2424,12 +2424,23 @@ list lazy_list_set(list L, integer i, list v)
                         typ = 'rotation'
                     if typ == 'void':
                         typ = None
+                    elif typ != 'event' and typ not in self.types:
+                        warning('Invalid type in builtins.txt, line ' + line + ': ' + typ)
+                        continue
                     args = []
                     arglist = match.group(3)
                     if arglist:
                         arglist = arglist.split(',')
+                        bad = False
                         for arg in arglist:
+                            argtyp = parse_arg_re.match(arg).group(1)
+                            if argtyp not in self.types:
+                                warning('Invalid type in builtins.txt, line ' + line + ': ' + argtyp)
+                                bad = True
+                                break
                             args.append(parse_arg_re.match(arg).group(1))
+                        if bad:
+                            continue
                     name = match.group(2)
                     if typ == 'event':
                         if name in self.events:
@@ -2451,6 +2462,9 @@ list lazy_list_set(list L, integer i, list v)
                     if name in self.constants:
                         warning('Global already defined in bultins.txt, overwriting: ' + name)
                     typ = match.group(4)
+                    if typ not in self.types:
+                        warning('Invalid type in builtins.txt, line ' + line + ': ' + typ)
+                        continue
                     if typ == 'quaternion':
                         typ = 'rotation'
                     value = match.group(6)
