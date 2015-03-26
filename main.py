@@ -234,6 +234,9 @@ Optimizer options (+ means active by default, - means inactive by default):
                        Like lazylists, it's implemented for compatibility with
                        Firestorm, but not recommended. Note that the operand to
                        switch() may be evaluated more than once.
+  funcoverride       - Allow duplicate function definitions to override the
+                       previous definition. For compatibility with Firestorm's
+                       optimizer.
 
   Optimization options
 

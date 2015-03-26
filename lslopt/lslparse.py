@@ -271,7 +271,7 @@ class parser(object):
         try:
             return self.symtab[0][symbol] # Quick guess
         except KeyError:
-            if self.globalmode and symbol not in self.symtab[0] and symbol not in self.functions \
+            if self.globalmode and symbol not in self.symtab[0] \
                or symbol not in self.globals:
                 return None # Disallow forwards in global var mode
             return self.globals[symbol]
@@ -1965,6 +1965,7 @@ list lazy_list_set(list L, integer i, list v)
         func_def: optional_type IDENT '(' optional_param_list ')' code_block
         optional_type: LAMBDA | TYPE
         """
+        assert self.scopeindex == 0
         while self.tok[0] in ('TYPE','IDENT'):
             typ = None
             if self.tok[0] == 'TYPE':
@@ -1973,9 +1974,26 @@ list lazy_list_set(list L, integer i, list v)
                 self.expect('IDENT')
 
             name = self.tok[1]
-            if name in self.symtab[self.scopeindex]:
-                raise EParseAlreadyDefined(self)
             self.NextToken()
+            if name in self.symtab[0]:
+                # Duplicate identifier. That's an exception unless function
+                # override is in effect.
+                report = True
+                if self.funcoverride:
+                    # Is it a function definition, and is the entry in the
+                    # symbol table a function definition itself? And is it
+                    # a user-defined function?
+                    if self.tok[0] == '(' \
+                       and self.symtab[0][name]['Kind'] == 'f' \
+                       and 'Loc' in self.symtab[0][name]:
+                        # Override it.
+                        report = False
+                        # Delete the previous definition.
+                        self.tree[self.symtab[0][name]['Loc']] = \
+                            {'nt':'LAMBDA', 't':None}
+                        del self.symtab[0][name]
+                if report:
+                    raise EParseAlreadyDefined(self)
 
             if self.tok[0] in ('=', ';'):
                 # This is a variable definition
@@ -2134,7 +2152,7 @@ list lazy_list_set(list L, integer i, list v)
         states: state [state [...]]
         state: (DEFAULT | STATE IDENT) balanced_braces_or_anything_else
         """
-        ret = self.functions.copy() # The library functions go here too.
+        ret = self.funclibrary.copy() # The library functions go here too.
 
         # If there's a syntax error, that's not our business. We just return
         # what we have so far. Doing a proper parse will determine the exact
@@ -2301,6 +2319,10 @@ list lazy_list_set(list L, integer i, list v)
         # Shrink names. Activates duplabels automatically.
         self.shrinknames = 'shrinknames' in options
 
+        # Allow a duplicate function definition to override the former,
+        # rather than reporting a duplicate identifier error.
+        self.funcoverride = 'funcoverride' in options
+
         # Symbol table:
         # This is a list of all local and global symbol tables.
         # The first element (0) is the global scope. Each symbol table is a
@@ -2309,13 +2331,15 @@ list lazy_list_set(list L, integer i, list v)
         # 'v' for variable, 'f' for function, 'l' for label, 's' for state,
         # or 'e' for event.
         #   Variables have 'Scope', 'Type', 'Loc' (if global), 'Local' (if local).
-        #   Functions have 'Type' and 'ParamTypes'; UDFs also have 'Loc' and'ParamNames'.
+        #   Functions have 'Type' and 'ParamTypes'; UDFs also have 'Loc' and 'ParamNames'.
         #   Labels only have 'Scope'.
         #   States only have 'Loc'.
         #   Events have 'ParamTypes' and 'ParamNames'.
         # Other modules may add information if they need.
 
-        self.symtab = [{-1: None},]
+        # Incorporate the library into the initial symbol table.
+        self.symtab = [self.funclibrary.copy()]
+        self.symtab[0][-1] = None
         self.scopeindex = 0
 
         # This is a small hack to prevent circular definitions in globals when
@@ -2363,9 +2387,6 @@ list lazy_list_set(list L, integer i, list v)
         # No longer needed. The data is already in self.symtab[0].
         del self.globals
 
-        # Insert library functions into symbol table
-        self.symtab[0].update(self.functions)
-
         treesymtab = self.tree, self.symtab
         del self.tree
         del self.symtab
@@ -2387,7 +2408,7 @@ list lazy_list_set(list L, integer i, list v)
 
         self.events = {}
         self.constants = {}
-        self.functions = {}
+        self.funclibrary = {}
 
         # Library read code
 
@@ -2449,12 +2470,12 @@ list lazy_list_set(list L, integer i, list v)
                         # Library functions go to the functions table. If
                         # they are implemented in lslfuncs.*, they get a
                         # reference to the implementation; otherwise None.
-                        if name in self.functions:
+                        if name in self.funclibrary:
                             warning('Function already defined in bultins.txt, overwriting: ' + name)
                         fn = getattr(lslfuncs, name, None)
-                        self.functions[name] = {'Kind':'f', 'Type':typ, 'ParamTypes':args}
+                        self.funclibrary[name] = {'Kind':'f', 'Type':typ, 'ParamTypes':args}
                         if fn is not None:
-                            self.functions[name]['Fn'] = fn
+                            self.funclibrary[name]['Fn'] = fn
                 elif match.group(4):
                     # constant
                     name = match.group(5)
@@ -2544,7 +2565,7 @@ list lazy_list_set(list L, integer i, list v)
                 if line == '':
                     break
                 line = line.strip()
-                if line and line[0] != '#' and line in self.functions:
-                    self.functions[line]['SEF'] = True
+                if line and line[0] != '#' and line in self.funclibrary:
+                    self.funclibrary[line]['SEF'] = True
         finally:
             f.close()
