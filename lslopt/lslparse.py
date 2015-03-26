@@ -166,8 +166,7 @@ class EParseInvalidCont(EParse):
 
 class EInternal(Exception):
     """This exception is a construct to allow a different function to cause an
-    immediate return of EOF from parser.GetToken(). Reused elsewhere for
-    detecting parsing errors.
+    immediate return of EOF from parser.GetToken().
     """
     pass
 
