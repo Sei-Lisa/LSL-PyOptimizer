@@ -46,6 +46,7 @@ pre code { padding: 0px; }
 <li><a href="#extensions-multiple-labels-with-the-same-name">Allow multiple labels with the same name in the same function.</a></li>
 <li><a href="#extensions-switch-statements"><code>switch()</code> statements</a>, for compatibility with Firestorm.</li>
 <li><a href="#extensions-lazy-lists">Lazy list syntax</a> (<code>identifier[index]</code>), for compatibility with Firestorm.</li>
+<li><a href="#extensions-allow-dup-fn">Allow duplicate function definitions</a>, for compatibility with Firestorm.</li>
 <li>As of version 0.1.3alpha, it can invoke the preprocessor on its own, providing defaults for the GNU C preprocessor <code>cpp</code> and for <a href="http://mcpp.sourceforge.net/">mcpp</a>).</li>
 </ul>
 
@@ -279,6 +280,12 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
 </code></pre>
 
 <p>That is a requirement of the underlying <code>llList2List</code> function used in this case.</p>
+
+<h3><a id="extensions-allow-dup-fn"></a>Allow duplicate function definitions</h3>
+
+<p>If two or more functions with the same name are defined, the latest definition takes effect. This is done for compatibility with Firestorm; apparently that "feature" is used by some people.</p>
+
+<p>Note that Firestorm also allows calling undefined functions, as long as the function that has the calls is optimized out. That feature is not implemented by this optimizer, as it would complicate expression parsing a lot. It's also considered a misfeature; writing code that relies on it is discouraged.</p>
 
 <hr>
 
