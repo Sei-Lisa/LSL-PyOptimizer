@@ -223,7 +223,7 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
 
 <h3><a id="extensions-lazy-lists"></a>Lazy lists</h3>
 
-<p>That's how Firestorm calls an extended syntax for subindex values after individual list elements.</p>
+<p>That's how Firestorm calls an extended syntax for subindex values referencing individual list elements.</p>
 
 <h4><a id="lazy-lists-assignment"></a>Assignment</h4>
 
@@ -237,12 +237,12 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
 <pre><code>mylist = llListReplaceList(mylist, (list)value, index, index);
 </code></pre>
 
-<p>However, the implementation includes creating a function that performs the replacement. The function is called <code>lazy_list_set</code>. It can be user-overriden. If you define a function with this prototype:</p>
+<p>However, the implementation includes creating a function that performs the replacement, which prevents the index from being evaluated twice. The function is called <code>lazy_list_set</code>. It can be user-overriden. If you define a function with this prototype:</p>
 
 <pre><code>list lazy_list_set(list target, integer index, list value)
 </code></pre>
 
-<p>which returns the list with the element replaced, then the optimizer will use yours rather than defining it twice.</p>
+<p>which returns the list with the element replaced, then the optimizer will use yours rather than defining it twice. Note that a preprocessor macro won't work in its place.</p>
 
 <p>For compatibility with Firestorm, when the index is greater than the number of elements in the list, the intermediate values are filled with integer zeros. If you don't want that, you may have a reason to override it.</p>
 
