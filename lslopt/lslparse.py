@@ -271,7 +271,7 @@ class parser(object):
         try:
             return self.symtab[0][symbol] # Quick guess
         except KeyError:
-            if self.globalmode and symbol not in self.symtab[0] \
+            if self.disallowglobalvars and symbol not in self.symtab[0] \
                or symbol not in self.globals:
                 return None # Disallow forwards in global var mode
             return self.globals[symbol]
@@ -1761,7 +1761,7 @@ list lazy_list_set(list L, integer i, list v)
                 decl['ch'] = [self.autocastcheck(self.Parse_expression(), typ)]
             self.expect(';')
             self.NextToken()
-            self.AddSymbol('v', self.scopeindex, name, Type=typ, Local=True)
+            self.AddSymbol('v', self.scopeindex, name, Type=typ)
             return decl
 
         # If none of the above, it must be an expression.
@@ -2003,7 +2003,7 @@ list lazy_list_set(list L, integer i, list v)
                 if self.tok[0] == '=':
                     self.NextToken()
                     if self.extendedglobalexpr:
-                        self.globalmode = True # Disallow forward globals.
+                        self.disallowglobalvars = True # Disallow forward globals.
                         # Mark backtracking position
                         pos = self.pos
                         errorpos = self.errorpos
@@ -2020,7 +2020,7 @@ list lazy_list_set(list L, integer i, list v)
                             # Use advanced expression evaluation.
                             value = self.Parse_expression()
                             self.expect(';')
-                        self.globalmode = False # Allow forward globals again.
+                        self.disallowglobalvars = False # Allow forward globals again.
                     else:
                         # Use LSL's dull global expression.
                         value = self.Parse_simple_expr()
@@ -2120,7 +2120,9 @@ list lazy_list_set(list L, integer i, list v)
         # detailed unnecessarily.
         self.jump_lookups = []
 
+        self.globalmode = True
         self.Parse_globals()
+        self.globalmode = False
         self.Parse_states()
         self.expect('EOF')
 
@@ -2323,18 +2325,26 @@ list lazy_list_set(list L, integer i, list v)
         # rather than reporting a duplicate identifier error.
         self.funcoverride = 'funcoverride' in options
 
+        # This was an idea, but functions must return a type, and making the
+        # type suitable for the context is too much work.
+        # # Allow referencing undefined functions inside function definitions.
+        # self.allowundeffn = 'allowundeffn' in options
+
         # Symbol table:
         # This is a list of all local and global symbol tables.
         # The first element (0) is the global scope. Each symbol table is a
         # dictionary. Element -1 of the dictionary is the parent index. The
         # rest of entries are dictionaries. Each has a 'Kind', which can be
         # 'v' for variable, 'f' for function, 'l' for label, 's' for state,
-        # or 'e' for event.
-        #   Variables have 'Scope', 'Type', 'Loc' (if global), 'Local' (if local).
-        #   Functions have 'Type' and 'ParamTypes'; UDFs also have 'Loc' and 'ParamNames'.
+        # or 'e' for event. Some have a 'Loc' indicating the location (index)
+        # of the definition in the tree root.
+        #   Variables have 'Scope' and 'Type' (a string).
+        #     Global variables also have 'Loc'.
+        #   Functions have 'Type' (return type, a string) and 'ParamTypes' (a list of strings).
+        #     User-defined functions also have 'Loc' and 'ParamNames' (a list of strings).
         #   Labels only have 'Scope'.
         #   States only have 'Loc'.
-        #   Events have 'ParamTypes' and 'ParamNames'.
+        #   Events have 'ParamTypes' and 'ParamNames', just like UDFs.
         # Other modules may add information if they need.
 
         # Incorporate the library into the initial symbol table.
@@ -2345,7 +2355,7 @@ list lazy_list_set(list L, integer i, list v)
         # This is a small hack to prevent circular definitions in globals when
         # extended expressions are enabled. When false (default), forward
         # globals are allowed; if true, only already seen globals are permitted.
-        self.globalmode = False
+        self.disallowglobalvars = False
 
         # Globals and labels can be referenced before they are defined. That
         # includes states.

@@ -23,6 +23,11 @@ from lslparse import warning
 
 class foldconst(object):
 
+    def isLocalVar(self, node):
+        name = node['name']
+        scope = node['scope']
+        return self.symtab[scope][name]['Kind'] == 'v' \
+            and 'Loc' not in self.symtab[scope][name]
     def FoldAndRemoveEmptyStmts(self, lst):
         """Utility function for elimination of useless expressions in FOR"""
         idx = 0
@@ -596,7 +601,7 @@ class foldconst(object):
                                 node['SEF'] = True
                             return
                         # only -2, 2 remain
-                        if child[a]['nt'] == 'IDENT' and 'Local' in self.symtab[child[a]['scope']][child[a]['name']]:
+                        if child[a]['nt'] == 'IDENT' and self.isLocalVar(child[a]):
                             child[b] = child[a].copy()
                             node['nt'] = '+'
                             if val == -2:
