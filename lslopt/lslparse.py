@@ -2569,7 +2569,9 @@ list lazy_list_set(list L, integer i, list v)
 
         # Load the side-effect-free table as well.
         # TODO: Transform the SEF Table into a function properties table
-        #       that includes domain data (min, max).
+        #       that includes domain data (min, max) and possibly input
+        #       parameter transformations e.g.
+        #           llSensor(..., PI, ...) -> llSensor(..., 4, ...).
         f = open(lslcommon.DataPath + 'seftable.txt', 'rb')
         try:
             while True:
