@@ -510,15 +510,10 @@ class foldconst(object):
                 # Transforming << into multiply saves some bytes.
                 if child[1]['value'] & 31:
                     # x << 3  -->  x * 8
-                    # Do we need parentheses for *? It depends on x
-                    # e.g. x+3<<3 needs parentheses when converted to (x+3)*8
-                    # We can have {<< {<< x y} 3} -> (x << y) * 8 but we can't
-                    # have e.g. {<< {& x y} 3}; there will be explicit
-                    # parentheses here always, so we don't need to worry.
 
                     # we have {<<, something, {CONST n}}
                     # we transform it into {*, something, {CONST n}}
-                    node['nt'] = '*'
+                    nt = node['nt'] = '*'
                     child[1]['value'] = 1 << (child[1]['value'] & 31)
 
                     # Fall through to optimize product
@@ -624,6 +619,8 @@ class foldconst(object):
                 return
 
             if nt in ('<', '>'):
+                # TODO: If function domain is -1..INT_MAX, treat <0 as !=-1
+
                 # i>2147483647 to FALSE if SEF, otherwise convert to a&0
                 # i<-2147483648 to FALSE if SEF, otherwise convert to a&0
                 a, b = 0, 1
