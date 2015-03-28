@@ -146,6 +146,7 @@ class foldconst(object):
                 self.FoldCond(child, 0)
                 self.FoldCond(child, 1)
 
+                # Deal with operands in any order
                 a, b = 0, 1
                 # Put constant in child[b] if present
                 if child[b]['nt'] != 'CONST':
@@ -159,7 +160,7 @@ class foldconst(object):
                     # Both operands are negated.
                     # If they are boolean, the expression can be turned into
                     # !(a&b) which hopefully will have a ! uptree if it came
-                    # from a && and cancel out (if not, we still remove one
+                    # from a '&&' and cancel out (if not, we still remove one
                     # ! so it's good). If one is bool, another transformation
                     # can be performed: !nonbool|!bool -> !(nonbool&-bool)
                     # which is still a gain.
@@ -187,15 +188,35 @@ class foldconst(object):
                         # Fold the node we've just synthesized
                         # (this deals with SEF)
                         self.FoldTree(parent, index)
-                        return
 
-            # TODO: Convert bool(x < 0) to bool(x & 0x80000000)
-            # TODO: If function domain starts at -1, treat & 0x80000000 as ~
-            # TODO: If function domain starts at -1, treat < 0 as ~
+                return
 
+            if nt == '<':
+                if child[1]['nt'] == 'CONST' and child[1]['value'] == 0:
+                    nt = node['nt'] = '&'
+                    child[1]['value'] = -2147483648
+                    # Fall through to check & 0x80000000
+
+            if nt == '&':
+
+                # Deal with operands in any order
+                a, b = 0, 1
+                # Put constant in child[b], if present
+                if child[b]['nt'] != 'CONST':
+                    a, b = 1, 0
+                if child[b]['nt'] == 'CONST' and child[b]['value'] == -2147483648 \
+                   and child[a]['nt'] == 'FNCALL':
+                    sym = self.symtab[0][child[a]['name']]
+                    if 'min' in sym and sym['min'] == -1:
+                        node = parent[index] = {'nt':'~', 't':'integer',
+                            'ch':[child[a]]}
+                        if 'SEF' in child[a]:
+                            node['SEF'] = True
+                return
 
     def CopyNode(self, node):
-        # This is mainly for simple_expr so no need to go deeper than 1 level.
+        '''This is mainly for simple_expr so no need to go deeper than 1 level
+        '''
         ret = node.copy()
         if 'ch' in ret:
             new = []
