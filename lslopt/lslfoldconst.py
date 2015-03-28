@@ -128,7 +128,10 @@ class foldconst(object):
                     self.FoldTree(parent, index)
 
             if nt == '|':
-                #TODO: simplify !!a|b or a|!!b -> a|b
+                # In a boolean context, the operands count as booleans.
+                self.FoldCond(child, 0)
+                self.FoldCond(child, 1)
+
                 a, b = 0, 1
                 if child[a]['nt'] == 'CONST':
                     a, b = 1, 0
