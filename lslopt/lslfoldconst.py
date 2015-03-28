@@ -81,8 +81,19 @@ class foldconst(object):
         boolean expressions. This function returns whether we know for sure
         that the result is boolean.
         """
-        return False # TODO: implement IsBool
-        # Ideas include some functions like llSameGroup and llDetectedGroup.
+        nt = node['nt']
+        if nt in ('<', '!', '>', '<=', '>=', '==', '||', '&&') \
+           or nt == '!=' and node['ch'][0]['t'] != 'list' \
+           or nt == 'CONST' and node['t'] == 'integer' and node['value'] in (0, 1):
+            return True
+
+        if nt == 'FNCALL':
+            sym = self.symtab[0][node['name']]
+            if sym['Typ'] == 'integer' and 'min' in sym and 'max' in sym \
+               and sym['min'] == 0 and sym['max'] == 1:
+                return True
+
+        return False
 
     def FoldCond(self, parent, index):
         """When we know that the parent is interested only in the truth value
@@ -136,17 +147,47 @@ class foldconst(object):
                 self.FoldCond(child, 1)
 
                 a, b = 0, 1
-                if child[a]['nt'] == 'CONST':
+                # Put constant in child[b] if present
+                if child[b]['nt'] != 'CONST':
                     a, b = 1, 0
                 if child[b]['nt'] == 'CONST' and child[b]['value'] and 'SEF' in child[a]:
                     parent[index] = child[b]
-                    child[b]['value'] = 1
+                    child[b]['value'] = -1
                     return
-            # TODO: on bitwise OR, detect if both operands are negated.
-            # If so treat it as an AND, checking if the operands are boolean
-            # to try to simplify them to an expression of the form !(a&b)
-            # when possible. Or if one is bool and the other is not, to an
-            # expression of the form !(a&-b) (if b is bool).
+
+                if child[0]['nt'] == child[1]['nt'] == '!':
+                    # Both operands are negated.
+                    # If they are boolean, the expression can be turned into
+                    # !(a&b) which hopefully will have a ! uptree if it came
+                    # from a && and cancel out (if not, we still remove one
+                    # ! so it's good). If one is bool, another transformation
+                    # can be performed: !nonbool|!bool -> !(nonbool&-bool)
+                    # which is still a gain.
+                    a, b = 0, 1
+                    # Put the bool in child[b]['ch'][0].
+                    if not self.IsBool(child[b]['ch'][0]):
+                       a, b = 1, 0
+                    if self.IsBool(child[b]['ch'][0]):
+                        if not self.IsBool(child[a]['ch'][0]):
+                            # HACK: Wrap in a a dummy node so that the code
+                            # below can extract it properly, without swapping
+                            # left and right hand sides (purely for aesthetic
+                            # reasons).
+                            child[b] = {'ch':[
+                                {'nt':'NEG', 't':'integer',
+                                'ch':[child[b]['ch'][0]]}
+                            ]}
+
+                        node = parent[index] = {'nt':'!', 't':'integer',
+                            'ch':[{'nt':'&','t':'integer',
+                                  'ch':[child[0]['ch'][0],
+                                        child[1]['ch'][0]]
+                                  }]
+                        }
+                        # Fold the node we've just synthesized
+                        # (this deals with SEF)
+                        self.FoldTree(parent, index)
+                        return
 
             # TODO: Convert bool(x < 0) to bool(x & 0x80000000)
             # TODO: If function domain starts at -1, treat & 0x80000000 as ~
