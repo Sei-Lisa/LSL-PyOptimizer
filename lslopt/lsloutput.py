@@ -271,9 +271,11 @@ class outscript(object):
             lnt = child[0]['nt']
             paren = False
             if nt == 'NEG':
-                ret = '- '
+                ret = '-'
                 if lnt in self.op_priority:
                     paren = self.op_priority[lnt] <= self.op_priority['-']
+                elif lnt == 'NEG' or lnt == '--V':
+                    ret += ' ' # don't output -- as that's a different token
             else:
                 if lnt in self.op_priority:
                     paren = True
