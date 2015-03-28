@@ -146,6 +146,8 @@ class foldconst(object):
             # expression of the form !(a&-b) (if b is bool).
 
             # TODO: Convert bool(x < 0) to bool(x & 0x80000000)
+            # TODO: If function domain starts at -1, treat & 0x80000000 as ~
+            # TODO: If function domain starts at -1, treat < 0 as ~
 
 
     def CopyNode(self, node):
@@ -609,41 +611,45 @@ class foldconst(object):
                             return
                 return
 
-            if nt in ('<=', '>=') or nt == '!=' \
-                                    and child[0]['t'] in ('float', 'integer') \
-                                    and child[1]['t'] in ('float', 'integer'):
+            if nt in ('<=', '>=') or nt == '!=' and child[0]['t'] != 'list':
+                # Except for list != list, all these comparisons are compiled
+                # as !(a>b) etc. so we transform them here in order to reduce
+                # the number of cases to check.
+                # a<=b  -->  !(a>b);  a>=b  -->  !(a<b);  a!=b  -->  !(a==b)
                 SEF = 'SEF' in node
                 node['nt'] = {'<=':'>', '>=':'<', '!=':'=='}[nt]
                 node = parent[index] = {'nt':'!', 't':node['t'], 'ch':[node]}
                 if SEF:
                     node['SEF'] = True
-                # Fold the new node
-                self.FoldTree(parent, index)
-                return
+                # Fall through to optimize as '<' or '>' or '=='
 
-            if nt in ('<', '>'):
-                # TODO: If function domain is -1..INT_MAX, treat <0 as !=-1
+            if nt == '>':
+                # Invert the inequalities to avoid doubling the cases to check.
+                # a>b  -->   b<a
+                nt = node['nt'] = '<'
+                child[1], child[0] = child[0], child[1]
+                # fall through to check for '<'
 
-                # i>2147483647 to FALSE if SEF, otherwise convert to a&0
-                # i<-2147483648 to FALSE if SEF, otherwise convert to a&0
-                a, b = 0, 1
-                if child[a]['nt'] == 'CONST':
-                    a,b = 1,0
-                if child[b]['nt'] == 'CONST' and child[a]['t'] == child[b]['t'] == 'integer' \
-                   and (nt == '>' and child[b]['value'] == 2147483647
-                        or nt == '<' and child[b]['value'] == -2147483648):
-                    if 'SEF' in child[a]:
-                        parent[index] = node = child[b]
-                        node['value'] = 0
-                        return
+            if nt == '<':
+                # Convert 2147483647<i and i<-2147483648 to i&0
+                if child[0]['t'] == child[1]['t'] == 'integer' \
+                   and (child[0]['nt'] == 'CONST' and child[0]['value'] == 2147483647
+                        or child[1]['nt'] == 'CONST' and child[1]['value'] == -2147483648):
+                    a, b = 0, 1
+                    # Put the constant in child[b]
+                    if child[a]['nt'] == 'CONST':
+                        a, b = 1, 0
                     nt = node['nt'] = '&'
                     child[b]['value'] = 0
                     # fall through to check for '&'
+                else:
+                    return
 
             if nt in ('&', '|'):
                 # Deal with operands in any order
                 a, b = 0, 1
-                if child[a]['nt'] == 'CONST' and child[a]['t'] in ('float', 'integer'):
+                # Put constant in child[b]
+                if child[b]['nt'] != 'CONST':
                     a, b = 1, 0
 
                 if child[b]['nt'] == 'CONST':
@@ -658,7 +664,7 @@ class foldconst(object):
                         # a&0  ->  0 if a is SEF
                         if 'SEF' in child[a]:
                             parent[index] = child[b]
-                            return
+                return
 
             if nt == '^':
                 a, b = 0, 1
