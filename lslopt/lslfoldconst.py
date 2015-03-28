@@ -119,13 +119,16 @@ class foldconst(object):
                     # and optimize out ^0.
                     node['nt'] = '^'
                 self.FoldTree(parent, index)
-            elif nt == '==':
+                return
+
+            if nt == '==':
                 if child[0]['nt'] == 'CONST' and -1 <= child[0]['value'] <= 1 \
                    or child[1]['nt'] == 'CONST' and -1 <= child[1]['value'] <= 1:
                     # Transform a==b into !(a-b) if either a or b are in [-1, 1]
                     parent[index] = {'nt':'!', 't':'integer', 'ch':[node]}
                     node['nt'] = '-'
                     self.FoldTree(parent, index)
+                return
 
             if nt == '|':
                 # In a boolean context, the operands count as booleans.
@@ -190,9 +193,10 @@ class foldconst(object):
             return
 
         if nt == 'NEG':
+            # TODO:  -(b + -c)  ->  -b+c,  -(-b + c)  ->  b + -c
             self.FoldTree(child, 0)
             if child[0]['nt'] == 'NEG':
-                # Double negation: - - expr  -->  expr
+                # Double negation: - - expr  ->  expr
                 node = parent[index] = child[0]['ch'][0]
                 child = node['ch'] if 'ch' in node else None
             elif child[0]['nt'] == 'CONST':
@@ -232,7 +236,8 @@ class foldconst(object):
             if subexpr['nt'] == 'CONST':
                 node = parent[index] = subexpr
                 node['value'] = int(not node['value'])
-            # TODO: !(i>const) to i<(const+1) if no overflow (4 variants)
+            # TODO: !(const < i)  ->  i < const+1, !(i < const)  ->  const-1 < i
+            #       (if no overflow)
             return
 
         if nt == '~':
