@@ -95,7 +95,7 @@ class foldconst(object):
 
         return False
 
-    def FoldCond(self, parent, index):
+    def FoldCond(self, parent, index, ParentIsNegation = False):
         """When we know that the parent is interested only in the truth value
         of the node, we can perform further optimizations. This function deals
         with them.
@@ -156,28 +156,84 @@ class foldconst(object):
                     child[b]['value'] = -1
                     return
 
-                if child[0]['nt'] == child[1]['nt'] == '!':
-                    # Both operands are negated.
+                # Check if the operands are a negation ('!') or can be inverted
+                # without adding more than 1 byte and are boolean.
+                # We only support '<' and some cases of '&' (are there more?)
+                Invertible0 = child[0]['nt'] == '!'
+                Invertible1 = child[1]['nt'] == '!'
+                if child[0]['nt'] == '<' \
+                   and child[0]['ch'][0]['t'] == child[0]['ch'][1]['t'] == 'integer':
+                    if child[0]['ch'][0]['nt'] == 'CONST' \
+                       and child[0]['ch'][0]['value'] != 2147483647 \
+                       or child[0]['ch'][1]['nt'] == 'CONST' \
+                       and child[0]['ch'][1]['value'] != int(-2147483648):
+                        Invertible0 = True
+                if child[1]['nt'] == '<' \
+                   and child[1]['ch'][0]['t'] == child[1]['ch'][1]['t'] == 'integer':
+                    if child[1]['ch'][0]['nt'] == 'CONST' \
+                       and child[1]['ch'][0]['value'] != 2147483647 \
+                       or child[1]['ch'][1]['nt'] == 'CONST' \
+                       and child[1]['ch'][1]['value'] != int(-2147483648):
+                        Invertible1 = True
+
+                # Deal with our optimization of a<0 -> a&0x80000000 (see below)
+                if child[0]['nt'] == '&' and (
+                   child[0]['ch'][0]['nt'] == 'CONST' and child[0]['ch'][0]['value'] == int(-2147483648)
+                   or child[0]['ch'][1]['nt'] == 'CONST' and child[0]['ch'][1]['value'] == int(-2147483648)
+                   ):
+                        Invertible0 |= ParentIsNegation
+                if child[1]['nt'] == '&' and (
+                   child[1]['ch'][0]['nt'] == 'CONST' and child[1]['ch'][0]['value'] == int(-2147483648)
+                   or child[1]['ch'][1]['nt'] == 'CONST' and child[1]['ch'][1]['value'] == int(-2147483648)
+                   ):
+                        Invertible1 |= ParentIsNegation
+
+                if (Invertible0 or Invertible1) and ParentIsNegation:
+                    # !(!a|b)  ->  a&-!b or better
+                    if not Invertible0:
+                        child[0] = {'nt':'!', 't':'integer',
+                            'ch':[{'nt':'!', 't':'integer', 'ch':[child[0]]}]
+                        }
+                        Invertible0 = True
+                    if not Invertible1:
+                        child[1] = {'nt':'!', 't':'integer',
+                            'ch':[{'nt':'!', 't':'integer', 'ch':[child[1]]}]
+                        }
+                        Invertible1 = True
+
+                if Invertible0 and Invertible1:
+                    # Both operands are negated, or negable.
+                    # Make them a negation if they aren't already.
+                    for a in (0, 1):
+                        if child[a]['nt'] == '<':
+                            if child[a]['ch'][0]['nt'] == 'CONST':
+                                child[a]['ch'][0]['value'] += 1
+                            else:
+                                child[a]['ch'][1]['value'] -= 1
+                            child[a]['ch'][0], child[a]['ch'][1] = \
+                                child[a]['ch'][1], child[a]['ch'][0]
+                            child[a] = {'nt':'!','t':'integer','ch':[child[a]]}
+                        elif child[a]['nt'] == '&':
+                            child[a] = {'nt':'!', 't':'integer',
+                                'ch':[{'nt':'!', 't':'integer', 'ch':[child[a]]}]
+                            }
+                            self.FoldTree(child[a]['ch'], 0)
                     # If they are boolean, the expression can be turned into
                     # !(a&b) which hopefully will have a ! uptree if it came
                     # from a '&&' and cancel out (if not, we still remove one
                     # ! so it's good). If one is bool, another transformation
                     # can be performed: !nonbool|!bool -> !(nonbool&-bool)
                     # which is still a gain.
+
+                    # Deal with operands in any order
                     a, b = 0, 1
                     # Put the bool in child[b]['ch'][0].
                     if not self.IsBool(child[b]['ch'][0]):
                        a, b = 1, 0
                     if self.IsBool(child[b]['ch'][0]):
                         if not self.IsBool(child[a]['ch'][0]):
-                            # HACK: Wrap in a a dummy node so that the code
-                            # below can extract it properly, without swapping
-                            # left and right hand sides (purely for aesthetic
-                            # reasons).
-                            child[b] = {'ch':[
-                                {'nt':'NEG', 't':'integer',
+                            child[b]['ch'][0] = {'nt':'NEG','t':'integer',
                                 'ch':[child[b]['ch'][0]]}
-                            ]}
 
                         node = parent[index] = {'nt':'!', 't':'integer',
                             'ch':[{'nt':'&','t':'integer',
@@ -191,10 +247,14 @@ class foldconst(object):
 
                 return
 
+            # This optimization turns out to be counter-productive for some
+            # common cases, e.g. it turns i >= 0 into !(i & 0x80000000)
+            # instead of the more optimal (integer)-1 < i. So we revert it
+            # where appropriate (in FoldTree, case '!', and above, case '|').
             if nt == '<':
                 if child[1]['nt'] == 'CONST' and child[1]['value'] == 0:
                     nt = node['nt'] = '&'
-                    child[1]['value'] = -2147483648
+                    child[1]['value'] = int(-2147483648)
                     # Fall through to check & 0x80000000
 
             if nt == '&':
@@ -204,14 +264,13 @@ class foldconst(object):
                 # Put constant in child[b], if present
                 if child[b]['nt'] != 'CONST':
                     a, b = 1, 0
-                if child[b]['nt'] == 'CONST' and child[b]['value'] == -2147483648 \
+                if child[b]['nt'] == 'CONST' and child[b]['value'] == int(-2147483648) \
                    and child[a]['nt'] == 'FNCALL':
                     sym = self.symtab[0][child[a]['name']]
                     if 'min' in sym and sym['min'] == -1:
                         node = parent[index] = {'nt':'~', 't':'integer',
                             'ch':[child[a]]}
-                        if 'SEF' in child[a]:
-                            node['SEF'] = True
+                        self.FoldTree(parent, index)
                 return
 
     def CopyNode(self, node):
@@ -287,16 +346,43 @@ class foldconst(object):
 
         if nt == '!':
             self.FoldTree(child, 0)
-            self.FoldCond(child, 0)
+            self.FoldCond(child, 0, True)
             # !! does *not* cancel out (unless in cond), but !!! can be simplified to !
             subexpr = child[0]
+            snt = subexpr['nt']
             if 'SEF' in subexpr:
                 node['SEF'] = True
             if subexpr['nt'] == 'CONST':
                 node = parent[index] = subexpr
                 node['value'] = int(not node['value'])
-            # TODO: !(const < i)  ->  i < const+1, !(i < const)  ->  const-1 < i
-            #       (if no overflow)
+                return
+            if snt == '<':
+                lop = subexpr['ch'][0]
+                rop = subexpr['ch'][1]
+                if lop['nt'] == 'CONST' and lop['t'] == rop['t'] == 'integer' \
+                   and lop['value'] < 2147483647:
+                    lop['value'] += 1
+                    subexpr['ch'][0], subexpr['ch'][1] = subexpr['ch'][1], subexpr['ch'][0]
+                    parent[index] = subexpr # remove !
+                    return
+                if rop['nt'] == 'CONST' and lop['t'] == rop['t'] == 'integer' \
+                   and rop['value'] > int(-2147483648):
+                    rop['value'] -= 1
+                    subexpr['ch'][0], subexpr['ch'][1] = subexpr['ch'][1], subexpr['ch'][0]
+                    parent[index] = subexpr # remove !
+                    return
+            if snt == '&':
+                a, b = 0, 1
+                if subexpr['ch'][b]['nt'] != 'CONST':
+                    a, b = 1, 0
+                if subexpr['ch'][b]['nt'] == 'CONST' and subexpr['ch'][b]['value'] == int(-2147483648):
+                    # !(i & 0x80000000)  ->  -1 < i (because one of our
+                    # optimizations can be counter-productive, see FoldCond)
+                    subexpr['nt'] = '<'
+                    subexpr['ch'][b]['value'] = -1
+                    subexpr['ch'] = [subexpr['ch'][b], subexpr['ch'][a]]
+                    parent[index] = subexpr
+                    return
             return
 
         if nt == '~':
@@ -635,7 +721,7 @@ class foldconst(object):
                             or child[b]['t'] != 'float'
                        ):
                         # Expression is of the form (-float)*const or (-float)/const or const/(-float)
-                        if val != -2147483648 or child[a]['t'] == 'integer': # can't be optimized otherwise
+                        if val != int(-2147483648) or child[a]['t'] == 'integer': # can't be optimized otherwise
                             child[a] = child[a]['ch'][0] # remove NEG
                             child[b]['value'] = val = -val
 
@@ -680,11 +766,9 @@ class foldconst(object):
                 # as !(a>b) etc. so we transform them here in order to reduce
                 # the number of cases to check.
                 # a<=b  -->  !(a>b);  a>=b  -->  !(a<b);  a!=b  -->  !(a==b)
-                SEF = 'SEF' in node
                 node['nt'] = {'<=':'>', '>=':'<', '!=':'=='}[nt]
                 node = parent[index] = {'nt':'!', 't':node['t'], 'ch':[node]}
-                if SEF:
-                    node['SEF'] = True
+                self.FoldTree(parent, index)
                 # Fall through to optimize as '<' or '>' or '=='
 
             if nt == '>':
@@ -698,7 +782,7 @@ class foldconst(object):
                 # Convert 2147483647<i and i<-2147483648 to i&0
                 if child[0]['t'] == child[1]['t'] == 'integer' \
                    and (child[0]['nt'] == 'CONST' and child[0]['value'] == 2147483647
-                        or child[1]['nt'] == 'CONST' and child[1]['value'] == -2147483648):
+                        or child[1]['nt'] == 'CONST' and child[1]['value'] == int(-2147483648)):
                     a, b = 0, 1
                     # Put the constant in child[b]
                     if child[a]['nt'] == 'CONST':
