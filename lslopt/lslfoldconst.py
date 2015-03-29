@@ -159,49 +159,34 @@ class foldconst(object):
                 # Check if the operands are a negation ('!') or can be inverted
                 # without adding more than 1 byte and are boolean.
                 # We only support '<' and some cases of '&' (are there more?)
-                Invertible0 = child[0]['nt'] == '!'
-                Invertible1 = child[1]['nt'] == '!'
-                if child[0]['nt'] == '<' \
-                   and child[0]['ch'][0]['t'] == child[0]['ch'][1]['t'] == 'integer':
-                    if child[0]['ch'][0]['nt'] == 'CONST' \
-                       and child[0]['ch'][0]['value'] != 2147483647 \
-                       or child[0]['ch'][1]['nt'] == 'CONST' \
-                       and child[0]['ch'][1]['value'] != int(-2147483648):
-                        Invertible0 = True
-                if child[1]['nt'] == '<' \
-                   and child[1]['ch'][0]['t'] == child[1]['ch'][1]['t'] == 'integer':
-                    if child[1]['ch'][0]['nt'] == 'CONST' \
-                       and child[1]['ch'][0]['value'] != 2147483647 \
-                       or child[1]['ch'][1]['nt'] == 'CONST' \
-                       and child[1]['ch'][1]['value'] != int(-2147483648):
-                        Invertible1 = True
+                Invertible = [False, False]
+                for a in (0, 1):
+                    Invertible[a] = child[a]['nt'] == '!'
+                    if child[a]['nt'] == '<' \
+                       and child[a]['ch'][0]['t'] == child[a]['ch'][1]['t'] == 'integer':
+                        if child[a]['ch'][0]['nt'] == 'CONST' \
+                           and child[a]['ch'][0]['value'] != 2147483647 \
+                           or child[a]['ch'][1]['nt'] == 'CONST' \
+                           and child[a]['ch'][1]['value'] != int(-2147483648):
+                            Invertible[a] = True
 
-                # Deal with our optimization of a<0 -> a&0x80000000 (see below)
-                if child[0]['nt'] == '&' and (
-                   child[0]['ch'][0]['nt'] == 'CONST' and child[0]['ch'][0]['value'] == int(-2147483648)
-                   or child[0]['ch'][1]['nt'] == 'CONST' and child[0]['ch'][1]['value'] == int(-2147483648)
-                   ):
-                        Invertible0 |= ParentIsNegation
-                if child[1]['nt'] == '&' and (
-                   child[1]['ch'][0]['nt'] == 'CONST' and child[1]['ch'][0]['value'] == int(-2147483648)
-                   or child[1]['ch'][1]['nt'] == 'CONST' and child[1]['ch'][1]['value'] == int(-2147483648)
-                   ):
-                        Invertible1 |= ParentIsNegation
+                    # Deal with our optimization of a<0 -> a&0x80000000 (see below)
+                    if child[a]['nt'] == '&' and (
+                       child[a]['ch'][0]['nt'] == 'CONST' and child[a]['ch'][0]['value'] == int(-2147483648)
+                       or child[a]['ch'][1]['nt'] == 'CONST' and child[a]['ch'][1]['value'] == int(-2147483648)
+                       ):
+                        Invertible[a] |= ParentIsNegation
 
-                if (Invertible0 or Invertible1) and ParentIsNegation:
-                    # !(!a|b)  ->  a&-!b or better
-                    if not Invertible0:
-                        child[0] = {'nt':'!', 't':'integer',
-                            'ch':[{'nt':'!', 't':'integer', 'ch':[child[0]]}]
-                        }
-                        Invertible0 = True
-                    if not Invertible1:
-                        child[1] = {'nt':'!', 't':'integer',
-                            'ch':[{'nt':'!', 't':'integer', 'ch':[child[1]]}]
-                        }
-                        Invertible1 = True
+                if (Invertible[0] or Invertible[1]) and ParentIsNegation:
+                    # !(!a|b)  ->  a&-!b or a&!b
+                    for a in (0, 1):
+                        if not Invertible[a]:
+                            child[a] = {'nt':'!', 't':'integer',
+                                'ch':[{'nt':'!', 't':'integer', 'ch':[child[a]]}]
+                            }
+                            Invertible[a] = True
 
-                if Invertible0 and Invertible1:
+                if Invertible[0] and Invertible[1]:
                     # Both operands are negated, or negable.
                     # Make them a negation if they aren't already.
                     for a in (0, 1):
