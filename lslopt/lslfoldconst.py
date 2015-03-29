@@ -299,8 +299,20 @@ class foldconst(object):
             return
 
         if nt == 'NEG':
-            # TODO:  -(b + -c)  ->  -b+c,  -(-b + c)  ->  b + -c
             self.FoldTree(child, 0)
+
+            if child[0]['nt'] == '+' and (child[0]['ch'][0]['nt'] == 'NEG'
+                                          or child[0]['ch'][1]['nt'] == 'NEG'):
+                node = parent[index] = child[0]
+                child = node['ch']
+                for a in (0, 1):
+                    if child[a]['nt'] == 'NEG':
+                        child[a] = child[a]['ch'][0]
+                    else:
+                        child[a] = {'nt':'NEG','t':child[a]['t'],'ch':[child[a]]}
+                        self.FoldTree(child, a)
+                return
+
             if child[0]['nt'] == 'NEG':
                 # Double negation: - - expr  ->  expr
                 node = parent[index] = child[0]['ch'][0]
@@ -469,6 +481,7 @@ class foldconst(object):
                     rnt = 'NEG'
                     RSEF = 'SEF' in rval
                     rval = child[1] = {'nt':rnt, 't':rval['t'], 'ch':[rval]}
+                    self.FoldTree(child, 1)
                     if RSEF:
                         rval['SEF'] = True
                     # rtype unchanged
