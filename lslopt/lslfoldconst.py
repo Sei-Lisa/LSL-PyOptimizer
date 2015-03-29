@@ -292,9 +292,6 @@ class foldconst(object):
             subexpr = child[0]
             if 'SEF' in subexpr:
                 node['SEF'] = True
-            if subexpr['nt'] == '!' and subexpr['ch'][0]['nt'] == '!':
-                # Simplify !!! to !
-                subexpr = child[0] = subexpr['ch'][0]['ch'][0]
             if subexpr['nt'] == 'CONST':
                 node = parent[index] = subexpr
                 node['value'] = int(not node['value'])
