@@ -338,7 +338,7 @@ default
 
 <h3><a id="optimizations-shrinking-identifiers"></a>Shrinking Identifiers</h3>
 
-<p>Long variable and parameter names are nice and readable, but when used as part of the globals or as function parameters, each character in the identifier takes at least one byte of code memory. In large programs, this can add up to a significant amount. This option replaces global and parameter identifiers with the shortest possible ones, also reusing as many as it can. The savings from this alone can be very significant in programs with a large number of globals or states.</p>
+<p>Long variable and parameter names are nice and readable, but when used as part of the globals or as function parameters, or in function or state names, each character in the identifier takes at least one byte of code memory. In large programs, this can add up to a significant amount. This option replaces global (including functions and states) and parameter identifiers with the shortest possible ones, also reusing as many as it can. The savings from this alone can be very significant in programs with a large number of globals or states.</p>
 
 <h3><a id="optimizations-floats"></a>Floats</h3>
 
