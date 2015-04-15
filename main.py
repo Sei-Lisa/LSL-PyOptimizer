@@ -201,7 +201,7 @@ Optimizer options (+ means active by default, - means inactive by default):
 
   extendedglobalexpr + Enables arbitrary expressions in globals (as opposed to
                        dull simple expressions allowed by regular LSL). Needs
-                       the optimizer to run for the result to be compilable.
+                       constant folding active for the result to be compilable.
   breakcont          - Allow break/continue statements for loops. Note that
                        when active, 'break' and 'continue' become reserved
                        words, but when inactive they can be used as variables.
