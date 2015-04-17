@@ -166,6 +166,9 @@ class outscript(object):
             # node is a node
             if 'scope' in node and 'NewName' in self.symtab[node['scope']][node['name']]:
                 return self.symtab[node['scope']][node['name']]['NewName']
+            if node['nt'] == 'FNCALL' and 'NewName' in self.symtab[0][node['name']]:
+                return self.symtab[0][node['name']]['NewName']
+
             return node['name']
         # node is a name
         if 'NewName' in self.symtab[scope][node]:
