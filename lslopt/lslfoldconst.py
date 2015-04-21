@@ -769,9 +769,9 @@ class foldconst(object):
                 # the number of cases to check.
                 # a<=b  -->  !(a>b);  a>=b  -->  !(a<b);  a!=b  -->  !(a==b)
                 node['nt'] = {'<=':'>', '>=':'<', '!=':'=='}[nt]
-                node = parent[index] = {'nt':'!', 't':node['t'], 'ch':[node]}
+                parent[index] = {'nt':'!', 't':node['t'], 'ch':[node]}
                 self.FoldTree(parent, index)
-                # Fall through to optimize as '<' or '>' or '=='
+                return
 
             if nt == '>':
                 # Invert the inequalities to avoid doubling the cases to check.
