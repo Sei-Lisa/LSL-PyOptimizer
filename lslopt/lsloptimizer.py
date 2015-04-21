@@ -18,7 +18,7 @@
 # Optimizer class that wraps and calls the other parts.
 
 import lslfuncs
-from lslfuncs import Key, Vector, Quaternion
+from lslcommon import Key, Vector, Quaternion
 
 from lslfoldconst import foldconst
 from lslrenamer import renamer

@@ -20,6 +20,7 @@
 import lslfuncs
 import math
 from lslparse import warning
+from lslfuncparams import OptimizeParams
 
 class foldconst(object):
 
@@ -179,6 +180,9 @@ class foldconst(object):
 
                 if (Invertible[0] or Invertible[1]) and ParentIsNegation:
                     # !(!a|b)  ->  a&-!b or a&!b
+                    # This deals with the part after the first !, transforming
+                    # it into (!a|!!b) so that the outer node can optimize the
+                    # negated version to a simple &.
                     for a in (0, 1):
                         if not Invertible[a]:
                             child[a] = {'nt':'!', 't':'integer',
@@ -344,7 +348,7 @@ class foldconst(object):
         if nt == '!':
             self.FoldTree(child, 0)
             self.FoldCond(child, 0, True)
-            # !! does *not* cancel out (unless in cond), but !!! can be simplified to !
+            # !! does *not* cancel out (unless in cond)
             subexpr = child[0]
             snt = subexpr['nt']
             if 'SEF' in subexpr:
@@ -926,8 +930,7 @@ class foldconst(object):
                 if child[idx]['nt'] != 'CONST':
                     CONSTargs = False
 
-            # TODO: Find some way to convert keys to "" e.g. llListen("", NULL_KEY, "")
-            # TODO: Find some way to convert PI to 4 in llSensor[Repeat]
+            OptimizeParams(node, self.symtab[0][node['name']])
             if 'Fn' in self.symtab[0][node['name']]:
                 # Guaranteed to be side-effect free if the children are.
                 if SEFargs:
