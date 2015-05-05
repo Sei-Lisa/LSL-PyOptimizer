@@ -294,7 +294,7 @@ def main():
         ))
 
     try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], 'hO:o:pP:H',
+        opts, args = getopt.gnu_getopt(sys.argv[1:], 'hO:o:p:P:H',
             ('optimizer-options=', 'help', 'version', 'output=', 'header',
             'preproc=', 'precmd=', 'prearg=', 'prenodef',
             'avid=', 'avname=', 'assetid=', 'scriptname='))
