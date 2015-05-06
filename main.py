@@ -169,6 +169,7 @@ Usage: {progname}
     [-P|--prearg=<arg>]         add parameter to preprocessor's command line
     [--precmd=<cmd>]            preprocessor command ('cpp' by default)
     [--prenodef]                no LSL specific defines (__AGENTKEY__ etc.)
+    [--preshow]                 show preprocessor output, and stop
     [--avid=<UUID>]             specify UUID of avatar saving the script
     [--avname=<name>]           specify name of avatar saving the script
     [--assetid=<UUID>]          specify the asset UUID of the script
@@ -296,7 +297,7 @@ def main():
     try:
         opts, args = getopt.gnu_getopt(sys.argv[1:], 'hO:o:p:P:H',
             ('optimizer-options=', 'help', 'version', 'output=', 'header',
-            'preproc=', 'precmd=', 'prearg=', 'prenodef',
+            'preproc=', 'precmd=', 'prearg=', 'prenodef', 'preshow',
             'avid=', 'avname=', 'assetid=', 'scriptname='))
     except getopt.GetoptError:
         Usage()
@@ -312,6 +313,7 @@ def main():
     predefines = True
     script_header = ''
     mcpp_mode = False
+    preshow = False
 
     for opt, arg in opts:
         if type(opt) is unicode:
@@ -385,6 +387,9 @@ def main():
 
         elif opt == '--prenodef':
             predefines = False
+
+        elif opt == '--preshow':
+            preshow = True
 
         elif opt in ('-H', '--header'):
             script_header = True
@@ -486,23 +491,25 @@ def main():
             elif x == 'USE_LAZY_LISTS':
                 options.add('lazylists')
 
-    p = parser()
-    try:
-        ts = p.parse(script, options)
-    except EParse as e:
-        sys.stderr.write(e.message + '\n')
-        return 1
-    del p
+    if not preshow:
 
-    opt = optimizer()
-    ts = opt.optimize(ts, options)
-    del opt
+        p = parser()
+        try:
+            ts = p.parse(script, options)
+        except EParse as e:
+            sys.stderr.write(e.message + '\n')
+            return 1
+        del p
 
-    outs = outscript()
-    script = script_header + outs.output(ts, options)
-    del outs
-    del ts
-    del script_header
+        opt = optimizer()
+        ts = opt.optimize(ts, options)
+        del opt
+
+        outs = outscript()
+        script = script_header + outs.output(ts, options)
+        del outs
+        del ts
+        del script_header
 
     if outfile == '-':
         sys.stdout.write(script)
