@@ -453,7 +453,7 @@ def main():
                 # need the result.
                 UniConvScript(script).to_unicode()
             except EParse as e:
-                sys.stderr.write(e.message + '\n')
+                sys.stderr.write(e[0] + '\n')
                 return 1
         script = PreparePreproc(script)
         if mcpp_mode:
@@ -497,9 +497,10 @@ def main():
         try:
             ts = p.parse(script, options)
         except EParse as e:
-            sys.stderr.write(e.message + '\n')
+            sys.stderr.write(e[0] + '\n')
             return 1
         del p
+        del script
 
         opt = optimizer()
         ts = opt.optimize(ts, options)
@@ -509,7 +510,8 @@ def main():
         script = script_header + outs.output(ts, options)
         del outs
         del ts
-        del script_header
+
+    del script_header
 
     if outfile == '-':
         sys.stdout.write(script)
