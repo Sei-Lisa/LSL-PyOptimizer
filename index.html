@@ -24,9 +24,9 @@ pre code { padding: 0px; }
 
 <p>The aim of this program is to act as a filter that performs the optimizations automatically, letting the programmer focus on writing readable code.</p>
 
-<p>It also implements several syntax extensions to help improving the readability of scripts and the productivity of the programmer. It works well when combined with a C preprocessor such as <i>Boost::Wave</i> (the one embedded in Firestorm) or <code>cpp</code>.</p>
+<p>It also implements several syntax extensions to help improving the readability of scripts and the productivity of the programmer. It works well when combined with a C preprocessor such as <i>Boost::Wave</i> (the one embedded in Firestorm and other TPVs) or <code>cpp</code>.</p>
 
-<p>Firestorm does already incorporate an optimizer. However it is limited to removing unused global variables and functions, and does so by simple string analysis, not by syntactic analysis (e.g. if a local variable with the same name as a global is defined, the global isn't optimized out even if not used). In contrast, the program presented here does full syntax analysis and implements many more optimizations, including removing unused locals, simplifying many expressions, removing dead code, and more.</p>
+<p>Firestorm does already incorporate an optimizer, but it is limited to removing unused global variables and functions, and does so by simple string analysis, not by syntactic analysis (e.g. if a local variable with the same name as a global is defined, the global isn't optimized out even if not used). In contrast, the program presented here does full syntax analysis and implements many more optimizations, including removing unused locals, simplifying many expressions, removing dead code, and more.</p>
 
 <h2><a id="status"></a>Status</h2>
 
@@ -47,14 +47,14 @@ pre code { padding: 0px; }
 <li><a href="#extensions-switch-statements"><code>switch()</code> statements</a>, for compatibility with Firestorm.</li>
 <li><a href="#extensions-lazy-lists">Lazy list syntax</a> (<code>identifier[index]</code>), for compatibility with Firestorm.</li>
 <li><a href="#extensions-allow-dup-fn">Allow duplicate function definitions</a>, for compatibility with Firestorm.</li>
-<li>As of version 0.1.3alpha, it can invoke the preprocessor on its own, providing defaults for the GNU C preprocessor <code>cpp</code> and for <a href="http://mcpp.sourceforge.net/">mcpp</a>).</li>
+<li>As of version 0.1.3alpha, it can invoke the preprocessor on its own, providing defaults for the GNU C preprocessor <code>cpp</code> and for <a href="http://mcpp.sourceforge.net/">mcpp</a>.</li>
 </ul>
 
 <p><a href="#optimizations">Optimizations supported:</a></p>
 
 <ul>
 <li><a href="#optimizations-constant-folding-and-expression-simplification">Constant folding, expression and statement simplification</a>.</li>
-<li><a href="#optimizations-dead-code-removal">Dead code removal</a>, including unused global and local variables.</li>
+<li><a href="#optimizations-dead-code-removal">Dead code removal</a>, including unused functions and global and local variables.</li>
 <li><a href="#optimizations-shrinking-identifiers">Shrinking identifiers.</a></li>
 <li><a href="#optimizations-floats">Floats to integers where possible.</a></li>
 <li><a href="#optimizations-signs">Signs in numbers.</a></li>
@@ -152,7 +152,7 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
 <pre><code>llOwnerSay("Program version " + "1.13" + ", revision " + "b");
 </code></pre>
 
-<p>The latter can also be resolved by the optimizer, but by default that optimization is disabled as it can be counter-productive.</p>
+<p>The latter can also be resolved by the optimizer, but by default that optimization is disabled as it can be counter-productive (see <a href="#optimizations-string-constant-folding">String constant concatenation</a> below for more information).</p>
 
 <h3><a id="extensions-type-cast-extension"></a>Type-cast extension</h3>
 
@@ -210,7 +210,7 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
 <li><code>case</code> labels can't appear in nested blocks. That's because they are replaced by LSL labels, and as discussed in the <i>Multiple labels with the same name</i> section above, label scope rules prevent their visibility in an outer block, so once converted to labels, the corresponding <code>jump</code> instructions would not be able to find them. This limitation means that <a href="https://en.wikipedia.org/wiki/Duff's_device">Duff's device</a> or similar constructs can't be implemented with this optimizer.</li>
 <li><div><code>switch()</code> needs to be followed by a block, not by a single statement. For example, whiile this works in C, it won't work in this optimizer:</div>
 <pre><code>    switch(1) case 1: break;</code></pre>
-<div>The reason is that <code>case</code> is treated by this parser as a statement, rather than as a label prefix, making <code>break</code> be outside the <code>switch</code>. This limitation is probably only of theoretical importance and will not have any practical implication, since single-statement <code>switch</code> clauses are of little no practical use (known to the author). Of course it works perfectly when enclosed in braces:</div>
+<div>The reason is that <code>case</code> is treated by this parser as a statement, rather than as a label prefix, making <code>break</code> be outside the <code>switch</code> and failing at that point. This limitation is probably only of theoretical importance and will not have any practical implication, since single-statement <code>switch</code> clauses are of little or no practical use (known to the author). Of course it works perfectly when enclosed in braces:</div>
 <pre><code>    switch(1) { case 1: break; }</code></pre></li>
 </ol>
 
@@ -219,6 +219,10 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
 <pre><code>    switch (x) { case 1: ;  default: ;  }
     switch (x) { case 1  {} default  {} }
     switch (x) { case 1: {} default: {} }
+</code></pre>
+
+but this will cause an error:
+<pre><code>    switch (x) { case 1  ;  default  ;  }
 </code></pre>
 
 <h3><a id="extensions-lazy-lists"></a>Lazy lists</h3>
@@ -237,7 +241,7 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
 <pre><code>mylist = llListReplaceList(mylist, (list)value, index, index);
 </code></pre>
 
-<p>However, the implementation includes creating a function that performs the replacement, which prevents the index from being evaluated twice. The function is called <code>lazy_list_set</code>. It can be user-overriden. If you define a function with this prototype:</p>
+<p>The implementation, however, includes creating a function that performs the replacement, which prevents the index from being evaluated twice but also uses more memory. The function is called <code>lazy_list_set</code>. It can be user-overriden. If you define a function with this prototype:</p>
 
 <pre><code>list lazy_list_set(list target, integer index, list value)
 </code></pre>
@@ -293,11 +297,11 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
 
 <h3><a id="optimizations-constant-folding-and-expression-simplification"></a>Constant folding and expression simplification</h3>
 
-<p>The optimizer simplifies expressions as much as it knows, which is a fair amount, though there's still room for improvement in this area. Expressions that evaluate to a constant will be replaced with that constant. Most calculation functions are implemented; note, however, that the JSON functions in particular do not follow the broken LSL behaviour too closely, and that <code>llJsonSetValue</code> is not implemented as of yet.</p>
+<p>The optimizer simplifies expressions as much as it knows, which is a fair amount, though there's still room for improvement in this area. Expressions that evaluate to a constant will be replaced with that constant. Most calculation functions are implemented; note, however, that the JSON functions in particular do not follow the broken LSL behaviour too closely, and that <code>llJsonSetValue</code> in particular is not implemented as of yet.</p>
 
 <p>Other expressions such as a+3+1 are replaced with a+4, and so on. Note, however, that for floats, <code>(a+b)+c</code> may not equal <code>a+(b+c)</code>, so that optimization is not always done for floats. Also, as of this writing this optimization is only partial, so some expressions may not be optimized, e.g. <code>2+a+b+3</code> is not optimized to <code>a+b+5</code>. Many boolean expressions are simplified too (more are on the way). For example, <code>(TRUE&amp;&amp;(expression))</code> is simplified to <code>(expression)</code>, and <code>(FALSE&amp;&amp;(expression))</code> is simplified to <code>(FALSE)</code> provided the expression has no side effects. The famous <code>if (llListFindList(...)!=-1)</code> to <code>if (~llListFindList(...))</code> replacement is also performed automatically.</p>
 
-<p>The constant folding optimizer is also responsible for simplifying certain statements, e.g. <code>if (FALSE) { statements; }</code> is completely removed, and <code>if (TRUE) { statements1; } else { statements2; }</code> is replaced with just <code>{ statements1; }</code>, removing <code>{ statements2; }</code>. Similarly, <code>do...while(constant)</code> loops and other loops are optimized too.</p>
+<p>The constant folding optimizer is also responsible for simplifying certain statements, e.g. <code>if (FALSE) { statements; }</code> is completely removed, and <code>if (TRUE) { statements1; } else { statements2; }</code> is replaced with just <code>{ statements1; }</code>, removing <code>{ statements2; }</code>. The <code>do...while(constant)</code> loops and other loops are optimized similarly.</p>
 
 <p>This enables using many preprocessor tricks, like creating an <code>assert()</code> macro similar to that in C:</p>
 
@@ -318,7 +322,7 @@ default
 {
     state_entry()
     {
-        llOwnerSay((string)X);
+        llOwnerSay((string)ANSWER);
     }
 }
 </code></pre>
@@ -338,7 +342,7 @@ default
 
 <h3><a id="optimizations-shrinking-identifiers"></a>Shrinking Identifiers</h3>
 
-<p>Long variable and parameter names are nice and readable, but when used as part of the globals or as function parameters, or in function or state names, each character in the identifier takes at least one byte of code memory. In large programs, this can add up to a significant amount. This option replaces global (including functions and states) and parameter identifiers with the shortest possible ones, also reusing as many as it can. The savings from this alone can be very significant in programs with a large number of globals or states.</p>
+<p>Long variable and parameter names are nice and readable, but when used as part of the globals or as function parameters, or in function or state names, each character in the identifier takes at least one byte of code memory. In large programs, this can add up to a significant amount. This option replaces global (including functions and states) and parameter identifiers with the shortest possible ones, also reusing as many as it can as well as reusing some system ones. The savings from this alone can be very significant in programs with a large number of globals or states.</p>
 
 <h3><a id="optimizations-floats"></a>Floats</h3>
 
@@ -346,7 +350,7 @@ default
 
 <h3><a id="optimizations-signs"></a>Signs</h3>
 
-<p>The sign at the beginning of a number (except in globals) takes one byte of code, unless prefixed by a type cast (which does not, under Mono, take code memory in itself if the destination type is the same). Small saving, but it adds up to the overall. Numbers are thus output with a type cast and surrounded by parentheses, e.g. <code>((float)-1.5)</code> instead of <code>-1.5</code>.</p>
+<p>The sign at the beginning of a number (except in globals) takes up one byte of code, unless prefixed by a type cast (which does not, under Mono, take up code memory by itself if the destination type is the same). Small saving, but it adds up to the overall. Numbers are thus output with a type cast and surrounded by parentheses, e.g. <code>((float)-1.5)</code> instead of <code>-1.5</code>.</p>
 
 <h3><a id="optimizations-string-constant-folding"></a>String constant folding</h3>
 
@@ -356,7 +360,7 @@ default
 string b = "A very long string that appears in this script once" + " or twice";
 </code></pre>
 
-<p>Since Mono keeps only one copy of each constant string in the code, making the optimizer concatenate them would be counter-productive, generating two long strings that take more code than the original string plus the shorter ones.</p>
+<p>Since Mono keeps only one copy of each constant string in the code, making the optimizer concatenate them would be counter-productive, generating two long strings that would take more code than the original string plus the shorter ones.</p>
 
 <hr>
 
