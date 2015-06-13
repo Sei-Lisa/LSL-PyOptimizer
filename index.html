@@ -255,7 +255,7 @@ but this will cause an error:
 <pre><code>  list a; integer b = a[5] = 4;
 </code></pre>
 
-<p>To see why, look what that is expanded to:</p>
+<p>To see why, look at what that is expanded to:</p>
 
 <pre><code>  list a; integer b = a = lazy_list_set(a, 5, (list)4);
 </code></pre>
