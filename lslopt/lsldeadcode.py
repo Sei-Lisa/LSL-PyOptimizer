@@ -495,7 +495,7 @@ class deadcode(object):
                 # We can't remove it here because there may be more references
                 # that we will remove in CleanNode later, that hold the
                 # original value.
-                if node['nt'] == 'DECL':
+                if node['nt'] == 'DECL' or node['nt'] == 'STDEF':
                     GlobalDeletions.append(node['name'])
                 del self.tree[idx]
                 del LocMap[idx]
