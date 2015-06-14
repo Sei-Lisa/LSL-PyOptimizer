@@ -358,7 +358,9 @@ class outscript(object):
         if nt == 'DECL':
             ret = self.dent() + node['t'] + ' ' + self.FindName(node)
             if child:
-                if 'orig' in child[0]:
+                if 'orig' in child[0] and (child[0]['orig']['nt'] != 'IDENT'
+                        or child[0]['orig']['name']
+                           in self.symtab[child[0]['orig']['scope']]):
                     ret += ' = ' + self.OutExpr(child[0]['orig'])
                 else:
                     ret += ' = ' + self.OutExpr(child[0])
