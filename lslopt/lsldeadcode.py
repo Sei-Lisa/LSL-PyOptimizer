@@ -411,12 +411,20 @@ class deadcode(object):
                 sym = self.SymbolReplacedOrDeleted(node)
                 if sym:
                     # Mark as executed, so it isn't optimized out.
-                    new = sym['W']
+                    # Make shallow copy.
+                    # TODO: Needs more analysis to see if it's correct or not.
+                    #       (See constant_anomaly.lsl)
+                    new = sym['W'].copy()
+                    if 'orig' in new:
+                        del new['orig']
+
                     new['X'] = True
 
-                    SEF = 'SEF' in sym['W']
-                    if SEF:
-                        new['SEF'] = True
+                    # this part makes no sense?
+                    #SEF = 'SEF' in sym['W']
+                    #if SEF:
+                    #    new['SEF'] = True
+
                     if new['t'] != node['t']:
                         new = self.Cast(new, node['t'])
                     curnode['ch'][index] = node = new
