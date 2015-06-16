@@ -1515,7 +1515,7 @@ def llSqrt(f):
     if f < 0.0:
         return NaN
     # LSL and Python both produce -0.0 when the input is -0.0.
-    return math.sqrt(f)
+    return F32(math.sqrt(f))
 
 def llStringLength(s):
     assert isstring(s)
