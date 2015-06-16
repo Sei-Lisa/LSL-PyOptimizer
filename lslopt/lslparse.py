@@ -862,11 +862,7 @@ list lazy_list_set(list L, integer i, list v)
             # Lots of drama for checking types. This is pretty much like
             # addition, subtraction, multiply, divide, etc. all in one go.
             if tok0 == '=':
-                if typ == 'list' != rtyp:
-                    if self.explicitcast:
-                        expr = {'nt':'CAST', 't':typ, 'ch':[expr]}
-                else:
-                    expr = self.autocastcheck(expr, typ)
+                expr = self.autocastcheck(expr, typ)
 
                 return {'nt':'=', 't':typ, 'ch':[lvalue, expr]}
 
@@ -874,7 +870,7 @@ list lazy_list_set(list L, integer i, list v)
                 if typ == 'float':
                     expr = self.autocastcheck(expr, typ)
                 if rtyp != typ != 'list' or typ == rtyp == 'key':
-                    # key + key is the only disallowed combo of equals
+                    # key + key is the only disallowed combo of equal types
                     raise EParseTypeMismatch(self)
                 if self.explicitcast:
                     if typ == 'list' != rtyp:
