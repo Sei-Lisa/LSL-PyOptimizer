@@ -301,6 +301,7 @@ class Test03_Optimizer(UnitTestCase):
                 f += 4; f += -4.3;
                 integer i;
                 i = llGetListLength(L);
+                if (i&&llSameGroup(llGetOwner())) ++i;
                 i *= -3.0;
                 print(3+2);
                 i |= !i;

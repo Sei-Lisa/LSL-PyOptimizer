@@ -90,7 +90,7 @@ class foldconst(object):
 
         if nt == 'FNCALL':
             sym = self.symtab[0][node['name']]
-            if sym['Typ'] == 'integer' and 'min' in sym and 'max' in sym \
+            if sym['Type'] == 'integer' and 'min' in sym and 'max' in sym \
                and sym['min'] == 0 and sym['max'] == 1:
                 return True
 
