@@ -321,7 +321,10 @@ class parser(object):
                 if c == '#' and self.skippreproc:
                     # Preprocessor directives act like single line comments.
                     # Most are not supposed to reach us but cpp also generates
-                    # as output lines like: # 123 "file.lsl"
+                    # lines in the output like: # 123 "file.lsl"
+                    # and other preprocessors including Boost Wave and mcpp
+                    # generate lines like: #line 123 "file.lsl" (Firestorm
+                    # comments these out and outputs //#line 123 "file.lsl")
                     self.ceof()
                     while self.script[self.pos] != '\n':
                         self.pos += 1
