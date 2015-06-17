@@ -213,9 +213,30 @@ class outscript(object):
                 elif lnt == 'NEG' and base_pri > self.op_priority['-']:
                     lparen = True
 
+                # This situation has ugly cases due to the strange priority of
+                # unary minus. Consider the following two statements:
+                #     (~-a) * a
+                #     a * (~-a) * a
+                # In one case, the (~-a) is a left child; in the other, it's a
+                # right child. In both, the parentheses are mandatory, or they
+                # would be interpreted respectively as:
+                #     ~-(a * a)
+                #     a * ~-(a * a)
+                # Yet the tree structure makes it quite hard to detect these.
+                # So as a safeguard, for now we parenthesize all ~ and ! within
+                # binary operands, as they have a deceitful binding power when
+                # there's a unary minus downstream.
+                #
+                # FIXME: See if the parenthesizing of ~ and ! can be improved.
+                elif lnt in ('~', '!'):
+                    lparen = True
+
                 if rnt in self.op_priority:
                     if self.op_priority[rnt] <= base_pri:
                         rparen = True
+                # see above
+                elif rnt in ('~', '!'):
+                    rparen = True
 
             if lparen:
                 ret = '(' + self.OutExpr(child[0]) + ')'
