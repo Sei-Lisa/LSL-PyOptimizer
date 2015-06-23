@@ -984,7 +984,28 @@ list lazy_list_set(list L, integer i, list v)
             if self.extendedtypecast:
                 # Allow any unary expression (except assignment). The type cast
                 # acts as a prefix operator.
-                expr = self.Parse_unary_expression(AllowAssignment = False)
+
+                # Deal with the case of minus a constant integer or float.
+                #  E.g. ~(integer)-2*3 should be parsed as (~(integer)-2)*3
+                #  and not as ~(integer)(-(2*3))
+                # Note ~(integer)-a*3 is also parsed as ~(integer)(-a)*3
+                # which is bordering a violation of the POLA because of the
+                # priority of - with respect to *. But the syntax is quite
+                # explicit: what is typecast is always a unary expression,
+                # therefore processed first.
+                if self.tok[0] == '-':
+                    self.NextToken()
+                    if self.tok[0] == 'INTEGER_VALUE':
+                        expr = {'nt':'CONST','t':'integer','value':-self.tok[1]}
+                        self.NextToken()
+                    elif self.tok[0] == 'FLOAT_VALUE':
+                        expr = {'nt':'CONST','t':'float','value':-self.tok[1]}
+                        self.NextToken()
+                    else:
+                        expr = self.Parse_unary_expression(AllowAssignment = False)
+                        expr = {'nt':'NEG','t':expr['t'],'ch':[expr]}
+                else:
+                    expr = self.Parse_unary_expression(AllowAssignment = False)
             else:
                 if self.tok[0] == '(':
                     self.NextToken()
