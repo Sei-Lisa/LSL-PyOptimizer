@@ -34,34 +34,7 @@ class UnitTestCase(unittest.TestCase):
 
 class Test01_LibraryLoader(UnitTestCase):
     def test_coverage(self):
-        os.remove('builtins.txt')
-        f = open('builtins.txt', 'wb')
-        f.write(r'''const key a="\t"
-event ev(integer i)
-event ev(integer i)
-quaternion x(integer i)
-void x(integer i)
-blah
-const vector a = <4,5,3,2>
-const vector a = <4,5,3,2
-const vector a = <x,4,3>
-const vector a = <4,x,3>
-const vector a = <3,4,x>
-const rotation a = <3,4,4,x>
-const list l = []
-const quaternion q=<1,2,3,4>
-const string v="
-const string q="\t"
-''')
-        f.close()
-        parser()
-        f = open('builtins.txt.dat', 'rb')
-        b = f.read()
-        f.close()
-        os.remove('builtins.txt')
-        f = open('builtins.txt', 'wb')
-        f.write(b)
-        f.close()
+        parser(builtins='builtins-unittest.txt')
         parser()
 
 

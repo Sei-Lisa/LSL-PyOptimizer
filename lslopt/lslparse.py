@@ -2429,7 +2429,7 @@ list lazy_list_set(list L, integer i, list v)
 
         return self.parse(script, options)
 
-    def __init__(self):
+    def __init__(self, builtins = 'builtins.txt', seftable = 'seftable.txt'):
         """Reads the library."""
 
         self.events = {}
@@ -2453,7 +2453,7 @@ list lazy_list_set(list L, integer i, list v)
         parse_num_re = re.compile(r'^\s*(-?(?=[0-9]|\.[0-9])[0-9]*((?:\.[0-9]*)?(?:[Ee][+-]?[0-9]+)?))\s*$')
         parse_str_re = re.compile(ur'^"((?:[^"\\]|\\.)*)"$')
 
-        f = open(lslcommon.DataPath + 'builtins.txt', 'rb')
+        f = open(lslcommon.DataPath + builtins, 'rb')
         try:
             while True:
                 line = f.readline()
@@ -2461,7 +2461,7 @@ list lazy_list_set(list L, integer i, list v)
                 if line[-1] == '\n': line = line[:-1]
                 match = parse_lin_re.match(line)
                 if not match:
-                    warning('Syntax error in builtins.txt, line ' + line)
+                    warning('Syntax error in ' + builtins + ', line ' + line)
                     continue
                 if match.group(1):
                     # event or function
@@ -2471,7 +2471,7 @@ list lazy_list_set(list L, integer i, list v)
                     if typ == 'void':
                         typ = None
                     elif typ != 'event' and typ not in self.types:
-                        warning('Invalid type in builtins.txt, line ' + line + ': ' + typ)
+                        warning('Invalid type in ' + builtins + ', line ' + line + ': ' + typ)
                         continue
                     args = []
                     arglist = match.group(3)
@@ -2481,7 +2481,7 @@ list lazy_list_set(list L, integer i, list v)
                         for arg in arglist:
                             argtyp = parse_arg_re.match(arg).group(1)
                             if argtyp not in self.types:
-                                warning('Invalid type in builtins.txt, line ' + line + ': ' + argtyp)
+                                warning('Invalid type in ' + builtins + ', line ' + line + ': ' + argtyp)
                                 bad = True
                                 break
                             args.append(parse_arg_re.match(arg).group(1))
@@ -2490,14 +2490,14 @@ list lazy_list_set(list L, integer i, list v)
                     name = match.group(2)
                     if typ == 'event':
                         if name in self.events:
-                            warning('Event already defined in bultins.txt, overwriting: ' + name)
+                            warning('Event already defined in ' + builtins + ', overwriting: ' + name)
                         self.events[name] = tuple(args)
                     else:
                         # Library functions go to the functions table. If
                         # they are implemented in lslfuncs.*, they get a
                         # reference to the implementation; otherwise None.
                         if name in self.funclibrary:
-                            warning('Function already defined in bultins.txt, overwriting: ' + name)
+                            warning('Function already defined in ' + builtins + ', overwriting: ' + name)
                         fn = getattr(lslfuncs, name, None)
                         self.funclibrary[name] = {'Kind':'f', 'Type':typ, 'ParamTypes':args}
                         if fn is not None:
@@ -2506,10 +2506,10 @@ list lazy_list_set(list L, integer i, list v)
                     # constant
                     name = match.group(5)
                     if name in self.constants:
-                        warning('Global already defined in bultins.txt, overwriting: ' + name)
+                        warning('Global already defined in ' + builtins + ', overwriting: ' + name)
                     typ = match.group(4)
                     if typ not in self.types:
-                        warning('Invalid type in builtins.txt, line ' + line + ': ' + typ)
+                        warning('Invalid type in ' + builtins + ', line ' + line + ': ' + typ)
                         continue
                     if typ == 'quaternion':
                         typ = 'rotation'
@@ -2539,10 +2539,10 @@ list lazy_list_set(list L, integer i, list v)
                             #if typ == 'key':
                             #    value = Key(value)
                         else:
-                            warning('Invalid string in builtins.txt: ' + line)
+                            warning('Invalid string in ' + builtins + ': ' + line)
                             value = None
                     elif typ == 'key':
-                        warning('Key constants not supported in builtins.txt: ' + line)
+                        warning('Key constants not supported in ' + builtins + ': ' + line)
                         value = None
                     elif typ in ('vector', 'rotation'):
                         try:
@@ -2572,10 +2572,10 @@ list lazy_list_set(list L, integer i, list v)
                                 value[3] = lslfuncs.F32(float(num.group(1)))
                                 value = Quaternion(value)
                         except ValueError:
-                            warning('Invalid vector/rotation syntax in builtins.txt: ' + line)
+                            warning('Invalid vector/rotation syntax in ' + builtins + ': ' + line)
                     else:
                         assert typ == 'list'
-                        warning('List constants not supported in builtins.txt: ' + line)
+                        warning('List constants not supported in ' + builtins + ': ' + line)
                         value = None
                     if value is not None:
                         self.constants[name] = value
@@ -2588,7 +2588,7 @@ list lazy_list_set(list L, integer i, list v)
         #       that includes domain data (min, max) and possibly input
         #       parameter transformations e.g.
         #           llSensor(..., PI, ...) -> llSensor(..., 4, ...).
-        f = open(lslcommon.DataPath + 'seftable.txt', 'rb')
+        f = open(lslcommon.DataPath + seftable, 'rb')
         try:
             while True:
                 line = f.readline()
