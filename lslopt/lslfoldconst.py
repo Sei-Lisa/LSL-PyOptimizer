@@ -951,8 +951,8 @@ class foldconst(object):
                     except lslfuncs.ELSLCantCompute:
                         # Don't transform the tree if function is not computable
                         pass
-                elif node['name'] == 'llGetListLength' and child[0]['nt'] == 'IDENT':
-                    # Convert llGetListLength(ident) to (ident != [])
+                elif node['name'] == 'llGetListLength':
+                    # Convert llGetListLength(expr) to (expr != [])
                     node = {'nt':'CONST', 't':'list', 'value':[]}
                     parent[index] = node = {'nt':'!=', 't':'list', 'ch':[child[0], node]}
             elif SEFargs and 'SEF' in self.symtab[0][node['name']]:
