@@ -29,7 +29,7 @@ class renamer(object):
     CharSet1 = '_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
     CharSet2 = '0123456789_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
     # TODO: Derive these from builtins.txt somehow.
-    KwByLen = ((), (), ('do', 'if', 'PI'), ('for', 'key', 'EOF'),
+    KwByLen = ((), (), ('do', 'if', 'PI'), ('for', 'key', 'EOF', 'Pop'),
         ('jump', 'else', 'list', 'TRUE', 'LOOP', 'case'))
     def GetNextShortest(self):
         """Generate the next shortest possible identifier"""
@@ -56,10 +56,13 @@ class renamer(object):
         self.WordFirstChar = 0
         self.WordRestOfChars = []
 
-        # Names that can be reused without penalty. The initial set is there
+        # Names that can be reused without penalty. This initial set is there
         # since the beginning. Others are created depending on the code
         # (e.g. Key when there are keys), but we don't take too many risks.
-        ReusableNames = set(['LslLibrary', 'LslUserScript', 'System'])
+        ReusableNames = set(['LslLibrary', 'Library', 'LslUserScript',
+            'System', 'UThread', 'UThreadStackFrame', 'Pop',
+            'IsRestoring', 'IsSaveDue', 'ResumeVoid',
+            ])
 
         # Names from ReusableNames that have already been used
         self.UsedNames = set()
