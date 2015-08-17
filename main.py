@@ -469,14 +469,8 @@ def main():
         stdout = ''
         p = subprocess.Popen(preproc_cmdline, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE)
-        p.stdin.write(script)
-        p.stdin.close()
-        while True:
-            time.sleep(0.1)
-            status = p.poll()
-            stdout += p.stdout.read()
-            if status is not None:
-                break
+        stdout = p.communicate(input=script)[0]
+        status = p.wait()
         if status:
             return status
         script = stdout
