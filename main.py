@@ -464,7 +464,6 @@ def main():
 
         # Invoke the external preprocessor
         import subprocess
-        import time
 
         stdout = ''
         p = subprocess.Popen(preproc_cmdline, stdin=subprocess.PIPE,
