@@ -465,15 +465,13 @@ def main():
         # Invoke the external preprocessor
         import subprocess
 
-        stdout = ''
         p = subprocess.Popen(preproc_cmdline, stdin=subprocess.PIPE,
             stdout=subprocess.PIPE)
-        stdout = p.communicate(input=script)[0]
+        script = p.communicate(input=script)[0]
         status = p.wait()
         if status:
             return status
-        script = stdout
-        del p, status, stdout
+        del p, status
 
         for x in re.findall(r'(?:(?<=\n)|^)\s*#\s*define\s+('
                             r'USE_SWITCHES'
