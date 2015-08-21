@@ -112,15 +112,15 @@ class renamer(object):
             for node in self.tree[entry['Loc']]['ch']:
                 assert node['nt'] == 'FNDEF'
                 event_name = node['name']
-                # These two events have their names translated.
+                # These events have their names translated.
                 if event_name == 'on_rez':
                     event_name = 'rez'
                 if event_name == 'listen':
                     event_name = 'chat'
-                # This one doesn't seem to be renamed internally any longer,
-                # even though the viewer sources indicate so:
-                #if event_name == 'changed':
-                #    event_name = 'inventory'
+                if event_name == 'run_time_permissions':
+                    event_name = 'run_time_perms'
+                if event_name == 'remote_data':
+                    event_name = 'remote_event'
                 ReusableNames.add('e' + name + event_name)
         del states
 
