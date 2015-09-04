@@ -270,7 +270,7 @@ class Test03_Optimizer(UnitTestCase):
                 integer j = 3||4&&5|6^7&8.==9!=10.e+01f<11<=12>13.>=14<<15>>16==0&&3==
                     ++f-f++-(3 + llFloor(f)<<3 << 32) - 2 - 0;
                 integer k = 2 + (3 * 25 - 4)/2 % 9;
-                a = (list)3; a += !3;
+                a = (list)3; a += !3; a = 3+a;
                 f += 4; f += -4.3;
                 integer i;
                 i = llGetListLength(L);

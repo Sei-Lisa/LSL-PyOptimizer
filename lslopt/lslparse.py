@@ -1128,10 +1128,10 @@ list lazy_list_set(list L, integer i, list v)
                 if self.explicitcast:
                     if ltype == 'list' != rtype:
                         rexpr = {'nt':'CAST', 't':ltype, 'ch':[rexpr]}
-                        #rtype = ltype # unused
                     elif rtype == 'list' != ltype:
                         term = {'nt':'CAST', 't':rtype, 'ch':[term]}
-                        ltype = rtype
+                if rtype == 'list':
+                    ltype = rtype
                 term = {'nt':op, 't':ltype, 'ch':[term, rexpr]}
                 # Note that although list + nonlist is semantically the same as
                 # list + (list)nonlist and same goes for nonlist + list, they
