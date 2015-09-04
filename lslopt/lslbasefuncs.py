@@ -974,6 +974,8 @@ def llIntegerToBase64(x):
     return b64encode(chr((x>>24)&255) + chr((x>>16)&255) + chr((x>>8)&255) + chr(x&255)).decode('utf8')
 
 def llList2CSV(lst):
+    # INCOMPATIBILITY NOTE: In LSL, llList2CSV can return "-nan". Python can't.
+    # In Python there's no distinction between -nan and nan.
     assert islist(lst)
     ret = []
     for elem in lst:
