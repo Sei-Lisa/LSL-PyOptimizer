@@ -1125,18 +1125,13 @@ list lazy_list_set(list L, integer i, list v)
                 if ltype == rtype == 'key':
                     # key + key is the only disallowed combo of equals
                     raise EParseTypeMismatch(self)
-                if self.explicitcast:
-                    if ltype == 'list' != rtype:
-                        rexpr = {'nt':'CAST', 't':ltype, 'ch':[rexpr]}
-                    elif rtype == 'list' != ltype:
-                        term = {'nt':'CAST', 't':rtype, 'ch':[term]}
+                # Note that although list + nonlist is semantically the
+                # same as list + (list)nonlist, and similarly for
+                # nonlist + list, they don't compile to the same thing,
+                # so we don't act on self.explicitcast in this case.
                 if rtype == 'list':
                     ltype = rtype
                 term = {'nt':op, 't':ltype, 'ch':[term, rexpr]}
-                # Note that although list + nonlist is semantically the same as
-                # list + (list)nonlist and same goes for nonlist + list, they
-                # don't compile to the same thing, but the optimizer should deal
-                # with typecast removal anyway.
             elif self.allowkeyconcat and op == '+' \
                  and ltype in ('key', 'string') and rtype in ('key', 'string'):
                 # Allow string+key addition (but add explicit cast)
