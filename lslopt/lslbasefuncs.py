@@ -77,6 +77,7 @@ NULL_KEY         = u'00000000-0000-0000-0000-000000000000'
 
 Infinity = float('inf')
 NaN = float('nan')
+Indet = Infinity * 0
 
 class ELSLTypeMismatch(Exception):
     def __init__(self):
@@ -881,7 +882,7 @@ def llCos(f):
     assert isfloat(f)
     f = ff(f)
     if math.isinf(f):
-        return NaN
+        return Indet
     if -9223372036854775808.0 <= f < 9223372036854775808.0:
         return F32(math.cos(f))
     return f
@@ -974,14 +975,16 @@ def llIntegerToBase64(x):
     return b64encode(chr((x>>24)&255) + chr((x>>16)&255) + chr((x>>8)&255) + chr(x&255)).decode('utf8')
 
 def llList2CSV(lst):
-    # INCOMPATIBILITY NOTE: In LSL, llList2CSV can return "-nan". Python can't.
-    # In Python there's no distinction between -nan and nan.
     assert islist(lst)
     ret = []
     for elem in lst:
         # This always uses LSO rules for float to string.
         if type(elem) == float:
-            ret.append(u'%.6f' % elem)
+            from struct import pack
+            if math.isnan(elem) and pack('>f', elem)[0:1] == b'\xff':
+                ret.append(u'-nan')
+            else:
+                ret.append(u'%.6f' % elem)
         elif type(elem) in (Vector, Quaternion):
             ret.append(u'<' + u', '.join(list(u'%.6f' % x for x in elem)) + u'>')
         else:
@@ -1383,7 +1386,7 @@ def llPow(base, exp):
         f = F32(math.pow(base, exp))
         return 0.0 if f == 0.0 else f # don't return -0.0
     except ValueError: # should happen only with negative base and noninteger exponent
-        return NaN
+        return Indet
 
 def llRot2Angle(r):
     assert isrotation(r)
@@ -1506,7 +1509,7 @@ def llSin(f):
     assert isfloat(f)
     f = ff(f)
     if math.isinf(f):
-        return NaN
+        return Indet
     if -9223372036854775808.0 <= f < 9223372036854775808.0:
         return F32(math.sin(f))
     return f
@@ -1515,7 +1518,7 @@ def llSqrt(f):
     assert isfloat(f)
     f = ff(f)
     if f < 0.0:
-        return NaN
+        return Indet
     # LSL and Python both produce -0.0 when the input is -0.0.
     return F32(math.sqrt(f))
 
@@ -1550,7 +1553,7 @@ def llTan(f):
     assert isfloat(f)
     f = ff(f)
     if math.isinf(f):
-        return NaN
+        return Indet
     if -9223372036854775808.0 <= f < 9223372036854775808.0:
         # We only consider the first turn for anomalous results.
         if abs(f) == 1.570796251296997:

@@ -828,6 +828,14 @@ def do_tests():
     test('llTan(F32(math.pi*.5))', -22877330.)
     test('llTan(F("0x1.921FB4p0"))', 13245400.)
 
+    # nan and -nan in llList2CSV
+    test('llList2CSV([llSin(F32(4e38))])', u'-nan')
+    test('llList2CSV([llCos(F32(4e38))])', u'-nan')
+    test('llList2CSV([llTan(F32(4e38))])', u'-nan')
+    test('llList2CSV([llSqrt(F32(-1))])', u'-nan')
+    test('llList2CSV([llPow(-1.0,F32(1.3))])', u'-nan')
+    test('llList2CSV([llPow(nan,F32(1.3))])', u'nan')
+
     testXB64S("", "", "")
     testXB64S(u"Hello, World!", u"", u"Hello, World!")
     testXB64S("AAAAA==AAAAA=", "_X", "/X/X/==X/X/X=")
