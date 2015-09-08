@@ -1414,11 +1414,11 @@ def llRot2Euler(r):
             1.-2.*(r[0]*r[0]+r[2]*r[2])))
 
     qy2 = r[1]*r[1]
-    return (
+    return Vector((
         math.atan2(2.*(r[0]*r[3]-r[1]*r[2]), 1.-2.*(r[0]*r[0]+qy2)),
         math.asin(y),
         math.atan2(2.*(r[2]*r[3]-r[0]*r[1]), 1.-2.*(r[2]*r[2]+qy2))
-        )
+        ))
 
 def llRot2Fwd(r):
     assert isrotation(r)
