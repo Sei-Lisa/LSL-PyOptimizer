@@ -262,7 +262,8 @@ class outscript(object):
             expr = child[0]
             if expr['nt'] in ('CONST', 'IDENT', 'V++', 'V--', 'VECTOR',
                'ROTATION', 'LIST', 'FIELD', 'PRINT', 'FNCALL'):
-                return ret + self.OutExpr(expr)
+                if expr['nt'] != 'LIST' or len(expr['ch']) != 1:
+                    return ret + self.OutExpr(expr)
             return ret + '(' + self.OutExpr(expr) + ')'
 
         if nt == 'LIST':
