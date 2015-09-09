@@ -986,7 +986,7 @@ def llList2CSV(lst):
             else:
                 ret.append(u'%.6f' % elem)
         elif type(elem) in (Vector, Quaternion):
-            ret.append(u'<' + u', '.join(list(u'%.6f' % x for x in elem)) + u'>')
+            ret.append(u'<' + llList2CSV(list(elem)) + u'>')
         else:
             ret.append(InternalTypecast(elem, unicode, InList=True, f32=True))
     ret = u', '.join(ret)

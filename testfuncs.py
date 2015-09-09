@@ -835,6 +835,7 @@ def do_tests():
     test('llList2CSV([llSqrt(F32(-1))])', u'-nan')
     test('llList2CSV([llPow(-1.0,F32(1.3))])', u'-nan')
     test('llList2CSV([llPow(nan,F32(1.3))])', u'nan')
+    test('llList2CSV([Vector((-nan,nan,-inf))])', u'<-nan, nan, -inf>')
 
     testXB64S("", "", "")
     testXB64S(u"Hello, World!", u"", u"Hello, World!")
