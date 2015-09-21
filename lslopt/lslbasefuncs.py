@@ -345,8 +345,14 @@ def InternalTypecast(val, out, InList, f32):
             if match is None:
                 return 0.0
             if match.group(1):
-                return F32(float.fromhex(match.group(0)), f32)
-            return F32(float(match.group(0)), f32)
+                ret =  F32(float.fromhex(match.group(0)), f32)
+            else:
+                ret = F32(float(match.group(0)), f32)
+            if not lslcommon.LSO and abs(ret) < 1.1754943508222875e-38:
+                # Mono doesn't return denormals when using (float)"val"
+                # (but it returns them when using (vector)"<val,...>")
+                ret = 0
+            return ret
         if out == int:
             match = int_re.match(val)
             if match is None:
