@@ -268,8 +268,8 @@ def f2s(val, DP=6):
         i += 1
         digits += 1
 
-    if s[i if i != dot else i+1] >= u'5': # no rounding necessary
-        # Rounding - increment s[:i] storing result into news
+    if s[i if i != dot else i+1] >= u'5':
+        # Rounding - increment s[:i] storing result into new_s
         new_s = u''
         ci = i-1 # carry index
         while ci >= 0 and s[ci] == u'9':
