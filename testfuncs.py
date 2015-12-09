@@ -49,7 +49,7 @@ def reallyequal(actual, expected, tol):
     # Deal with floats (edge cases, tolerance)
     if isinstance(actual, float):
         if actual == 0.0:
-            return str(actual) == str(expected)
+            return repr(actual) == repr(expected)
         elif math.isnan(actual):
             return math.isnan(expected)
         return abs(actual - expected) <= tol
