@@ -23,7 +23,7 @@
 #
 # A side effect of this change is that the script becomes unreadable gibberish.
 
-# TODO: Rename locals to loc_<identifier> rather than random names.
+# TODO: Make a new counter per scope.
 
 class renamer(object):
     CharSet1 = '_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
