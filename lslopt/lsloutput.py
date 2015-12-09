@@ -70,7 +70,7 @@ class outscript(object):
                 elif not self.globalmode:
                     # Important inside lists!!
                     return '((float)' + str(int(value)) + ')'
-            s = str(value)
+            s = repr(value)
             if s in ('inf', '-inf', 'nan'):
                 return '((float)"' + s + '")' # this shouldn't appear in globals
             # Try to remove as many decimals as possible but keeping the F32 value intact
