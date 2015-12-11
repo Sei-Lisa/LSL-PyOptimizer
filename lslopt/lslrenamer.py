@@ -94,8 +94,8 @@ class renamer(object):
             # name is made by concatenating an 'e', then the state name, then
             # the event name, e.g. edefaultstate_entry. Since a new identifier
             # having part of the state name is created for every event in that
-            # state, the shortest the state name, the least bytes it will use.
-            # Furthermore, a state switch instruction further adds a Unicode
+            # state, the shorter the state name, the lesser bytes it will use.
+            # Furthermore, a state switch instruction also adds a Unicode
             # string (all other identifier names use one-byte strings), which
             # is the more reason to shorten it as much as possible.
             #
@@ -118,7 +118,13 @@ class renamer(object):
                 if event_name == 'listen':
                     event_name = 'chat'
                 if event_name == 'run_time_permissions':
-                    event_name = 'run_time_perms'
+                    # LSO internally translates run_time_permissions to 'chat'.
+                    # But it doesn't include identifiers in the object anyway,
+                    # so this is here for documentation purposes only.
+                    #if lslcommon.LSO:
+                    #    event_name = 'chat'
+                    #else:
+                        event_name = 'run_time_perms'
                 if event_name == 'remote_data':
                     event_name = 'remote_event'
                 ReusableNames.add('e' + name + event_name)
