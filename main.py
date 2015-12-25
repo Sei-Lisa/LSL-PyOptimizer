@@ -164,6 +164,7 @@ Usage: {progname}
     [--version]                 print this program's version
     [-o|--output=<filename>]    output to file rather than stdout
     [-H|--header]               add the script as a comment in Firestorm format
+    [-T|--timestamp]            add a timestamp as a comment at the beginning
     [-p|--preproc=mode]         run external preprocessor (see below for modes)
                                 (resets the preprocessor command line so far)
     [-P|--prearg=<arg>]         add parameter to preprocessor's command line
@@ -272,7 +273,7 @@ Optimizer options (+ means active by default, - means inactive by default):
                        copy-paste-able to the viewer.
   skippreproc        + Skip preprocessor directives in the source as if they
                        were comments. Not useful unless the script is itself
-                       the output of a preprocessor like cpp, which inserts
+                       the output of a preprocessor like GNU cpp, which inserts
                        directives like: # 123 "filename".
   explicitcast       - Add explicit casts where they are implicit. This option
                        is useless with 'optimize' and 'optsigns', and is of
@@ -295,8 +296,9 @@ def main():
         ))
 
     try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], 'hO:o:p:P:H',
+        opts, args = getopt.gnu_getopt(sys.argv[1:], 'hO:o:p:P:HT',
             ('optimizer-options=', 'help', 'version', 'output=', 'header',
+            'timestamp',
             'preproc=', 'precmd=', 'prearg=', 'prenodef', 'preshow',
             'avid=', 'avname=', 'assetid=', 'scriptname='))
     except getopt.GetoptError:
@@ -312,6 +314,7 @@ def main():
     preproc = 'none'
     predefines = True
     script_header = ''
+    script_timestamp = ''
     mcpp_mode = False
     preshow = False
 
@@ -394,6 +397,9 @@ def main():
         elif opt in ('-H', '--header'):
             script_header = True
 
+        elif opt in ('-T', '--timestamp'):
+            script_timestamp = True
+
         elif opt == '--avid':
             avid = arg
 
@@ -427,6 +433,14 @@ def main():
 
     if script_header:
         script_header = ScriptHeader(script, avname)
+
+    if script_timestamp:
+        import time
+        tmp = time.time()
+        script_timestamp = time.strftime(
+            '// Generated on %Y-%m-%dT%H:%M:%S.{0:06d}Z\n'
+            .format(int(tmp % 1 * 1000000)), time.gmtime(tmp))
+        del tmp
 
     if shortname == '':
         shortname = os.path.basename(fname)
@@ -490,19 +504,17 @@ def main():
         except EParse as e:
             sys.stderr.write(e[0] + '\n')
             return 1
-        del p
-        del script
+        del p, script
 
         opt = optimizer()
         ts = opt.optimize(ts, options)
         del opt
 
         outs = outscript()
-        script = script_header + outs.output(ts, options)
-        del outs
-        del ts
+        script = script_header + script_timestamp + outs.output(ts, options)
+        del outs, ts
 
-    del script_header
+    del script_header, script_timestamp
 
     if outfile == '-':
         sys.stdout.write(script)
