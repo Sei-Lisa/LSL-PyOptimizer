@@ -60,14 +60,12 @@ def fieldpos(inp, sep, n):
 class EParse(Exception):
 
     def __init__(self, parser, msg):
-        errorpos = parser.errorpos
-        if parser.script[errorpos:errorpos+1] == '\n':
-            errorpos += 1
-        lno = parser.script.count('\n', 0, errorpos)
-        cno = errorpos - fieldpos(parser.script, '\n', lno)
+        self.errorpos = parser.errorpos
+        self.lno = parser.script.count('\n', 0, self.errorpos)
+        self.cno = self.errorpos - fieldpos(parser.script, '\n', self.lno)
         # Note the column number reported is in bytes.
 
-        msg = u"(Line %d char %d): ERROR: %s" % (lno + 1, cno + 1, msg)
+        msg = u"(Line %d char %d): ERROR: %s" % (self.lno + 1, self.cno + 1, msg)
         super(EParse, self).__init__(msg)
 
 class EParseUEOF(EParse):
@@ -309,11 +307,11 @@ class parser(object):
     def GetToken(self):
         """Lexer"""
 
-        # Keep track of the current position. If an error occurs, it will happen at the start of this token.
-        self.errorpos = self.pos
-
         try:
             while self.pos < self.length:
+                # If an error occurs, it will happen at the start of this token.
+                self.errorpos = self.pos
+
                 c = self.script[self.pos]
                 self.pos += 1
 
@@ -2388,14 +2386,14 @@ list lazy_list_set(list L, integer i, list v)
         # incomplete parsing pass, gathering globals with their types and
         # function arguments. And that's what we do.
 
-        self.pos = 0
+        self.pos = self.errorpos = 0
         self.tok = self.GetToken()
 
         self.globals = self.BuildTempGlobalsTable()
 
         # Restart
 
-        self.pos = 0
+        self.pos = self.errorpos = 0
         self.tok = self.GetToken()
 
         # Reserve spots at the beginning for functions we add

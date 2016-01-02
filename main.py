@@ -19,15 +19,21 @@
 
 # This is the main executable program that imports the libraries.
 
-from lslopt.lslparse import parser,EParse
+from lslopt.lslparse import parser,EParse,fieldpos
 from lslopt.lsloutput import outscript
 from lslopt.lsloptimizer import optimizer
 import sys, os, getopt, re
 import lslopt.lslcommon
 
 
-VERSION = '0.1.3alpha'
+VERSION = '0.2.0beta'
 
+
+def ReportError(script, e):
+    sys.stderr.write(script[fieldpos(script, '\n', e.lno):
+                            fieldpos(script, '\n', e.lno+1)-1] + '\n')
+    sys.stderr.write(' ' * e.cno + '^\n')
+    sys.stderr.write(e[0] + '\n')
 
 class UniConvScript(object):
     '''Converts the script to Unicode, setting the properties required by
@@ -467,6 +473,8 @@ def main():
                 # need the result.
                 UniConvScript(script).to_unicode()
             except EParse as e:
+                # We don't call ReportError to prevent problems due to
+                # displaying invalid UTF-8
                 sys.stderr.write(e[0] + '\n')
                 return 1
         script = PreparePreproc(script)
@@ -502,7 +510,7 @@ def main():
         try:
             ts = p.parse(script, options)
         except EParse as e:
-            sys.stderr.write(e[0] + '\n')
+            ReportError(script, e)
             return 1
         del p, script
 
