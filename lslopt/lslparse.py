@@ -646,7 +646,6 @@ class parser(object):
         if tok0 == '-':
             self.NextToken()
             if self.tok[0] in ('INTEGER_VALUE', 'FLOAT_VALUE'):
-                tok0 = self.tok[0]
                 val = self.tok[1]
                 self.NextToken()
                 return {'nt':CONST, 't':'integer' if type(val) == int else 'float', 'value':-val}
