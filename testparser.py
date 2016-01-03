@@ -467,6 +467,17 @@ class Test03_Optimizer(UnitTestCase):
         self.assertRaises(EParseAlreadyDefined, self.parser.parse,
             'default { timer() {} timer() {} }')
 
+        try:
+            self.parser.parse('default { timer() { return } }')
+            # should raise EParseSyntax, so it should never get here
+            self.assertFalse(True)
+        except EParseSyntax as e:
+            # should err before first closing brace
+            self.assertEqual(e.cno, 27)
+        except:
+            # should raise no other exception
+            self.assertFalse(True)
+
     def tearDown(self):
         del self.parser
         del self.opt

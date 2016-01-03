@@ -642,18 +642,22 @@ class parser(object):
         """
         tok0 = self.tok[0]
         val = self.tok[1] if len(self.tok) > 1 else None
-        self.NextToken()
         CONST = 'CONST'
-        if tok0 == '-' and self.tok[0] in ('INTEGER_VALUE', 'FLOAT_VALUE'):
-            tok0 = self.tok[0]
-            val = self.tok[1]
+        if tok0 == '-':
             self.NextToken()
-            return {'nt':CONST, 't':'integer' if type(val) == int else 'float', 'value':-val}
+            if self.tok[0] in ('INTEGER_VALUE', 'FLOAT_VALUE'):
+                tok0 = self.tok[0]
+                val = self.tok[1]
+                self.NextToken()
+                return {'nt':CONST, 't':'integer' if type(val) == int else 'float', 'value':-val}
         if tok0 == 'INTEGER_VALUE':
+            self.NextToken()
             return {'nt':CONST, 't':'integer', 'value':val}
         if tok0 == 'FLOAT_VALUE':
+            self.NextToken()
             return {'nt':CONST, 't':'float', 'value':val}
         if tok0 == 'STRING_VALUE':
+            self.NextToken()
             if self.allowmultistrings:
                 while self.tok[0] == 'STRING_VALUE':
                     val += self.tok[1]
@@ -663,14 +667,19 @@ class parser(object):
         #if tok0 == 'KEY_VALUE':
         #    return [CONST, 'key', val]
         if tok0 == 'VECTOR_VALUE':
+            self.NextToken()
             return {'nt':CONST, 't':'vector', 'value':val}
         if tok0 == 'ROTATION_VALUE':
+            self.NextToken()
             return {'nt':CONST, 't':'rotation', 'value':val}
         if tok0 == 'LIST_VALUE':
+            self.NextToken()
             return {'nt':CONST, 't':'list', 'value':val}
         if tok0 in ('TRUE', 'FALSE'):
+            self.NextToken()
             return {'nt':CONST, 't':'integer', 'value':int(tok0 == 'TRUE')}
         if tok0 == '<':
+            self.NextToken()
             val = [self.Parse_expression()]
             self.expect(',')
             self.NextToken()
@@ -709,11 +718,13 @@ class parser(object):
             return {'nt':'ROTATION', 't':'rotation', 'ch':val}
 
         if tok0 == '[':
+            self.NextToken()
             val = self.Parse_optional_expression_list()
             self.expect(']')
             self.NextToken()
             return {'nt':'LIST', 't':'list', 'ch':val}
         if tok0 == 'PRINT':
+            self.NextToken()
             self.expect('(')
             self.NextToken()
             expr = self.Parse_expression()
@@ -728,6 +739,7 @@ class parser(object):
                 raise EParseUEOF(self)
             raise EParseSyntax(self)
         name = val
+        self.NextToken()
 
         # Course of action decided here.
         tok0 = self.tok[0]
