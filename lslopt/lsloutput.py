@@ -71,8 +71,13 @@ class outscript(object):
                     # Important inside lists!!
                     return '((float)' + str(int(value)) + ')'
             s = repr(value)
-            if s in ('inf', '-inf', 'nan'):
+            if s == 'nan':
                 return '((float)"' + s + '")' # this shouldn't appear in globals
+            if s in ('inf', '-inf'):
+                s = '1e40' if s == 'inf' else '-1e40'
+                if self.globalmode:
+                    return s
+                return '((float)' + s + ')'
             # Try to remove as many decimals as possible but keeping the F32 value intact
             exp = s.find('e')
             if ~exp:

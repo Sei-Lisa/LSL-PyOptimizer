@@ -1228,10 +1228,9 @@ class foldconst(object):
             + nt # pragma: no cover
 
     def IsValidGlobalIdOrConst(self, node):
-        # inf and nan can't be represented as a simple constant
+        # nan can't be represented as a simple constant; all others are valid
         return not (node['nt'] == 'CONST' and node['t'] == 'float'
-                    and (math.isinf(node['value'])
-                         or math.isnan(node['value'])))
+                    and math.isnan(node['value']))
 
     def IsValidGlobalConstant(self, decl):
         if 'ch' not in decl:
@@ -1261,6 +1260,6 @@ class foldconst(object):
                 self.FoldTree(tree, idx)
                 self.globalmode = False
                 if warningpass and not self.IsValidGlobalConstant(tree[idx]):
-                    warning('Expression does not resolve to a simple constant.')
+                    warning("Expression in globals doesn't resolve to a simple constant.")
             else:
                 self.FoldTree(tree, idx)
