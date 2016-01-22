@@ -1404,6 +1404,8 @@ def llRot2Angle(r):
 def llRot2Axis(r):
     assert isrotation(r)
     r = q2f(r)
+    if r[3] < 0:
+        return llVecNorm(Vector((-r[0], -r[1], -r[2])))
     return llVecNorm(Vector((r[0], r[1], r[2])))
 
 def llRot2Euler(r):
