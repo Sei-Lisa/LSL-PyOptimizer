@@ -867,6 +867,7 @@ def llCSV2List(s):
             lastwascomma = False
             lastidx = i+1
         else:
+            lastwascomma = False
             if c == u',':
                 lastwascomma = True
                 ret.append(s[lastidx:i])
