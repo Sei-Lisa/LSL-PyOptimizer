@@ -852,7 +852,7 @@ def llCSV2List(s):
     assert isstring(s)
 
     bracketlevel = 0
-    lastwascomma = False
+    lastwascomma = True     # first space is eaten!!!
     lastidx = 0
     i = 0
     ret = []
