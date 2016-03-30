@@ -945,7 +945,7 @@ class foldconst(object):
                         else:
                             value = fn(*tuple(arg['value'] for arg in child))
                         if not self.foldtabs and isinstance(value, unicode) and '\t' in value:
-                            warning('Tab in function result and foldtabs option not used.')
+                            warning("Can't optimize call to %s because it would generate a tab character (you can force the optimization with the foldtabs option)." % node['name'])
                             return
                         parent[index] = {'nt':'CONST', 't':node['t'], 'value':value}
                     except lslfuncs.ELSLCantCompute:
