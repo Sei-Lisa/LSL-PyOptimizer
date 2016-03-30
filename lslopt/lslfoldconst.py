@@ -944,8 +944,17 @@ class foldconst(object):
                                        event=self.CurEvent)
                         else:
                             value = fn(*tuple(arg['value'] for arg in child))
-                        if not self.foldtabs and isinstance(value, unicode) and '\t' in value:
-                            warning("Can't optimize call to %s because it would generate a tab character (you can force the optimization with the foldtabs option)." % node['name'])
+                        if not self.foldtabs:
+                            generatesTabs = ( isinstance(value, unicode)
+                                              and '\t' in value
+                                             or type(value) == list
+                                              and any(isinstance(x, unicode)
+                                                      and '\t' in x
+                                                      for x in value
+                                                     )
+                                            )
+                            if generatesTabs:
+                                warning("Can't optimize call to %s because it would generate a tab character (you can force the optimization with the foldtabs option)." % node['name'])
                             return
                         parent[index] = {'nt':'CONST', 't':node['t'], 'value':value}
                     except lslfuncs.ELSLCantCompute:
