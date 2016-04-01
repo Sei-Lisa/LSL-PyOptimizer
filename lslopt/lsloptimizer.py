@@ -68,6 +68,7 @@ class optimizer(foldconst, renamer, deadcode):
         self.addstrings = 'addstrings' in options
 
         self.foldtabs = 'foldtabs' in options
+        self.nofoldtabs = 'nofoldtabs' in options
 
         self.shrinknames = 'shrinknames' in options
 
