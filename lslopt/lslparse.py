@@ -2049,9 +2049,7 @@ list lazy_list_set(list L, integer i, list v)
                         # Use LSL's dull global expression.
                         value = self.Parse_simple_expr()
                         self.expect(';')
-                    self.NextToken()
                 else: # must be semicolon
-                    self.NextToken()
                     value = None
 
                 assert self.scopeindex == 0
@@ -2059,6 +2057,7 @@ list lazy_list_set(list L, integer i, list v)
                 if value is not None:
                     value = self.autocastcheck(value, typ)
                     decl['ch'] = [value]
+                self.NextToken()
                 self.AddSymbol('v', 0, name, Loc=len(self.tree), Type=typ)
                 self.tree.append(decl)
 
