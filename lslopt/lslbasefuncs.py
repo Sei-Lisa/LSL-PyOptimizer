@@ -140,7 +140,43 @@ def F32(f, f32=True):
 
 # These are other approaches that are not fully debugged:
 
-#    # Another alternative. frexp and ldexp solve a lot (but are still troublesome):
+# This one is tested against c_float, but not carefully verified:
+#    if math.isnan(f) or math.isinf(f) or f == 0.0:
+#        return f
+#
+#    m, x = math.frexp(abs(f))
+#
+#    if x > 128:
+#        return math.copysign(Infinity, f)
+#
+#    if x < -125:
+#        m = math.ldexp(m, x + 149)
+#        x = -125
+#    else:
+#        m = m * 0x1000000
+#
+#    frac = m % 1
+#    m -= frac
+#    assert m.is_integer()
+#    m = int(m)
+#
+#    # Round to even
+#    if frac > 0.5 or frac == 0.5 and (m & 1):
+#        m += 1
+#        if m == 0x1000000:
+#            m = 0x800000
+#            x += 1
+#
+#            # re-check for overflow
+#            if x > 128:
+#                return math.copysign(Infinity, f)
+#
+#    if m == 0:
+#        return math.copysign(0.0, f)
+#
+#    return math.ldexp(math.copysign(m/16777216.0, f), x)
+
+#    # Another alternative.
 #    m, x = math.frexp(abs(f))
 #    if x > 128:
 #        return math.copysign(Infinity, f)
