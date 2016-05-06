@@ -228,6 +228,11 @@ Optimizer options (+ means active by default, - means inactive by default):
                        will go to the last label with that name). This flag
                        works around that limitation by replacing the names of
                        the labels in the output with unique ones.
+  brokennodefault    + Mimic Firestorm's legacy broken behaviour when the
+                       'default' label in a switch statement is absent. Rather
+                       than jumping to the end of the switch in that case
+                       (which is how it behaves when this option is not set),
+                       it falls through and executes the first 'case' label.
 
   Deprecated / compatibility syntax extensions options:
 
@@ -300,7 +305,7 @@ def main():
     # Default options
     options = set(('extendedglobalexpr','extendedtypecast','extendedassignment',
         'allowkeyconcat','allowmultistrings','skippreproc','optimize',
-        'optsigns','optfloats','constfold','dcr'
+        'optsigns','optfloats','constfold','dcr', 'brokennodefault',
         ))
 
     try:

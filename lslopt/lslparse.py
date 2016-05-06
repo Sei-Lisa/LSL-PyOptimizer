@@ -1674,10 +1674,15 @@ list lazy_list_set(list L, integer i, list v)
                     ]})
 
             if switchcasedefault is None:
-                switchcasedefault = brk
-                self.breakstack[-1][2] = True
-            prelude.append({'nt':'JUMP', 't':None, 'name':switchcasedefault,
-                'scope':blkscope})
+                warning("No 'default:' label in switch statement")
+                if self.brokennodefault:
+                    warning("Broken behaviour active - falling through")
+                if not self.brokennodefault:
+                    switchcasedefault = brk
+                    self.breakstack[-1][2] = True
+            if switchcasedefault is not None:
+                prelude.append({'nt':'JUMP', 't':None, 'name':switchcasedefault,
+                    'scope':blkscope})
             last = self.breakstack.pop()
             if last[2]:
                 blk.append({'nt':'@', 'name':brk, 'scope':blkscope})
@@ -2310,6 +2315,9 @@ list lazy_list_set(list L, integer i, list v)
         self.enableswitch = 'enableswitch' in options
         if self.enableswitch:
             self.keywords |= frozenset(('switch', 'case', 'break'))
+
+        # Broken behaviour in the absence of a default: label in a switch stmt.
+        self.brokennodefault = 'brokennodefault' in options
 
         # Allow brackets for assignment of list elements e.g. mylist[5]=4
         self.lazylists = 'lazylists' in options
