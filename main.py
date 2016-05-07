@@ -30,8 +30,10 @@ VERSION = '0.2.0beta'
 
 
 def ReportError(script, e):
-    sys.stderr.write(script[fieldpos(script, '\n', e.lno):
-                            fieldpos(script, '\n', e.lno+1)-1] + '\n')
+    lastpos = fieldpos(script, '\n', e.lno+1)-1
+    assert lastpos != -1
+    if lastpos < -1: lastpos = len(script) # may hit EOF
+    sys.stderr.write(script[fieldpos(script, '\n', e.lno):lastpos] + '\n')
     sys.stderr.write(' ' * e.cno + '^\n')
     sys.stderr.write(e[0] + '\n')
 
