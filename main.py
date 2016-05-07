@@ -228,11 +228,6 @@ Optimizer options (+ means active by default, - means inactive by default):
                        will go to the last label with that name). This flag
                        works around that limitation by replacing the names of
                        the labels in the output with unique ones.
-  brokennodefault    + Mimic Firestorm's legacy broken behaviour when the
-                       'default' label in a switch statement is absent. Rather
-                       than jumping to the end of the switch in that case
-                       (which is how it behaves when this option is not set),
-                       it falls through and executes the first 'case' label.
 
   Deprecated / compatibility syntax extensions options:
 
@@ -247,6 +242,8 @@ Optimizer options (+ means active by default, - means inactive by default):
                        Like lazylists, it's implemented for compatibility with
                        Firestorm, but not recommended. Note that the operand to
                        switch() may be evaluated more than once.
+  errmissingdefault  + Throw an error in case the 'default:' label of a switch
+                       statement is missing.
   funcoverride       - Allow duplicate function definitions to override the
                        previous definition. For compatibility with Firestorm's
                        optimizer.
@@ -305,7 +302,7 @@ def main():
     # Default options
     options = set(('extendedglobalexpr','extendedtypecast','extendedassignment',
         'allowkeyconcat','allowmultistrings','skippreproc','optimize',
-        'optsigns','optfloats','constfold','dcr', 'brokennodefault',
+        'optsigns','optfloats','constfold','dcr','errmissingdefault',
         ))
 
     try:

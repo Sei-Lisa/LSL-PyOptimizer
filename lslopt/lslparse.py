@@ -148,6 +148,12 @@ class EParseManyDefaults(EParse):
         super(EParseManyDefaults, self).__init__(parser,
             u"multiple 'default' labels inside 'switch' statement")
 
+class EParseMissingDefault(EParse):
+    def __init__(self, parser):
+        super(EParseMissingDefault, self).__init__(parser,
+            u"Missing 'default:' label inside 'switch' statement; disable"
+            u" option 'errmissingdefault' to disable this error.")
+
 class EParseInvalidBreak(EParse):
     def __init__(self, parser):
         super(EParseInvalidBreak, self).__init__(parser,
@@ -1674,15 +1680,15 @@ list lazy_list_set(list L, integer i, list v)
                     ]})
 
             if switchcasedefault is None:
-                warning("No 'default:' label in switch statement")
-                if self.brokennodefault:
-                    warning("Broken behaviour active - falling through")
-                if not self.brokennodefault:
-                    switchcasedefault = brk
-                    self.breakstack[-1][2] = True
-            if switchcasedefault is not None:
-                prelude.append({'nt':'JUMP', 't':None, 'name':switchcasedefault,
-                    'scope':blkscope})
+                if self.errmissingdefault:
+                    raise EParseMissingDefault(self)
+                switchcasedefault = brk
+                self.breakstack[-1][2] = True
+            # TODO: Check if this JUMP is necessary
+            # (it won't be if the default label is the next instruction)
+            # This is arguably better done after DCR.
+            prelude.append({'nt':'JUMP', 't':None, 'name':switchcasedefault,
+                'scope':blkscope})
             last = self.breakstack.pop()
             if last[2]:
                 blk.append({'nt':'@', 'name':brk, 'scope':blkscope})
@@ -2317,7 +2323,7 @@ list lazy_list_set(list L, integer i, list v)
             self.keywords |= frozenset(('switch', 'case', 'break'))
 
         # Broken behaviour in the absence of a default: label in a switch stmt.
-        self.brokennodefault = 'brokennodefault' in options
+        self.errmissingdefault = 'errmissingdefault' in options
 
         # Allow brackets for assignment of list elements e.g. mylist[5]=4
         self.lazylists = 'lazylists' in options
