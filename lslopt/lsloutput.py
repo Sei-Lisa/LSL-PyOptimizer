@@ -53,9 +53,11 @@ class outscript(object):
                     else:
                         pfx = '((key)'
                         sfx = ')'
-            if '\t' in value:
-                warning('A string contains a tab. Tabs are expanded to four'
-                        ' spaces by the viewer when copy-pasting the code.')
+            if '\t' in value and self.warntabs:
+                warning("A string contains a tab. Tabs are expanded to four"
+                        " spaces by the viewer when copy-pasting the code"
+                        " (disable this warning by disabling the 'warntabs'"
+                        " option).")
             return pfx + '"' + value.encode('utf8').replace('\\','\\\\') \
                 .replace('"','\\"').replace('\n','\\n') + '"' + sfx
         if tvalue == int:
@@ -428,14 +430,15 @@ class outscript(object):
 
         assert False, "Internal error: node type not handled: " + nt # pragma: no cover
 
-    def output(self, treesymtab, options = ('optsigns','optfloats')):
+    def output(self, treesymtab, options = ('optsigns','optfloats','warntabs')):
         # Build a sorted list of dict entries
         self.tree, self.symtab = treesymtab
 
-        # Optimize signs
+        # Grab options
         self.optsigns = 'optsigns' in options
         self.optfloats = 'optfloats' in options
         self.foldconst = 'constfold' in options
+        self.warntabs = 'warntabs' in options
 
         ret = ''
         self.indent = '    '

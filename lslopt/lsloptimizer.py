@@ -57,7 +57,8 @@ class optimizer(foldconst, renamer, deadcode):
             ret['X'] = value['X']
         return ret
 
-    def optimize(self, treesymtab, options = ('optimize','constfold','dcr')):
+    def optimize(self, treesymtab, options = ('optimize','constfold','dcr',
+                 'warntabs')):
         """Optimize the symbolic table symtab in place. Requires a table of
         predefined functions for folding constants.
         """
@@ -68,7 +69,7 @@ class optimizer(foldconst, renamer, deadcode):
         self.addstrings = 'addstrings' in options
 
         self.foldtabs = 'foldtabs' in options
-        self.nofoldtabs = 'nofoldtabs' in options
+        self.warntabs = 'warntabs' in options
 
         self.shrinknames = 'shrinknames' in options
 

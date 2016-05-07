@@ -281,8 +281,9 @@ Optimizer options (+ means active by default, - means inactive by default):
                        expansion of functions that produce strings with tabs.
                        The resulting source isn't guaranteed to be
                        copy-paste-able to the viewer.
-  nofoldtabs         - Suppress warning when a function can't be optimized
-                       because it generates a string or list with a tab.
+  warntabs           + Suppress warning when a function can't be optimized
+                       because it generates a string or list with a tab, or
+                       when a string contains a tab.
   skippreproc        + Skip preprocessor directives in the source as if they
                        were comments. Not useful unless the script is itself
                        the output of a preprocessor like GNU cpp, which inserts
@@ -303,7 +304,7 @@ def main():
 
     # Default options
     options = set(('extendedglobalexpr','extendedtypecast','extendedassignment',
-        'allowkeyconcat','allowmultistrings','skippreproc','optimize',
+        'allowkeyconcat','allowmultistrings','skippreproc','warntabs','optimize',
         'optsigns','optfloats','constfold','dcr','errmissingdefault',
         ))
 

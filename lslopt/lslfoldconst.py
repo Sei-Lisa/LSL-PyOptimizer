@@ -945,14 +945,14 @@ class foldconst(object):
                         else:
                             value = fn(*tuple(arg['value'] for arg in child))
                         if not self.foldtabs:
-                            if not self.nofoldtabs:
-                                generatesTabs = (
-                                    isinstance(value, unicode) and '\t' in value
-                                    or type(value) == list and any(isinstance(x, unicode) and '\t' in x for x in value)
-                                    )
-                                if generatesTabs:
-                                    warning("Can't optimize call to %s because it would generate a tab character (you can force the optimization with the foldtabs option, or disable this warning with the nofoldtabs option)." % node['name'])
-                            return
+                            generatesTabs = (
+                                isinstance(value, unicode) and '\t' in value
+                                or type(value) == list and any(isinstance(x, unicode) and '\t' in x for x in value)
+                                )
+                            if generatesTabs:
+                                if self.warntabs:
+                                    warning("Can't optimize call to %s because it would generate a tab character (you can force the optimization with the 'foldtabs' option, or disable this warning by disabling the 'warntabs' option)." % node['name'])
+                                return
                         parent[index] = {'nt':'CONST', 't':node['t'], 'value':value}
                     except lslfuncs.ELSLCantCompute:
                         # Don't transform the tree if function is not computable
