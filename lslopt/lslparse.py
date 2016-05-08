@@ -1695,21 +1695,26 @@ list lazy_list_set(list L, integer i, list v)
             if switchcasedefault is None:
                 if self.errmissingdefault:
                     raise EParseMissingDefault(self)
-                # Check if it's worth adding a break. If there's no executable
-                # code, there's no point. However, this check is insufficient.
-                # It misses SEF expressions. For that reason, this is best left
-                # up to a later optimizer that knows about SEF. But we do a
-                # preliminary elimination here.
+                # Check if it's worth adding a break label. If there's no
+                # executable code, there's no point. However, this check is
+                # insufficient. It misses SEF expressions. For that reason,
+                # this is best left up to a later optimizer that knows about
+                # SEF. But we do a preliminary elimination here.
                 if self.does_something(blk):
                     switchcasedefault = brk
                     self.breakstack[-1][2] = True
             else:
-                # TODO: Keep checking until there's output-generating code.
-                # For example, this isn't optimized due to the semicolon:
-                #    switch(1) { ; default: 1; }
-                if blk and blk[0]['nt'] == '@' and blk[0]['name'] == switchcasedefault:
-                    switchcasedefault = None
-                    del blk[0]
+                # Check if no code up to the default label does anything.
+                # If so, remove the label and don't generate the jump.
+                for i in xrange(len(blk)):
+                    node = blk[i]
+                    if node['nt'] == '@' and node['name'] == switchcasedefault:
+                        switchcasedefault = None
+                        del blk[i]
+                        break
+                    if self.does_something([node]):
+                        break
+                del i, node
 
             if switchcasedefault is not None:
                 prelude.append({'nt':'JUMP', 't':None, 'name':switchcasedefault,
