@@ -1708,7 +1708,8 @@ list lazy_list_set(list L, integer i, list v)
                 # If so, remove the label and don't generate the jump.
                 for i in xrange(len(blk)):
                     node = blk[i]
-                    if node['nt'] == '@' and node['name'] == switchcasedefault:
+                    if (node['nt'] == '@' and node['name'] == switchcasedefault
+                       and node['scope'] == blkscope):
                         switchcasedefault = None
                         del blk[i]
                         break
