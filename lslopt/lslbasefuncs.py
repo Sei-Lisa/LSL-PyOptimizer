@@ -678,7 +678,7 @@ def div(a, b, f32=True):
                     return - a//-b # that's -(a//-b) not (-a)//-b
                 return a//b
             ret = F32(ff(a)/ff(b), f32)
-            if math.isnan(res): # A NaN result gives a math error.
+            if math.isnan(ret): # A NaN result gives a math error.
                 raise ELSLMathError
             return ret
         if ta == Vector:
