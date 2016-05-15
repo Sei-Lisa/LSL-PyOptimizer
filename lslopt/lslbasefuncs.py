@@ -1024,8 +1024,7 @@ def llList2CSV(lst):
     for elem in lst:
         # This always uses LSO rules for float to string.
         if type(elem) == float:
-            from struct import pack
-            if math.isnan(elem) and pack('>f', elem)[0:1] == b'\xff':
+            if math.isnan(elem) and math.copysign(1.0, elem) < 0:
                 ret.append(u'-nan')
             else:
                 ret.append(u'%.6f' % elem)
