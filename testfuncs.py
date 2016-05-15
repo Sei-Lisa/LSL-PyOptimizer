@@ -51,7 +51,9 @@ def reallyequal(actual, expected, tol):
         if actual == 0.0:
             return repr(actual) == repr(expected)
         elif math.isnan(actual):
-            return math.isnan(expected)
+            # This compares the sign of NaN as well
+            from struct import pack
+            return pack('>f', actual) == pack('>f', expected)
         return abs(actual - expected) <= tol
 
     # Deal with tuples and lists (item-by-item, recursively)
@@ -830,6 +832,9 @@ def do_tests():
     test('llTan(F32(math.pi))', F('0x1.777A5Cp-24'))
     test('llTan(F32(math.pi*.5))', -22877330.)
     test('llTan(F("0x1.921FB4p0"))', 13245400.)
+    test('llAsin(2.0)', NaN)
+    test('llAcos(2.0)', NaN)
+    test('llAtan2(0.0, 0.0)', 0.0)
 
     # nan and -nan in llList2CSV
     test('llList2CSV([llSin(F32(4e38))])', u'-nan')
@@ -1023,7 +1028,7 @@ def do_tests():
     test('llModPow(41, 1, 17)', 7)
 
     test('llListFindList([], [])', 0)
-    test('llListFindList([NaN], [NaN])', 0) # I swear
+    test('llListFindList([NaN, -NaN], [-NaN, NaN])', 0) # I swear
     test('llListFindList([-0.], [0.])', 0) # Really.
     test('llListFindList([0.], [-0.])', 0) # Yes.
     test('llListFindList([1, NaN, 1., NaN], [1., NaN])', 2)
