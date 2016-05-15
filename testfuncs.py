@@ -493,6 +493,9 @@ def do_tests():
 
     shouldexcept('div(1.0, 0.0)', ELSLMathError)
     shouldexcept('div(1, 0)', ELSLMathError)
+    shouldexcept('div(NaN, 1)', ELSLMathError)
+    shouldexcept('div(1, NaN)', ELSLMathError)
+    shouldexcept('div(F32(1e40), F32(1e40))', ELSLMathError)
     shouldexcept('zstr("blah")', ELSLInvalidType)
     test(r'zstr(Key(u"xy\0zzy"))', Key(u'xy'))
     test('typecast(Infinity, unicode)', u'Infinity')

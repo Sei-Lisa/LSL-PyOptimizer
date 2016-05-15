@@ -669,8 +669,6 @@ def div(a, b, f32=True):
         if b == 0:
             raise ELSLMathError
         if ta in (int, float):
-            if math.isnan(a): # NaN/anything gives math error
-                raise ELSLMathError
             if ta == int and tb == int:
                 # special case
                 if a == -2147483648 and b == -1:
@@ -679,7 +677,10 @@ def div(a, b, f32=True):
                     # signs differ - Python rounds towards -inf, we need rounding towards 0
                     return - a//-b # that's -(a//-b) not (-a)//-b
                 return a//b
-            return F32(ff(a)/ff(b), f32)
+            ret = F32(ff(a)/ff(b), f32)
+            if math.isnan(res): # A NaN result gives a math error.
+                raise ELSLMathError
+            return ret
         if ta == Vector:
             a = v2f(a)
             b = ff(b)
