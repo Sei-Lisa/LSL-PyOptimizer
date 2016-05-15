@@ -39,6 +39,14 @@ class ETestFailed(Exception):
         super(self.__class__, self).__init__("Test failed")
     pass
 
+# Not failproof because we can't redefine float.__repr__
+# so floats in vectors/rotations/lists aren't handled.
+class newfloat(float):
+    def __repr__(n):
+        if not math.isnan(n):
+            return float.__repr__(n)
+        return '-nan' if math.copysign(1, n) < 0 else 'nan'
+
 def reallyequal(actual, expected, tol):
     if tol is None:
         return repr(actual) == repr(expected)
@@ -50,10 +58,11 @@ def reallyequal(actual, expected, tol):
     if isinstance(actual, float):
         if actual == 0.0:
             return repr(actual) == repr(expected)
-        elif math.isnan(actual):
+        if math.isnan(actual):
             # This compares the sign of NaN as well
-            from struct import pack
-            return pack('>f', actual) == pack('>f', expected)
+            return math.isnan(expected) and math.copysign(1, actual) == math.copysign(1, expected)
+        if math.isinf(actual) and math.isinf(expected):
+            return actual == expected
         return abs(actual - expected) <= tol
 
     # Deal with tuples and lists (item-by-item, recursively)
@@ -67,7 +76,7 @@ def test(fn, expected):
     global tests
     global errors
     global untested
-    tol = None  # get rid of tolerance test
+    tol = 0.0  # compare to zero tolerance
     tests += 1
     if StopAtFirstError:
         if errors:
@@ -75,6 +84,10 @@ def test(fn, expected):
             return
 
     actual = eval(fn)
+    if isinstance(actual, float):
+       actual = newfloat(actual)
+    if isinstance(expected, float):
+       expected = newfloat(expected)
     werr = sys.stderr.write
     if not reallyequal(actual, expected, tol):
         werr("Test failed: " + fn + '\n')
@@ -492,6 +505,8 @@ def test_jira_fixes():
 # End JSON tests from wiki
 
 def do_tests():
+    # Test our own test function for NaNs
+    test('reallyequal(NaN, Indet, 0.0)', False)
 
     shouldexcept('div(1.0, 0.0)', ELSLMathError)
     shouldexcept('div(1, 0)', ELSLMathError)
@@ -787,10 +802,10 @@ def do_tests():
     exp = [
         NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,
         NaN,0.,0.,0.,0.,0.,1.,1.,Infinity,-Infinity,Infinity,Infinity,Infinity,
-        NaN,0.,NaN,F('0x1.D0662Ep-3'),F('-0x1.E79E7Cp-2'),NaN,1.,1.,NaN,F('-0x1.0CCCCCp+1'),F('0x1.1A3D6Ep+2'),NaN,Infinity,
-        NaN,0.,NaN,.25,-0.5,NaN,1.,1.,NaN,-2.,4.,NaN,Infinity,
-        NaN,NaN,NaN,1.,-1.,NaN,1.,1.,NaN,-1.,1.,NaN,NaN,
-        NaN,Infinity,NaN,100.,-10.,NaN,1.,1.,NaN,F('-0x1.99999Ap-4'),F('0x1.47AE16p-7'),NaN,0.,
+        NaN,0.,Indet,F('0x1.D0662Ep-3'),F('-0x1.E79E7Cp-2'),Indet,1.,1.,Indet,F('-0x1.0CCCCCp+1'),F('0x1.1A3D6Ep+2'),Indet,Infinity,
+        NaN,0.,Indet,.25,-0.5,Indet,1.,1.,Indet,-2.,4.,Indet,Infinity,
+        NaN,NaN,Indet,1.,-1.,Indet,1.,1.,Indet,-1.,1.,Indet,NaN,
+        NaN,Infinity,Indet,100.,-10.,Indet,1.,1.,Indet,F('-0x1.99999Ap-4'),F('0x1.47AE16p-7'),Indet,0.,
         NaN,Infinity,Infinity,Infinity,-Infinity,Infinity,1.,1.,0.,0.,0.,0.,0.,
         NaN,Infinity,Infinity,Infinity,Infinity,Infinity,1.,1.,0.,0.,0.,0.,0.,
         NaN,Infinity,F('0x1.F791EEp+6'),100.,10.,F('0x1.4248F0p0'),1.,1.,F('0x1.96B230p-1'),F('0x1.99999Ap-4'),F('0x1.47AE16p-7'),F('0x1.04491Ap-7'),0.,
@@ -807,8 +822,8 @@ def do_tests():
             idx += 1
 
     test('llCos(NaN)', NaN)
-    test('llCos(Infinity)', NaN)
-    test('llCos(-Infinity)', NaN)
+    test('llCos(Infinity)', Indet)
+    test('llCos(-Infinity)', Indet)
     test('llCos(math.pi)', -1.)
     test('llCos(1000.)', F('0x1.1FF026p-1'))
     test('llCos(1000000.)', F('0x1.DF9DFAp-1'))
@@ -817,8 +832,8 @@ def do_tests():
     #test('llCos(F("0x.FFFFFFp+63"))', F('-0x1.F4E122p-1')) # alas, doesn't match
     test('abs(llCos(F("0x.FFFFFFp+63")) - F("-0x1.F4E122p-1")) < 0.003', True) # workaround
     test('llSin(NaN)', NaN)
-    test('llSin(Infinity)', NaN)
-    test('llSin(-Infinity)', NaN)
+    test('llSin(Infinity)', Indet)
+    test('llSin(-Infinity)', Indet)
     test('llSin(F32(math.pi))', F('-0x1.777A5Cp-24'))
     test('llSin(1000.)', F('0x1.A75CC2p-1'))
     test('llSin(1000000.)', F('-0x1.6664B2p-2'))
@@ -828,7 +843,7 @@ def do_tests():
     #test('llSin(F("0x.FFFFFFp+63"))', F('0x1.A8862Cp-3')) # alas, doesn't match
     test('abs(llSin(F("0x.FFFFFFp+63")) - F("0x1.A8862Cp-3")) < 0.012', True) # workaround
     test('llTan(F32(1e38))', F32(1e38))
-    test('llTan(F32(4e38))', NaN)
+    test('llTan(F32(4e38))', Indet)
     test('llTan(F32(math.pi))', F('0x1.777A5Cp-24'))
     test('llTan(F32(math.pi*.5))', -22877330.)
     test('llTan(F("0x1.921FB4p0"))', 13245400.)
@@ -1028,7 +1043,8 @@ def do_tests():
     test('llModPow(41, 1, 17)', 7)
 
     test('llListFindList([], [])', 0)
-    test('llListFindList([NaN, -NaN], [-NaN, NaN])', 0) # I swear
+    test('llListFindList([NaN], [NaN])', 0) # I swear.
+    test('llListFindList([NaN, Indet], [Indet, NaN])', 0) # Indeed.
     test('llListFindList([-0.], [0.])', 0) # Really.
     test('llListFindList([0.], [-0.])', 0) # Yes.
     test('llListFindList([1, NaN, 1., NaN], [1., NaN])', 2)
