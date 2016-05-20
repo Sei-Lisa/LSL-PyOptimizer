@@ -134,6 +134,10 @@ def F32(f, f32=True):
     #from struct import pack, unpack
     #return unpack('f', pack('f', f))[0]
 
+    # Using numpy:
+    #import numpy
+    #return float(numpy.float32(f))
+
     # Using ctypes:
     #from ctypes import c_float
     return c_float(f).value
