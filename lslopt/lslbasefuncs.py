@@ -934,11 +934,11 @@ def llCeil(f):
 
 def llCos(f):
     assert isfloat(f)
-    f = reduce(ff(f))
+    f = ff(f)
     if math.isinf(f):
         return Indet
     if -9223372036854775808.0 < f < 9223372036854775808.0:
-        return F32(math.cos(f))
+        return F32(math.cos(reduce(f)))
     return f
 
 def llDeleteSubList(lst, start, end):
@@ -1562,11 +1562,11 @@ def llSHA1String(s):
 
 def llSin(f):
     assert isfloat(f)
-    f = reduce(ff(f))
+    f = ff(f)
     if math.isinf(f):
         return Indet
     if -9223372036854775808.0 < f < 9223372036854775808.0:
-        return F32(math.sin(f))
+        return F32(math.sin(reduce(f)))
     return f
 
 def llSqrt(f):
@@ -1606,16 +1606,11 @@ def llSubStringIndex(s, pattern):
 
 def llTan(f):
     assert isfloat(f)
-    f = reduce(ff(f))
+    f = ff(f)
     if math.isinf(f):
         return Indet
     if -9223372036854775808.0 < f < 9223372036854775808.0:
-        # We only consider the first turn for anomalous results.
-        if abs(f) == 1.570796251296997:
-            return math.copysign(13245402.0, f);
-        if abs(f) == 1.5707963705062866:
-            return -math.copysign(22877332.0, f);
-        return F32(math.tan(f))
+        return F32(math.tan(reduce(f)))
     return f
 
 def llToLower(s):
