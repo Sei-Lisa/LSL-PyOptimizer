@@ -780,6 +780,12 @@ def iskey(x):
 def islist(x):
     return type(x) == list
 
+def reduce(t):
+    t = F32(t)
+    if not t.is_integer():
+        return t # Accurate-ish until big numbers come into play
+    return int(t * 18446744073709551616) % 115904311329233965478 / 18446744073709551616.
+
 #
 # LSL-compatible computation functions
 #
@@ -928,7 +934,7 @@ def llCeil(f):
 
 def llCos(f):
     assert isfloat(f)
-    f = ff(f)
+    f = reduce(ff(f))
     if math.isinf(f):
         return Indet
     if -9223372036854775808.0 < f < 9223372036854775808.0:
@@ -1556,7 +1562,7 @@ def llSHA1String(s):
 
 def llSin(f):
     assert isfloat(f)
-    f = ff(f)
+    f = reduce(ff(f))
     if math.isinf(f):
         return Indet
     if -9223372036854775808.0 < f < 9223372036854775808.0:
@@ -1600,7 +1606,7 @@ def llSubStringIndex(s, pattern):
 
 def llTan(f):
     assert isfloat(f)
-    f = ff(f)
+    f = reduce(ff(f))
     if math.isinf(f):
         return Indet
     if -9223372036854775808.0 < f < 9223372036854775808.0:
