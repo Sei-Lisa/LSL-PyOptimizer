@@ -931,7 +931,7 @@ def llCos(f):
     f = ff(f)
     if math.isinf(f):
         return Indet
-    if -9223372036854775808.0 <= f < 9223372036854775808.0:
+    if -9223372036854775808.0 < f < 9223372036854775808.0:
         return F32(math.cos(f))
     return f
 
@@ -1559,7 +1559,7 @@ def llSin(f):
     f = ff(f)
     if math.isinf(f):
         return Indet
-    if -9223372036854775808.0 <= f < 9223372036854775808.0:
+    if -9223372036854775808.0 < f < 9223372036854775808.0:
         return F32(math.sin(f))
     return f
 
@@ -1603,7 +1603,7 @@ def llTan(f):
     f = ff(f)
     if math.isinf(f):
         return Indet
-    if -9223372036854775808.0 <= f < 9223372036854775808.0:
+    if -9223372036854775808.0 < f < 9223372036854775808.0:
         # We only consider the first turn for anomalous results.
         if abs(f) == 1.570796251296997:
             return math.copysign(13245402.0, f);
