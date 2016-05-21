@@ -1606,9 +1606,9 @@ def llTan(f):
     if -9223372036854775808.0 <= f < 9223372036854775808.0:
         # We only consider the first turn for anomalous results.
         if abs(f) == 1.570796251296997:
-            return math.copysign(13245400.0, f);
+            return math.copysign(13245402.0, f);
         if abs(f) == 1.5707963705062866:
-            return -math.copysign(22877330.0, f);
+            return -math.copysign(22877332.0, f);
         return F32(math.tan(f))
     return f
 
