@@ -258,7 +258,7 @@ def zstr(s):
 
 def ff(x):
     """Force x to be a float"""
-    if type(x) == int:
+    if type(x) != float:
         x = F32(float(x))
     return x
 
