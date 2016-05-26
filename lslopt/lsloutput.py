@@ -20,6 +20,7 @@
 import lslfuncs
 from lslcommon import Key, Vector, Quaternion
 from lslparse import warning
+import math
 
 class outscript(object):
 
@@ -74,12 +75,13 @@ class outscript(object):
                     return '((float)' + str(int(value)) + ')'
             s = repr(value)
             if s == 'nan':
-                return '((float)"' + s + '")' # this shouldn't appear in globals
-            if s in ('inf', '-inf'):
-                s = '1e40' if s == 'inf' else '-1e40'
-                if self.globalmode:
-                    return s
-                return '((float)' + s + ')'
+                if math.copysign(1, value) < 0: # Indeterminate
+                    return '(1e40*0)'
+                return '((float)"NaN")' # this shouldn't appear in globals
+            if s == 'inf':
+                return '1e40'
+            if s == '-inf':
+                return '-1e40' if self.globalmode else '((float)-1e40)'
             # Try to remove as many decimals as possible but keeping the F32 value intact
             exp = s.find('e')
             if ~exp:
