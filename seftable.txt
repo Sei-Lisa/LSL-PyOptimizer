@@ -58,6 +58,7 @@ llGetAnimationList
 # This may have the side effect of erring but we optimize it out
 llGetAnimationOverride
 llGetAttached
+llGetAttachedList
 llGetBoundingBox
 # This may have the side effect of erring but we optimize it out
 llGetCameraPos
