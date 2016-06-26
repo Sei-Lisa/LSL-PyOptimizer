@@ -864,19 +864,6 @@ list lazy_list_set(list L, integer i, list v)
         if AllowAssignment and (tok0 in self.assignment_toks
                                 or self.extendedassignment
                                    and tok0 in self.extassignment_toks):
-            if tok0 == '[':
-                if lvalue['nt'] != 'IDENT':
-                    raise EParseSyntax(self)
-                if lvalue['t'] != 'list':
-                    raise EParseTypeMismatch(self)
-                self.NextToken()
-                idxexpr = self.Parse_expression()
-                if idxexpr['t'] != 'integer':
-                    raise EParseTypeMismatch(self)
-                self.expect(']')
-                self.NextToken()
-                self.expect('=')
-
             self.NextToken()
             expr = self.Parse_expression()
             rtyp = expr['t']
