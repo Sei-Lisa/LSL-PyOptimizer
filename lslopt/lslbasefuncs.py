@@ -381,7 +381,7 @@ def InternalTypecast(val, out, InList, f32):
         if out == Key: return Key(val)
         if out == float:
             # Clean up the string for Picky Python
-            match = float_re.match(val)
+            match = float_re.search(val)
             if match is None:
                 return 0.0
             if match.group(1):
@@ -394,7 +394,7 @@ def InternalTypecast(val, out, InList, f32):
                 ret = 0.0
             return ret
         if out == int:
-            match = int_re.match(val)
+            match = int_re.search(val)
             if match is None:
                 return 0
             val = match.group(0)
@@ -412,7 +412,7 @@ def InternalTypecast(val, out, InList, f32):
                 return Z
             val = val[1:]
             for _ in range(dim):
-                match = vfloat_re.match(val)
+                match = vfloat_re.search(val)
                 if match is None:
                     return Z
                 if match.group(1):
@@ -752,7 +752,7 @@ def cond(x):
     if tx == Key:
         if x == NULL_KEY or len(x) != 36:
             return False
-        return bool(key_re.match(x))
+        return bool(key_re.search(x))
     if tx == Vector:
         return bool(compare(x, ZERO_VECTOR, Eq=False))
     if tx == Quaternion:
@@ -880,7 +880,7 @@ def llBase64ToInteger(s):
     assert isstring(s)
     if len(s) > 8:
         return 0
-    s = b64_re.match(s).group()
+    s = b64_re.search(s).group()
     i = len(s)
     s = b64decode(s + u'='*(-i & 3))
     if len(s) < 3:
@@ -892,7 +892,7 @@ def llBase64ToInteger(s):
 
 def llBase64ToString(s):
     assert isstring(s)
-    s = b64_re.match(s).group(0)
+    s = b64_re.search(s).group(0)
     return InternalUTF8toString(b64decode(s + u'='*(-len(s)&3)))
 
 def llCSV2List(s):
@@ -1688,9 +1688,9 @@ def llXorBase64(s, xor):
     if xor == u'':
         return s
 
-    s = b64_re.match(s).group(0)
+    s = b64_re.search(s).group(0)
     L1 = len(s)
-    xor = b64_re.match(xor).group(0)
+    xor = b64_re.search(xor).group(0)
     L2 = len(xor)
 
     if L2 == 0:
@@ -1770,9 +1770,9 @@ def llXorBase64StringsCorrect(s, xor):
         return s
 
 
-    s = b64_re.match(s).group(0)
+    s = b64_re.search(s).group(0)
     L1 = len(s)
-    xor = b64_re.match(xor).group(0)
+    xor = b64_re.search(xor).group(0)
     L2 = len(xor)
 
     if L2 == 0:

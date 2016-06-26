@@ -2494,7 +2494,7 @@ list lazy_list_set(list L, integer i, list v)
                 line = f.readline()
                 if not line: break
                 if line[-1] == '\n': line = line[:-1]
-                match = parse_lin_re.match(line)
+                match = parse_lin_re.search(line)
                 if not match:
                     warning('Syntax error in ' + builtins + ', line ' + line)
                     continue
@@ -2514,12 +2514,12 @@ list lazy_list_set(list L, integer i, list v)
                         arglist = arglist.split(',')
                         bad = False
                         for arg in arglist:
-                            argtyp = parse_arg_re.match(arg).group(1)
+                            argtyp = parse_arg_re.search(arg).group(1)
                             if argtyp not in self.types:
                                 warning('Invalid type in ' + builtins + ', line ' + line + ': ' + argtyp)
                                 bad = True
                                 break
-                            args.append(parse_arg_re.match(arg).group(1))
+                            args.append(parse_arg_re.search(arg).group(1))
                         if bad:
                             continue
                     name = match.group(2)
@@ -2555,7 +2555,7 @@ list lazy_list_set(list L, integer i, list v)
                         value = lslfuncs.F32(float(value))
                     elif typ == 'string':
                         value = value.decode('utf8')
-                        if parse_str_re.match(value):
+                        if parse_str_re.search(value):
                             esc = False
                             tmp = value[1:-1]
                             value = u''
@@ -2586,22 +2586,22 @@ list lazy_list_set(list L, integer i, list v)
                             value = value[1:-1].split(',')
                             if len(value) != (3 if typ == 'vector' else 4):
                                 raise ValueError
-                            num = parse_num_re.match(value[0])
+                            num = parse_num_re.search(value[0])
                             if not num:
                                 raise ValueError
                             value[0] = lslfuncs.F32(float(num.group(1)))
-                            num = parse_num_re.match(value[1])
+                            num = parse_num_re.search(value[1])
                             if not num:
                                 raise ValueError
                             value[1] = lslfuncs.F32(float(num.group(1)))
-                            num = parse_num_re.match(value[2])
+                            num = parse_num_re.search(value[2])
                             if not num:
                                 raise ValueError
                             value[2] = lslfuncs.F32(float(num.group(1)))
                             if typ == 'vector':
                                 value = Vector(value)
                             else:
-                                num = parse_num_re.match(value[3])
+                                num = parse_num_re.search(value[3])
                                 if not num:
                                     raise ValueError
                                 value[3] = lslfuncs.F32(float(num.group(1)))
