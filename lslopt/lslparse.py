@@ -168,6 +168,11 @@ class EParseInvalidCont(EParse):
         super(EParseInvalidCont, self).__init__(parser,
             u"'continue' used outside a loop")
 
+class EParseInvalidBackslash(EParse):
+    def __init__(self, parser):
+        super(EParseInvalidBackslash, self).__init__(parser,
+            u"Preprocessor directive can't end in backslash")
+
 class EInternal(Exception):
     """This exception is a construct to allow a different function to cause an
     immediate return of EOF from parser.GetToken().
@@ -310,6 +315,45 @@ class parser(object):
         if self.pos >= self.length:
             raise EInternal() # force GetToken to return EOF
 
+    def ProcessDirective(self, directive):
+        """Process a given preprocessor directive during parsing."""
+
+        if directive[len(directive)-1:] == '\\':
+            raise EParseInvalidBackslash(self)
+
+        if self.parse_directive_re is None:
+            self.parse_directive_re = re.compile(
+                r'^#\s*(?:'
+                    r'(?:[Ll][Ii][Nn][Ee]\s+)?(\d+)(?:\s+("(?:[^"\\]|\\.)*"))?'
+                    r'|'
+                    r'([A-Za-z0-9_]+\s+(.+?))'
+                r')\s*$'
+            )
+        match = self.parse_directive_re.search(directive)
+        if match is not None:
+            # Something parsed
+            if match.group(1) is not None:
+                #line directive
+                if match.group(2) is not None:
+                    # filename included
+                    if match.group(2).find('\\') != -1:
+                        # interpret escapes
+                        from ast import literal_eval
+                        filename = literal_eval(match.group(2))
+                    else:
+                        filename = match.group(2)[1:-1]
+                    # TODO: what do we do with the filename?
+
+                    del filename
+                linenum = int(match.group(1))
+                # TODO: process line number
+                del linenum
+            else:
+                assert match.group(3) is not None
+                if match.group(3) == 'pragma':
+                    # TODO: process #pragma
+                    pass
+
     def GetToken(self):
         """Lexer"""
 
@@ -322,17 +366,26 @@ class parser(object):
                 self.pos += 1
 
                 # Process comments
-                if c == '#' and self.skippreproc:
-                    # Preprocessor directives act like single line comments.
-                    # Most are not supposed to reach us but cpp also generates
-                    # lines in the output like: # 123 "file.lsl"
-                    # and other preprocessors including Boost Wave and mcpp
-                    # generate lines like: #line 123 "file.lsl" (Firestorm
-                    # comments these out and outputs //#line 123 "file.lsl")
+                if self.skippreproc and self.linestart and c == '#':
+                    # Preprocessor directive.
+                    # Most are not supposed to reach us but some do:
+                    # - gcpp generates lines in the output like:
+                    #       # 123 "file.lsl"
+                    # - other preprocessors including Boost Wave and mcpp
+                    #   generate lines like:
+                    #       #line 123 "file.lsl"
+                    #   Firestorm comments these out and instead outputs
+                    #   //#line 123 "file.lsl"
+                    # - #pragma directives
+                    # - #define directives from mcpp's #pragma MCPP put_defines
+                    #   or from gcpp's -dN option, that we use to detect some
+                    #   definitions.
                     self.ceof()
                     while self.script[self.pos] != '\n':
                         self.pos += 1
                         self.ceof() # A preprocessor command at EOF is not unexpected EOF.
+
+                    self.ProcessDirective(self.script[self.errorpos:self.pos])
 
                     self.pos += 1
                     self.ceof()
@@ -346,6 +399,7 @@ class parser(object):
                             self.pos += 1
                             self.ceof() # A single-line comment at EOF is not unexpected EOF.
 
+                        self.linestart = True
                         self.pos += 1
                         self.ceof()
                         continue
@@ -359,6 +413,11 @@ class parser(object):
                         self.pos += 1
                         self.ceof()
                         continue
+
+                # self.linestart is related to the preprocessor, therefore we
+                # check the characters that are relevant for standard C.
+                if c not in ' \n\r\x0B\x0C':
+                    self.linestart = False
 
                 # Process strings
                 if c == '"' or c == 'L' and self.script[self.pos:self.pos+1] == '"':
@@ -388,6 +447,7 @@ class parser(object):
                                 # '\' followed by a newline; it's not a string.
                                 self.pos = savepos
                                 is_string = False
+                                self.linestart = True
                                 break
                             else:
                                 strliteral += self.script[self.pos]
@@ -521,6 +581,8 @@ class parser(object):
                 if c in '.;{},=()-+*/%@:<>[]&|^~!' and c != '':
                     return (c,)
 
+                if c == '\n':
+                    self.linestart = True
                 # We eat spacers AND any other character, so the following is not needed,
                 # although the lex file includes it (the lex file does not count() invalid characters
                 # for the purpose of error reporting).
@@ -2429,6 +2491,7 @@ list lazy_list_set(list L, integer i, list v)
         # function arguments. And that's what we do.
 
         self.pos = self.errorpos = 0
+        self.linestart = True
         self.tok = self.GetToken()
 
         self.globals = self.BuildTempGlobalsTable()
@@ -2436,6 +2499,7 @@ list lazy_list_set(list L, integer i, list v)
         # Restart
 
         self.pos = self.errorpos = 0
+        self.linestart = True
         self.tok = self.GetToken()
 
         # Reserve spots at the beginning for functions we add
@@ -2470,6 +2534,8 @@ list lazy_list_set(list L, integer i, list v)
         self.events = {}
         self.constants = {}
         self.funclibrary = {}
+
+        self.parse_directive_re = None
 
         # Library read code
 
