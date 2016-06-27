@@ -187,8 +187,10 @@ class parser(object):
 
     # These are hardcoded because additions or modifications imply
     # important changes to the code anyway.
-    keywords = frozenset(('default', 'state', 'event', 'jump', 'return', 'if',
+    base_keywords = frozenset(('default', 'state', 'event', 'jump', 'return', 'if',
         'else', 'for', 'do', 'while', 'print', 'TRUE', 'FALSE'))
+    brkcont_keywords = frozenset(('break', 'continue'))
+    switch_keywords = frozenset(('switch', 'case', 'break'))
     types = frozenset(('integer','float','string','key','vector',
         'quaternion','rotation','list'))
     PythonType2LSL = {int: 'integer', float: 'float',
@@ -2370,6 +2372,8 @@ list lazy_list_set(list L, integer i, list v)
         self.script = script
         self.length = len(script)
 
+        self.keywords = self.base_keywords
+
         self.labelcnt = 0
 
         # Options
@@ -2402,7 +2406,7 @@ list lazy_list_set(list L, integer i, list v)
         # Enable switch statements.
         self.enableswitch = 'enableswitch' in options
         if self.enableswitch:
-            self.keywords |= frozenset(('switch', 'case', 'break'))
+            self.keywords |= self.switch_keywords
 
         # Broken behaviour in the absence of a default: label in a switch stmt.
         self.errmissingdefault = 'errmissingdefault' in options
@@ -2421,7 +2425,7 @@ list lazy_list_set(list L, integer i, list v)
         # Enable break/continue
         self.breakcont = 'breakcont' in options
         if self.breakcont:
-            self.keywords |= frozenset(('break', 'continue'))
+            self.keywords |= self.brkcont_keywords
 
         # Stack to track the labels for break targets, their scope table index,
         # and whether they are used.
