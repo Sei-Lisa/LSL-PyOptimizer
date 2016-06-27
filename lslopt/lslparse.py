@@ -318,6 +318,10 @@ class parser(object):
     def ProcessDirective(self, directive):
         """Process a given preprocessor directive during parsing."""
 
+        # Ignore directives on the first pass
+        if self.scanglobals:
+            return
+
         if directive[len(directive)-1:] == '\\':
             raise EParseInvalidBackslash(self)
 
@@ -2490,6 +2494,7 @@ list lazy_list_set(list L, integer i, list v)
         # incomplete parsing pass, gathering globals with their types and
         # function arguments. And that's what we do.
 
+        self.scanglobals = True # Tell the lexer not to process directives
         self.pos = self.errorpos = 0
         self.linestart = True
         self.tok = self.GetToken()
@@ -2498,6 +2503,7 @@ list lazy_list_set(list L, integer i, list v)
 
         # Restart
 
+        self.scanglobals = False
         self.pos = self.errorpos = 0
         self.linestart = True
         self.tok = self.GetToken()
