@@ -169,7 +169,8 @@ class EParseInvalidCont(EParse):
 class EParseInvalidBackslash(EParse):
     def __init__(self, parser):
         super(EParseInvalidBackslash, self).__init__(parser,
-            u"Preprocessor directive can't end in backslash")
+            u"Preprocessor directive can't end in backslash."
+            u" Activate the preprocessor or put everything in the same line.")
 
 class EInternal(Exception):
     """This exception is a construct to allow a different function to cause an
