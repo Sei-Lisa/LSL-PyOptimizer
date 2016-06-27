@@ -326,7 +326,7 @@ class parser(object):
                 r'^#\s*(?:'
                     r'(?:[Ll][Ii][Nn][Ee]\s+)?(\d+)(?:\s+("(?:[^"\\]|\\.)*"))?'
                     r'|'
-                    r'([A-Za-z0-9_]+\s+(.+?))'
+                    r'([A-Za-z0-9_]+)\s+(.+?)'
                 r')\s*$'
             )
         match = self.parse_directive_re.search(directive)
@@ -350,9 +350,9 @@ class parser(object):
                 del linenum
             else:
                 assert match.group(3) is not None
-                if match.group(3) == 'pragma':
+                if match.group(3).lower() == 'pragma':
                     # TODO: process #pragma
-                    pass
+                    warning('pragma not implemented')
 
     def GetToken(self):
         """Lexer"""
