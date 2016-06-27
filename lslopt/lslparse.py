@@ -24,8 +24,6 @@ from lslcommon import Key, Vector, Quaternion
 import lslcommon
 import lslfuncs
 import sys, re
-from base64 import b64encode
-import random
 
 # Note this module was basically written from bottom to top, which may help
 # reading it.
@@ -208,13 +206,9 @@ class parser(object):
     # Utility function
     def GenerateLabel(self):
         while True:
-            x = random.randint(0, 16777215)
-            unique = 'J_' + b64encode(chr(x>>16) + chr((x>>8)&255)
-                + chr(x&255)).replace('+', '_')
-            x = random.randint(0, 16777215)
-            unique += b64encode(chr(x>>16) + chr((x>>8)&255)
-                + chr(x&255)).replace('+', '_')
-            if '/' not in unique not in self.locallabels:
+            self.labelcnt += 1
+            unique = 'J_autoGen%05d' % self.labelcnt
+            if unique not in self.locallabels:
                 break
         self.locallabels.add(unique)
         return unique
@@ -2375,6 +2369,10 @@ list lazy_list_set(list L, integer i, list v)
 
         self.script = script
         self.length = len(script)
+
+        self.labelcnt = 0
+
+        # Options
 
         # Extended expressions in globals (needs support from the optimizer to work)
         self.extendedglobalexpr = 'extendedglobalexpr' in options
