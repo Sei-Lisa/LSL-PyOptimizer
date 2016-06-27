@@ -502,6 +502,13 @@ def main():
             return status
         del p, status
 
+        # This method is very imperfect, in several senses. However, since
+        # it's applied to the output of the preprocessor, all of the concerns
+        # should be addressed:
+        #    - \s includes \n, but \n should not be allowed.
+        #    - Comments preceding the directive should not cause problems.
+        #              e.g.: /* test */ #directive
+        #    - #directive within a comment or string should be ignored.
         for x in re.findall(r'(?:(?<=\n)|^)\s*#\s*define\s+('
                             r'USE_SWITCHES'
                             r'|USE_LAZY_LISTS'
