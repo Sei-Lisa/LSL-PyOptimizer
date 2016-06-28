@@ -26,7 +26,7 @@ import sys, os, getopt, re
 import lslopt.lslcommon
 
 
-VERSION = '0.2.0beta'
+VERSION = '0.2.1beta'
 
 
 def ReportError(script, e):
