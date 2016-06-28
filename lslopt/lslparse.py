@@ -312,6 +312,70 @@ class parser(object):
         if self.pos >= self.length:
             raise EInternal() # force GetToken to return EOF
 
+    def SetOpt(self, option, value):
+        # See parse() for meaning of options.
+        if option == 'extendedglobalexpr':
+            self.extendedglobalexpr = value
+
+        if option == 'extendedtypecast':
+            self.extendedtypecast = value
+
+        if option == 'extendedassignment':
+            self.extendedassignment = value
+
+        if option == 'explicitcast':
+            self.explicitcast = value
+
+        if option == 'allowkeyconcat':
+            self.allowkeyconcat = value
+
+        if option == 'allowmultistrings':
+            self.allowmultistrings = value
+
+        if option == 'processpre':
+            self.processpre = value
+
+        # TODO: Allow pure C-style string escapes. This is low-priority.
+        #if option == 'allowcescapes':
+        #    self.allowcescapes = value
+
+        # Enable switch statements.
+        if option == 'enableswitch':
+            if not self.enableswitch and value:
+                self.keywords |= self.switch_keywords
+            elif self.enableswitch and not value:
+                self.keywords = self.base_keywords
+                if self.breakcont:
+                    self.keywords |= self.brkcont_keywords
+
+            self.enableswitch = value
+
+        # Enable break/continue
+        if option == 'breakcont':
+            if not self.breakcont and value:
+                self.keywords |= self.brkcont_keywords
+            elif self.breakcont and not value:
+                self.keywords = self.base_keywords
+                if self.enableswitch:
+                    self.keywords |= self.switch_keywords
+
+            self.breakcont = value
+
+        if option == 'errmissingdefault':
+            self.errmissingdefault = value
+
+        if option == 'lazylists':
+            self.lazylists = value
+
+        if option == 'duplabels':
+            self.duplabels = value
+
+        if option == 'shrinknames':
+            self.shrinknames = value
+
+        if option == 'funcoverride':
+            self.funcoverride = value
+
     def ProcessDirective(self, directive):
         """Process a given preprocessor directive during parsing."""
 
@@ -327,7 +391,7 @@ class parser(object):
                 r'^#\s*(?:'
                     r'(?:[Ll][Ii][Nn][Ee]\s+)?(\d+)(?:\s+("(?:[^"\\]|\\.)*"))?'
                     r'|'
-                    r'([A-Za-z0-9_]+)\s+(.+?)'
+                    r'([A-Za-z0-9_]+)\s+([A-Za-z0-9_]+)\s+([-+,A-Za-z0-9_]+)'
                 r')\s*$'
             )
         match = self.parse_directive_re.search(directive)
@@ -351,9 +415,16 @@ class parser(object):
                 del linenum
             else:
                 assert match.group(3) is not None
-                if match.group(3).lower() == 'pragma':
-                    # TODO: process #pragma
-                    warning('pragma not implemented')
+                if match.group(3).lower() == 'pragma' and match.group(4) == 'OPT':
+                    opts = match.group(5).lower().split(',')
+                    for opt in opts:
+                        if opt != '':
+                            if opt[0] == '-':
+                                self.SetOpt(opt[1:], False)
+                            elif opt[0] == '+':
+                                self.SetOpt(opt[1:], True)
+                            else:
+                                self.SetOpt(opt, True)
 
     def GetToken(self):
         """Lexer"""
@@ -366,8 +437,8 @@ class parser(object):
                 c = self.script[self.pos]
                 self.pos += 1
 
-                # Process comments
-                if self.skippreproc and self.linestart and c == '#':
+                # Process preprocessor directives
+                if self.processpre and self.linestart and c == '#':
                     # Preprocessor directive.
                     # Most are not supposed to reach us but some do:
                     # - gcpp generates lines in the output like:
@@ -392,6 +463,7 @@ class parser(object):
                     self.ceof()
                     continue
 
+                # Process comments
                 if c == '/':
                     if self.script[self.pos:self.pos+1] == '/':
                         self.pos += 1
@@ -2398,8 +2470,8 @@ list lazy_list_set(list L, integer i, list v)
         # Allow C style string composition of strings: "blah" "blah" = "blahblah"
         self.allowmultistrings = 'allowmultistrings' in options
 
-        # Skip preprocessor directives (specifically #line).
-        self.skippreproc = 'skippreproc' in options
+        # Process preprocessor directives (especially #pragma and #line).
+        self.processpre = 'processpre' in options
 
         # TODO: Allow pure C-style string escapes. This is low-priority.
         #self.allowcescapes = 'allowcescapes' in options

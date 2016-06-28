@@ -196,8 +196,8 @@ Preprocessor modes:
               pertinent to it. Implies --precmd=cpp
     none      No preprocessing (default)
 
-Normally, running the preprocessor needs -O skippreproc to make the output
-readable by the optimizer.
+Normally, running the preprocessor needs the option 'processpre' active, to
+make the output readable by the optimizer. This option is active by default.
 
 '''.format(progname=sys.argv[0], version=VERSION))
         return
@@ -284,10 +284,11 @@ Optimizer options (+ means active by default, - means inactive by default):
   warntabs           + Suppress warning when a function can't be optimized
                        because it generates a string or list with a tab, or
                        when a string contains a tab.
-  skippreproc        + Skip preprocessor directives in the source as if they
-                       were comments. Not useful unless the script is itself
-                       the output of a preprocessor like GNU cpp, which inserts
-                       directives like: # 123 "filename".
+  processpre         + Process some preprocessor directives in the source. This
+                       enables usage of #pragma/#line preprocessor directives,
+                       and is probably necessary if the script is itself the
+                       output of a preprocessor. Note that this option does not
+                       make the optimizer process macros.
   explicitcast       - Add explicit casts where they are implicit. This option
                        is useless with 'optimize' and 'optsigns', and is of
                        basically no use in general, other than to see where
@@ -304,7 +305,7 @@ def main():
 
     # Default options
     options = set(('extendedglobalexpr','extendedtypecast','extendedassignment',
-        'allowkeyconcat','allowmultistrings','skippreproc','warntabs','optimize',
+        'allowkeyconcat','allowmultistrings','processpre','warntabs','optimize',
         'optsigns','optfloats','constfold','dcr','errmissingdefault',
         ))
 

@@ -213,7 +213,7 @@ class Test02_Parser(UnitTestCase):
             }}''',
             ['explicitcast','extendedtypecast','extendedassignment',
                 'extendedglobalexpr', 'allowmultistrings', 'allowkeyconcat',
-                'skippreproc', 'duplabels']
+                'processpre', 'duplabels']
             ))
         print self.parser.scopeindex
 
