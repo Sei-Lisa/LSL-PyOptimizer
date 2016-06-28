@@ -205,25 +205,27 @@ make the output readable by the optimizer. This option is active by default.
     if about == 'optimizer-options':
         sys.stderr.write(
 r'''
-Optimizer options (+ means active by default, - means inactive by default):
+Optimizer control options.
++ means active by default, - means inactive by default.
+Case insensitive.
 
   Syntax extensions options:
 
-  extendedglobalexpr + Enables arbitrary expressions in globals (as opposed to
+  ExtendedGlobalExpr + Enables arbitrary expressions in globals (as opposed to
                        dull simple expressions allowed by regular LSL). Needs
                        constant folding active for the result to be compilable.
-  breakcont          - Allow break/continue statements for loops. Note that
+  BreakCont          - Allow break/continue statements for loops. Note that
                        when active, 'break' and 'continue' become reserved
                        words, but when inactive they can be used as variables.
-  extendedtypecast   + Allows extended typecast syntax e.g. (string)(integer)a
+  ExtendedTypeCast   + Allows extended typecast syntax e.g. (string)(integer)a
                        is valid with this option.
-  extendedassignment + Enables &=, |=, ^=, <<=, >>= assignment operators.
-  allowkeyconcat     + Allow string + key and key + string (both return string)
-  allowmultistrings  + Allow C-like string juxtaposition, e.g. "ab" "cd" means
+  ExtendedAssignment + Enables &=, |=, ^=, <<=, >>= assignment operators.
+  AllowKeyConcat     + Allow string + key and key + string (both return string)
+  AllowMultiStrings  + Allow C-like string juxtaposition, e.g. "ab" "cd" means
                        "abcd", no concatenation involved. Very useful when used
                        with a preprocessor. Similar to addstrings, but this one
                        is not an optimization, it introduces new syntax.
-  duplabels          - Normally, a duplicate label within a function is allowed
+  DupLabels          - Normally, a duplicate label within a function is allowed
                        by the syntax by using {} blocks; however, the server
                        will just refuse to save the script (under Mono) or do
                        something completely unexpected (under LSO: all jumps
@@ -233,39 +235,39 @@ Optimizer options (+ means active by default, - means inactive by default):
 
   Deprecated / compatibility syntax extensions options:
 
-  lazylists          - Support syntax like mylist[index] = 5; rather than using
+  LazyLists          - Support syntax like mylist[index] = 5; rather than using
                        llListReplaceList. Only assignment supported. The list
                        is extended when the argument is greater than the list
                        length, by inserting integer zeros. This is implemented
                        for compatibility with Firestorm, but its use is not
                        recommended, as it adds a new function, wasting memory
                        against the very spirit of this program.
-  enableswitch       - Support C-like switch() syntax, with some limitations.
+  EnableSwitch       - Support C-like switch() syntax, with some limitations.
                        Like lazylists, it's implemented for compatibility with
                        Firestorm, but not recommended. Note that the operand to
                        switch() may be evaluated more than once.
-  errmissingdefault  + Throw an error in case the 'default:' label of a switch
+  ErrMissingDefault  + Throw an error in case the 'default:' label of a switch
                        statement is missing.
-  funcoverride       - Allow duplicate function definitions to override the
+  FuncOverride       - Allow duplicate function definitions to override the
                        previous definition. For compatibility with Firestorm's
                        optimizer.
 
   Optimization options
 
-  optimize           + Runs the optimizer.
-  optsigns           + Optimize signs in float and integer constants.
-  optfloats          + Optimize floats that represent an integral value.
-  constfold          + Fold constant expressions to their values, and simplify
+  Optimize           + Runs the optimizer.
+  OptSigns           + Optimize signs in float and integer constants.
+  OptFloats          + Optimize floats that represent an integral value.
+  ConstFold          + Fold constant expressions to their values, and simplify
                        some expressions and statements.
-  dcr                + Dead code removal. This option removes several instances
+  DCR                + Dead code removal. This option removes several instances
                        of code that will never execute, and performs other
                        optimizations like removal of unused variables,
                        functions or expressions.
-  shrinknames        - Reduces script memory by shrinking identifiers. In the
+  ShrinkNames        - Reduces script memory by shrinking identifiers. In the
                        process, it turns the script into unreadable gibberish,
                        hard to debug, but this gets big savings for complex
                        scripts.
-  addstrings         - Concatenate strings together when possible. Note that
+  AddStrings         - Concatenate strings together when possible. Note that
                        such an optimization can be counter-productive in some
                        cases, that's why it's disabled by default. For example:
                        string a="a"+"longstring"; string b="b"+"longstring";
@@ -275,21 +277,21 @@ Optimizer options (+ means active by default, - means inactive by default):
 
   Miscellaneous options
 
-  foldtabs           - Tabs can't be copy-pasted, so expressions that produce
+  FoldTabs           - Tabs can't be copy-pasted, so expressions that produce
                        tabs, e.g. llUnescapeURL("%09"), aren't optimized by
                        default. This option overrides that check, enabling
                        expansion of functions that produce strings with tabs.
                        The resulting source isn't guaranteed to be
                        copy-paste-able to the viewer.
-  warntabs           + Suppress warning when a function can't be optimized
+  WarnTabs           + Suppress warning when a function can't be optimized
                        because it generates a string or list with a tab, or
                        when a string contains a tab.
-  processpre         + Process some preprocessor directives in the source. This
+  ProcessPre         + Process some preprocessor directives in the source. This
                        enables usage of #pragma/#line preprocessor directives,
                        and is probably necessary if the script is itself the
                        output of a preprocessor. Note that this option does not
                        make the optimizer process macros.
-  explicitcast       - Add explicit casts where they are implicit. This option
+  ExplicitCast       - Add explicit casts where they are implicit. This option
                        is useless with 'optimize' and 'optsigns', and is of
                        basically no use in general, other than to see where
                        automatic casts happen.
@@ -348,9 +350,9 @@ def main():
                 if chg[0:1] not in ('+', '-'):
                     chg = '+' + chg
                 if chg[0] == '-':
-                    options.discard(chg[1:])
+                    options.discard(chg[1:].lower())
                 else:
-                    options.add(chg[1:])
+                    options.add(chg[1:].lower())
 
         elif opt in ('-h', '--help'):
             Usage()
