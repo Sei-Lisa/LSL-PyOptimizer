@@ -227,6 +227,15 @@ class Test02_Parser(UnitTestCase):
         self.parser.parse('f(){if(1) {state default;}if (1) if (1) state default; else state default;}default{timer(){}}')
         self.parser.parse('default{timer(){vector v;v.x=0;}}')
 
+        # Check for exceptions only
+        p = self.parser.parse('default{timer(){jump x;while(1)@x;}}')
+        self.outscript.output(p)
+
+        self.assertRaises(EParseUndefined, self.parser.parse,
+            'default{timer(){jump x;while(1){@x;}}}')
+        self.assertRaises(EParseUndefined, self.parser.parse,
+            'default{timer(){jump x;{while(1)@x;}}}')
+
 
     def tearDown(self):
         del self.parser
@@ -477,6 +486,14 @@ class Test03_Optimizer(UnitTestCase):
         except:
             # should raise no other exception
             self.assertFalse(True)
+
+        p = self.parser.parse('default{timer(){jump x;while(1)@x;}}')
+        self.opt.optimize(p)
+        out = self.outscript.output(p)
+        print out
+        # FIXME: DCR produces invalid code, thinks the while can be eliminated
+        # due to the jump jumping past it. Extremely corner case, but maybe
+        # worth a fix.
 
     def tearDown(self):
         del self.parser
