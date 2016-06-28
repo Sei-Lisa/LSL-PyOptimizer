@@ -9,6 +9,7 @@ a:visited {color:#8000c0;}
 pre, code { background:#e8e8f8; padding:2px; }
 pre { padding:4px; }
 pre code { padding: 0px; }
+i em {font-style: normal;}
 </style>
 </head><body>
 
@@ -24,13 +25,13 @@ pre code { padding: 0px; }
 
 <p>The aim of this program is to act as a filter that performs the optimizations automatically, letting the programmer focus on writing readable code.</p>
 
-<p>It also implements several syntax extensions to help improving the readability of scripts and the productivity of the programmer. It works well when combined with a C preprocessor such as <i>Boost::Wave</i> (the one embedded in Firestorm and other TPVs) or <code>cpp</code>.</p>
+<p>It also implements several syntax extensions to help improving the readability of scripts and the productivity of the programmer. It works well when combined with a C preprocessor such as <em>Boost::Wave</em> (the one embedded in Firestorm and other TPVs) or <em>GNU cpp</em>.</p>
 
 <p>Firestorm does already incorporate an optimizer, but it is limited to removing unused global variables and functions, and does so by simple string analysis, not by syntactic analysis (e.g. if a local variable with the same name as a global is defined, the global isn't optimized out even if not used). In contrast, the program presented here does full syntax analysis and implements many more optimizations, including removing unused locals, simplifying many expressions, removing dead code, and more.</p>
 
 <h2><a id="status"></a>Status</h2>
 
-<p>It is still considered alpha code. Command line options are still subject to change, and new features may be added without notice. Please help by reporting any bugs you find, using the <a href="https://github.com/Sei-Lisa/LSL-PyOptimizer/issues">project's issue tracker at GitHub</a>.</p>
+<p>It is now in the beta stage. Command line options are still subject to change, and new features may be added without notice. Please help by reporting any bugs you find, using the <a href="https://github.com/Sei-Lisa/LSL-PyOptimizer/issues">project's issue tracker at GitHub</a>.</p>
 
 <h2><a id="features"></a>Features</h2>
 
@@ -48,6 +49,7 @@ pre code { padding: 0px; }
 <li><a href="#extensions-lazy-lists">Lazy list syntax</a> (<code>identifier[index]</code>), for compatibility with Firestorm.</li>
 <li><a href="#extensions-allow-dup-fn">Allow duplicate function definitions</a>, for compatibility with Firestorm.</li>
 <li>As of version 0.1.3alpha, it can invoke the preprocessor on its own, providing defaults for the GNU C preprocessor <code>cpp</code> and for <a href="http://mcpp.sourceforge.net/">mcpp</a>.</li>
+<li>As of version 0.2.1beta, it can interpret <a href="#extensions-preproc-cmds"><code>#pragma</code> and <code>#line</code> preprocessor directives</a></li>
 </ul>
 
 <p><a href="#optimizations">Optimizations supported:</a></p>
@@ -194,6 +196,63 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
 
 <p>Without this option, you would only be able to have one <code>DO...WHILE()</code> loop per function.</p>
 
+<h3><a id="extensions-preproc-cmds"></a>#pragma and #line</h3>
+
+<p>The optimizer option <code>ProcessPre</code> enables processing of certain preprocessor directives that control compilation. Only <code>#pragma</code> and <code>#line</code> are supported for now. Typically these directives pass through the preprocessor unchanged, so they will reach the optimizer if a preprocessor is used. The rest of preprocessor directives will be ignored.</p>
+
+<p><code>#pragma</code> is a special C preprocessor directive that allows compilers to extend the language with certain options. In the case of this optimizer, the <code>#pragma</code> directive is used to enable/disable on the fly the parsing options and extensions. Even <code>ProcessPre</code> itself can be disabled (it can't be enabled this way because when disabled, <code>#pragma</code> directives aren't processed).</p>
+
+<p>To use this feature, type the command like this:</p>
+
+<pre><code><b>#pragma OPT</b> [+/-]<i>option1</i>[,[+/-]<i>option2</i>,...]
+</code></pre>
+
+<p>Note that it's important that OPT is in upper case. The options list is not case sensitive, but it can't have any spaces.</p>
+
+<p>For example, this code activates the <a href="#extensions-break-and-continue"><code>break</code> and <code>continue</code> statements extension</a> and the <a href="#extensions-c-like-string-juxtaposition">C-like string juxtaposition extension</a> regardless of the options passed in the command line:</p>
+
+<pre><code>#pragma OPT +BreakCont,+AllowMultiStrings
+default
+{
+  while (TRUE) break;
+  llOwnerSay("TEA" "TIME");
+}
+</code></pre>
+
+<p>Like in the command line, prepending a <code>+</code> sign or not preprending anything to an option has the same effect, namely to activate the option, while prepending a <code>-</code> sign has the effect of deactivating the option.</p>
+
+<p>The list of options usable in <code>#pragma</code> directives is:</p>
+
+<pre><code>ExtendedGlobalExpr
+ExtendedTypeCast
+ExtendedAssignment
+ExplicitCast
+AllowKeyConcat
+AllowMultiStrings
+ProcessPre
+EnableSwitch
+BreakCont
+ErrMissingDefault
+LazyLists
+DupLabels
+ShrinkNames
+FuncOverride
+</code></pre>
+
+<p>For a description of each, you can invoke the program from the command line with: <code>python main.py -O help</code> (that's the upper case letter O, not the number zero). Note, however, that the only options that can be used in <code>#pragma</code> directives inlined in the code are the options listed above, which are the ones that affect the parsing, not the optimization.</p>
+
+<p>The <code>#line</code> directive is not supposed to be used by the programmer. Preprocessors including <em>Boost::Wave</em>, <em>mcpp</em> and <em>GNU cpp</em> automatically generate them whenever the lines in the original file lose synchronization with the preprocessor's output, in order to keep track of which original line produced a certain output line, for error reporting and debugging purposes. As of version 0.2.1beta, this directive doesn't do anything, but there are plans to use it for the same purpose: to track which input line generated a certain output line, in order to generate errors where the line numbers refer to the original file rather than the preprocessed/optimized file.</p>
+
+<p><b>Important:</b> Changing options in the middle of the program may not be well supported. In particular, activating and deactivating in the same program certain options like <code>BreakCont</code> may crash the optimizer. Changing the options at the beginning of the script should be safe.</p>
+
+<p><i><b>Note:</b> <em>GNU cpp</em> actually generates a preprocessor command that only contains the line number and the file name, pretty much like a </i><code>#line</code><i> directive does, but without the </i><code>line</code><i> part. The parser deals with that format correctly, treating it as if it was a </i><code>#line</code><i> directive.</i></p>
+
+<p><i><b>Note:</b> Firestorm prepends a <em><code>//</code></em> comment to the </i><code>#line</code><i> directives that <em>Boost::Wave</em> generates; since the optimizer doesn't use Firestorm's output directly, it doesn't interpret these lines.</i></p>
+
+<p><i><b>Note:</b> Pragma operators of the form </i><code>_Pragma("pragma string")</code><i> introduced in <em>C99</em> are not supported.</i></p>
+
+<p>In versions 0.1.3alpha and below, there was a similar option called <code>skippreproc</code> that merely skipped any preprocessor directives. That option is now removed.</p>
+
 <hr>
 
 <h2><a id="compatibility-syntax-extensions"></a>Compatibility Syntax extensions</h2>
@@ -207,7 +266,7 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
 <p>The syntax of the <code>switch</code> statement as implemented, has two restrictions over its C counterpart:</p>
 
 <ol>
-<li><code>case</code> labels can't appear in nested blocks. That's because they are replaced by LSL labels, and as discussed in the <i>Multiple labels with the same name</i> section above, label scope rules prevent their visibility in an outer block, so once converted to labels, the corresponding <code>jump</code> instructions would not be able to find them. This limitation means that <a href="https://en.wikipedia.org/wiki/Duff's_device">Duff's device</a> or similar constructs can't be implemented with this optimizer.</li>
+<li><code>case</code> labels can't appear in nested blocks. That's because they are replaced by LSL labels, and as discussed in the <em>Multiple labels with the same name</em> section above, label scope rules prevent their visibility in an outer block, so once converted to labels, the corresponding <code>jump</code> instructions would not be able to find them. This limitation means that <a href="https://en.wikipedia.org/wiki/Duff's_device">Duff's device</a> or similar constructs can't be implemented with this optimizer.</li>
 <li><div><code>switch()</code> needs to be followed by a block, not by a single statement. For example, whiile this works in C, it won't work in this optimizer:</div>
 <pre><code>    switch(1) case 1: break;</code></pre>
 <div>The reason is that <code>case</code> is treated by this parser as a statement, rather than as a label prefix, making <code>break</code> be outside the <code>switch</code> and thus failing at that point. This limitation is probably only of theoretical importance and will not have any practical implication, since single-statement <code>switch</code> clauses are of little or no practical use (known to the author). Of course it works perfectly when enclosed in braces:</div>
@@ -368,31 +427,31 @@ string b = "A very long string that appears in this script once" + " or twice";
 
 <p>This program is designed to work as a filter. It can read from standard input if the file name argument is "-", and it can (and does by default) output the result to standard output. Any errors and warnings go to standard error always, to not interfere with the script being output.</p>
 
-<p>Running it by hand to optimize your scripts can be cumbersome. The intention is for it to act as a filter that is transparent to the user; however, as of this writing there's no support for any viewer or IDE, as it has just been released. Run it without parameters to see the invocation help, for example with <code>python main.py</code>. Redirect the output to a file if you want to store the result, possibly to open it with an editor and copy it to the clipboard. Or under <i>X Window</i>, you can pipe the output directly to <code>xclip -quiet -selection clipboard</code> to copy it to the clipboard, rather than using a file, so you can paste it directly into the viewer. Examples:</p>
+<p>Running it by hand to optimize your scripts can be cumbersome. The intention is for it to act as a filter that is transparent to the user; however, as of this writing there's no support for any viewer or IDE, as it has just been released. Run it without parameters to see the invocation help, for example with <code>python main.py</code>. Redirect the output to a file if you want to store the result, possibly to open it with an editor and copy it to the clipboard. Or under <em>X Window</em>, you can pipe the output directly to <code>xclip -quiet -selection clipboard</code> to copy it to the clipboard, rather than using a file, so you can paste it directly into the viewer. Examples:</p>
 
 <pre><code>python main.py myscript.lsl | xclip -quiet -selection clipboard
 </code></pre>
 
-<p>will, under <i>X Window</i>, read <code>myscript.lsl</code>, optimize it, and copy the optimized result to the clipboard, ready to be pasted into the viewer.</p>
+<p>will, under <em>X Window</em>, read <code>myscript.lsl</code>, optimize it, and copy the optimized result to the clipboard, ready to be pasted into the viewer.</p>
 
 <pre><code>python main.py myscript.lsl -o temp.opt
 notepad temp.opt
 </code></pre>
 
-<p>will, under any system which has an editor called <code>notepad</code>, read <code>myscript.lsl</code>, optimize it, and write the optimized result to <code>temp.opt</code>, then open it in the editor, enabling you to copy it and paste it into the viewer. Under <i>Windows</i> version <i>Vista</i> and above, apparently there's a command line application called <code>clip</code> that does the same as <code>xclip</code> does for <i>X Window</i>, enabling you to use this:</p>
+<p>will, under any system which has an editor called <code>notepad</code>, read <code>myscript.lsl</code>, optimize it, and write the optimized result to <code>temp.opt</code>, then open it in the editor, enabling you to copy it and paste it into the viewer. Under <em>Windows</em> version <em>Vista</em> and above, apparently there's a command line application called <code>clip</code> that does the same as <code>xclip</code> does for <em>X Window</em>, enabling you to use this:</p>
 
 <pre><code>python main.py myscript.lsl | clip
 </code></pre>
 
 <p>to copy the optimized output to the clipboard. Under OS X, it seems <code>pbcopy</code> does the same as <code>xclip</code> and <code>clip</code>.</p>
 
-<p>An external preprocessor is supported. If your system has a GNU C Compiler suite already installed, then the <code>cpp</code> that comes with it (or <code>gcc</code> adding the <code>-E</code> option) should be enough. If you don't have it, the recommended preprocessor is <i>mcpp</i>, because it's a standalone executable, easy to install. Download it from <a href="http://mcpp.sourceforge.net/download.html">http://mcpp.sourceforge.net/download.html</a>, unpack the executable somewhere in the system path (or specify the path to the executable every time with the <code>--precmd</code> option of the program) and you're ready to go.</p>
+<p>An external preprocessor is supported. If your system has a GNU C Compiler suite already installed, then the <code>cpp</code> that comes with it (or <code>gcc</code> adding the <code>-E</code> option) should be enough. If you don't have it, the recommended preprocessor is <em>mcpp</em>, because it's a standalone executable, easy to install. Download it from <a href="http://mcpp.sourceforge.net/download.html">http://mcpp.sourceforge.net/download.html</a>, unpack the executable somewhere in the system path (or specify the path to the executable every time with the <code>--precmd</code> option of the program) and you're ready to go.</p>
 
 <p>Future plans include writing a patch for Firestorm to enable it to run external script filtering programs instead of Firestorm's internal preprocessor and optimizer. That would allow this program to be run using Firestorm's integrated machinery, making usage pretty transparent to the programmer.</p>
 
 <p>Support for other IDEs like Eclipse is not planned, but the author encourages others to write it. Please notify Sei Lisa if you write one, so that it can be listed in this page.</p>
 
-<p>The program uses two external files. One is <code>builtins.txt</code>, which is in the same format as needed by <a href="https://github.com/pclewis/lslint"><i>lslint</i></a>, and an up-to-date copy can be obtained from the <a href="https://bitbucket.org/Sei_Lisa/kwdb/"><i>kwdb</i></a> project: <a href="https://bitbucket.org/Sei_Lisa/kwdb/raw/tip/outputs/builtins.txt">https://bitbucket.org/Sei_Lisa/kwdb/raw/tip/outputs/builtins.txt</a>. The other is <code>seftable.txt</code>, which is a list of functions that have no side effects (SEF stands for Side-Effect Free), allowing them to be removed (optimized out) if nothing else has side effects in an expression and the result of the expression is not used.</p>
+<p>The program uses two external files. One is <code>builtins.txt</code>, which is in the same format as needed by <a href="https://github.com/pclewis/lslint"><em>lslint</em></a>, and an up-to-date copy can be obtained from the <a href="https://bitbucket.org/Sei_Lisa/kwdb/"><em>kwdb</em></a> project: <a href="https://bitbucket.org/Sei_Lisa/kwdb/raw/tip/outputs/builtins.txt">https://bitbucket.org/Sei_Lisa/kwdb/raw/tip/outputs/builtins.txt</a>. The other is <code>seftable.txt</code>, which is a list of functions that have no side effects (SEF stands for Side-Effect Free), allowing them to be removed (optimized out) if nothing else has side effects in an expression and the result of the expression is not used.</p>
 
 <hr>
 
