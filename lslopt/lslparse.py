@@ -872,7 +872,7 @@ class parser(object):
 
         if tok0 == '[':
             self.NextToken()
-            val = self.Parse_optional_expression_list()
+            val = self.Parse_optional_expression_list(False)
             self.expect(']')
             self.NextToken()
             return {'nt':'LIST', 't':'list', 'ch':val}
@@ -926,7 +926,7 @@ class parser(object):
             self.NextToken()
             if typ != 'list':
                 raise EParseTypeMismatch(self)
-            idxexpr = self.Parse_optional_expression_list()
+            idxexpr = self.Parse_optional_expression_list(False)
             self.expect(']')
             self.NextToken()
             if self.tok[0] != '=' or not AllowAssignment:
@@ -1464,24 +1464,28 @@ list lazy_list_set(list L, integer i, list v)
         optional_expression_list: LAMBDA | expression_list
         expression_list: expression | expression_list ',' expression
         """
-        # This is a maze of which we get out with a dirty hack.
-        # optional_expression_list is used by FOR statements (closed by ';' or ')'),
-        # list constants (closed by ']') and function arguments (closed by ')').
-        # If it's not the right token, we'll err anyway, in Parse_expression or
-        # upon return.
+        # Recursive descendent parsers are nice, but not exempt of problems.
+        # We need to accept empty lists. This is a maze of which we get out
+        # with a dirty hack. Rather than attempt to parse as an expression and
+        # backtrack in case of error, we check the next token to see if it
+        # is one that closes the expression list.
+        # optional_expression_list is used by FOR loops (closed by ';' or ')'),
+        # list constants and lazy lists (closed by ']') and function arguments
+        # (closed by ')'). If it's not the right token, we'll err anyway upon
+        # return.
         ret = []
         idx = 0
         if self.tok[0] not in (']', ')', ';'):
             while True:
                 expr = self.Parse_expression()
-                if expected_types is not None:
+                if False is not expected_types is not None:
                     if idx >= len(expected_types):
                         raise EParseFunctionMismatch(self)
                     try:
                         expr = self.autocastcheck(expr, expected_types[idx]);
                     except EParseTypeMismatch:
                         raise EParseFunctionMismatch(self)
-                else:
+                elif expected_types is False: # don't accept void expressions
                     if expr['t'] not in self.types:
                         raise EParseTypeMismatch(self)
                 idx += 1
@@ -1489,7 +1493,7 @@ list lazy_list_set(list L, integer i, list v)
                 if self.tok[0] != ',':
                     break
                 self.NextToken()
-        if expected_types is not None and idx != len(expected_types):
+        if False is not expected_types is not None and idx != len(expected_types):
             raise EParseFunctionMismatch(self)
         return ret
 

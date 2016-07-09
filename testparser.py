@@ -228,13 +228,14 @@ class Test02_Parser(UnitTestCase):
         self.parser.parse('default{timer(){vector v;v.x=0;}}')
 
         # Check for exceptions only
-        p = self.parser.parse('default{timer(){jump x;while(1)@x;}}')
-        p = self.parser.parse('default{timer(){jump x;do@x;while(1);}}')
-        p = self.parser.parse('default{timer(){jump x;for(;1;)@x;}}')
-        p = self.parser.parse('default{timer(){jump x;while(1)@x;}}', ('breakcont',))
-        p = self.parser.parse('default{timer(){jump x;do@x;while(1);}}', ('breakcont',))
-        p = self.parser.parse('default{timer(){jump x;for(;1;)@x;}}', ('breakcont',))
-        self.outscript.output(p)
+        self.parser.parse('default{timer(){jump x;while(1)@x;}}')
+        self.parser.parse('default{timer(){jump x;do@x;while(1);}}')
+        self.parser.parse('default{timer(){jump x;for(;1;)@x;}}')
+        self.parser.parse('default{timer(){jump x;while(1)@x;}}', ('breakcont',))
+        self.parser.parse('default{timer(){jump x;do@x;while(1);}}', ('breakcont',))
+        self.parser.parse('default{timer(){jump x;for(;1;)@x;}}', ('breakcont',))
+
+        self.parser.parse('default{timer(){for(llDie();1;llDie());}}')
 
         self.assertRaises(EParseUndefined, self.parser.parse,
             'default{timer(){jump x;while(1){@x;}}}')
