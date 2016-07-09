@@ -1659,9 +1659,6 @@ list lazy_list_set(list L, integer i, list v)
                 # This works by adding braces around the while and the newly
                 # added label, like this:
                 # if (a) { while (b) { ... jump label; } @label; }
-                #
-                # FIXME: This causes issues with this code that should work:
-                #   default{timer(){ jump x; while(1) @x; }}
                 self.PushScope()
 
                 self.breakstack.append([self.GenerateLabel(), self.scopeindex, False])
@@ -1671,8 +1668,22 @@ list lazy_list_set(list L, integer i, list v)
             condition = self.Parse_expression()
             self.expect(')')
             self.NextToken()
-            ret = {'nt':'WHILE', 't':None, 'ch':[condition,
-                self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)]}
+            # To fix a problem with a corner case (LSL allows defining a label
+            # in a single statement, at the same scope as the loop, breaking
+            # some of our logic), we check if the statement is a label. If so,
+            # we pop the scope to parse the statement and push it again.
+            # It won't cause scope problems in turn because we won't add any
+            # break or continue labels if no break or continue statement is
+            # present, which it can't because the statement is a label.
+            if self.breakcont and self.tok[0] == '@':
+                self.PopScope()
+                stmt = self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)
+                self.PushScope()
+            else:
+                stmt = self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)
+
+            ret = {'nt':'WHILE', 't':None, 'ch':[condition, stmt]}
+
             if self.breakcont:
                 last = self.continuestack.pop()
                 if last[2]:
@@ -1694,7 +1705,12 @@ list lazy_list_set(list L, integer i, list v)
 
                 self.breakstack.append([self.GenerateLabel(), self.scopeindex, False])
                 self.continuestack.append([self.GenerateLabel(), None, False])
-            stmt = self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)
+            if self.breakcont and self.tok[0] == '@':
+                self.PopScope()
+                stmt = self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)
+                self.PushScope()
+            else:
+                stmt = self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)
             self.expect('WHILE')
             self.NextToken()
             self.expect('(')
@@ -1737,7 +1753,12 @@ list lazy_list_set(list L, integer i, list v)
             iterator = self.Parse_optional_expression_list()
             self.expect(')')
             self.NextToken()
-            stmt = self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)
+            if self.breakcont and self.tok[0] == '@':
+                self.PopScope()
+                stmt = self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)
+                self.PushScope()
+            else:
+                stmt = self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)
             ret = {'nt':'FOR', 't':None,
                 'ch':[{'nt':'EXPRLIST','t':None, 'ch':initializer},
                       condition,
