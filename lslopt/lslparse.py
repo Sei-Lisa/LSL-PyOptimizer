@@ -1652,6 +1652,14 @@ list lazy_list_set(list L, integer i, list v)
                 # we always do and open a new scope for it. At worst it will be
                 # empty. At least it is not reflected as braces in the code if
                 # braces are not used.
+                #
+                # This is designed to deal with cases like:
+                # if (a) while (b) { ... break; }
+                #
+                # This works by adding braces around the while and the newly
+                # added label, like this:
+                # if (a) { while (b) { ... jump label; } @label; }
+                #
                 # FIXME: This causes issues with this code that should work:
                 #   default{timer(){ jump x; while(1) @x; }}
                 self.PushScope()
