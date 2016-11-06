@@ -679,7 +679,7 @@ def div(a, b, f32=True):
                     return a # this could be handled by using S32 but it's probably faster this way
                 if (a < 0) ^ (b < 0):
                     # signs differ - Python rounds towards -inf, we need rounding towards 0
-                    return - a//-b # that's -(a//-b) not (-a)//-b
+                    return -(a//-b)
                 return a//b
             ret = F32(ff(a)/ff(b), f32)
             if math.isnan(ret): # A NaN result gives a math error.
