@@ -1708,7 +1708,7 @@ def llXorBase64(s, xor):
 
     Bug3763 = 3763 in Bugs
     # BUG-3763 consists of the binary string having an extra NULL every time after the second repetition of
-    # the XOR pattern. For example, if the XOR binary stirng is b'pqr' and the input string is
+    # the XOR pattern. For example, if the XOR binary string is b'pqr' and the input string is
     # b'12345678901234567890', the XOR binary string behaves as if it was b'pqrpqr\0pqr\0pqr\0pqr\0pq'.
     # We emulate that by adding the zero and increasing the length the first time.
     for c in s:
