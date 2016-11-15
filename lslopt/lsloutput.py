@@ -226,9 +226,9 @@ class outscript(object):
                 # unary minus. Consider the following two statements:
                 #     (~-a) * a
                 #     a * (~-a) * a
-                # In one case, the (~-a) is a left child; in the other, it's a
-                # right child. In both, the parentheses are mandatory, or they
-                # would be interpreted respectively as:
+                # In one case, the (~-a) is a left child; in the other, it's
+                # part of a right child. In both, cases, the parentheses are
+                # mandatory, or they would be interpreted respectively as:
                 #     ~-(a * a)
                 #     a * ~-(a * a)
                 # Yet the tree structure makes it quite hard to detect these.
