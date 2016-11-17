@@ -364,8 +364,8 @@ but this will cause an error:
 
 <p>This enables using many preprocessor tricks, like creating an <code>assert()</code> macro similar to that in C:</p>
 
-<pre><code>#define assert(x) do { if (DEBUG &amp;&amp; !(x)) \
-  llOwnerSay("ASSERTION FAILED: " #x); } while (0)
+<pre><code>#define assert(...) do { if (DEBUG) if (__VA_ARGS__) ; \
+  else llOwnerSay("ASSERTION FAILED: " #__VA_ARGS__); } while (0)
 </code></pre>
 
 <p>without worrying about the extra memory that it will take in production code once DEBUG is switched off, or about the loop taking up actual code memory.</p>
