@@ -530,7 +530,7 @@ class parser(object):
 
                     if is_string:
                         self.pos += 1
-                        return ('STRING_VALUE', strliteral.decode('utf8'))
+                        return ('STRING_VALUE', lslfuncs.zstr(strliteral.decode('utf8')))
                     # fall through (to consider the L or to ignore the ")
 
                 if isalpha_(c):
