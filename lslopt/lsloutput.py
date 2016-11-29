@@ -437,9 +437,12 @@ class outscript(object):
         self.tree, self.symtab = treesymtab
 
         # Grab options
-        self.optsigns = 'optsigns' in options
-        self.optfloats = 'optfloats' in options
-        self.foldconst = 'constfold' in options
+        self.optimize = 'optimize' in options
+        # These are optimization options that depend on the above:
+        self.optsigns = self.optimize and 'optsigns' in options
+        self.optfloats = self.optimize and 'optfloats' in options
+        self.foldconst = self.optimize and 'constfold' in options
+
         self.warntabs = 'warntabs' in options
 
         ret = ''
