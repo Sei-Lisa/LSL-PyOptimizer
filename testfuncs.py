@@ -525,6 +525,8 @@ def do_tests():
     test('div(1,-9)', 0)
     test('div(8,-9)', 0)
     test('div(9,-9)', -1)
+    test('less(Infinity, Infinity)', 0)
+    test('less(-Infinity, Infinity)', 1)
     test(r'zstr(Key(u"xy\0zzy"))', Key(u'xy'))
     test('typecast(Infinity, unicode)', u'Infinity')
     test('typecast(NaN, unicode)', u'NaN')
