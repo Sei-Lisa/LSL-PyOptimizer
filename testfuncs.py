@@ -22,6 +22,7 @@ from lslopt.lslfuncs import *
 from lslopt import lslcommon
 import sys
 import math
+from base64 import b64encode
 
 StopAtFirstError = False
 
@@ -150,6 +151,14 @@ def testXB64(s1, s2, expect, Bug3763=False):
         Bugs.add(3763)
     test('llXorBase64(' + repr(s1) + ',' + repr(s2) + ')', expect)
     Bugs.discard(3763)
+
+def h2b64(h):
+    return unicode(b64encode(bytes(bytearray.fromhex(h))))
+
+def testB642S(b, expected):
+    assert type(b) == str
+    assert type(expected) == str
+    test('llEscapeURL(llBase64ToString(h2b64(' + repr(b) + ')))', unicode(expected))
 
 # Begin JSON tests from http://wiki.secondlife.com/wiki/Json_usage_in_LSL/TestScript
 def verify(msg, result, expected):
@@ -1126,7 +1135,90 @@ def do_tests():
     test('llBase64ToString(u"")', u'')
     test('llBase64ToString(u"1")', u'')
     test('llBase64ToString(u"12")', u'?')
-    test('llBase64ToString(u"14A")', u'\u05C0') # Defer thorough testing of UTF-8 to llUnescapeURL tests
+    test('llBase64ToString(u"14A")', u'\u05C0')
+    # llUnescapeURL and llBase64ToString behave differently. We need to test
+    # both thoroughly.
+
+    # Embedded and trailing NUL tests:
+    test('llBase64ToString(u"QUJDAERFRg")', u'ABC?DEF') # 'ABC\x00DEF'
+    test('llBase64ToString(u"AEEAQgBD")', u'?A?B?C') # '\x00A\x00B\x00C'
+    test('llBase64ToString(u"AEEAQgBDAA")', u'?A?B?C') # '\x00A\x00B\x00C\x00'
+    test('llBase64ToString(u"AEEAQgBDAA")', u'?A?B?C') # '\x00A\x00B\x00C\x00'
+    testB642S("0041004200430000", "%3FA%3FB%3FC%3F")
+
+    # Some assorted tests:
+    test('llBase64ToString(u"gIAA")', u'??')
+    test('llBase64ToString(u"gAA")', u'?')
+    test('llBase64ToString(u"44AA")', u'?')
+    test('llBase64ToString(u"4IAh")', u'?!')
+    test('llBase64ToString(u"gICAgGE")', u'????a')
+    test('llBase64ToString(u"QQA")', u'A')
+    test('llBase64ToString(u"AEE=")', u'?A')
+    test('llBase64ToString(u"wKE")', u'?') # C080
+    test('llBase64ToString(u"9ICA")', u'?') # F48080
+    test('llBase64ToString(u"94CAgICA")', u'??????')
+    test('llBase64ToString(u"4ICA")', u'?') # E08080
+    test('llBase64ToString(u"4IA")', u'?') # E080
+    test('llUnescapeURL(u"%E0%80")', u'??') # Compare with the above
+
+    testB642S("C38180E381C380414243D3", "%C3%81%3F%3F%C3%80ABC%3F")
+    testB642S("C38180E381C38041424300D3", "%C3%81%3F%3F%C3%80ABC%3F%3F")
+    testB642S("E0808080808080E381C38041424300D3", "%3F%3F%3F%3F%3F%3F%C3%80ABC%3F%3F")
+    # test UTF-8 valid ranges
+    testB642S("7F78", "%7Fx") # range up to U+007F
+    testB642S("808078", "%3F%3Fx") # invalid range begin
+    testB642S("BFBF78", "%3F%3Fx") # invalid range end
+    testB642S("C08078", "%3Fx") # aliased range begin (U+0000)
+    testB642S("C1BF78", "%3Fx") # aliased range end   (U+007F)
+    testB642S("C28078", "%C2%80x") # U+0080 (2-byte range start)
+    testB642S("DFBF78", "%DF%BFx") # U+07FF (2-byte range end)
+    testB642S("E0808078", "%3Fx") # aliased range begin (U+0000)
+    testB642S("E09FBF78", "%3Fx") # aliased range end   (U+07FF)
+    testB642S("E0A08078", "%E0%A0%80x") # U+0800 (3-byte range start)
+    testB642S("ED9FBF78", "%ED%9F%BFx") # U+D7FF (right before first UTF-16 high surrogate)
+    testB642S("EE808078", "%EE%80%80x") # U+E000 (right after last UTF-16 low surrogate)
+    testB642S("EFBFBF78", "%EF%BF%BFx") # U+FFFF (3-byte range end)
+    testB642S("F080808078", "%3Fx") # aliased range begin (U+0000)
+    testB642S("F08FBFBF78", "%3Fx") # aliased range end   (U+FFFF)
+    testB642S("F090808078", "%F0%90%80%80x") # U+10000 (4-byte range start)
+    testB642S("F48FBFBF78", "%F4%8F%BF%BFx") # U+10FFFF (valid 4-byte range end)
+    # excluded because they are used for UTF-16 surrogates, not valid characters
+    testB642S("EDA080", "%3F%3F%3F") # D800 - first high surrogate
+    testB642S("EDAFBF", "%3F%3F%3F") # DBFF - last high surrogate
+    testB642S("EDB080", "%3F%3F%3F") # DC00 - first low surrogate
+    testB642S("EDBFBF", "%3F%3F%3F") # DFFF - last low  surrogate
+    # excluded because of truncation to U+10FFFF
+    testB642S("F490808078", "%3F%3F%3F%3Fx") # U+110000 (invalid 4-byte range start)
+    testB642S("F7BFBFBF78", "%3F%3F%3F%3Fx") # U+1FFFFF (invalid 4-byte range end)
+    testB642S("F88080808078", "%3Fx") # aliased range begin (U+0000)
+    testB642S("F887BFBFBF78", "%3Fx") # aliased range end (U+1FFFFF)
+    testB642S("F88880808078", "%3F%3F%3F%3F%3Fx") # U+200000 (5-byte range start)
+    testB642S("FBBFBFBFBF78", "%3F%3F%3F%3F%3Fx") # U+3FFFFFF (5-byte range end)
+    testB642S("FC808080808078", "%3Fx") # aliased range begin (U+0000)
+    testB642S("FC83BFBFBFBF78", "%3Fx") # aliased range end (U+3FFFFFF)
+    testB642S("FC848080808078", "%3F%3F%3F%3F%3F%3Fx") # U+4000000 (6-byte range start)
+    testB642S("FDBFBFBFBFBF78", "%3F%3F%3F%3F%3F%3Fx") # U+7FFFFFFF (6-byte range end)
+    # not actually valid either way (these are actually used to distinguish the input as UTF-16 BOM)
+    testB642S("FEB080808080808078", "%3F%3F%3F%3F%3F%3F%3F%3Fx")
+    testB642S("FFBFBFBFBFBFBFBF78", "%3F%3F%3F%3F%3F%3F%3F%3Fx")
+    # short or invalid sequences
+    testB642S("80", "%3F")
+    testB642S("BF", "%3F")
+    testB642S("C2", "%3F")
+    testB642S("E1", "%3F")
+    testB642S("E180", "%3F")
+    testB642S("F1", "%3F")
+    testB642S("F180", "%3F")
+    testB642S("F18080", "%3F")
+    testB642S("F8808080", "%3F")
+    testB642S("F8888080", "%3F")
+    testB642S("FC80808080", "%3F")
+    testB642S("FC84808080", "%3F")
+
+    # Test that U+FFFD is preserved even with invalid characters
+    testB642S("EFBFBD90", "%EF%BF%BD%3F")
+
+
     test('typecast([1,F32(3.14),Key(u"blah"),Quaternion((1.,0.,0.,0.))], unicode)',
         u'13.140000blah<1.000000, 0.000000, 0.000000, 0.000000>')
 
@@ -1199,6 +1291,15 @@ def do_tests():
     # not actually valid either way (these are actually used to distinguish the input as UTF-16 BOM)
     test('llEscapeURL(llUnescapeURL(u"%FE%B0%80%80%80%80%80%80x"))', u'%3F%3F%3F%3F%3F%3F%3F%3Fx')
     test('llEscapeURL(llUnescapeURL(u"%FF%BF%BF%BF%BF%BF%BF%BFx"))', u'%3F%3F%3F%3F%3F%3F%3F%3Fx')
+    # short or invalid sequences
+    test('llEscapeURL(llUnescapeURL(u"%80"))', u'%3F')
+    test('llEscapeURL(llUnescapeURL(u"%BF"))', u'%3F')
+    test('llEscapeURL(llUnescapeURL(u"%C2"))', u'%3F')
+    test('llEscapeURL(llUnescapeURL(u"%E1"))', u'%3F')
+    test('llEscapeURL(llUnescapeURL(u"%E1%80"))', u'%3F%3F')
+    test('llEscapeURL(llUnescapeURL(u"%F1"))', u'%3F')
+    test('llEscapeURL(llUnescapeURL(u"%F1%80"))', u'%3F%3F')
+    test('llEscapeURL(llUnescapeURL(u"%F1%80%80"))', u'%3F%3F%3F')
 
     # Test that U+FFFD is preserved even with invalid characters
     test('llEscapeURL(llUnescapeURL(u"%EF%BF%BD%90"))', u'%EF%BF%BD%3F')
@@ -1221,11 +1322,11 @@ def do_tests():
     test('llParseStringKeepNulls(u"",[],[""])', [u""])
     test('llParseStringKeepNulls(u"",[""],[])', [u""])
     test('llParseStringKeepNulls(u"",[""],[""])', [u""])
-    test('llParseString2List(u"",[],[])', []);
-    test('llParseString2List(u"",[],[u""])', []);
-    test('llParseString2List(u"",[u""],[])', []);
-    test('llParseString2List(u"",[u""],[u""])', []);
-    test('llParseStringKeepNulls(u"a",[u""],[])', [u"a"]);
+    test('llParseString2List(u"",[],[])', [])
+    test('llParseString2List(u"",[],[u""])', [])
+    test('llParseString2List(u"",[u""],[])', [])
+    test('llParseString2List(u"",[u""],[u""])', [])
+    test('llParseStringKeepNulls(u"a",[u""],[])', [u"a"])
 
 
     test(r'llToUpper(u"\u03c4\u03ac\u03c7\u03b9\u03c3\u03c4\u03b7 \u03b1\u03bb'
@@ -1424,7 +1525,7 @@ def do_tests():
     test(r'llJsonGetValue(u" [[[]]]]]]][] ", [])', u'[[[]]]]]]][]')
 
     test(r'llJsonGetValue(u"{\"a\":[1],\"a\":[2],\"a\":[3]}", [u"a",0])', u'3')
-    test(r'llJsonGetValue(u"{\"a\":[2,3,[4]],\"a\":1}", [u"a", 2, 0])', JSON_INVALID);
+    test(r'llJsonGetValue(u"{\"a\":[2,3,[4]],\"a\":1}", [u"a", 2, 0])', JSON_INVALID)
 
     test(r'llJsonGetValue(u"{\"a\":1,}",["a"])', JSON_INVALID)
 

@@ -897,10 +897,61 @@ def llBase64ToInteger(s):
     i = ord(s[0]) if s[0] < b'\x80' else ord(s[0])-256
     return (i<<24)+(ord(s[1])<<16)+(ord(s[2])<<8)+ord(s[3])
 
+b64tos_re = re.compile(
+    b'('
+      # Those pass through and are caught by InternalUTF8toString:
+      b'\x00$' # NUL at last position (zstr removes it)
+      b'|[\x01-\x7F\xFE\xFF]|[\xC2-\xDF][\x80-\xBF]'
+      b'|(?:\xE0[\xA0-\xBF]|[\xE1-\xEF][\x80-\xBF])[\x80-\xBF]'
+      b'|(?:\xF0[\x90-\xBF]|[\xF1-\xF7][\x80-\xBF])[\x80-\xBF]{2}'
+      b'|(?:\xF8[\x88-\xBF]|[\xF9-\xFB][\x80-\xBF])[\x80-\xBF]{3}'
+      b'|(?:\xFC[\x84-\xBF]|\xFD[\x80-\xBF])[\x80-\xBF]{4}'
+    b')|('
+      # Those are caught here and substituted by a single "?"
+      # (greediness is important here):
+      b'[\x00\x80-\xBF]'
+      b'|[\xC0-\xDF][\x80-\xBF]?'
+      b'|[\xE0-\xEF][\x80-\xBF]{0,2}'
+      b'|[\xF0-\xF7][\x80-\xBF]{0,3}'
+      b'|[\xF8-\xFB][\x80-\xBF]{0,4}'
+      b'|[\xFC-\xFD][\x80-\xBF]{0,5}'
+    b')|(.)' # should never be reached
+)
+
 def llBase64ToString(s):
     assert isstring(s)
     s = b64_re.search(s).group(0)
-    return InternalUTF8toString(b64decode(s + u'='*(-len(s)&3)))
+
+    # llUnescapeURL and llBase64ToString behave differently.
+    # llBase64ToString does a first check on the UTF-8 before the standard
+    # conversion, unlike llUnescapeURL. That makes it have a much more similar
+    # behaviour to LSO's than llUnescapeURL does. But LL being LL, the check
+    # is, of course, flawed, and some illegal sequences pass as good (but in
+    # Mono they are fortunately stopped on the conversion to UTF-8 instead).
+    # The check that llBase64ToString does has the quirk that the invalid
+    # sequences that it catches are treated as 1 single bad character instead
+    # of as many as the sequence has. The latter is what normal conversion to
+    # UTF-8 does. This causes inconsistencies in the number of ?'s returned.
+
+    # In llBase64ToString, trailing NUL is stripped, and embedded NULs are
+    # converted to "?".
+
+    byteseq = bytearray(b64decode(s + u'='*(-len(s)&3)))
+
+    pos = 0
+    match = b64tos_re.search(byteseq, pos)
+    while match is not None:
+        assert match.group(3) is None, 'Fail in b64tos_re: ' + match.group(3)
+        L = len(match.group(2) or '')
+        if L:
+            byteseq[pos:pos+L] = b'?'
+            pos = match.end(2) - L + 1
+        else:
+            pos = match.end(1)
+
+        match = b64tos_re.search(byteseq, pos)
+
+    return InternalUTF8toString(bytes(byteseq))
 
 def llCSV2List(s):
     assert isstring(s)
