@@ -30,6 +30,9 @@ class Quaternion(tuple):
     def __repr__(self):
         return 'Quaternion(' + super(Quaternion, self).__repr__() + ')'
 
+class ELSONotSupported(Exception):
+    pass
+
 # Recognized: 3763, 6466, 6495
 Bugs = set([6495])
 
