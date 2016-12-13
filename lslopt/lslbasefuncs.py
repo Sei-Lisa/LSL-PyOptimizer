@@ -460,8 +460,9 @@ def InternalUTF8toString(s):
         if partialchar:
             if 0x80 <= o < 0xC0 and (
                     partialchar[1:2]
-                    or b'\xC2' <= partialchar < b'\xF4' and partialchar not in b'\xE0\xF0'
+                    or b'\xC2' <= partialchar < b'\xF4' and partialchar not in b'\xE0\xED\xF0'
                     or partialchar == b'\xE0' and o >= 0xA0
+                    or partialchar == b'\xED' and o < 0xA0
                     or partialchar == b'\xF0' and o >= 0x90
                     or partialchar == b'\xF4' and o < 0x90
                     ):
