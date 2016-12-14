@@ -2,18 +2,24 @@
 <html><head>
 <title>LSL PyOptimizer project</title>
 <style type="text/css">
-body {background:#f0fcff;}
-a {text-decoration:none;color:blue;}
-a:hover {text-decoration:underline;}
-a:visited {color:#8000c0;}
-pre, code { background:#e8e8f8; padding:2px; }
-pre { padding:4px; }
+body { background:#506c80; font-family:Verdana, Bitstream Vera Sans, sans-serif; font-size:10pt; line-height:1.5; }
+a { text-decoration:none;color:#004090; }
+a:hover { text-decoration:underline; }
+a:visited { color:#9000c0; }
+pre, code { background:#ecf0ff; padding:1px; border: solid 1px #c0dcee; }
+pre code { border: none; }
+pre { margin: 0px 4px; padding:4px 1em 4px 0.2em; white-space:pre-wrap; }
 pre code { padding: 0px; }
-i em {font-style: normal;}
+pre span { padding-left: 0.8em; }
+i em { font-style: normal; }
+h1 { background: #2080C0; color: white; padding:25px 5% 8px; margin: 4% 7% 0px; }
+#textcontainer { margin: 0px 7%; padding: 30px 13% 30px 5%; background:#e2e6ff; word-wrap:break-word; }
 </style>
 </head><body>
 
 <h1><a id="lsl-pyoptimizer"></a>LSL PyOptimizer</h1>
+
+<div id="textcontainer">
 
 <h2><a id="introduction"></a>Introduction</h2>
 
@@ -94,12 +100,12 @@ i em {font-style: normal;}
 
 <p>Allow arbitrary expressions in globals, as long as they resolve to a single constant. The optimizer will evaluate the expression and substitute the result in the final script. For example, you can have a line like:</p>
 
-<pre><code>    float a = llPow(llSin(40*DEG_TO_RAD), 2);
+<pre><code><span>    float a = llPow(llSin(40*DEG_TO_RAD), 2);</span>
 </code></pre>
 
 <p>in the globals section, and the optimizer will output the line:</p>
 
-<pre><code>    float a = 0.41317588;
+<pre><code><span>    float a = 0.41317588;</span>
 </code></pre>
 
 <p>instead. Needs constant folding optimization to be enabled. If the expression does not resolve to a constant, a warning will be emitted, and the compilation will fail at that line.</p>
@@ -112,12 +118,12 @@ i em {font-style: normal;}
 
 <p>In LSL, keys are automatically cast to string in most cases. For example:</p>
 
-<pre><code>    llOwnerSay(llGetOwner());
+<pre><code><span>    llOwnerSay(llGetOwner());</span>
 </code></pre>
 
 <p>works perfectly. However, one prominent case where that does not happen automatically is in string concatenation. Confusingly, while the above works, this doesn't:</p>
 
-<pre><code>    llOwnerSay("Your key is: " + llGetOwner());
+<pre><code><span>    llOwnerSay("Your key is: " + llGetOwner());</span>
 </code></pre>
 
 <p>and instead produces a type mismatch error. This syntax extension allows you to concatenate strings and keys, making the type cast transparent.</p>
@@ -126,32 +132,32 @@ i em {font-style: normal;}
 
 <p>For example <code>"a" "b"</code> resolves to the string <code>"ab"</code>. Very useful when combined with preprocessor macros, for not needing to add strings together to form a larger string. For example:</p>
 
-<pre><code>#define VERSION "1.13"
-#define REVISION "b"
-...
-llOwnerSay("Program version " VERSION
-           ", revision " REVISION);
+<pre><code><span>#define VERSION "1.13"</span>
+<span>#define REVISION "b"</span>
+<span>...</span>
+<span>llOwnerSay("Program version " VERSION</span>
+<span>           ", revision " REVISION);</span>
 </code></pre>
 
 <p>or even</p>
 
-<pre><code>#define VERSION 1.13
-#define REVISION b
-#define VERBATIM_STRINGIFY(x) #x
-#define STRINGIFY(x) VERBATIM_STRINGIFY(x)
-...
-llOwnerSay("Program version " STRINGIFY(VERSION)
-           ", revision " STRINGIFY(REVISION));
+<pre><code><span>#define VERSION 1.13</span>
+<span>#define REVISION b</span>
+<span>#define VERBATIM_STRINGIFY(x) #x</span>
+<span>#define STRINGIFY(x) VERBATIM_STRINGIFY(x)</span>
+<span>...</span>
+<span>llOwnerSay("Program version " STRINGIFY(VERSION)</span>
+<span>           ", revision " STRINGIFY(REVISION));</span>
 </code></pre>
 
 <p>will resolve to:</p>
 
-<pre><code>llOwnerSay("Program version 1.13, revision b");
+<pre><code><span>llOwnerSay("Program version 1.13, revision b");</span>
 </code></pre>
 
 <p>instead of something like</p>
 
-<pre><code>llOwnerSay("Program version " + "1.13" + ", revision " + "b");
+<pre><code><span>llOwnerSay("Program version " + "1.13" + ", revision " + "b");</span>
 </code></pre>
 
 <p>The latter can also be resolved by the optimizer, but by default that optimization is disabled as it can be counter-productive (see <a href="#optimizations-string-constant-folding">String constant concatenation</a> below for more information).</p>
@@ -166,20 +172,20 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
 
 <p>For example, you can have:</p>
 
-<pre><code>default
-{
-    state_entry()
-    {
-        {
-            integer i;
-            @label1;
-        }
-        {
-            integer i;
-            @label1;
-        }
-    }
-}
+<pre><code><span>default</span>
+<span>{</span>
+<span>    state_entry()</span>
+<span>    {</span>
+<span>        {</span>
+<span>            integer i;</span>
+<span>            @label1;</span>
+<span>        }</span>
+<span>        {</span>
+<span>            integer i;</span>
+<span>            @label1;</span>
+<span>        }</span>
+<span>    }</span>
+<span>}</span>
 </code></pre>
 
 <p>Just as the variables, the labels are visible only within their own blocks or any nested block inside them. Unlike variables, labels are also visible if they are declared <em>after</em> the <code>jump</code> instruction that uses them, as long as it's within a block that encloses the label.</p>
@@ -190,8 +196,8 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
 
 <p>Again, one use is in preprocessor macros. Consider this example:</p>
 
-<pre><code>#define DO {@dowhile;
-#define WHILE(expr) if (expr) jump dowhile;}
+<pre><code><span>#define DO {@dowhile;</span>
+<span>#define WHILE(expr) if (expr) jump dowhile;}</span>
 </code></pre>
 
 <p>Without this option, you would only be able to have one <code>DO...WHILE()</code> loop per function.</p>
@@ -204,39 +210,39 @@ llOwnerSay("Program version " STRINGIFY(VERSION)
 
 <p>To use this feature, type the command like this:</p>
 
-<pre><code><b>#pragma OPT</b> [+/-]<i>option1</i>[,[+/-]<i>option2</i>,...]
+<pre><code><span><b>#pragma OPT</b> [+/-]<i>option1</i>[,[+/-]<i>option2</i>,...]</span>
 </code></pre>
 
 <p>Note that it's important that OPT is in upper case. The options list is not case sensitive, but it can't have any spaces.</p>
 
 <p>For example, this code activates the <a href="#extensions-break-and-continue"><code>break</code> and <code>continue</code> statements extension</a> and the <a href="#extensions-c-like-string-juxtaposition">C-like string juxtaposition extension</a> regardless of the options passed in the command line:</p>
 
-<pre><code>#pragma OPT +BreakCont,+AllowMultiStrings
-default
-{
-  while (TRUE) break;
-  llOwnerSay("TEA" "TIME");
-}
+<pre><code><span>#pragma OPT +BreakCont,+AllowMultiStrings</span>
+<span>default</span>
+<span>{</span>
+<span>  while (TRUE) break;</span>
+<span>  llOwnerSay("TEA" "TIME");</span>
+<span>}</span>
 </code></pre>
 
 <p>Like in the command line, prepending a <code>+</code> sign or not preprending anything to an option has the same effect, namely to activate the option, while prepending a <code>-</code> sign has the effect of deactivating the option.</p>
 
 <p>The list of options usable in <code>#pragma</code> directives is:</p>
 
-<pre><code>ExtendedGlobalExpr
-ExtendedTypeCast
-ExtendedAssignment
-ExplicitCast
-AllowKeyConcat
-AllowMultiStrings
-ProcessPre
-EnableSwitch
-BreakCont
-ErrMissingDefault
-LazyLists
-DupLabels
-ShrinkNames
-FuncOverride
+<pre><code><span>ExtendedGlobalExpr</span>
+<span>ExtendedTypeCast</span>
+<span>ExtendedAssignment</span>
+<span>ExplicitCast</span>
+<span>AllowKeyConcat</span>
+<span>AllowMultiStrings</span>
+<span>ProcessPre</span>
+<span>EnableSwitch</span>
+<span>BreakCont</span>
+<span>ErrMissingDefault</span>
+<span>LazyLists</span>
+<span>DupLabels</span>
+<span>ShrinkNames</span>
+<span>FuncOverride</span>
 </code></pre>
 
 <p>For a description of each, you can invoke the program from the command line with: <code>python main.py -O help</code> (that's the upper case letter O, not the number zero). Note, however, that the only options that can be used in <code>#pragma</code> directives inlined in the code are the options listed above, which are the ones that affect the parsing, not the optimization.</p>
@@ -268,20 +274,20 @@ FuncOverride
 <ol>
 <li><code>case</code> labels can't appear in nested blocks. That's because they are replaced by LSL labels, and as discussed in the <em>Multiple labels with the same name</em> section above, label scope rules prevent their visibility in an outer block, so once converted to labels, the corresponding <code>jump</code> instructions would not be able to find them. This limitation means that <a href="https://en.wikipedia.org/wiki/Duff's_device">Duff's device</a> or similar constructs can't be implemented with this optimizer.</li>
 <li><div><code>switch()</code> needs to be followed by a block, not by a single statement. For example, while this works in C, it won't work in this optimizer:</div>
-<pre><code>    switch(1) case 1: break;</code></pre>
+<pre><code><span>    switch(1) case 1: break;</span></code></pre>
 <div>The reason is that <code>case</code> is treated by this parser as a statement, rather than as a label prefix, making <code>break</code> be outside the <code>switch</code> and thus failing at that point. This limitation is probably only of theoretical importance and will not have any practical implication, since single-statement <code>switch</code> clauses are of little or no practical use (known to the author). Of course it works perfectly when enclosed in braces:</div>
-<pre><code>    switch(1) { case 1: break; }</code></pre></li>
+<pre><code><span>    switch(1) { case 1: break; }</span></code></pre></li>
 </ol>
 
 <p>As an extension, and for compatibility with Firestorm, if there is a block beginning right after a <code>case</code> or <code>default</code> statement, the colon is optional. For example, all these are valid:</p>
 
-<pre><code>    switch (x) { case 1: ;  default: ;  }
-    switch (x) { case 1  {} default  {} }
-    switch (x) { case 1: {} default: {} }
+<pre><code><span>    switch (x) { case 1: ;  default: ;  }</span>
+<span>    switch (x) { case 1  {} default  {} }</span>
+<span>    switch (x) { case 1: {} default: {} }</span>
 </code></pre>
 
 but this will cause an error:
-<pre><code>    switch (x) { case 1  ;  default  ;  }
+<pre><code><span>    switch (x) { case 1  ;  default  ;  }</span>
 </code></pre>
 
 <h3><a id="extensions-lazy-lists"></a>Lazy lists</h3>
@@ -292,17 +298,17 @@ but this will cause an error:
 
 <p>The syntax for assignment is:</p>
 
-<pre><code>mylist[index] = value;
+<pre><code><span>mylist[index] = value;</span>
 </code></pre>
 
 <p>which is designed to be roughly a shortcut for this:</p>
 
-<pre><code>mylist = llListReplaceList(mylist, (list)value, index, index);
+<pre><code><span>mylist = llListReplaceList(mylist, (list)value, index, index);</span>
 </code></pre>
 
 <p>The implementation, however, includes creating a function that performs the replacement, which prevents the index from being evaluated twice but also uses more memory. The function is called <code>lazy_list_set</code>. It can be user-overriden. If you define a function with this prototype:</p>
 
-<pre><code>list lazy_list_set(list target, integer index, list value)
+<pre><code><span>list lazy_list_set(list target, integer index, list value)</span>
 </code></pre>
 
 <p>which returns the list with the element replaced, then the optimizer will use yours rather than defining it twice. Note that a preprocessor macro won't work in its place.</p>
@@ -311,35 +317,41 @@ but this will cause an error:
 
 <p>Note that the value of the assignment as an expression is the whole list, not the element. For example, this will fail because it's assigning a list to an integer:</p>
 
-<pre><code>  list a; integer b = a[5] = 4;
+<pre><code><span>  list a;</span>
+<span>  integer b = a[5] = 4;</span>
 </code></pre>
 
 <p>To see why, look at what that is expanded to:</p>
 
-<pre><code>  list a; integer b = a = lazy_list_set(a, 5, (list)4);
+<pre><code><span>  list a;</span>
+<span>  integer b = a = lazy_list_set(a, 5, (list)4);</span>
 </code></pre>
 
 <p>which will obviously fail. But this will work:</p>
 
-<pre><code>  list a; integer b; a[5] = b = 4;
+<pre><code><span>  list a;</span>
+<span>  integer b;
+<span>  a[5] = b = 4;</span>
 </code></pre>
 
-<h4>
-<a id="lazy-lists-reading"></a>Reading</h4>
+<h4><a id="lazy-lists-reading"></a>Reading</h4>
 
 <p>The syntax for reading an element is the same as for assigning, but it returns no type, therefore a type cast is mandatory. For example:</p>
 
-<pre><code>  list a; integer b = (integer)a[3];
+<pre><code><span>  list a;</span>
+<span>  integer b = (integer)a[3];</span>
 </code></pre>
 
 <p>That is converted at parsing time to:</p>
 
-<pre><code>  list a; integer b = llList2Integer(a, 3);
+<pre><code><span>  list a;</span>
+<span>  integer b = llList2Integer(a, 3);</span>
 </code></pre>
 
 <p>If the type it's cast to is list, it needs two parameters (starting and ending index), not one:</p>
 
-<pre><code>  list a; a = (list)a[3, 3];
+<pre><code><span>  list a;</span>
+<span>  a = (list)a[3, 3];</span>
 </code></pre>
 
 <p>That is a requirement of the underlying <code>llList2List</code> function used in this case.</p>
@@ -364,8 +376,8 @@ but this will cause an error:
 
 <p>This enables using many preprocessor tricks, like creating an <code>assert()</code> macro similar to that in C:</p>
 
-<pre><code>#define assert(...) do { if (DEBUG) if (__VA_ARGS__) ; \
-  else llOwnerSay("ASSERTION FAILED: " #__VA_ARGS__); } while (0)
+<pre><code><span>#define assert(...) do { if (DEBUG) if (__VA_ARGS__) ; \</span>
+<span>  else llOwnerSay("ASSERTION FAILED: " #__VA_ARGS__); } while (0)</span>
 </code></pre>
 
 <p>without worrying about the extra memory that it will take in production code once DEBUG is switched off, or about the loop taking up actual code memory.</p>
@@ -376,25 +388,25 @@ but this will cause an error:
 
 <p>It also replaces references to integer, string and key variables that are not written to (global or local), with their value. For example:</p>
 
-<pre><code>integer ANSWER = 42;
-default
-{
-    state_entry()
-    {
-        llOwnerSay((string)ANSWER);
-    }
-}
+<pre><code><span>integer ANSWER = 42;</span>
+<span>default</span>
+<span>{</span>
+<span>    state_entry()</span>
+<span>    {</span>
+<span>        llOwnerSay((string)ANSWER);</span>
+<span>    }</span>
+<span>}</span>
 </code></pre>
 
 <p>will produce:</p>
 
-<pre><code>default
-{
-    state_entry()
-    {
-        llOwnerSay("42");
-    }
-}
+<pre><code><span>default</span>
+<span>{</span>
+<span>    state_entry()</span>
+<span>    {</span>
+<span>        llOwnerSay("42");</span>
+<span>    }</span>
+<span>}</span>
 </code></pre>
 
 <p>after DCR and constant folding. This optimization has one of the largest impacts, as variables and parameters in general seem to take a lot of memory in Mono, and removing as much of them as possible produces good savings.</p>
@@ -415,8 +427,8 @@ default
 
 <p>This optimization is turned off by default, as it can be counter-productive. It enables concatenating constants together. However, consider this situation:</p>
 
-<pre><code>string a = "A very long string that appears in this script once" + ", or not";
-string b = "A very long string that appears in this script once" + " or twice";
+<pre><code><span>string a = "A very long string that appears in this script once" + ", or not";</span>
+<span>string b = "A very long string that appears in this script once" + " or twice";</span>
 </code></pre>
 
 <p>Since Mono keeps only one copy of each constant string in the code, making the optimizer concatenate them would be counter-productive, generating two long strings that would take more code than the original string plus the shorter ones.</p>
@@ -429,18 +441,18 @@ string b = "A very long string that appears in this script once" + " or twice";
 
 <p>Running it by hand to optimize your scripts can be cumbersome. The intention is for it to act as a filter that is transparent to the user; however, as of this writing there's no support for any viewer or IDE, as it has just been released. Run it without parameters to see the invocation help, for example with <code>python main.py</code>. Redirect the output to a file if you want to store the result, possibly to open it with an editor and copy it to the clipboard. Or under <em>X Window</em>, you can pipe the output directly to <code>xclip -quiet -selection clipboard</code> to copy it to the clipboard, rather than using a file, so you can paste it directly into the viewer. Examples:</p>
 
-<pre><code>python main.py myscript.lsl | xclip -quiet -selection clipboard
+<pre><code><span>python main.py myscript.lsl | xclip -quiet -selection clipboard</span>
 </code></pre>
 
 <p>will, under <em>X Window</em>, read <code>myscript.lsl</code>, optimize it, and copy the optimized result to the clipboard, ready to be pasted into the viewer.</p>
 
-<pre><code>python main.py myscript.lsl -o temp.opt
-notepad temp.opt
+<pre><code><span>python main.py myscript.lsl -o temp.opt
+notepad temp.opt</span>
 </code></pre>
 
 <p>will, under any system which has an editor called <code>notepad</code>, read <code>myscript.lsl</code>, optimize it, and write the optimized result to <code>temp.opt</code>, then open it in the editor, enabling you to copy it and paste it into the viewer. Under <em>Windows</em> version <em>Vista</em> and above, there's a command line application called <code>clip</code> that does the same as <code>xclip</code> does for <em>X Window</em>, enabling you to use this:</p>
 
-<pre><code>python main.py myscript.lsl | clip
+<pre><code><span>python main.py myscript.lsl | clip</span>
 </code></pre>
 
 <p>to copy the optimized output to the clipboard. Under OS X, <code>pbcopy</code> does the same as <code>xclip</code> and <code>clip</code>.</p>
@@ -469,7 +481,7 @@ notepad temp.opt
 
 <p>This program is distributed under the terms of the GNU General Public License (GPL) version 3.</p>
 
-<p>(C) Copyright 2015-2016 Sei Lisa. All rights reserved.</p>
+<p>&copy; Copyright 2015-2016 Sei Lisa. All rights reserved.</p>
 
 <p>Just to put it explicitly, processing code with this optimizer does NOT automatically make the result fall under the terms of the license. Only the optimizer itself is subject to the terms of the GPL, similarly to how the C code compiled by a GPL-licensed compiler is not subject to the licensing requirements of the compiler even if the compiler itself is.</p>
 
@@ -481,4 +493,5 @@ notepad temp.opt
 
 <p>Happy coding!</p>
 
+</div>
 </body></html>
