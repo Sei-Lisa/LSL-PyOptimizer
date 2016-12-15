@@ -425,7 +425,8 @@ class outscript(object):
             return ret + ')\n' + self.OutCode(child[0])
 
         if nt == 'EXPR':
-            return self.dent() + self.OutExpr(child[0]) + ';\n'
+            return self.dent() + self.OutExpr(child[0]) + (
+                ';\n' if not self.lslcalc else '')
 
         if nt == 'LAMBDA':
             return ''
@@ -443,6 +444,7 @@ class outscript(object):
         self.optsigns = self.optimize and 'optsigns' in options
         self.optfloats = self.optimize and 'optfloats' in options
         self.foldconst = self.optimize and 'constfold' in options
+        self.lslcalc = 'lslcalc' in options
 
         self.warntabs = 'warntabs' in options
 
