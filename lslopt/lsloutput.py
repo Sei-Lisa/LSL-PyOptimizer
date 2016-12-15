@@ -432,7 +432,8 @@ class outscript(object):
 
         assert False, "Internal error: node type not handled: " + nt # pragma: no cover
 
-    def output(self, treesymtab, options = ('optsigns','optfloats','warntabs')):
+    def output(self, treesymtab, options = ('optimize',
+            'optsigns','optfloats','warntabs')):
         # Build a sorted list of dict entries
         self.tree, self.symtab = treesymtab
 
