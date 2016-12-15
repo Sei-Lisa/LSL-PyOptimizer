@@ -1,4 +1,4 @@
-#    (C) Copyright 2015 Sei Lisa. All rights reserved.
+#    (C) Copyright 2015-2016 Sei Lisa. All rights reserved.
 #
 #    This file is part of LSL PyOptimizer.
 #
@@ -34,6 +34,9 @@ class ELSONotSupported(Exception):
     pass
 
 # Recognized: 3763, 6466, 6495
+# BUG-3763 affected llXorBase64 (see lslbasefuncs.py). It's been fixed.
+# BUG-6466 is about some valid numbers in JSON not being accepted. It's fixed.
+# BUG-6495 is about "]" inside a JSON string closing an array. It's NOT FIXED.
 Bugs = set([6495])
 
 LSO = False
