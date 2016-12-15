@@ -2368,6 +2368,7 @@ list lazy_list_set(list L, integer i, list v)
         """
         value = self.Parse_expression()
         self.tree.append({'nt':'EXPR', 't':value['t'], 'ch':[value]})
+        self.expect('EOF')
         return
 
     def BuildTempGlobalsTable(self):
