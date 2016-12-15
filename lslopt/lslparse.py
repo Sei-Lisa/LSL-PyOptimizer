@@ -2359,6 +2359,17 @@ list lazy_list_set(list L, integer i, list v)
 
         del self.jump_lookups # Finished with it.
 
+    def Parse_single_expression(self):
+        """Parse the script as an expression, Used by lslcalc.
+
+        Grammar parsed here:
+
+        script: expression EOF
+        """
+        value = self.Parse_expression()
+        self.tree.append({'nt':'EXPR', 't':value['t'], 'ch':[value]})
+        return
+
     def BuildTempGlobalsTable(self):
         """Build an approximate globals table.
 
@@ -2609,7 +2620,8 @@ list lazy_list_set(list L, integer i, list v)
         self.linestart = True
         self.tok = self.GetToken()
 
-        self.globals = self.BuildTempGlobalsTable()
+        self.globals = self.BuildTempGlobalsTable() if \
+          'lslcalc' not in options else self.funclibrary.copy()
 
         # Restart
 
@@ -2623,7 +2635,10 @@ list lazy_list_set(list L, integer i, list v)
         self.usedspots = 0
 
         # Start the parsing proper
-        self.Parse_script()
+        if 'lslcalc' in options:
+            self.Parse_single_expression()
+        else:
+            self.Parse_script()
 
         # No longer needed. The data is already in self.symtab[0].
         del self.globals
