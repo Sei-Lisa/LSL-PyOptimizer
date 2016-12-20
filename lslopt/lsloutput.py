@@ -18,7 +18,8 @@
 # Convert an abstract syntax tree + symbol table back to a script as text.
 
 import lslfuncs
-from lslcommon import *
+import lslcommon
+from lslcommon import Key, Vector, Quaternion
 from lslparse import warning
 import math
 
@@ -426,7 +427,7 @@ class outscript(object):
 
         if nt == 'EXPR':
             return self.dent() + self.OutExpr(child[0]) + (
-                ';\n' if not IsCalc else '')
+                ';\n' if not lslcommon.IsCalc else '')
 
         if nt == 'LAMBDA':
             return ''

@@ -475,7 +475,7 @@ def InternalUTF8toString(s):
                 # NOTE: Without the above line, the following one hits a bug in
                 # python-coverage. It IS executed but not detected.
                 continue
-            if LSO:
+            if lslcommon.LSO:
                 raise ELSONotSupported(u"Byte strings not supported")
             ret += u'?' * len(partialchar)
             partialchar = b''
@@ -484,14 +484,14 @@ def InternalUTF8toString(s):
             partialchar = c
             pending = 1 if o < 0xE0 else 2 if o < 0xF0 else 3
         elif o >= 0x80:
-            if LSO:
+            if lslcommon.LSO:
                 raise ELSONotSupported(u"Byte strings not supported")
             ret += u'?'
         else:
             ret += c.decode('utf8')
 
     if partialchar:
-        if LSO:
+        if lslcommon.LSO:
             raise ELSONotSupported(u"Byte strings not supported")
         ret += u'?' * len(partialchar)
 

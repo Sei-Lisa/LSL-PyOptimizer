@@ -17,9 +17,10 @@
 
 # Extra functions that have predictable return values for certain arguments.
 
-from lslcommon import *
+import lslcommon
+from lslcommon import Key #, Vector, Quaternion
 from lslbasefuncs import ELSLCantCompute, isinteger, iskey, islist, \
-  isvector, isstring, NULL_KEY, ZERO_VECTOR, ZERO_ROTATION
+  isvector, isstring, NULL_KEY, ZERO_VECTOR, ZERO_ROTATION, cond
 #isfloat, isrotation
 
 TouchEvents = ('touch', 'touch_start', 'touch_end')
