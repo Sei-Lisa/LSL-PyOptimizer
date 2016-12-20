@@ -30,6 +30,8 @@ class Quaternion(tuple):
     def __repr__(self):
         return 'Quaternion(' + super(Quaternion, self).__repr__() + ')'
 
+# We don't yet support the LSO string model (arbitrary zero-terminated byte
+# sequences). This exception is  triggered to report attempts at using it.
 class ELSONotSupported(Exception):
     pass
 
@@ -39,6 +41,9 @@ class ELSONotSupported(Exception):
 # BUG-6495 is about "]" inside a JSON string closing an array. It's NOT FIXED.
 Bugs = set([6495])
 
+# LSO is generally not supported, but some calculations can handle it. The
+# main intention of this setting is for the code to serve as documentation
+# of how LSO's behaviour differs from Mono's in the fine details.
 LSO = False
 
 DataPath = ''
