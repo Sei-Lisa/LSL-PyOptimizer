@@ -20,7 +20,7 @@
 
 # TODO: Add info to be able to propagate error position to the source.
 
-from lslcommon import Key, Vector, Quaternion
+from lslcommon import *
 import lslcommon
 import lslfuncs
 import sys, re
@@ -2621,8 +2621,8 @@ list lazy_list_set(list L, integer i, list v)
         self.linestart = True
         self.tok = self.GetToken()
 
-        self.globals = self.BuildTempGlobalsTable() if \
-          'lslcalc' not in options else self.funclibrary.copy()
+        self.globals = self.BuildTempGlobalsTable() if not IsCalc \
+          else self.funclibrary.copy()
 
         # Restart
 
@@ -2636,7 +2636,7 @@ list lazy_list_set(list L, integer i, list v)
         self.usedspots = 0
 
         # Start the parsing proper
-        if 'lslcalc' in options:
+        if IsCalc:
             self.Parse_single_expression()
         else:
             self.Parse_script()

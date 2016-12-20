@@ -46,4 +46,7 @@ Bugs = set([6495])
 # of how LSO's behaviour differs from Mono's in the fine details.
 LSO = False
 
+# Set to True by lslcalc's main
+IsCalc = False
+
 DataPath = ''
