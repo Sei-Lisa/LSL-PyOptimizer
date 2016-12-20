@@ -951,7 +951,7 @@ class foldconst(object):
                                 )
                             if generatesTabs:
                                 if self.warntabs:
-                                    warning("Can't optimize call to %s because it would generate a tab character (you can force the optimization with the 'foldtabs' option, or disable this warning by disabling the 'warntabs' option)." % node['name'])
+                                    warning(u"Can't optimize call to %s because it would generate a tab character (you can force the optimization with the 'foldtabs' option, or disable this warning by disabling the 'warntabs' option)." % node['name'].decode('utf8'))
                                 return
                         parent[index] = {'nt':'CONST', 't':node['t'], 'value':value}
                     except lslfuncs.ELSLCantCompute:
@@ -1266,6 +1266,6 @@ class foldconst(object):
                 self.FoldTree(tree, idx)
                 self.globalmode = False
                 if warningpass and not self.IsValidGlobalConstant(tree[idx]):
-                    warning("Expression in globals doesn't resolve to a simple constant.")
+                    warning(u"Expression in globals doesn't resolve to a simple constant.")
             else:
                 self.FoldTree(tree, idx)

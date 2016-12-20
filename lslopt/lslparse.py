@@ -29,8 +29,8 @@ import sys, re
 # reading it.
 
 def warning(txt):
-    assert type(txt) == str
-    sys.stderr.write('WARNING: ' + txt + '\n')
+    assert type(txt) == unicode
+    sys.stderr.write(u"WARNING: " + txt + u"\n")
 
 def isdigit(c):
     return '0' <= c <= '9'
@@ -2688,13 +2688,24 @@ list lazy_list_set(list L, integer i, list v)
 
         f = open(lslcommon.DataPath + builtins, 'rb')
         try:
+            linenum = 0
+            try:
+                ubuiltins = builtins.decode('utf8')
+            except UnicodeDecodeError:
+                ubuiltins = builtins.decode('iso-8859-15')
             while True:
+                linenum += 1
                 line = f.readline()
                 if not line: break
                 if line[-1] == '\n': line = line[:-1]
+                try:
+                    uline = line.decode('utf8')
+                except UnicodeDecodeError:
+                    warning(u"Bad Unicode in %s line %d" % (ubuiltins, linenum))
+                    continue
                 match = parse_lin_re.search(line)
                 if not match:
-                    warning('Syntax error in ' + builtins + ', line ' + line)
+                    warning(u"Syntax error in %s, line %d" % (ubuiltins, linenum))
                     continue
                 if match.group(1):
                     # event or function
@@ -2704,7 +2715,7 @@ list lazy_list_set(list L, integer i, list v)
                     if typ == 'void':
                         typ = None
                     elif typ != 'event' and typ not in self.types:
-                        warning('Invalid type in ' + builtins + ', line ' + line + ': ' + typ)
+                        warning(u"Invalid type in %s, line %d: %s" % (ubuiltins, linenum, typ))
                         continue
                     args = []
                     arglist = match.group(3)
@@ -2714,23 +2725,29 @@ list lazy_list_set(list L, integer i, list v)
                         for arg in arglist:
                             argtyp = parse_arg_re.search(arg).group(1)
                             if argtyp not in self.types:
-                                warning('Invalid type in ' + builtins + ', line ' + line + ': ' + argtyp)
+                                uargtyp = argtyp.decode('utf8')
+                                warning(u"Invalid type in %s, line %d: %s" % (ubuiltins, linenum, uargtyp))
+                                del uargtyp
                                 bad = True
                                 break
-                            args.append(parse_arg_re.search(arg).group(1))
+                            args.append(argtyp)
                         if bad:
                             continue
                     name = match.group(2)
                     if typ == 'event':
                         if name in self.events:
-                            warning('Event already defined in ' + builtins + ', overwriting: ' + name)
+                            uname = name.decode('utf8')
+                            warning(u"Event at line %d was already defined in %s, overwriting: %s" % (linenum, ubuiltins, uname))
+                            del uname
                         self.events[name] = tuple(args)
                     else:
                         # Library functions go to the functions table. If
                         # they are implemented in lslfuncs.*, they get a
                         # reference to the implementation; otherwise None.
                         if name in self.funclibrary:
-                            warning('Function already defined in ' + builtins + ', overwriting: ' + name)
+                            uname = name.decode('utf8')
+                            warning(u"Function at line %d was already defined in %s, overwriting: %s" % (linenum, ubuiltins, uname))
+                            del uname
                         fn = getattr(lslfuncs, name, None)
                         self.funclibrary[name] = {'Kind':'f', 'Type':typ, 'ParamTypes':args}
                         if fn is not None:
@@ -2739,10 +2756,14 @@ list lazy_list_set(list L, integer i, list v)
                     # constant
                     name = match.group(5)
                     if name in self.constants:
-                        warning('Global already defined in ' + builtins + ', overwriting: ' + name)
+                        uname = name.decode('utf8')
+                        warning(u"Global at line %d was already defined in %s, overwriting: %s" % (linenum, ubuiltins, uname))
+                        del uname
                     typ = match.group(4)
                     if typ not in self.types:
-                        warning('Invalid type in ' + builtins + ', line ' + line + ': ' + typ)
+                        utyp = typ.decode('utf8')
+                        warning(u"Invalid type in %s, line %d: %s" % (ubuiltins, linenum, utyp))
+                        del utyp
                         continue
                     if typ == 'quaternion':
                         typ = 'rotation'
@@ -2772,10 +2793,10 @@ list lazy_list_set(list L, integer i, list v)
                             #if typ == 'key':
                             #    value = Key(value)
                         else:
-                            warning('Invalid string in ' + builtins + ': ' + line)
+                            warning(u"Invalid string in %s line %d: %s" % (ubuiltins, linenum, uline))
                             value = None
                     elif typ == 'key':
-                        warning('Key constants not supported in ' + builtins + ': ' + line)
+                        warning(u"Key constants not supported in %s, line %d: %s" % (ubuiltins, linenum, uline))
                         value = None
                     elif typ in ('vector', 'rotation'):
                         try:
@@ -2805,10 +2826,10 @@ list lazy_list_set(list L, integer i, list v)
                                 value[3] = lslfuncs.F32(float(num.group(1)))
                                 value = Quaternion(value)
                         except ValueError:
-                            warning('Invalid vector/rotation syntax in ' + builtins + ': ' + line)
+                            warning(u"Invalid vector/rotation syntax in %s line %d: %s" % (ubuiltins, linenum, uline))
                     else:
                         assert typ == 'list'
-                        warning('List constants not supported in ' + builtins + ': ' + line)
+                        warning(u"List constants not supported in %s, line %d: %s" % (ubuiltins, linenum, uline))
                         value = None
                     if value is not None:
                         self.constants[name] = value

@@ -38,9 +38,9 @@ def ReportError(script, e):
     sys.stderr.write(e[0] + '\n')
 
 class UniConvScript(object):
-    '''Converts the script to Unicode, setting the properties required by
+    """Converts the script to Unicode, setting the properties required by
     EParse to report a meaningful error position.
-    '''
+    """
     def __init__(self, script):
         self.script = script
 
@@ -50,7 +50,7 @@ class UniConvScript(object):
                 self.script = self.script.decode('utf8')
             except UnicodeDecodeError as e:
                 self.errorpos = e.start
-                raise EParse(self, 'Invalid UTF-8 in script')
+                raise EParse(self, u"Invalid UTF-8 in script")
         return self.script
 
 def PreparePreproc(script):
@@ -155,7 +155,7 @@ def ScriptHeader(script, avname):
 def Usage(about = None):
     if about is None:
         sys.stderr.write(
-r'''LSL optimizer v{version}
+ur"""LSL optimizer v{version}
 
     (C) Copyright 2015 Sei Lisa. All rights reserved.
 
@@ -199,12 +199,12 @@ Preprocessor modes:
 Normally, running the preprocessor needs the option 'processpre' active, to
 make the output readable by the optimizer. This option is active by default.
 
-'''.format(progname=sys.argv[0], version=VERSION))
+""".format(progname=sys.argv[0], version=VERSION))
         return
 
     if about == 'optimizer-options':
         sys.stderr.write(
-r'''
+ur"""
 Optimizer control options.
 + means active by default, - means inactive by default.
 Case insensitive.
@@ -295,11 +295,11 @@ Case insensitive.
                        is useless with 'optimize' and 'optsigns', and is of
                        basically no use in general, other than to see where
                        automatic casts happen.
-''')
+""")
         return
 
 def main():
-    '''Main executable.'''
+    """Main executable."""
 
     # If it's good to append the basename to it, it's good to append the
     # auxiliary files' names to it, which should be located where this file is.

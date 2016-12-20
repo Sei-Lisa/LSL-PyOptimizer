@@ -81,15 +81,15 @@ Indet = Infinity * 0
 
 class ELSLTypeMismatch(Exception):
     def __init__(self):
-        super(ELSLTypeMismatch, self).__init__("Type mismatch")
+        super(ELSLTypeMismatch, self).__init__(u"Type mismatch")
 
 class ELSLMathError(Exception):
     def __init__(self):
-        super(ELSLMathError, self).__init__("Math Error")
+        super(ELSLMathError, self).__init__(u"Math Error")
 
 class ELSLInvalidType(Exception):
     def __init__(self):
-        super(ELSLInvalidType, self).__init__("Internal error: Invalid type")
+        super(ELSLInvalidType, self).__init__(u"Internal error: Invalid type")
 
 class ELSLCantCompute(Exception):
     pass
@@ -476,7 +476,7 @@ def InternalUTF8toString(s):
                 # python-coverage. It IS executed but not detected.
                 continue
             if LSO:
-                raise ELSONotSupported("Byte strings not supported")
+                raise ELSONotSupported(u"Byte strings not supported")
             ret += u'?' * len(partialchar)
             partialchar = b''
             # fall through to process current character
@@ -485,14 +485,14 @@ def InternalUTF8toString(s):
             pending = 1 if o < 0xE0 else 2 if o < 0xF0 else 3
         elif o >= 0x80:
             if LSO:
-                raise ELSONotSupported("Byte strings not supported")
+                raise ELSONotSupported(u"Byte strings not supported")
             ret += u'?'
         else:
             ret += c.decode('utf8')
 
     if partialchar:
         if LSO:
-            raise ELSONotSupported("Byte strings not supported")
+            raise ELSONotSupported(u"Byte strings not supported")
         ret += u'?' * len(partialchar)
 
     return zstr(ret)
