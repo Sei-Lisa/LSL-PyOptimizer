@@ -196,7 +196,7 @@ def llGetBoundingBox(id):
         return []
     raise ELSLCantCompute
 
-def llGetColor(id):
+def llGetColor(face):
     assert isinteger(face)
     if face > 8:
         return ZERO_VECTOR
