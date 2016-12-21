@@ -1058,6 +1058,11 @@ if lslcommon.IsCalc:
     import random
     def llFrand(lim):
         assert isfloat(lim)
+        if math.isinf(lim):
+            return 0.
+        if math.isnan(lim):
+            return lim
+
         lim = F32(lim) # apply constraints
         val = random.random() * lim
         # Truncate, rather than rounding
