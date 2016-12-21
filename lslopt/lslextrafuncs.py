@@ -150,7 +150,7 @@ def llEdgeOfWorld(v1, v2):
 if not lslcommon.IsCalc:
     def llFrand(f):
         assert isfloat(f)
-        if f == 0.:
+        if f == 0:
             return 0.
         raise ELSLCantCompute
 

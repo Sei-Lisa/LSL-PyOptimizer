@@ -482,6 +482,28 @@ class Test03_Optimizer(UnitTestCase):
         self.assertRaises(EParseAlreadyDefined, self.parser.parse,
             'default { timer() {} timer() {} }')
 
+        p = self.parser.parse('default{timer(){\n'
+            'llLog(3);llLog(3.0);\n'
+            'llStringToBase64((key)"");llGetAgentInfo("");\n'
+            'llStringToBase64("");llGetAgentInfo((key)"");\n'
+            '}}\n'
+        )
+        self.opt.optimize(p, ('optimize','constfold'))
+        out = self.outscript.output(p)
+        self.assertEqual(out, 'default\n'
+                              '{\n'
+                              '    timer()\n'
+                              '    {\n'
+                              '        1.0986123;\n'
+                              '        1.0986123;\n'
+                              '        "";\n'
+                              '        0;\n'
+                              '        "";\n'
+                              '        0;\n'
+                              '    }\n'
+                              '}\n'
+                        )
+
         try:
             self.parser.parse('default { timer() { return } }')
             # should raise EParseSyntax, so it should never get here

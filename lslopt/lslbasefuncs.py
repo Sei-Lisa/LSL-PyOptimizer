@@ -259,8 +259,20 @@ def zstr(s):
 def ff(x):
     """Force x to be a float"""
     if type(x) != float:
-        x = F32(float(x))
-    return x
+        x = float(x)
+    return F32(x)
+
+def fk(k):
+    """Force k to be a key"""
+    if type(k) != Key:
+        k = Key(k)
+    return k
+
+def fs(s):
+    """Force s to be a string"""
+    if type(s) != unicode:
+        s = unicode(s)
+    return s
 
 def q2f(q):
     if type(q[0]) == type(q[1]) == type(q[2]) == type(q[3]) == float:
@@ -770,7 +782,7 @@ def isinteger(x):
     return type(x) == int
 
 def isfloat(x):
-    return type(x) in (float, int)
+    return type(x) == float
 
 def isvector(x):
     return type(x) == Vector and len(x) == 3 and type(x[0]) == type(x[1]) == type(x[2]) == float
@@ -804,37 +816,31 @@ def llAbs(i):
 def llAcos(f):
     assert isfloat(f)
     try:
-        return F32(math.acos(ff(f)))
+        return F32(math.acos(f))
     except ValueError:
         return NaN
 
 def llAngleBetween(r1, r2):
     assert isrotation(r1)
     assert isrotation(r2)
-    r1 = q2f(r1)
-    r2 = q2f(r2)
     return llRot2Angle(div(r1, r2, f32=False))
 
 def llAsin(f):
     assert isfloat(f)
     try:
-        return F32(math.asin(ff(f)))
+        return F32(math.asin(f))
     except ValueError:
         return NaN
 
 def llAtan2(y, x):
     assert isfloat(y)
     assert isfloat(x)
-    return F32(math.atan2(ff(y), ff(x)))
+    return F32(math.atan2(y, x))
 
 def llAxes2Rot(fwd, left, up):
     assert isvector(fwd)
     assert isvector(left)
     assert isvector(up)
-
-    fwd = v2f(fwd)
-    left = v2f(left)
-    up = v2f(up)
 
     # One of the hardest.
 
@@ -877,8 +883,8 @@ def llAxisAngle2Rot(axis, angle):
     axis = llVecNorm(axis, f32=False)
     if axis == ZERO_VECTOR:
         angle = 0.
-    c = math.cos(ff(angle)*0.5)
-    s = math.sin(ff(angle)*0.5)
+    c = math.cos(angle*0.5)
+    s = math.sin(angle*0.5)
     return Quaternion(F32((axis[0]*s, axis[1]*s, axis[2]*s, c)))
 
 # NOTE: This one does not always return the same value in LSL. When it isn't
@@ -985,14 +991,12 @@ def llCSV2List(s):
 
 def llCeil(f):
     assert isfloat(f)
-    f = ff(f)
     if math.isnan(f) or math.isinf(f) or f >= 2147483648.0 or f < -2147483648.0:
         return -2147483648
     return int(math.ceil(f))
 
 def llCos(f):
     assert isfloat(f)
-    f = ff(f)
     if math.isinf(f):
         return Indet
     if -9223372036854775808.0 < f < 9223372036854775808.0:
@@ -1027,7 +1031,6 @@ def llEscapeURL(s):
 
 def llEuler2Rot(v):
     assert isvector(v)
-    v = v2f(v)
     c0 = math.cos(v[0]*0.5)
     s0 = math.sin(v[0]*0.5)
     c1 = math.cos(v[1]*0.5)
@@ -1042,11 +1045,10 @@ def llEuler2Rot(v):
 
 def llFabs(f):
     assert isfloat(f)
-    return math.fabs(ff(f))
+    return math.fabs(f)
 
 def llFloor(f):
     assert isfloat(f)
-    f = ff(f)
     if math.isnan(f) or math.isinf(f) or f >= 2147483648.0 or f < -2147483648.0:
         return -2147483648
     return int(math.floor(f))
@@ -1069,7 +1071,7 @@ if lslcommon.IsCalc:
     def llGenerateKey():
         s = hashlib.md5((u'%.17g %f %f' % (time.time(), random.random(),
                                            random.random())).encode('utf8')
-               ).hexdigest()
+                       ).hexdigest()
         return Key(s[:8] + '-' + s[8:12] + '-' + s[12:16] + '-' + s[16:20]
                    + '-' + s[20:32])
 
@@ -1416,14 +1418,12 @@ def llListStatistics(op, lst):
 
 def llLog(f):
     assert isfloat(f)
-    f = ff(f)
     if math.isinf(f) and f < 0 or math.isnan(f) or f <= 0.0:
         return 0.0
     return F32(math.log(f))
 
 def llLog10(f):
     assert isfloat(f)
-    f = ff(f)
     if math.isinf(f) and f < 0 or math.isnan(f) or f <= 0.0:
         return 0.0
     return F32(math.log10(f))
@@ -1489,8 +1489,6 @@ def llParseStringKeepNulls(s, exc, inc):
 def llPow(base, exp):
     assert isfloat(base)
     assert isfloat(exp)
-    base = ff(base)
-    exp = ff(exp)
     try:
         # Python corner cases and LSL corner cases differ
 
@@ -1521,20 +1519,17 @@ def llPow(base, exp):
 def llRot2Angle(r):
     assert isrotation(r)
     # Used by llAngleBetween.
-    r = q2f(r)
     # Version based on research by Moon Metty, Miranda Umino and Strife Onizuka
     return F32(2.*math.atan2(math.sqrt(math.fsum((r[0]*r[0], r[1]*r[1], r[2]*r[2]))), abs(r[3])));
 
 def llRot2Axis(r):
     assert isrotation(r)
-    r = q2f(r)
     if r[3] < 0:
         return llVecNorm(Vector((-r[0], -r[1], -r[2])))
     return llVecNorm(Vector((r[0], r[1], r[2])))
 
 def llRot2Euler(r):
     assert isrotation(r)
-    r = q2f(r)
 
     # Another one of the hardest. The formula for Z angle in the
     # singularity case was inspired by the viewer code.
@@ -1554,7 +1549,6 @@ def llRot2Euler(r):
 
 def llRot2Fwd(r):
     assert isrotation(r)
-    r = q2f(r)
     v = (1., 0., 0.)
     if r == (0., 0., 0., 0.):
         return v
@@ -1562,7 +1556,6 @@ def llRot2Fwd(r):
 
 def llRot2Left(r):
     assert isrotation(r)
-    r = q2f(r)
     v = (0., 1., 0.)
     if r == (0., 0., 0., 0.):
         return v
@@ -1570,7 +1563,6 @@ def llRot2Left(r):
 
 def llRot2Up(r):
     assert isrotation(r)
-    r = q2f(r)
     v = (0., 0., 1.)
     if r == (0., 0., 0., 0.):
         return v
@@ -1579,8 +1571,6 @@ def llRot2Up(r):
 def llRotBetween(v1, v2):
     assert isvector(v1)
     assert isvector(v2)
-    v1 = v2f(v1)
-    v2 = v2f(v2)
 
     aabb = math.sqrt(mul(v1, v1, f32=False) * mul(v2, v2, f32=False)) # product of the squared lengths of the arguments
     if aabb == 0.:
@@ -1628,7 +1618,6 @@ def llRotBetween(v1, v2):
 
 def llRound(f):
     assert isfloat(f)
-    f = ff(f)
     if math.isnan(f) or math.isinf(f) or f >= 2147483647.5 or f < -2147483648.0:
         return -2147483648
     return int(math.floor(f+0.5))
@@ -1639,7 +1628,6 @@ def llSHA1String(s):
 
 def llSin(f):
     assert isfloat(f)
-    f = ff(f)
     if math.isinf(f):
         return Indet
     if -9223372036854775808.0 < f < 9223372036854775808.0:
@@ -1648,7 +1636,6 @@ def llSin(f):
 
 def llSqrt(f):
     assert isfloat(f)
-    f = ff(f)
     if f < 0.0:
         return Indet
     # LSL and Python both produce -0.0 when the input is -0.0.
@@ -1683,7 +1670,6 @@ def llSubStringIndex(s, pattern):
 
 def llTan(f):
     assert isfloat(f)
-    f = ff(f)
     if math.isinf(f):
         return Indet
     if -9223372036854775808.0 < f < 9223372036854775808.0:
@@ -1735,8 +1721,6 @@ def llUnescapeURL(s):
 def llVecDist(v1, v2):
     assert isvector(v1)
     assert isvector(v2)
-    v1 = v2f(v1)
-    v2 = v2f(v2)
     # For improved accuracy, do the intermediate calcs as doubles
     vx = v1[0]-v2[0]
     vy = v1[1]-v2[1]
@@ -1745,12 +1729,10 @@ def llVecDist(v1, v2):
 
 def llVecMag(v):
     assert isvector(v)
-    v = v2f(v)
     return F32(math.sqrt(math.fsum((v[0]*v[0], v[1]*v[1], v[2]*v[2]))))
 
 def llVecNorm(v, f32 = True):
     assert isvector(v)
-    v = v2f(v)
     if v == ZERO_VECTOR:
         return v
     f = math.sqrt(math.fsum((v[0]*v[0], v[1]*v[1], v[2]*v[2])))

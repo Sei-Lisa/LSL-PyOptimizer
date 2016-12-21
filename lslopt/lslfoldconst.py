@@ -17,6 +17,7 @@
 
 # Constant folding and simplification of expressions and statements.
 
+import lslcommon
 import lslfuncs
 import math
 from lslparse import warning
@@ -930,20 +931,48 @@ class foldconst(object):
                 if child[idx]['nt'] != 'CONST':
                     CONSTargs = False
 
-            OptimizeParams(node, self.symtab[0][node['name']])
-            if 'Fn' in self.symtab[0][node['name']]:
+            sym = self.symtab[0][node['name']]
+            OptimizeParams(node, sym)
+            if 'Fn' in sym:
                 # Guaranteed to be side-effect free if the children are.
                 if SEFargs:
                     node['SEF'] = True
                 if CONSTargs:
                     # Call it
-                    fn = self.symtab[0][node['name']]['Fn']
+                    fn = sym['Fn']
                     try:
+                        args = [arg['value'] for arg in child]
+                        argtypes = sym['ParamTypes']
+                        assert(len(args) == len(argtypes))
+                        for argnum in range(len(args)):
+                            # Adapt types of params
+                            if argtypes[argnum] == 'string':
+                                args[argnum] = lslfuncs.fs(args[argnum])
+                            elif argtypes[argnum] == 'key':
+                                args[argnum] = lslfuncs.fk(args[argnum])
+                            elif argtypes[argnum] == 'float':
+                                args[argnum] = lslfuncs.ff(args[argnum])
+                            elif argtypes[argnum] == 'vector':
+                                args[argnum] = lslfuncs.v2f(args[argnum])
+                            elif argtypes[argnum] == 'quaternion':
+                                args[argnum] = lslfuncs.q2f(args[argnum])
+                            elif argtypes[argnum] == 'list':
+                                # ensure vectors and quaternions passed to
+                                # functions have only float components
+                                assert type(args[argnum]) == list
+                                # make a shallow copy
+                                args[argnum] = args[argnum][:]
+                                for i in range(len(args[argnum])):
+                                    if type(args[argnum][i]) == lslcommon.Quaternion:
+                                        args[argnum][i] = lslfuncs.q2f(args[argnum][i])
+                                    elif type(args[argnum][i]) == lslcommon.Vector:
+                                        args[argnum][i] = lslfuncs.v2f(args[argnum][i])
+                        del argtypes
                         if node['name'][:10] == 'llDetected':
-                            value = fn(*tuple(arg['value'] for arg in child),
-                                       event=self.CurEvent)
+                            value = fn(*args, event=self.CurEvent)
                         else:
-                            value = fn(*tuple(arg['value'] for arg in child))
+                            value = fn(*args)
+                        del args
                         if not self.foldtabs:
                             generatesTabs = (
                                 isinstance(value, unicode) and '\t' in value
