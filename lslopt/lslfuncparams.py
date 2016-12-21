@@ -41,3 +41,4 @@ def OptimizeParams(node, sym):
                 if params[i]['nt'] == 'CONST':
                     if not lslfuncs.cond(Key(params[i]['value'])):
                         params[i]['value'] = u""
+                        params[i]['type'] = 'string'
