@@ -1071,7 +1071,8 @@ if lslcommon.IsCalc:
         s = md5((u'%.17g %f %f' % (time.time(), random.random(),
                                    random.random())).encode('utf8')
                ).hexdigest()
-        return s[:8] + '-' + s[8:12] + '-' + s[12:16] + '-' + s[16:20] + '-' + s[20:32]
+        return Key(s[:8] + '-' + s[8:12] + '-' + s[12:16] + '-' + s[16:20]
+                   + '-' + s[20:32])
 
 # Otherwise they're not implemented, as they don't give the same output for
 # the same input.
