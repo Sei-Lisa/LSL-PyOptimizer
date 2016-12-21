@@ -1062,8 +1062,9 @@ if lslcommon.IsCalc:
         val = random.random() * lim
         # Truncate, rather than rounding
         m, e = math.frexp(val)
-        m = math.floor(m * 8388608.0) / 8388608.0
-        val = F32(math.ldexp(m, e))
+        m = m * 16777216.0
+        m = math.floor(m) if m > 0 else math.ceil(m) # don't invoke __trunc__
+        val = F32(math.ldexp(m * 0.000000059604644775390625, e))
         if val == lim:
             val = 0.
         return val
