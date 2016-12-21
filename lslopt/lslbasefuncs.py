@@ -1053,7 +1053,6 @@ def llFloor(f):
 
 if lslcommon.IsCalc:
     import time
-    from hashlib import md5
     import random
     def llFrand(lim):
         assert isfloat(lim)
@@ -1068,8 +1067,8 @@ if lslcommon.IsCalc:
         return val
 
     def llGenerateKey():
-        s = md5((u'%.17g %f %f' % (time.time(), random.random(),
-                                   random.random())).encode('utf8')
+        s = hashlib.md5((u'%.17g %f %f' % (time.time(), random.random(),
+                                           random.random())).encode('utf8')
                ).hexdigest()
         return Key(s[:8] + '-' + s[8:12] + '-' + s[12:16] + '-' + s[16:20]
                    + '-' + s[20:32])
