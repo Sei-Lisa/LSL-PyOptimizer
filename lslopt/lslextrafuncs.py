@@ -20,8 +20,8 @@
 import lslcommon
 from lslcommon import Key #, Vector, Quaternion
 from lslbasefuncs import ELSLCantCompute, isinteger, iskey, islist, \
-  isvector, isstring, NULL_KEY, ZERO_VECTOR, ZERO_ROTATION, cond
-#isfloat, isrotation
+  isfloat, isvector, isstring, NULL_KEY, ZERO_VECTOR, ZERO_ROTATION, cond
+#isrotation
 
 TouchEvents = ('touch', 'touch_start', 'touch_end')
 DetectionEvents = ('touch', 'touch_start', 'touch_end',
@@ -146,6 +146,13 @@ def llEdgeOfWorld(v1, v2):
     if v2.x == v2.y == 0:
         return 1
     raise ELSLCantCompute
+
+if not lslcommon.IsCalc:
+    def llFrand(f):
+        assert isfloat(f)
+        if f == 0.:
+            return 0.
+        raise ELSLCantCompute
 
 def llGetAgentInfo(id):
     assert iskey(id)

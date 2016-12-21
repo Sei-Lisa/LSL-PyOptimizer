@@ -1051,11 +1051,30 @@ def llFloor(f):
         return -2147483648
     return int(math.floor(f))
 
-# not implemented as it does not give the same output for the same input
-#def llFrand(lim):
+if lslcommon.IsCalc:
+    import time
+    from hashlib import md5
+    import random
+    def llFrand(lim):
+        assert isfloat(lim)
+        lim = F32(lim) # apply constraints
+        val = random.random() * lim
+        # Truncate, rather than rounding
+        m, e = math.frexp(val)
+        m = math.floor(m * 8388608.0) / 8388608.0
+        val = F32(math.ldexp(m, e))
+        if val == lim:
+            val = 0.
+        return val
 
-# not implemented as it does not give the same output for the same input
-#def llGenerateKey():
+    def llGenerateKey():
+        s = md5((u'%.17g %f %f' % (time.time(), random.random(),
+                                   random.random())).encode('utf8')
+               ).hexdigest()
+        return s[:8] + '-' + s[8:12] + '-' + s[12:16] + '-' + s[16:20] + '-' + s[20:32]
+
+# Otherwise they're not implemented, as they don't give the same output for
+# the same input.
 
 def llGetListEntryType(lst, pos):
     assert islist(lst)
