@@ -890,6 +890,21 @@ def do_tests():
     test('llList2CSV([llPow(nan,F32(1.3))])', u'nan')
     test('llList2CSV([Vector((-nan,nan,-inf))])', u'<-nan, nan, -inf>')
 
+    test('llFrand(0.0)', 0.0)
+    test('llFrand(-0.0)', 0.0)
+    test('llFrand(Infinity)', 0.0)
+    test('llFrand(-Infinity)', 0.0)
+    test('llFrand(-NaN)', -NaN)
+    test('llFrand(NaN)', NaN)
+    for i in range(10):
+      test('llFrand(F32(1.4e-45))', 0.0)
+      test('llFrand(F32(1.1754943508222875e-38))', 0.0)
+
+    lslcommon.IsCalc = True
+    test('cond(llGenerateKey())', True)
+    lslcommon.IsCalc = False
+    shouldexcept('llGenerateKey()', ELSLCantCompute)
+
     testXB64S("", "", "")
     testXB64S(u"Hello, World!", u"", u"Hello, World!")
     testXB64S("AAAAA==AAAAA=", "_X", "/X/X/==X/X/X=")

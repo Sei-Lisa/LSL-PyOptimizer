@@ -20,8 +20,8 @@
 # The functions it implements are all functions that always return the same
 # result when given the same input, and that have no side effects.
 #
-# For example, llAbs() is here, but llFrand() is not, because it doesn't always
-# return the same result.
+# For example, llAbs() is here, but llGetPos() is not, because it doesn't
+# always return the same result.
 #
 # This implies that functions present in this module can be precomputed if
 # their arguments are constants.
@@ -1053,36 +1053,41 @@ def llFloor(f):
         return -2147483648
     return int(math.floor(f))
 
-if lslcommon.IsCalc:
-    import time
-    import random
-    def llFrand(lim):
-        assert isfloat(lim)
-        if math.isinf(lim):
-            return 0.
-        if math.isnan(lim):
-            return lim
+def llFrand(lim):
+    assert isfloat(lim)
+    if math.isinf(lim) or abs(lim) < 1.1754943508222875e-38:
+        return 0.
+    if math.isnan(lim):
+        return lim
 
-        lim = F32(lim) # apply constraints
+    if lslcommon.IsCalc:
+        import random
         val = random.random() * lim
         # Truncate, rather than rounding
         m, e = math.frexp(val)
-        m = m * 16777216.0
-        m = math.floor(m) if m > 0 else math.ceil(m) # don't invoke __trunc__
-        val = F32(math.ldexp(m * 0.000000059604644775390625, e))
+        val = F32(math.ldexp(int(m * 16777216.) * .000000059604644775390625, e))
         if val == lim:
+            # this should never happen
+            # (it can happen on denormals, but these cause output of 0.0)
             val = 0.
         return val
 
-    def llGenerateKey():
+    # Can't give a concrete value
+    raise ELSLCantCompute
+
+def llGenerateKey():
+    if lslcommon.IsCalc:
+        import time
+        import random
+
         s = hashlib.md5((u'%.17g %f %f' % (time.time(), random.random(),
                                            random.random())).encode('utf8')
                        ).hexdigest()
         return Key(s[:8] + '-' + s[8:12] + '-' + s[12:16] + '-' + s[16:20]
                    + '-' + s[20:32])
 
-# Otherwise they're not implemented, as they don't give the same output for
-# the same input.
+    # Can't give a concrete value
+    raise ELSLCantCompute
 
 def llGetListEntryType(lst, pos):
     assert islist(lst)
