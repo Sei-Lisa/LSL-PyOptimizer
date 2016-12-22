@@ -1568,21 +1568,21 @@ def llRot2Euler(r):
 
 def llRot2Fwd(r):
     assert isrotation(r)
-    v = (1., 0., 0.)
+    v = Vector((1., 0., 0.))
     if r == (0., 0., 0., 0.):
         return v
     return llVecNorm(mul(v, r, f32=False))
 
 def llRot2Left(r):
     assert isrotation(r)
-    v = (0., 1., 0.)
+    v = Vector((0., 1., 0.))
     if r == (0., 0., 0., 0.):
         return v
     return llVecNorm(mul(v, r, f32=False))
 
 def llRot2Up(r):
     assert isrotation(r)
-    v = (0., 0., 1.)
+    v = Vector((0., 0., 1.))
     if r == (0., 0., 0., 0.):
         return v
     return llVecNorm(mul(v, r, f32=False))

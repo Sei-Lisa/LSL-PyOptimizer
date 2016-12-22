@@ -924,6 +924,22 @@ def do_tests():
       test('llFrand(F32(1.4e-45))', 0.0)
       test('llFrand(F32(1.1754942106924411e-38))', 0.0)
 
+    test('llRot2Fwd(Quaternion((1.,0.,0.,0.)))', Vector((1.,0.,0.)))
+    test('llRot2Fwd(Quaternion((0.,1.,0.,0.)))', Vector((-1.,0.,0.)))
+    test('llRot2Fwd(Quaternion((0.,0.,1.,0.)))', Vector((-1.,0.,0.)))
+    test('llRot2Fwd(Quaternion((0.,0.,0.,1.)))', Vector((1.,0.,0.)))
+    test('llRot2Fwd(Quaternion((0.,0.,0.,0.)))', Vector((1.,0.,0.)))
+    test('llRot2Left(Quaternion((1.,0.,0.,0.)))', Vector((0.,-1.,0.)))
+    test('llRot2Left(Quaternion((0.,1.,0.,0.)))', Vector((0.,1.,0.)))
+    test('llRot2Left(Quaternion((0.,0.,1.,0.)))', Vector((0.,-1.,0.)))
+    test('llRot2Left(Quaternion((0.,0.,0.,1.)))', Vector((0.,1.,0.)))
+    test('llRot2Left(Quaternion((0.,0.,0.,0.)))', Vector((0.,1.,0.)))
+    test('llRot2Up(Quaternion((1.,0.,0.,0.)))', Vector((0.,0.,-1.)))
+    test('llRot2Up(Quaternion((0.,1.,0.,0.)))', Vector((0.,0.,-1.)))
+    test('llRot2Up(Quaternion((0.,0.,1.,0.)))', Vector((0.,0.,1.)))
+    test('llRot2Up(Quaternion((0.,0.,0.,1.)))', Vector((0.,0.,1.)))
+    test('llRot2Up(Quaternion((0.,0.,0.,0.)))', Vector((0.,0.,1.)))
+
     lslcommon.IsCalc = True
     test('cond(llGenerateKey())', True)
     lslcommon.IsCalc = False
