@@ -518,8 +518,8 @@ def do_tests():
     test('reallyequal(NaN, Indet, 0.0)', False)
     test('reallyequal(-NaN, Indet, 0.0)', True)
     test('reallyequal(NaN, -Indet, 0.0)', True)
-    test('reallyequal(NaN, float("nan"), 0.0)', True)
-    test('reallyequal(-float("nan"), Indet, 0.0)', True)
+    test('reallyequal(NaN, -(Infinity*0), 0.0)', True)
+    test('reallyequal(Infinity*0, Indet, 0.0)', True)
 
     shouldexcept('div(1.0, 0.0)', ELSLMathError)
     shouldexcept('div(1, 0)', ELSLMathError)

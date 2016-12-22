@@ -76,8 +76,8 @@ ZERO_ROTATION    = Quaternion((0.0, 0.0, 0.0, 1.0))
 NULL_KEY         = u'00000000-0000-0000-0000-000000000000'
 
 Infinity = float('inf')
-NaN = float('nan')
 Indet = Infinity * 0
+NaN = -Indet # Don't use float("nan") - Windows gets upset.
 
 class ELSLTypeMismatch(Exception):
     def __init__(self):
