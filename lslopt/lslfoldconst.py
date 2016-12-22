@@ -940,52 +940,52 @@ class foldconst(object):
                 if CONSTargs:
                     # Call it
                     fn = sym['Fn']
+                    args = [arg['value'] for arg in child]
+                    argtypes = sym['ParamTypes']
+                    assert(len(args) == len(argtypes))
+                    for argnum in range(len(args)):
+                        # Adapt types of params
+                        if argtypes[argnum] == 'string':
+                            args[argnum] = lslfuncs.fs(args[argnum])
+                        elif argtypes[argnum] == 'key':
+                            args[argnum] = lslfuncs.fk(args[argnum])
+                        elif argtypes[argnum] == 'float':
+                            args[argnum] = lslfuncs.ff(args[argnum])
+                        elif argtypes[argnum] == 'vector':
+                            args[argnum] = lslfuncs.v2f(args[argnum])
+                        elif argtypes[argnum] == 'quaternion':
+                            args[argnum] = lslfuncs.q2f(args[argnum])
+                        elif argtypes[argnum] == 'list':
+                            # ensure vectors and quaternions passed to
+                            # functions have only float components
+                            assert type(args[argnum]) == list
+                            # make a shallow copy
+                            args[argnum] = args[argnum][:]
+                            for i in range(len(args[argnum])):
+                                if type(args[argnum][i]) == lslcommon.Quaternion:
+                                    args[argnum][i] = lslfuncs.q2f(args[argnum][i])
+                                elif type(args[argnum][i]) == lslcommon.Vector:
+                                    args[argnum][i] = lslfuncs.v2f(args[argnum][i])
+                    del argtypes
                     try:
-                        args = [arg['value'] for arg in child]
-                        argtypes = sym['ParamTypes']
-                        assert(len(args) == len(argtypes))
-                        for argnum in range(len(args)):
-                            # Adapt types of params
-                            if argtypes[argnum] == 'string':
-                                args[argnum] = lslfuncs.fs(args[argnum])
-                            elif argtypes[argnum] == 'key':
-                                args[argnum] = lslfuncs.fk(args[argnum])
-                            elif argtypes[argnum] == 'float':
-                                args[argnum] = lslfuncs.ff(args[argnum])
-                            elif argtypes[argnum] == 'vector':
-                                args[argnum] = lslfuncs.v2f(args[argnum])
-                            elif argtypes[argnum] == 'quaternion':
-                                args[argnum] = lslfuncs.q2f(args[argnum])
-                            elif argtypes[argnum] == 'list':
-                                # ensure vectors and quaternions passed to
-                                # functions have only float components
-                                assert type(args[argnum]) == list
-                                # make a shallow copy
-                                args[argnum] = args[argnum][:]
-                                for i in range(len(args[argnum])):
-                                    if type(args[argnum][i]) == lslcommon.Quaternion:
-                                        args[argnum][i] = lslfuncs.q2f(args[argnum][i])
-                                    elif type(args[argnum][i]) == lslcommon.Vector:
-                                        args[argnum][i] = lslfuncs.v2f(args[argnum][i])
-                        del argtypes
                         if node['name'][:10] == 'llDetected':
                             value = fn(*args, event=self.CurEvent)
                         else:
                             value = fn(*args)
-                        del args
-                        if not self.foldtabs:
-                            generatesTabs = (
-                                isinstance(value, unicode) and '\t' in value
-                                or type(value) == list and any(isinstance(x, unicode) and '\t' in x for x in value)
-                                )
-                            if generatesTabs:
-                                if self.warntabs:
-                                    warning(u"Can't optimize call to %s because it would generate a tab character (you can force the optimization with the 'foldtabs' option, or disable this warning by disabling the 'warntabs' option)." % node['name'].decode('utf8'))
-                                return
-                        parent[index] = {'nt':'CONST', 't':node['t'], 'value':value}
                     except lslfuncs.ELSLCantCompute:
                         # Don't transform the tree if function is not computable
                         pass
+                    del args
+                    if not self.foldtabs:
+                        generatesTabs = (
+                            isinstance(value, unicode) and '\t' in value
+                            or type(value) == list and any(isinstance(x, unicode) and '\t' in x for x in value)
+                            )
+                        if generatesTabs:
+                            if self.warntabs:
+                                warning(u"Can't optimize call to %s because it would generate a tab character (you can force the optimization with the 'foldtabs' option, or disable this warning by disabling the 'warntabs' option)." % node['name'].decode('utf8'))
+                            return
+                    parent[index] = {'nt':'CONST', 't':node['t'], 'value':value}
                 elif node['name'] == 'llGetListLength':
                     # Convert llGetListLength(expr) to (expr != [])
                     node = {'nt':'CONST', 't':'list', 'value':[]}
