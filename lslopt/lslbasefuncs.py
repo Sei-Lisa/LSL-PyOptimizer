@@ -835,6 +835,14 @@ def llAsin(f):
 def llAtan2(y, x):
     assert isfloat(y)
     assert isfloat(x)
+    if math.isnan(x) and math.isnan(y):
+        if math.copysign(1, x) == -1 and math.copysign(1, y) == -1:
+            return -NaN
+        return NaN
+    elif math.isnan(x):
+        return x
+    elif math.isnan(y):
+        return y
     return F32(math.atan2(y, x))
 
 def llAxes2Rot(fwd, left, up):
