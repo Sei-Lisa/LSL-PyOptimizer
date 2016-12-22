@@ -1329,6 +1329,7 @@ def llListSort(lst, stride, asc):
     assert isinteger(asc)
     lst = lst[:] # make a copy
     L = len(lst)
+    broken = u'\ufb1a' > u'\U0001d41a' # that happens on Windows
     if stride < 1: stride = 1
     if L % stride:
         return lst
@@ -1339,6 +1340,10 @@ def llListSort(lst, stride, asc):
         if ta == Vector:
             a = v2f(a) # list should contain vectors made only of floats
             a = a[0]*a[0] + a[1]*a[1] + a[2]*a[2]
+        if broken and ta in (unicode, Key):
+            # Note this breaks type consistency between a and ta!
+            # It should be OK because only equal types are compared.
+            a = a.encode('utf-32-be')
         for j in xrange(i+stride, L, stride):
             b = lst[j]
             tb = type(b)
@@ -1349,6 +1354,8 @@ def llListSort(lst, stride, asc):
                     gt = not (a <= b[0]*b[0] + b[1]*b[1] + b[2]*b[2])
                                         # (note NaNs compare as > thus the reversed condition!)
                 elif tb != Quaternion:
+                    if broken and tb in (unicode, Key):
+                        b = b.encode('utf-32-be')
                     gt = not (a <= b) # float integer, string, key all compare with this
                                         # (note NaNs compare as > thus the reversed condition!)
             if gt ^ (asc != 1):
@@ -1360,6 +1367,8 @@ def llListSort(lst, stride, asc):
                 if ta == Vector:
                     a = v2f(a)
                     a = a[0]*a[0] + a[1]*a[1] + a[2]*a[2]
+                if broken and ta in (unicode, Key):
+                    a = a.encode('utf-32-be')
     return lst
 
 def llListStatistics(op, lst):
