@@ -922,7 +922,7 @@ def do_tests():
     test('llFrand(NaN)', NaN)
     for i in range(10):
       test('llFrand(F32(1.4e-45))', 0.0)
-      test('llFrand(F32(1.1754943508222875e-38))', 0.0)
+      test('llFrand(F32(1.1754942106924411e-38))', 0.0)
 
     lslcommon.IsCalc = True
     test('cond(llGenerateKey())', True)
