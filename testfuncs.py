@@ -516,6 +516,8 @@ def test_jira_fixes():
 def do_tests():
     # Test our own test function for NaNs
     test('reallyequal(NaN, Indet, 0.0)', False)
+    test('reallyequal(-NaN, Indet, 0.0)', True)
+    test('reallyequal(NaN, -Indet, 0.0)', True)
     test('reallyequal(NaN, float("nan"), 0.0)', True)
     test('reallyequal(-float("nan"), Indet, 0.0)', True)
 
