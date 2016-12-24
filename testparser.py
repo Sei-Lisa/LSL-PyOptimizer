@@ -504,6 +504,22 @@ class Test03_Optimizer(UnitTestCase):
                               '}\n'
                         )
 
+        p = self.parser.parse('default{timer(){\n'
+            'integer i = llGetAgentInfo("12345678-9ABC-DEF0-0123-456789ABCDEF");\n'
+            '}}\n'
+        )
+        self.opt.optimize(p, ('optimize','constfold'))
+        out = self.outscript.output(p)
+        self.assertEqual(out, 'default\n'
+                              '{\n'
+                              '    timer()\n'
+                              '    {\n'
+                              '        integer i = llGetAgentInfo("12345678-'
+                              '9ABC-DEF0-0123-456789ABCDEF");\n'
+                              '    }\n'
+                              '}\n'
+                        )
+
         try:
             self.parser.parse('default { timer() { return } }')
             # should raise EParseSyntax, so it should never get here

@@ -974,7 +974,8 @@ class foldconst(object):
                             value = fn(*args)
                     except lslfuncs.ELSLCantCompute:
                         # Don't transform the tree if function is not computable
-                        pass
+                        return
+
                     del args
                     if not self.foldtabs:
                         generatesTabs = (
