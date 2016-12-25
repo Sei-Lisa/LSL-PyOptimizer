@@ -1461,7 +1461,8 @@ def llMD5String(s, salt):
     assert isinteger(salt)
     return hashlib.md5(zstr(s).encode('utf8') + b':' + bytes(salt)).hexdigest().decode('utf8')
 
-def llModPow(base, exp, mod):
+# This function has a delay, therefore it's not safe to compute it.
+def x_llModPow(base, exp, mod):
     assert isinteger(base)
     assert isinteger(exp)
     assert isinteger(mod)
@@ -1809,7 +1810,8 @@ def llXorBase64(s, xor):
                 L2 += 1
     return b64encode(ret).decode('utf8')
 
-def llXorBase64Strings(s, xor):
+# This function has a delay, therefore it's not safe to compute it.
+def x_llXorBase64Strings(s, xor):
     assert isstring(s)
     assert isstring(xor)
 
