@@ -33,9 +33,9 @@ def ReportError(script, e):
     lastpos = fieldpos(script, '\n', e.lno+1)-1
     assert lastpos != -1
     if lastpos < -1: lastpos = len(script) # may hit EOF
-    sys.stderr.write(script[fieldpos(script, '\n', e.lno):lastpos] + '\n')
-    sys.stderr.write(' ' * e.cno + '^\n')
-    sys.stderr.write(e[0] + '\n')
+    sys.stderr.write(script[fieldpos(script, '\n', e.lno):lastpos].decode('utf8') + u"\n")
+    sys.stderr.write(u" " * e.cno + u"^\n")
+    sys.stderr.write(e.args[0] + u"\n")
 
 class UniConvScript(object):
     """Converts the script to Unicode, setting the properties required by
@@ -497,7 +497,7 @@ def main(argv):
         except EParse as e:
             # We don't call ReportError to prevent problems due to
             # displaying invalid UTF-8
-            sys.stderr.write(e[0] + '\n')
+            sys.stderr.write(e.args[0] + u"\n")
             return 1
 
     if preproc != 'none':
