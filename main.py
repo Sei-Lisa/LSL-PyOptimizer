@@ -283,9 +283,9 @@ Case insensitive.
                        expansion of functions that produce strings with tabs.
                        The resulting source isn't guaranteed to be
                        copy-paste-able to the viewer.
-  WarnTabs           + Suppress warning when a function can't be optimized
-                       because it generates a string or list with a tab, or
-                       when a string contains a tab.
+  WarnTabs           + Warn when a function can't be optimized because it
+                       generates a string or list with a tab, or when a string
+                       contains a tab.
   ProcessPre         + Process some preprocessor directives in the source. This
                        enables usage of #pragma/#line preprocessor directives,
                        and is probably necessary if the script is itself the
