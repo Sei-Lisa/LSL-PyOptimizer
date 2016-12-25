@@ -300,6 +300,15 @@ Case insensitive.
 """)
         return
 
+validoptions = frozenset(('extendedglobalexpr','breakcont','extendedtypecast',
+    'extendedassignment','allowkeyconcat','allowmultistrings','duplabels',
+    'lazylists','enableswitch','errmissingdefault','funcoverride','optimize',
+    'optsigns','optfloats','constfold','dcr','shrinknames','addstrings',
+    'foldtabs','warntabs','processpre','explicitcast',
+    'help'
+    # 'clear' is handled as a special case
+))
+
 def main(argv):
     """Main executable."""
 
@@ -312,6 +321,10 @@ def main(argv):
         'allowkeyconcat','allowmultistrings','processpre','warntabs','optimize',
         'optsigns','optfloats','constfold','dcr','errmissingdefault',
         ))
+
+    assert not (options - validoptions), (u"Default options not present in"
+        u" validoptions: '%s'"
+        % (b"', '".join(options - validoptions)).decode('utf8'))
 
     try:
         opts, args = getopt.gnu_getopt(argv[1:], 'hO:o:p:P:HT',
@@ -346,18 +359,27 @@ def main(argv):
         if opt in ('-O', '--optimizer-options'):
             optchanges = arg.lower().split(',')
             for chg in optchanges:
+                if not chg:
+                    continue
                 if chg in ('clear', '+clear'):
                     options = set()
                     continue
                 if chg == '-clear':
                     # ignore
                     continue
-                if chg[0:1] not in ('+', '-'):
-                    chg = '+' + chg
-                if chg[0] == '-':
-                    options.discard(chg[1:])
+                chgfix = chg
+                if chgfix[0] not in ('+', '-'):
+                    chgfix = '+' + chgfix
+                if chgfix[1:] not in validoptions:
+                    Usage(argv[0], 'optimizer-options')
+                    sys.stderr.write(u"\nError: Unrecognized"
+                        u" optimizer option: %s\n" % chg)
+                    return 1
+                if chgfix[0] == '-':
+                    options.discard(chgfix[1:])
                 else:
-                    options.add(chg[1:])
+                    options.add(chgfix[1:])
+                del chgfix
 
         elif opt in ('-h', '--help'):
             Usage(argv[0])
