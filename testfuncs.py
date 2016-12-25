@@ -520,6 +520,11 @@ def do_tests():
     test('reallyequal(NaN, -Indet, 0.0)', True)
     test('reallyequal(NaN, -(Infinity*0), 0.0)', True)
     test('reallyequal(Infinity*0, Indet, 0.0)', True)
+    # Check that it properly distinguishes -0.0 and 0.0
+    test('reallyequal(-0.0, 0.0, 0.0)', False)
+    test('reallyequal(0.0, -0.0, 0.0)', False)
+    test('reallyequal(0.0, 0.0, 0.0)', True)
+    test('reallyequal(-0.0, -0.0, 0.0)', True)
 
     shouldexcept('div(1.0, 0.0)', ELSLMathError)
     shouldexcept('div(1, 0)', ELSLMathError)
