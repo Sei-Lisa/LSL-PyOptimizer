@@ -158,7 +158,7 @@ def llGetAgentLanguage(id):
         return u''
     raise ELSLCantCompute
 
-def llGetListEntryType(scope, options):
+def llGetAgentList(scope, options):
     assert isinteger(scope)
     assert islist(options)
     if scope == 0:
