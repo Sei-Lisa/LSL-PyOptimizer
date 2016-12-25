@@ -471,22 +471,23 @@ def main(argv):
         preproc_cmdline.append('-D__OPTIMIZER__=LSL PyOptimizer')
         preproc_cmdline.append('-D__OPTIMIZER_VERSION__=' + VERSION)
 
+    if type(script) is unicode:
+        script = script.encode('utf8')
+    else:
+        try:
+            # Try converting the script to Unicode, to report any encoding
+            # errors with accurate line information. At this point we don't
+            # need the result.
+            UniConvScript(script).to_unicode()
+        except EParse as e:
+            # We don't call ReportError to prevent problems due to
+            # displaying invalid UTF-8
+            sys.stderr.write(e[0] + '\n')
+            return 1
+
     if preproc != 'none':
         # At this point, for the external preprocessor to work we need the
         # script as a byte array, not as unicode, but it should be valid UTF-8.
-        if type(script) is unicode:
-            script = script.encode('utf8')
-        else:
-            try:
-                # Try converting the script to Unicode, to report any encoding
-                # errors with accurate line information. At this point we don't
-                # need the result.
-                UniConvScript(script).to_unicode()
-            except EParse as e:
-                # We don't call ReportError to prevent problems due to
-                # displaying invalid UTF-8
-                sys.stderr.write(e[0] + '\n')
-                return 1
         script = PreparePreproc(script)
         if mcpp_mode:
             # As a special treatment for mcpp, we force it to output its macros
