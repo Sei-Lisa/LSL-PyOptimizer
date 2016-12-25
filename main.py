@@ -344,10 +344,6 @@ def main(argv):
             arg = arg.encode('utf8')
 
         if opt in ('-O', '--optimizer-options'):
-            if arg == 'help':
-                Usage(argv[0], 'optimizer-options')
-                return 0
-
             optchanges = arg.lower().split(',')
             for chg in optchanges:
                 if chg in ('clear', '+clear'):
@@ -437,6 +433,10 @@ def main(argv):
         elif opt == '--shortname':
             shortname = arg
     del opts
+
+    if 'help' in options:
+        Usage(argv[0], 'optimizer-options')
+        return 0
 
     fname = args[0] if args else None
     if fname is None:
