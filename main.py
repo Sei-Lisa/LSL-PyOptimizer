@@ -295,6 +295,9 @@ Case insensitive.
                        is useless with 'optimize' and 'optsigns', and is of
                        basically no use in general, other than to see where
                        automatic casts happen.
+  Clear              - Set all options to inactive, Normally used as the first
+                       option, to start afresh. Note that this sets to inactive
+                       even the options that are active by default.
 """)
         return
 
@@ -345,14 +348,20 @@ def main(argv):
                 Usage(argv[0], 'optimizer-options')
                 return 0
 
-            optchanges = arg.split(',')
+            optchanges = arg.lower().split(',')
             for chg in optchanges:
+                if chg in ('clear', '+clear'):
+                    options = set()
+                    continue
+                if chg == '-clear':
+                    # ignore
+                    continue
                 if chg[0:1] not in ('+', '-'):
                     chg = '+' + chg
                 if chg[0] == '-':
-                    options.discard(chg[1:].lower())
+                    options.discard(chg[1:])
                 else:
-                    options.add(chg[1:].lower())
+                    options.add(chg[1:])
 
         elif opt in ('-h', '--help'):
             Usage(argv[0])
