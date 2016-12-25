@@ -152,7 +152,7 @@ def ScriptHeader(script, avname):
           '//program_version LSL PyOptimizer v' + VERSION + avname
         + '\n//mono\n\n')
 
-def Usage(about = None):
+def Usage(progname, about = None):
     if about is None:
         sys.stderr.write(
 ur"""LSL optimizer v{version}
@@ -199,7 +199,7 @@ Preprocessor modes:
 Normally, running the preprocessor needs the option 'processpre' active, to
 make the output readable by the optimizer. This option is active by default.
 
-""".format(progname=sys.argv[0], version=VERSION))
+""".format(progname=progname, version=VERSION))
         return
 
     if about == 'optimizer-options':
@@ -298,7 +298,7 @@ Case insensitive.
 """)
         return
 
-def main():
+def main(argv):
     """Main executable."""
 
     # If it's good to append the basename to it, it's good to append the
@@ -312,13 +312,13 @@ def main():
         ))
 
     try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], 'hO:o:p:P:HT',
+        opts, args = getopt.gnu_getopt(argv[1:], 'hO:o:p:P:HT',
             ('optimizer-options=', 'help', 'version', 'output=', 'header',
             'timestamp',
             'preproc=', 'precmd=', 'prearg=', 'prenodef', 'preshow',
             'avid=', 'avname=', 'assetid=', 'scriptname='))
     except getopt.GetoptError:
-        Usage()
+        Usage(argv[0])
         return 1
 
     outfile = '-'
@@ -342,7 +342,7 @@ def main():
 
         if opt in ('-O', '--optimizer-options'):
             if arg == 'help':
-                Usage('optimizer-options')
+                Usage(argv[0], 'optimizer-options')
                 return 0
 
             optchanges = arg.split(',')
@@ -355,7 +355,7 @@ def main():
                     options.add(chg[1:].lower())
 
         elif opt in ('-h', '--help'):
-            Usage()
+            Usage(argv[0])
             return 0
 
         elif opt == '--version':
@@ -368,7 +368,7 @@ def main():
         elif opt in ('-p', '--preproc'):
             preproc = arg.lower()
             if preproc not in ('ext', 'gcpp', 'mcpp', 'none'):
-                Usage()
+                Usage(argv[0])
                 return 1
 
             mcpp_mode = False
@@ -431,7 +431,7 @@ def main():
 
     fname = args[0] if args else None
     if fname is None:
-        Usage()
+        Usage(argv[0])
         return 1
 
     del args
@@ -552,6 +552,6 @@ def main():
     return 0
 
 if __name__ == '__main__':
-    ret = main()
+    ret = main(sys.argv)
     if ret:
         sys.exit(ret)
