@@ -198,7 +198,6 @@ Preprocessor modes:
 
 Normally, running the preprocessor needs the option 'processpre' active, to
 make the output readable by the optimizer. This option is active by default.
-
 """.format(progname=progname, version=VERSION))
         return
 
@@ -320,8 +319,9 @@ def main(argv):
             'timestamp',
             'preproc=', 'precmd=', 'prearg=', 'prenodef', 'preshow',
             'avid=', 'avname=', 'assetid=', 'scriptname='))
-    except getopt.GetoptError:
+    except getopt.GetoptError as e:
         Usage(argv[0])
+        sys.stderr.write(u"\nError: " + str(e).decode('utf8') + u"\n")
         return 1
 
     outfile = '-'
@@ -372,8 +372,12 @@ def main(argv):
 
         elif opt in ('-p', '--preproc'):
             preproc = arg.lower()
-            if preproc not in ('ext', 'gcpp', 'mcpp', 'none'):
+            supported = ('ext', 'mcpp', 'gcpp', 'none')
+            if preproc not in supported:
                 Usage(argv[0])
+                sys.stderr.write(u"\nUnknown --preproc option: '%s'."
+                    u" Only '%s' supported.\n"
+                    % (preproc, u"', '".join(supported)))
                 return 1
 
             mcpp_mode = False
@@ -441,6 +445,8 @@ def main(argv):
     fname = args[0] if args else None
     if fname is None:
         Usage(argv[0])
+        sys.stderr.write(u"\nError: Input file not specified. Use -"
+            u" if you want to use stdin.\n")
         return 1
 
     del args
