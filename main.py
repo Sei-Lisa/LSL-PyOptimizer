@@ -477,7 +477,13 @@ def main(argv):
     if fname == '-':
         script = sys.stdin.read()
     else:
-        f = open(fname, 'r')
+        try:
+            f = open(fname, 'r')
+        except IOError as e:
+            if e.errno == 2:
+                sys.stderr.write('Error: File not found: %s\n' % fname)
+                return 2
+            raise
         try:
             script = f.read()
         finally:
