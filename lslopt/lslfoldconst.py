@@ -107,7 +107,7 @@ class foldconst(object):
         if nt in ('CONST', 'IDENT', 'FLD'):
             if node['nt'] == 'CONST':
                 node['t'] = 'integer'
-                node['value'] = -1 if lslfuncs.cond(node['value']) else 0
+                node['value'] = 1 if lslfuncs.cond(node['value']) else 0
             return # Nothing to do if it's already simplified.
         child = node['ch'] if 'ch' in node else None
 
@@ -1173,7 +1173,8 @@ class foldconst(object):
                 # And if there is more than one, these expressions will need a
                 # new block, which means new scope, which is dangerous.
                 # They are expressions, no declarations or labels allowed, thus
-                # no new identifiers, but it still feels uneasy.
+                # no new identifiers may be created in the new scope, but it
+                # still feels dodgy.
                 if child[1]['value']:
                     # Endless loop. Traverse the loop and the iterator.
                     self.FoldTree(child, 3)
