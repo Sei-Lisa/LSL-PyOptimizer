@@ -76,7 +76,8 @@ def PreparePreproc(script):
     # a<return>b. But in LSL, forgetting about the preprocessor, the string
     # "a\\<return>nb" is valid and stands for a\<return>nb. The principle of
     # least surprise seems to suggest to accept valid LSL strings as LSL
-    # instead of reproducing that C quirk.
+    # instead of reproducing that C quirk. This also matches what FS is doing
+    # currently, so it's good for compatibility.
     tok = re.compile(
         r'(?:'
             r'/(?:\?\?/\n|\\\n)*\*.*?\*(?:\?\?/\n|\\\n)*/'
