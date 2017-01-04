@@ -306,7 +306,7 @@ validoptions = frozenset(('extendedglobalexpr','breakcont','extendedtypecast',
     'lazylists','enableswitch','errmissingdefault','funcoverride','optimize',
     'optsigns','optfloats','constfold','dcr','shrinknames','addstrings',
     'foldtabs','warntabs','processpre','explicitcast',
-    'help'
+    'help','lso','expr'
     # 'clear' is handled as a special case
 ))
 
@@ -460,6 +460,14 @@ def main(argv):
         elif opt == '--shortname':
             shortname = arg
     del opts
+
+    if 'lso' in options:
+        lslopt.lslcommon.LSO = True
+        options.remove('lso')
+
+    if 'expr' in options:
+        lslopt.lslcommon.IsCalc = True
+        options.remove('expr')
 
     if 'help' in options:
         Usage(argv[0], 'optimizer-options')
