@@ -2064,7 +2064,13 @@ list lazy_list_set(list L, integer i, list v)
             sym = self.FindSymbolPartial(tok[1])
             if sym is None or sym['Kind'] != 'v':
                 raise EParseUndefined(self)
-            return {'nt':'IDENT', 't':sym['Type'], 'name':tok[1], 'scope':sym['Scope']}
+            typ = sym['Type']
+            if ForbidList and lslcommon.LSO and typ == 'key':
+                # This attempts to reproduce LSO's behaviour that a key global
+                # var inside a list global definition takes a string value
+                # (SCR-295).
+                typ = 'string'
+            return {'nt':'IDENT', 't':typ, 'name':tok[1], 'scope':sym['Scope']}
         if tok[0] == '<':
             value = [self.Parse_simple_expr()]
             self.autocastcheck(value[0], 'float')
