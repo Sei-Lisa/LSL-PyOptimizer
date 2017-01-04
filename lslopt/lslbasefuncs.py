@@ -776,6 +776,9 @@ def cond(x):
         return bool(compare(x, ZERO_VECTOR, Eq=False))
     if tx == Quaternion:
         return bool(compare(x, ZERO_ROTATION, Eq=False))
+    if lslcommon.LSO and tx == list:
+        # SVC-689: lists of 1 element count as false
+        return len(x) > 1
     return bool(x) # works fine for int, float, string, list
 
 def isinteger(x):
