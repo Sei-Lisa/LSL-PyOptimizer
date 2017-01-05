@@ -30,6 +30,7 @@ class foldconst(object):
         scope = node['scope']
         return self.symtab[scope][name]['Kind'] == 'v' \
             and 'Loc' not in self.symtab[scope][name]
+
     def FoldAndRemoveEmptyStmts(self, lst):
         """Utility function for elimination of useless expressions in FOR"""
         idx = 0
@@ -41,6 +42,18 @@ class foldconst(object):
                 del lst[idx]
             else:
                 idx += 1
+
+    def DoesSomething(self, node):
+        """Tell if a subtree does something or is just empty statements
+        (a pure combination of ';' and '{}')
+        """
+        if node['nt'] != ';':
+            if node['nt'] == '{}':
+                if self.does_something(node['ch']):
+                    return True
+            else:
+                return True
+        return False
 
     def FoldStmt(self, parent, index):
         """Simplify a statement."""
@@ -1095,20 +1108,38 @@ class foldconst(object):
                         # result of optimization so they must be wrapped in an
                         # IF statement). The current approach leaves unnecessary
                         # IFs behind.
-                        if len(child) == 3:
+                        if len(child) == 3 and child[2]['nt'] != '@':
                             del child[2] # Delete ELSE if present
                             return
                     else:
                         self.FoldStmt(child, 1)
+                        if len(child) == 3 and child[2]['nt'] == '@':
+                            # Corner case. The label is in the same scope as
+                            # this statement, so it must be preserved just in
+                            # case it's jumped to.
+                            return
                         parent[index] = child[1]
                         return
                 elif len(child) == 3:
                     self.FoldTree(child, 2)
                     self.FoldStmt(child, 2)
+                    if child[1]['nt'] == '@':
+                        # Corner case. The label is in the same scope as this
+                        # statement, so it must be preserved just in case it's
+                        # jumped to.
+                        if not self.DoesSomething(child[2]):
+                            del child[2]
+                        return
                     parent[index] = child[2]
                     return
                 else:
                     # No ELSE branch, replace the statement with an empty one.
+                    if child[1]['nt'] == '@':
+                        # Corner case. The label is in the same scope as this
+                        # statement, so it must be preserved just in case it's
+                        # jumped to.
+                        parent[index] = child[1]
+                        return
                     parent[index] = {'nt':';', 't':None, 'SEF':True}
                     return
             else:
@@ -1117,8 +1148,7 @@ class foldconst(object):
                 if len(child) > 2:
                     self.FoldTree(child, 2)
                     self.FoldStmt(child, 2)
-                    if child[2]['nt'] == ';' \
-                       or child[2]['nt'] == '{}' and not child[2]['ch']:
+                    if not self.DoesSomething(child[2]):
                         # no point in "... else ;" - remove else branch
                         del child[2]
             if all('SEF' in subnode for subnode in child):
@@ -1141,8 +1171,14 @@ class foldconst(object):
                     self.FoldTree(child, 1)
                     self.FoldStmt(child, 1)
                 else:
-                    # Can be removed.
-                    parent[index] = {'nt':';', 't':None, 'SEF':True}
+                    if child[1]['nt'] == '@':
+                        # Corner case. The label is in the same scope as this
+                        # statement, so it must be preserved just in case it's
+                        # jumped to.
+                        parent[index] = child[1]
+                    else:
+                        # Whole statement can be removed.
+                        parent[index] = {'nt':';', 't':None, 'SEF':True}
                     return
             else:
                 self.FoldTree(child, 1)
@@ -1186,6 +1222,14 @@ class foldconst(object):
                     for expr in child[0]['ch']:
                         # Fold into expression statements.
                         exprlist.append({'nt':'EXPR', 't':expr['t'], 'ch':[expr]})
+                    if (exprlist or child[2]['ch']) and child[3]['nt'] == '@':
+                        # Corner case. We can't optimize this to one single
+                        # statement, so we leave it as-is.
+                        self.FoldTree(child, 3)
+                        self.FoldStmt(child, 3)
+                        self.FoldAndRemoveEmptyStmts(child[2]['ch'])
+                        return
+
                     # returns type None, as FOR does
                     if exprlist:
                         # We're in the case where there are expressions. If any
@@ -1193,7 +1237,19 @@ class foldconst(object):
                         # removed earlier) so don't mark this node as SEF.
                         parent[index] = {'nt':'{}', 't':None, 'ch':exprlist}
                     else:
-                        parent[index] = {'nt':';', 't':None, 'SEF': True}
+                        if child[3]['nt'] == '@':
+                            # Corner case. The label is in the same scope as
+                            # this statement, so it must be preserved. Also,
+                            # jumping inside the loop would execute the
+                            # iterator, so we fold it.
+                            self.FoldAndRemoveEmptyStmts(child[2]['ch'])
+                            if not child[2]['ch']:
+                                # if there's something in the 2nd list,
+                                # preserve the whole statement, otherwise
+                                # replace it with the label
+                                parent[index] = child[3]
+                        else:
+                            parent[index] = {'nt':';', 't':None, 'SEF': True}
                     return
             else:
                 self.FoldTree(child, 3)
