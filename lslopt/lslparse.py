@@ -188,10 +188,10 @@ class parser(object):
 
     # These are hardcoded because additions or modifications imply
     # important changes to the code anyway.
-    base_keywords = frozenset(('default', 'state', 'event', 'jump', 'return', 'if',
-        'else', 'for', 'do', 'while', 'print', 'TRUE', 'FALSE'))
+    base_keywords = frozenset(('default', 'state', 'event', 'jump', 'return',
+        'if', 'else', 'for', 'do', 'while', 'print', 'TRUE', 'FALSE'))
     brkcont_keywords = frozenset(('break', 'continue'))
-    switch_keywords = frozenset(('switch', 'case', 'break'))
+    switch_keywords = frozenset(('switch', 'case', 'break', 'default'))
     types = frozenset(('integer','float','string','key','vector',
         'quaternion','rotation','list'))
     PythonType2LSL = {int: 'integer', float: 'float',
