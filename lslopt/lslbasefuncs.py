@@ -1464,11 +1464,14 @@ def llMD5String(s, salt):
     assert isinteger(salt)
     return hashlib.md5(zstr(s).encode('utf8') + b':' + bytes(salt)).hexdigest().decode('utf8')
 
-# This function has a delay, therefore it's not safe to compute it.
-def x_llModPow(base, exp, mod):
+def llModPow(base, exp, mod):
     assert isinteger(base)
     assert isinteger(exp)
     assert isinteger(mod)
+    if not lslcommon.IsCalc:
+        # This function has a delay, therefore it's not safe to compute it
+        # unless in calculator mode.
+        raise ELSLCantCompute
     # With some luck, this works fully with native ints on 64 bit machines.
     if mod in (0, 1):
         return 0
@@ -1813,10 +1816,14 @@ def llXorBase64(s, xor):
                 L2 += 1
     return b64encode(ret).decode('utf8')
 
-# This function has a delay, therefore it's not safe to compute it.
-def x_llXorBase64Strings(s, xor):
+def llXorBase64Strings(s, xor):
     assert isstring(s)
     assert isstring(xor)
+
+    if not lslcommon.IsCalc:
+        # This function has a delay, therefore it's not safe to compute it
+        # unless in calculator mode.
+        raise ELSLCantCompute
 
     if xor == u'':
         return s
