@@ -1140,7 +1140,10 @@ def do_tests():
     test('llModPow(41, 1, 17)', 7)
     lslcommon.IsCalc = False
 
-    test('llListFindList([], [])', 0)
+    lslcommon.LSO = True
+    test('llListFindList([],[])', -1)
+    test('llListFindList([3],[])', 0)
+    lslcommon.LSO = False
     test('llListFindList([NaN], [NaN])', 0) # I swear.
     test('llListFindList([NaN, Indet], [Indet, NaN])', 0) # Indeed.
     test('llListFindList([-0.], [0.])', 0) # Really.
