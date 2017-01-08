@@ -180,14 +180,18 @@ Usage: {progname}
     [--precmd=<cmd>]            preprocessor command ('cpp' by default)
     [--prenodef]                no LSL specific defines (__AGENTKEY__ etc.)
     [--preshow]                 show preprocessor output, and stop
-    [--avid=<UUID>]             specify UUID of avatar saving the script
-    [--avname=<name>]           specify name of avatar saving the script
-    [--assetid=<UUID>]          specify the asset UUID of the script
-    [--scriptname=<name>]       specify the script's file name
+    [--avid=<UUID>]           * specify UUID of avatar saving the script
+    [--avname=<name>]         * specify name of avatar saving the script
+    [--assetid=<UUID>]        * specify the asset UUID of the script
+    [--shortname=<name>]      * specify the script's short file name
     filename                    input file
 
+Options marked with * are used to define the preprocessor macros __AGENTID__,
+__AGENTKEY__, __AGENTIDRAW__, __AGENTNAME__, __ASSETID__ and __SHORTFILE__,
+and have no effect if --prenodef is specified.
+
 If filename is a dash (-) then standard input is used.
-Use: {progname} -O help for help on the command line options.
+Use: {progname} -O help for help on the optimizer control options.
 
 Preprocessor modes:
     ext       Invoke preprocessor
@@ -226,7 +230,7 @@ Case insensitive.
                        with a preprocessor. Similar to addstrings, but this one
                        is not an optimization, it introduces new syntax.
   DupLabels          - Normally, a duplicate label within a function is allowed
-                       by the syntax by using {} blocks; however, the server
+                       by the syntax by using {{}} blocks; however, the server
                        will just refuse to save the script (under Mono) or do
                        something completely unexpected (under LSO: all jumps
                        will go to the last label with that name). This flag
@@ -298,7 +302,12 @@ Case insensitive.
   Clear              - Set all options to inactive, Normally used as the first
                        option, to start afresh. Note that this sets to inactive
                        even the options that are active by default.
-""")
+
+For example:
+   {progname} -O -DCR,+BreakCont scriptname.lsl
+would turn off dead code removal (which is active by default) and turn on the
+break/continue syntax extension (which is inactive by default).
+""".format(progname=progname))
         return
 
 validoptions = frozenset(('extendedglobalexpr','breakcont','extendedtypecast',
@@ -332,7 +341,7 @@ def main(argv):
             ('optimizer-options=', 'help', 'version', 'output=', 'header',
             'timestamp',
             'preproc=', 'precmd=', 'prearg=', 'prenodef', 'preshow',
-            'avid=', 'avname=', 'assetid=', 'scriptname='))
+            'avid=', 'avname=', 'assetid=', 'shortname='))
     except getopt.GetoptError as e:
         Usage(argv[0])
         sys.stderr.write(u"\nError: " + str(e).decode('utf8') + u"\n")
