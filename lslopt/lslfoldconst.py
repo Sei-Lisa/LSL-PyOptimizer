@@ -946,8 +946,9 @@ class foldconst(object):
 
             sym = self.symtab[0][node['name']]
             OptimizeParams(node, sym)
-            if 'Fn' in sym:
-                # Guaranteed to be side-effect free if the children are.
+            if 'Fn' in sym and ('SEF' in sym and sym['SEF'] or lslcommon.IsCalc):
+                # It's side-effect free if the children are and the function
+                # is marked as SEF.
                 if SEFargs:
                     node['SEF'] = True
                 if CONSTargs:
