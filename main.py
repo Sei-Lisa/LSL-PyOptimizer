@@ -383,7 +383,7 @@ def main(argv):
                 if chgfix[1:] not in validoptions:
                     Usage(argv[0], 'optimizer-options')
                     sys.stderr.write(u"\nError: Unrecognized"
-                        u" optimizer option: %s\n" % chg)
+                        u" optimizer option: %s\n" % chg.decode('utf8'))
                     return 1
                 if chgfix[0] == '-':
                     options.discard(chgfix[1:])
