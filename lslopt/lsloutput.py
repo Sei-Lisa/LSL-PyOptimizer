@@ -70,9 +70,13 @@ class outscript(object):
         if tvalue == float:
             if self.optfloats and value.is_integer() and -2147483648.0 <= value < 2147483648.0:
                 if self.globalmode and not self.listmode:
+                    if value == 0 and math.copysign(1, value) == -1:
+                        return '-0.'
                     return str(int(value))
                 elif not self.globalmode:
                     # Important inside lists!!
+                    if value == 0 and math.copysign(1, value) == -1:
+                        return '(-(float)0)'
                     return '((float)' + str(int(value)) + ')'
             s = repr(value)
             if s == 'nan':
