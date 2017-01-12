@@ -551,9 +551,7 @@ def do_tests():
     test('typecast(Infinity, unicode)', u'Infinity')
     test('typecast(NaN, unicode)', u'NaN')
     test('typecast(Vector((NaN,-Infinity,-0.)), unicode)', u'<NaN, -Infinity, -0.00000>')
-    lslcommon.LSO = True
     test('typecast(Vector((NaN,-Infinity,-0.)), unicode, True, True)', u'<NaN, -Infinity, -0.000000>')
-    lslcommon.LSO = False
     test('typecast(Vector((NaN,2.,3.)), list)', [Vector((NaN,2.,3.))])
     test('typecast([Vector((NaN,2.,-Infinity))], list)', [Vector((NaN,2.,-Infinity))])
 
