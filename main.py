@@ -191,6 +191,9 @@ Options marked with * are used to define the preprocessor macros __AGENTID__,
 __AGENTKEY__, __AGENTIDRAW__, __AGENTNAME__, __ASSETID__ and __SHORTFILE__,
 and have no effect if --prenodef is specified.
 
+Using --prenodef before -p causes no macros whatsoever to be defined. If used
+after -p, the type casting macros string(...), key(...), etc. will be defined.
+
 If filename is a dash (-) then standard input is used.
 Use: {progname} -O help for help on the optimizer control options.
 
