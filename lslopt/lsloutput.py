@@ -151,14 +151,11 @@ class outscript(object):
                 ret += ']'
                 self.listmode = False
                 return ret
-            ret = '\n'
+            ret = '' if lslcommon.IsCalc else '\n'
             first = True
             self.indentlevel += 1
             for entry in value:
-                if not first:
-                    ret += self.dent() + ', '
-                else:
-                    ret += self.dent() + '[ '
+                ret += self.dent() + ('[ ' if first else ', ')
                 self.listmode = True
                 ret += self.Value2LSL(entry) + '\n'
                 self.listmode = False
