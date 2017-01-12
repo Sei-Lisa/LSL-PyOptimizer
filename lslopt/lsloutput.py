@@ -150,21 +150,23 @@ class outscript(object):
             if value == []:
                 return '[]'
             if len(value) < 5:
+                save_listmode = self.listmode
                 self.listmode = True
                 ret = '[' + self.Value2LSL(value[0])
                 for elem in value[1:]:
                     ret += ', ' + self.Value2LSL(elem)
                 ret += ']'
-                self.listmode = False
+                self.listmode = save_listmode
                 return ret
             ret = '' if lslcommon.IsCalc else '\n'
             first = True
             self.indentlevel += 1
             for entry in value:
                 ret += self.dent() + ('[ ' if first else ', ')
+                save_listmode = self.listmode
                 self.listmode = True
                 ret += self.Value2LSL(entry) + '\n'
-                self.listmode = False
+                self.listmode = save_listmode
                 first = False
             self.indentlevel -= 1
             return ret + self.dent() + self.indent + ']'
