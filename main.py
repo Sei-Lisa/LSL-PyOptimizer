@@ -174,6 +174,7 @@ Usage: {progname}
     [-o|--output=<filename>]    output to file rather than stdout
     [-H|--header]               add the script as a comment in Firestorm format
     [-T|--timestamp]            add a timestamp as a comment at the beginning
+    [-y|--python-exceptions]    when an exception is raised, show a stack trace
     [-p|--preproc=mode]         run external preprocessor (see below for modes)
                                 (resets the preprocessor command line so far)
     [-P|--prearg=<arg>]         add parameter to preprocessor's command line
@@ -337,9 +338,9 @@ def main(argv):
         % (b"', '".join(options - validoptions)).decode('utf8'))
 
     try:
-        opts, args = getopt.gnu_getopt(argv[1:], 'hO:o:p:P:HT',
+        opts, args = getopt.gnu_getopt(argv[1:], 'hO:o:p:P:HTy',
             ('optimizer-options=', 'help', 'version', 'output=', 'header',
-            'timestamp',
+            'timestamp','python-exceptions',
             'preproc=', 'precmd=', 'prearg=', 'prenodef', 'preshow',
             'avid=', 'avname=', 'assetid=', 'shortname='))
     except getopt.GetoptError as e:
@@ -359,6 +360,7 @@ def main(argv):
     script_timestamp = ''
     mcpp_mode = False
     preshow = False
+    raise_exception = False
 
     for opt, arg in opts:
         if type(opt) is unicode:
@@ -401,6 +403,9 @@ def main(argv):
 
         elif opt in ('-o', '--output'):
             outfile = arg
+
+        elif opt in ('-y', '--python-exceptions'):
+            raise_exception = True
 
         elif opt in ('-p', '--preproc'):
             preproc = arg.lower()
@@ -470,148 +475,156 @@ def main(argv):
             shortname = arg
     del opts
 
-    if 'lso' in options:
-        lslopt.lslcommon.LSO = True
-        options.remove('lso')
+    try:
 
-    if 'expr' in options:
-        lslopt.lslcommon.IsCalc = True
-        options.remove('expr')
+        if 'lso' in options:
+            lslopt.lslcommon.LSO = True
+            options.remove('lso')
 
-    if 'help' in options:
-        Usage(argv[0], 'optimizer-options')
+        if 'expr' in options:
+            lslopt.lslcommon.IsCalc = True
+            options.remove('expr')
+
+        if 'help' in options:
+            Usage(argv[0], 'optimizer-options')
+            return 0
+
+        fname = args[0] if args else None
+        if fname is None:
+            Usage(argv[0])
+            sys.stderr.write(u"\nError: Input file not specified. Use -"
+                u" if you want to use stdin.\n")
+            return 1
+
+        del args
+
+        script = ''
+        if fname == '-':
+            script = sys.stdin.read()
+        else:
+            try:
+                f = open(fname, 'r')
+            except IOError as e:
+                if e.errno == 2:
+                    sys.stderr.write('Error: File not found: %s\n' % fname)
+                    return 2
+                raise
+            try:
+                script = f.read()
+            finally:
+                f.close()
+                del f
+
+        if script_header:
+            script_header = ScriptHeader(script, avname)
+
+        if script_timestamp:
+            import time
+            tmp = time.time()
+            script_timestamp = time.strftime(
+                '// Generated on %Y-%m-%dT%H:%M:%S.{0:06d}Z\n'
+                .format(int(tmp % 1 * 1000000)), time.gmtime(tmp))
+            del tmp
+
+        if shortname == '':
+            shortname = os.path.basename(fname)
+
+        if predefines:
+            preproc_cmdline.append('-D__AGENTKEY__="' + avid + '"')
+            preproc_cmdline.append('-D__AGENTID__="' + avid + '"')
+            preproc_cmdline.append('-D__AGENTIDRAW__=' + avid)
+            preproc_cmdline.append('-D__AGENTNAME__="' + avname + '"')
+            preproc_cmdline.append('-D__ASSETID__=' + assetid)
+            preproc_cmdline.append('-D__SHORTFILE__="' + shortname + '"')
+            preproc_cmdline.append('-D__OPTIMIZER__=LSL PyOptimizer')
+            preproc_cmdline.append('-D__OPTIMIZER_VERSION__=' + VERSION)
+
+        if type(script) is unicode:
+            script = script.encode('utf8')
+        else:
+            try:
+                # Try converting the script to Unicode, to report any encoding
+                # errors with accurate line information. At this point we don't
+                # need the result.
+                UniConvScript(script).to_unicode()
+            except EParse as e:
+                # We don't call ReportError to prevent problems due to
+                # displaying invalid UTF-8
+                sys.stderr.write(e.args[0] + u"\n")
+                return 1
+
+        if preproc != 'none':
+            # At this point, for the external preprocessor to work we need the
+            # script as a byte array, not as unicode, but it should be UTF-8.
+            script = PreparePreproc(script)
+            if mcpp_mode:
+                # As a special treatment for mcpp, we force it to output its
+                # macros so we can read if USE_xxx are defined. With GCC that
+                # is achieved with -dN, but mcpp has no command line option.
+                script += '\n#pragma MCPP put_defines\n'
+
+            # Invoke the external preprocessor
+            import subprocess
+
+            p = subprocess.Popen(preproc_cmdline, stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE)
+            script = p.communicate(input=script)[0]
+            status = p.wait()
+            if status:
+                return status
+            del p, status
+
+            # This method is very imperfect, in several senses. However, since
+            # it's applied to the output of the preprocessor, all of the
+            # concerns should be addressed:
+            #    - \s includes \n, but \n should not be allowed.
+            #    - Comments preceding the directive should not cause problems.
+            #              e.g.: /* test */ #directive
+            #    - #directive within a comment or string should be ignored.
+            for x in re.findall(r'(?:(?<=\n)|^)\s*#\s*define\s+('
+                                r'USE_SWITCHES'
+                                r'|USE_LAZY_LISTS'
+                                r')(?:$|[^A-Za-z0-9_])', script, re.S):
+                if x == 'USE_SWITCHES':
+                    options.add('enableswitch')
+                elif x == 'USE_LAZY_LISTS':
+                    options.add('lazylists')
+
+        if not preshow:
+
+            p = parser()
+            try:
+                ts = p.parse(script, options)
+            except EParse as e:
+                ReportError(script, e)
+                return 1
+            del p, script
+
+            opt = optimizer()
+            ts = opt.optimize(ts, options)
+            del opt
+
+            outs = outscript()
+            script = script_header + script_timestamp + outs.output(ts, options)
+            del outs, ts
+
+        del script_header, script_timestamp
+
+        if outfile == '-':
+            sys.stdout.write(script)
+        else:
+            outf = open(outfile, 'w')
+            try:
+                outf.write(script)
+            finally:
+                outf.close()
         return 0
 
-    fname = args[0] if args else None
-    if fname is None:
-        Usage(argv[0])
-        sys.stderr.write(u"\nError: Input file not specified. Use -"
-            u" if you want to use stdin.\n")
-        return 1
-
-    del args
-
-    script = ''
-    if fname == '-':
-        script = sys.stdin.read()
-    else:
-        try:
-            f = open(fname, 'r')
-        except IOError as e:
-            if e.errno == 2:
-                sys.stderr.write('Error: File not found: %s\n' % fname)
-                return 2
+    except Exception as e:
+        if raise_exception:
             raise
-        try:
-            script = f.read()
-        finally:
-            f.close()
-            del f
-
-    if script_header:
-        script_header = ScriptHeader(script, avname)
-
-    if script_timestamp:
-        import time
-        tmp = time.time()
-        script_timestamp = time.strftime(
-            '// Generated on %Y-%m-%dT%H:%M:%S.{0:06d}Z\n'
-            .format(int(tmp % 1 * 1000000)), time.gmtime(tmp))
-        del tmp
-
-    if shortname == '':
-        shortname = os.path.basename(fname)
-
-    if predefines:
-        preproc_cmdline.append('-D__AGENTKEY__="' + avid + '"')
-        preproc_cmdline.append('-D__AGENTID__="' + avid + '"')
-        preproc_cmdline.append('-D__AGENTIDRAW__=' + avid)
-        preproc_cmdline.append('-D__AGENTNAME__="' + avname + '"')
-        preproc_cmdline.append('-D__ASSETID__=' + assetid)
-        preproc_cmdline.append('-D__SHORTFILE__="' + shortname + '"')
-        preproc_cmdline.append('-D__OPTIMIZER__=LSL PyOptimizer')
-        preproc_cmdline.append('-D__OPTIMIZER_VERSION__=' + VERSION)
-
-    if type(script) is unicode:
-        script = script.encode('utf8')
-    else:
-        try:
-            # Try converting the script to Unicode, to report any encoding
-            # errors with accurate line information. At this point we don't
-            # need the result.
-            UniConvScript(script).to_unicode()
-        except EParse as e:
-            # We don't call ReportError to prevent problems due to
-            # displaying invalid UTF-8
-            sys.stderr.write(e.args[0] + u"\n")
-            return 1
-
-    if preproc != 'none':
-        # At this point, for the external preprocessor to work we need the
-        # script as a byte array, not as unicode, but it should be valid UTF-8.
-        script = PreparePreproc(script)
-        if mcpp_mode:
-            # As a special treatment for mcpp, we force it to output its macros
-            # so we can read if USE_xxx are defined. With GCC that is achieved
-            # with -dN but with mcpp there's no command line option.
-            script += '\n#pragma MCPP put_defines\n'
-
-        # Invoke the external preprocessor
-        import subprocess
-
-        p = subprocess.Popen(preproc_cmdline, stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE)
-        script = p.communicate(input=script)[0]
-        status = p.wait()
-        if status:
-            return status
-        del p, status
-
-        # This method is very imperfect, in several senses. However, since
-        # it's applied to the output of the preprocessor, all of the concerns
-        # should be addressed:
-        #    - \s includes \n, but \n should not be allowed.
-        #    - Comments preceding the directive should not cause problems.
-        #              e.g.: /* test */ #directive
-        #    - #directive within a comment or string should be ignored.
-        for x in re.findall(r'(?:(?<=\n)|^)\s*#\s*define\s+('
-                            r'USE_SWITCHES'
-                            r'|USE_LAZY_LISTS'
-                            r')(?:$|[^A-Za-z0-9_])', script, re.S):
-            if x == 'USE_SWITCHES':
-                options.add('enableswitch')
-            elif x == 'USE_LAZY_LISTS':
-                options.add('lazylists')
-
-    if not preshow:
-
-        p = parser()
-        try:
-            ts = p.parse(script, options)
-        except EParse as e:
-            ReportError(script, e)
-            return 1
-        del p, script
-
-        opt = optimizer()
-        ts = opt.optimize(ts, options)
-        del opt
-
-        outs = outscript()
-        script = script_header + script_timestamp + outs.output(ts, options)
-        del outs, ts
-
-    del script_header, script_timestamp
-
-    if outfile == '-':
-        sys.stdout.write(script)
-    else:
-        outf = open(outfile, 'w')
-        try:
-            outf.write(script)
-        finally:
-            outf.close()
-    return 0
+        sys.stderr.write(e.__class__.__name__ + ': ' + str(e) + '\n')
+        return 1
 
 if __name__ == '__main__':
     ret = main(sys.argv)
