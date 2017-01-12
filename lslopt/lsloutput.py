@@ -135,6 +135,8 @@ class outscript(object):
                                 news = news2
                                 exp = newexp
                     s = neg+news
+            if exp and s[-1] == '.':
+                s = s[:-1] # transfrom e.g. 1.e-30 into 1e-30
             if value >= 0 or self.globalmode or not self.optsigns:
                 return s + exp
             return '((float)' + s + exp + ')'
