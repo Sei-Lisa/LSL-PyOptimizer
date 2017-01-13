@@ -827,23 +827,24 @@ def do_tests():
     lslcommon.LSO = False
 
     # llPow() input matrix
-    in1 = in2 = [NaN,-Infinity,F32(-2.1),-2.,-1.,F32(-.1),-.0,.0,F32(.1),1.,2.,F32(2.1),Infinity]
+    in1 = in2 = [NaN,-Infinity,F32(-2.1),-2.,-1.,F32(-.1),-.0,.0,F32(.1),1.,2.,F32(2.1),Infinity,Indet]
 
     # Expected results table
     exp = [
-        NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,
-        NaN,0.,0.,0.,0.,0.,1.,1.,Infinity,-Infinity,Infinity,Infinity,Infinity,
-        NaN,0.,Indet,F('0x1.D0662Ep-3'),F('-0x1.E79E7Cp-2'),Indet,1.,1.,Indet,F('-0x1.0CCCCCp+1'),F('0x1.1A3D6Ep+2'),Indet,Infinity,
-        NaN,0.,Indet,.25,-0.5,Indet,1.,1.,Indet,-2.,4.,Indet,Infinity,
-        NaN,NaN,Indet,1.,-1.,Indet,1.,1.,Indet,-1.,1.,Indet,NaN,
-        NaN,Infinity,Indet,100.,-10.,Indet,1.,1.,Indet,F('-0x1.99999Ap-4'),F('0x1.47AE16p-7'),Indet,0.,
-        NaN,Infinity,Infinity,Infinity,-Infinity,Infinity,1.,1.,0.,0.,0.,0.,0.,
-        NaN,Infinity,Infinity,Infinity,Infinity,Infinity,1.,1.,0.,0.,0.,0.,0.,
-        NaN,Infinity,F('0x1.F791EEp+6'),100.,10.,F('0x1.4248F0p0'),1.,1.,F('0x1.96B230p-1'),F('0x1.99999Ap-4'),F('0x1.47AE16p-7'),F('0x1.04491Ap-7'),0.,
-        NaN,NaN,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,NaN,
-        NaN,0.,F('0x1.DDB682p-3'),.25,.5,F('0x1.DDB680p-1'),1.,1.,F('0x1.125FBEp0'),2.,4.,F('0x1.125FBEp+2'),Infinity,
-        NaN,0.,F('0x1.AF30DAp-3'),F('0x1.D0662Ep-3'),F('0x1.E79E7Cp-2'),F('0x1.DB6346p-1'),1.,1.,F('0x1.13B748p0'),F('0x1.0CCCCCp+1'),F('0x1.1A3D6Ep+2'),F('0x1.2FFA0Ep+2'),Infinity,
-        NaN,0.,0.,0.,0.,0.,1.,1.,Infinity,Infinity,Infinity,Infinity,Infinity,
+        NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,
+        NaN,0.,0.,0.,0.,0.,1.,1.,Infinity,-Infinity,Infinity,Infinity,Infinity,NaN,
+        NaN,0.,Indet,F('0x1.D0662Ep-3'),F('-0x1.E79E7Cp-2'),Indet,1.,1.,Indet,F('-0x1.0CCCCCp+1'),F('0x1.1A3D6Ep+2'),Indet,Infinity,NaN,
+        NaN,0.,Indet,.25,-0.5,Indet,1.,1.,Indet,-2.,4.,Indet,Infinity,NaN,
+        NaN,NaN,Indet,1.,-1.,Indet,1.,1.,Indet,-1.,1.,Indet,NaN,NaN,
+        NaN,Infinity,Indet,100.,-10.,Indet,1.,1.,Indet,F('-0x1.99999Ap-4'),F('0x1.47AE16p-7'),Indet,0.,NaN,
+        NaN,Infinity,Infinity,Infinity,-Infinity,Infinity,1.,1.,0.,0.,0.,0.,0.,NaN,
+        NaN,Infinity,Infinity,Infinity,Infinity,Infinity,1.,1.,0.,0.,0.,0.,0.,NaN,
+        NaN,Infinity,F('0x1.F791EEp+6'),100.,10.,F('0x1.4248F0p0'),1.,1.,F('0x1.96B230p-1'),F('0x1.99999Ap-4'),F('0x1.47AE16p-7'),F('0x1.04491Ap-7'),0.,NaN,
+        NaN,NaN,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,NaN,NaN,
+        NaN,0.,F('0x1.DDB682p-3'),.25,.5,F('0x1.DDB680p-1'),1.,1.,F('0x1.125FBEp0'),2.,4.,F('0x1.125FBEp+2'),Infinity,NaN,
+        NaN,0.,F('0x1.AF30DAp-3'),F('0x1.D0662Ep-3'),F('0x1.E79E7Cp-2'),F('0x1.DB6346p-1'),1.,1.,F('0x1.13B748p0'),F('0x1.0CCCCCp+1'),F('0x1.1A3D6Ep+2'),F('0x1.2FFA0Ep+2'),Infinity,NaN,
+        NaN,0.,0.,0.,0.,0.,1.,1.,Infinity,Infinity,Infinity,Infinity,Infinity,NaN,
+        NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,NaN,
         ]
 
     idx = 0
