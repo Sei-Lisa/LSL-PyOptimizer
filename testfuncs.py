@@ -930,9 +930,8 @@ def do_tests():
     test('llFrand(-Infinity)', 0.0)
     test('llFrand(-NaN)', -NaN)
     test('llFrand(NaN)', NaN)
-    for i in range(10):
-      test('llFrand(F32(1.4e-45))', 0.0)
-      test('llFrand(F32(1.1754942106924411e-38))', 0.0)
+    test('llFrand(F32(1.4e-45))', 0.0)
+    test('llFrand(F32(1.1754942106924411e-38))', 0.0)
 
     test('llRot2Fwd(Quaternion((1.,0.,0.,0.)))', Vector((1.,0.,0.)))
     test('llRot2Fwd(Quaternion((0.,1.,0.,0.)))', Vector((-1.,0.,0.)))
