@@ -995,7 +995,6 @@ def do_tests():
                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAA")
     testXB64S("BCDABCDABCDABCDABCDABCDABCDA", "BCDA",
                  "AAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-    testXB64S("AQCDAQCD", "AQC=", "AAADQSCT")
     testXB64S("AA_AAA______AAAAAAAAAAAAA", "=5gbbW==oWVbj=", "+5=bbW======j+5gbbW+5gbbW")
 
     testXB64SC(u"\U00012345", "", u"\U00012345")
@@ -1016,10 +1015,7 @@ def do_tests():
     testXB64SC("ABCDABCDABCD", "ABCD", "AAAAAAAAAAAA")
     testXB64SC("AACD", "AACD", "AACD")
     testXB64SC("AQCD", "AQCD", "AAGC")
-    testXB64SC("AQCD", "AQC=", "AAGC")
-    testXB64SC("AQCD", "AQC=", "AAGC")
     testXB64SC("AQCDAQCD", "AQC=", "AAGCAAGC")
-    testXB64SC("AQCD", "AQCD", "AAGC")
     testXB64SC("AQCDAQCD", "AQCD", "AAGCAAGC")
     testXB64SC("ACCD", "AC==", "ACCD")
     testXB64SC("ABCD", "AB==", "ABCD")
