@@ -560,7 +560,6 @@ def do_tests():
     shouldexcept('typecast(Vector((1.,2.,3.)), Key)', ELSLTypeMismatch)
     shouldexcept('typecast(Quaternion((1.,2.,3.,0.)), Key)', ELSLTypeMismatch)
     shouldexcept('typecast(Key(u""), Vector)', ELSLTypeMismatch)
-    shouldexcept('typecast(Key(u""), Vector)', ELSLTypeMismatch)
     test('typecast(Key(u"xyz"), unicode)', u'xyz')
     test('typecast(u"xyz", Key)', Key(u'xyz'))
     test('typecast(u"3.14e+0a", int)', 3)
