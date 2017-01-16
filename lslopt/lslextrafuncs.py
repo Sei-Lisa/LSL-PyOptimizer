@@ -17,7 +17,7 @@
 
 # Extra functions that have predictable return values for certain arguments.
 
-from lslcommon import Key #, Vector, Quaternion
+from lslcommon import Key, Vector #, Quaternion
 from lslbasefuncs import ELSLCantCompute, isinteger, iskey, islist, \
   isvector, isstring, NULL_KEY, ZERO_VECTOR, ZERO_ROTATION, cond
 #isfloat, isrotation
@@ -200,7 +200,8 @@ def llGetBoundingBox(id):
 def llGetColor(face):
     assert isinteger(face)
     if face > 8:
-        return ZERO_VECTOR
+        return Vector((1.,1.,1.))
+    # Returns face 0 when negative (can't be computed)
     raise ELSLCantCompute
 
 def llGetDisplayName(id):
