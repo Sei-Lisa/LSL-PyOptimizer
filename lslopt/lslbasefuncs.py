@@ -1071,8 +1071,10 @@ def llFloor(f):
 
 def llFrand(lim):
     assert isfloat(lim)
-    if math.isinf(lim) or abs(lim) < 1.1754943508222875e-38:
+    if math.isinf(lim):
         return 0.
+    if abs(lim) < float.fromhex('0x1p-126'):
+        return -0. if lim < 0 else 0.
     if math.isnan(lim):
         return lim
 
