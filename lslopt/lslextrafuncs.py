@@ -161,7 +161,7 @@ def llGetAgentLanguage(id):
 def llGetAgentList(scope, options):
     assert isinteger(scope)
     assert islist(options)
-    if scope == 0:
+    if scope not in (1, 2, 4):
         return [u'INVALID_SCOPE']
     raise ELSLCantCompute
 
@@ -175,6 +175,8 @@ def llGetAlpha(face):
     assert isinteger(face)
     if face > 8:
         return 1.0
+    # Negative face numbers return (float)llGetNumberOfSides(), which isn't
+    # computable.
     raise ELSLCantCompute
 
 def llGetAnimation(id):
