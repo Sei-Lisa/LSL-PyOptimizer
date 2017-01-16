@@ -142,7 +142,7 @@ def llDetectedVel(idx, event=None):
 def llEdgeOfWorld(v1, v2):
     assert isvector(v1)
     assert isvector(v2)
-    if v2.x == v2.y == 0:
+    if v2[0] == v2[1] == 0:
         return 1
     raise ELSLCantCompute
 
