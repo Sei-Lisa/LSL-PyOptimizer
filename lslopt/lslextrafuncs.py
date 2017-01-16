@@ -71,7 +71,7 @@ def llDetectedName(idx, event=None):
     assert isinteger(idx)
     if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
         raise ELSLCantCompute
-    return u''
+    return NULL_KEY;
 
 def llDetectedOwner(idx, event=None):
     assert isinteger(idx)
