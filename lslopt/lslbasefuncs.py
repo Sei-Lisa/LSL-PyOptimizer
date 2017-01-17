@@ -1364,12 +1364,12 @@ def llListSort(lst, stride, asc):
                 if tb == Vector:
                     b = v2f(b)
                     gt = not (a <= b[0]*b[0] + b[1]*b[1] + b[2]*b[2])
-                                        # (note NaNs compare as > thus the reversed condition!)
+                    # (note NaNs compare as > thus the reversed condition!)
                 elif tb != Quaternion:
                     if broken and tb in (unicode, Key):
                         b = b.encode('utf-32-be')
-                    gt = not (a <= b) # float integer, string, key all compare with this
-                                        # (note NaNs compare as > thus the reversed condition!)
+                    gt = not (a <= b) # float, integer, string, key all take this branch
+                    # (note NaNs compare as > thus the reversed condition!)
             if gt ^ (asc != 1):
                 # swap
                 lst[i:i+stride],lst[j:j+stride] = lst[j:j+stride],lst[i:i+stride]
