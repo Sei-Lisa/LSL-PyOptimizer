@@ -1262,7 +1262,8 @@ def do_tests():
     testB642S("FC83BFBFBFBF78", "%3Fx") # aliased range end (U+3FFFFFF)
     testB642S("FC848080808078", "%3F%3F%3F%3F%3F%3Fx") # U+4000000 (invalid 6-byte range start)
     testB642S("FDBFBFBFBFBF78", "%3F%3F%3F%3F%3F%3Fx") # U+7FFFFFFF (invalid 6-byte range end)
-    # not actually valid either way (these are actually used to distinguish the input as UTF-16 BOM)
+    # not actually valid either way (these are actually used to distinguish the
+    # input as UTF-16 BOM and are invalid in UTF-8)
     testB642S("FEB080808080808078", "%3F%3F%3F%3F%3F%3F%3F%3Fx")
     testB642S("FFBFBFBFBFBFBFBF78", "%3F%3F%3F%3F%3F%3F%3F%3Fx")
     # short or invalid sequences

@@ -821,7 +821,7 @@ def reduce(t):
 
 def llAbs(i):
     assert isinteger(i)
-    return abs(i)
+    return abs(i) if i != -2147483648 else i
 
 def llAcos(f):
     assert isfloat(f)
