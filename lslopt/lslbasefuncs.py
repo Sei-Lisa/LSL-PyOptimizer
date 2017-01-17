@@ -744,10 +744,10 @@ def compare(a, b, Eq = True):
     tb = type(b)
     if ta in (int, float) and tb in (int, float):
         # we trust that NaN == NaN is False
-        if type(a) != type(b):
-            ret = ff(a) == ff(b)
-        else:
+        if ta == tb == int:
             ret = a == b
+        else:
+            ret = ff(a) == ff(b)
         return int(ret) if Eq else 1-ret
     if ta in (unicode, Key) and tb in (unicode, Key):
         ret = 0 if a == b else 1 if a > b or not lslcommon.LSO else -1
