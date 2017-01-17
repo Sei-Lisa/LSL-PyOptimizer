@@ -1000,7 +1000,7 @@ class foldconst(object):
                             if self.warntabs:
                                 warning(u"Can't optimize call to %s because it would generate a tab character (you can force the optimization with the 'foldtabs' option, or disable this warning by disabling the 'warntabs' option)." % node['name'].decode('utf8'))
                             return
-                    parent[index] = {'nt':'CONST', 't':node['t'], 'value':value}
+                    parent[index] = {'nt':'CONST', 't':node['t'], 'value':value, 'SEF':True}
                 elif node['name'] == 'llGetListLength':
                     # Convert llGetListLength(expr) to (expr != [])
                     node = {'nt':'CONST', 't':'list', 'value':[]}
