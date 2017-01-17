@@ -1247,21 +1247,21 @@ def do_tests():
     testB642S("F090808078", "%F0%90%80%80x") # U+10000 (4-byte range start)
     testB642S("F48FBFBF78", "%F4%8F%BF%BFx") # U+10FFFF (valid 4-byte range end)
     # excluded because they are used for UTF-16 surrogates, not valid characters
-    testB642S("EDA080", "%3F%3F%3F") # D800 - first high surrogate
-    testB642S("EDAFBF", "%3F%3F%3F") # DBFF - last high surrogate
-    testB642S("EDB080", "%3F%3F%3F") # DC00 - first low surrogate
-    testB642S("EDBFBF", "%3F%3F%3F") # DFFF - last low  surrogate
+    testB642S("EDA08078", "%3F%3F%3Fx") # D800 - first high surrogate
+    testB642S("EDAFBF78", "%3F%3F%3Fx") # DBFF - last high surrogate
+    testB642S("EDB08078", "%3F%3F%3Fx") # DC00 - first low surrogate
+    testB642S("EDBFBF78", "%3F%3F%3Fx") # DFFF - last low  surrogate
     # excluded because of truncation to U+10FFFF
     testB642S("F490808078", "%3F%3F%3F%3Fx") # U+110000 (invalid 4-byte range start)
     testB642S("F7BFBFBF78", "%3F%3F%3F%3Fx") # U+1FFFFF (invalid 4-byte range end)
     testB642S("F88080808078", "%3Fx") # aliased range begin (U+0000)
     testB642S("F887BFBFBF78", "%3Fx") # aliased range end (U+1FFFFF)
-    testB642S("F88880808078", "%3F%3F%3F%3F%3Fx") # U+200000 (5-byte range start)
-    testB642S("FBBFBFBFBF78", "%3F%3F%3F%3F%3Fx") # U+3FFFFFF (5-byte range end)
+    testB642S("F88880808078", "%3F%3F%3F%3F%3Fx") # U+200000 (invalid 5-byte range start)
+    testB642S("FBBFBFBFBF78", "%3F%3F%3F%3F%3Fx") # U+3FFFFFF (invalid 5-byte range end)
     testB642S("FC808080808078", "%3Fx") # aliased range begin (U+0000)
     testB642S("FC83BFBFBFBF78", "%3Fx") # aliased range end (U+3FFFFFF)
-    testB642S("FC848080808078", "%3F%3F%3F%3F%3F%3Fx") # U+4000000 (6-byte range start)
-    testB642S("FDBFBFBFBFBF78", "%3F%3F%3F%3F%3F%3Fx") # U+7FFFFFFF (6-byte range end)
+    testB642S("FC848080808078", "%3F%3F%3F%3F%3F%3Fx") # U+4000000 (invalid 6-byte range start)
+    testB642S("FDBFBFBFBFBF78", "%3F%3F%3F%3F%3F%3Fx") # U+7FFFFFFF (invalid 6-byte range end)
     # not actually valid either way (these are actually used to distinguish the input as UTF-16 BOM)
     testB642S("FEB080808080808078", "%3F%3F%3F%3F%3F%3F%3F%3Fx")
     testB642S("FFBFBFBFBFBFBFBF78", "%3F%3F%3F%3F%3F%3F%3F%3Fx")
