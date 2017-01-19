@@ -925,7 +925,7 @@ b64tos_re = re.compile(
     b'('
       # Those pass through and are caught by InternalUTF8toString:
       b'\x00$' # NUL at last position (zstr removes it)
-      b'|[\x01-\x7F\xFE\xFF]|[\xC2-\xDF][\x80-\xBF]'
+      b'|[\x09\x0A\x0F\x1F-\x7F\xFE\xFF]|[\xC2-\xDF][\x80-\xBF]'
       b'|(?:\xE0[\xA0-\xBF]|[\xE1-\xEF][\x80-\xBF])[\x80-\xBF]'
       b'|(?:\xF0[\x90-\xBF]|[\xF1-\xF7][\x80-\xBF])[\x80-\xBF]{2}'
       b'|(?:\xF8[\x88-\xBF]|[\xF9-\xFB][\x80-\xBF])[\x80-\xBF]{3}'
@@ -933,7 +933,7 @@ b64tos_re = re.compile(
     b')|('
       # Those are caught here and substituted by a single "?"
       # (greediness is important here):
-      b'[\x00\x80-\xBF]'
+      b'[\x00-\x1F\x80-\xBF]'
       b'|[\xC0-\xDF][\x80-\xBF]?'
       b'|[\xE0-\xEF][\x80-\xBF]{0,2}'
       b'|[\xF0-\xF7][\x80-\xBF]{0,3}'
@@ -958,7 +958,8 @@ def llBase64ToString(s):
     # UTF-8 does. This causes inconsistencies in the number of ?'s returned.
 
     # In llBase64ToString, trailing NUL is stripped, and embedded NULs are
-    # converted to "?".
+    # converted to "?". In addition, characters in range 00-1F are also
+    # converted to "?" except for \x09, \x0A, \x0F, \x1F.
 
     byteseq = bytearray(b64decode(s + u'=' * (-len(s) & 3)))
 
