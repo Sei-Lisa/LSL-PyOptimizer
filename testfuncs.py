@@ -1207,8 +1207,7 @@ def do_tests():
     test('llBase64ToString(u"QUJDAERFRg")', u'ABC?DEF') # 'ABC\x00DEF'
     test('llBase64ToString(u"AEEAQgBD")', u'?A?B?C') # '\x00A\x00B\x00C'
     test('llBase64ToString(u"AEEAQgBDAA")', u'?A?B?C') # '\x00A\x00B\x00C\x00'
-    test('llBase64ToString(u"AEEAQgBDAA")', u'?A?B?C') # '\x00A\x00B\x00C\x00'
-    testB642S("0041004200430000", "%3FA%3FB%3FC%3F")
+    test('llBase64ToString(u"AEEAQgBDAAA=")', u'?A?B?C?') # '\x00A\x00B\x00C\x00'
 
     # Some assorted tests:
     test('llBase64ToString(u"gIAA")', u'??')
