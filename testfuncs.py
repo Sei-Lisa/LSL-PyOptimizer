@@ -1137,6 +1137,9 @@ def do_tests():
     test('llListFindList([],[])', -1)
     test('llListFindList([3],[])', 0)
     lslcommon.LSO = False
+    test('llListFindList([],[])', 0)
+    test('llListFindList([3],[])', 0)
+    test('llListFindList([3],[3,4,5])', -1)
     test('llListFindList([NaN], [NaN])', 0) # I swear.
     test('llListFindList([NaN, Indet], [Indet, NaN])', 0) # Indeed.
     test('llListFindList([-0.], [0.])', 0) # Really.
@@ -1146,10 +1149,7 @@ def do_tests():
     test('llListFindList([Vector((NaN,0.,0.))], [Vector((NaN,0.,0.))])', -1) # Yes, really
     test('llListFindList([Vector((0.,0.,0.))], [Vector((0.,0.,0.))])', 0)
     test('llListFindList([Quaternion((0.,0.,0.,NaN))], [Quaternion((0.,0.,0.,NaN))])', -1) # Python == fails here
-    test('llListFindList([Quaternion((0.,0.,0.,float("nan")))], [Quaternion((0.,0.,0.,float("nan")))])', -1)
-    test('llListFindList([],[])', 0)
-    test('llListFindList([3],[])', 0)
-    test('llListFindList([3],[3,4,5])', -1)
+    test('llListFindList([Quaternion((0.,0.,0.,Indet))], [Quaternion((0.,0.,0.,Indet))])', -1)
     test('''llListFindList([Key(u"12345678-ABCD-5678-1234-123456781234")],
             [Key(u"12345678-abcd-5678-1234-123456781234")])''', -1)
     test('''llListFindList([Key(u"12345678-abcd-5678-1234-123456781234")],
