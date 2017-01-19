@@ -1800,11 +1800,14 @@ def llXorBase64(s, xor):
     if L2 == 0:
         # The input xor string starts with zero or one valid Base64 characters.
         # This produces garbage bytes (the first byte is zero though).
-        # We don't produce a result in this case.
-        raise ELSLCantCompute
+        if L1 > 2:
+            # We don't produce a result in this case.
+            raise ELSLCantCompute
+        L2 = 2
+        xor = u'AA'
 
-    s = b64decode(s + u'='*(-L1 & 3))
-    xor = b64decode(xor + u'='*(-L2 & 3))
+    s = b64decode(s + u'=' * (-L1 & 3))
+    xor = b64decode(xor + u'=' * (-L2 & 3))
     L2 = len(xor)
 
     i = 0
@@ -1887,11 +1890,14 @@ def llXorBase64StringsCorrect(s, xor):
     if L2 == 0:
         # The input xor string starts with zero or one valid Base64 characters.
         # This produces garbage bytes (the first byte is zero though).
-        # We don't produce a result in this case.
-        raise ELSLCantCompute
+        if L1 > 2:
+            # We don't produce a result in this case.
+            raise ELSLCantCompute
+        L2 = 2
+        xor = u'AA'
 
-    s = b64decode(s + u'='*(-L1 & 3))
-    xor = b64decode(xor + u'='*(-L2 & 3)) + b'\x00'
+    s = b64decode(s + u'=' * (-L1 & 3))
+    xor = b64decode(xor + u'=' * (-L2 & 3)) + b'\x00'
 
     i = 0
     ret = b''
