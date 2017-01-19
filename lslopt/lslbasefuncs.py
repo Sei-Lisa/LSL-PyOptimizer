@@ -49,7 +49,7 @@ from base64 import b64encode, b64decode
 # Also, Base64 needs the correct count of characters (len mod 4 can't be = 1).
 # The RE helps both in isolating the Base64 section and in trimming out the
 # offending characters; it just doesn't help with padding, with which Python is
-# also picky. We deal with that in the code by padding with '='*(-length&3).
+# also picky. We deal with that in the code by padding with '='*(-length & 3).
 
 # Despite what http://www.gnu.org/software/libc/manual/html_node/Parsing-of-Floats.html#Parsing-of-Floats
 # says, NaN(chars) does not work in LSL (which is relevant in vectors).
@@ -960,7 +960,7 @@ def llBase64ToString(s):
     # In llBase64ToString, trailing NUL is stripped, and embedded NULs are
     # converted to "?".
 
-    byteseq = bytearray(b64decode(s + u'='*(-len(s)&3)))
+    byteseq = bytearray(b64decode(s + u'=' * (-len(s) & 3)))
 
     pos = 0
     match = b64tos_re.search(byteseq, pos)
