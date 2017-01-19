@@ -1113,7 +1113,7 @@ def llGetListEntryType(lst, pos):
     assert islist(lst)
     assert isinteger(pos)
     try:
-        return Types(lst[pos])
+        return Types[type(lst[pos])]
     except IndexError:
         return 0 # TYPE_INVALID
     except KeyError:
