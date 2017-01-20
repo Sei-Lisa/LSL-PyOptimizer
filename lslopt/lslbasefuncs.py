@@ -110,7 +110,7 @@ Types = {
         Key:            4, # TYPE_KEY
         Vector:         5, # TYPE_VECTOR
         Quaternion:     6, # TYPE_ROTATION
-        #list:           7, # Undefined
+        list:           0, # TYPE_INVALID
         }
 
 # Utility functions
