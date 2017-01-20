@@ -1328,17 +1328,17 @@ def do_tests():
     test('llEscapeURL(llUnescapeURL(u"%E0%9F%BFx"))', u'%3F%3F%3Fx') # aliased range end   (U+07FF)
     test('llEscapeURL(llUnescapeURL(u"%E0%A0%80x"))', u'%E0%A0%80x') # U+0800 (3-byte range start)
     test('llEscapeURL(llUnescapeURL(u"%ED%9F%BFx"))', u'%ED%9F%BFx') # U+D7FF (right before first UTF-16 high surrogate)
+    # excluded because they are used for UTF-16 surrogates, not valid characters
+    test('llEscapeURL(llUnescapeURL(u"%ED%A0%80x"))', u'%3F%3F%3Fx') # D800 - first high surrogate
+    test('llEscapeURL(llUnescapeURL(u"%ED%AF%BFx"))', u'%3F%3F%3Fx') # DBFF - last high surrogate
+    test('llEscapeURL(llUnescapeURL(u"%ED%B0%80x"))', u'%3F%3F%3Fx') # DC00 - first low surrogate
+    test('llEscapeURL(llUnescapeURL(u"%ED%BF%BFx"))', u'%3F%3F%3Fx') # DFFF - last low  surrogate
     test('llEscapeURL(llUnescapeURL(u"%EE%80%80x"))', u'%EE%80%80x') # U+E000 (right after last UTF-16 low surrogate)
     test('llEscapeURL(llUnescapeURL(u"%EF%BF%BFx"))', u'%EF%BF%BFx') # U+FFFF (3-byte range end)
     test('llEscapeURL(llUnescapeURL(u"%F0%80%80%80x"))', u'%3F%3F%3F%3Fx') # aliased range begin (U+0000)
     test('llEscapeURL(llUnescapeURL(u"%F0%8F%BF%BFx"))', u'%3F%3F%3F%3Fx') # aliased range end   (U+FFFF)
     test('llEscapeURL(llUnescapeURL(u"%F0%90%80%80x"))', u'%F0%90%80%80x') # U+10000 (4-byte range start)
     test('llEscapeURL(llUnescapeURL(u"%F4%8F%BF%BFx"))', u'%F4%8F%BF%BFx') # U+10FFFF (valid 4-byte range end)
-    # excluded because they are used for UTF-16 surrogates, not valid characters
-    test('llEscapeURL(llUnescapeURL(u"%ED%A0%80"))', u'%3F%3F%3F') # D800 - first high surrogate
-    test('llEscapeURL(llUnescapeURL(u"%ED%AF%BF"))', u'%3F%3F%3F') # DBFF - last high surrogate
-    test('llEscapeURL(llUnescapeURL(u"%ED%B0%80"))', u'%3F%3F%3F') # DC00 - first low surrogate
-    test('llEscapeURL(llUnescapeURL(u"%ED%BF%BF"))', u'%3F%3F%3F') # DFFF - last low  surrogate
     # excluded because of truncation to U+10FFFF
     test('llEscapeURL(llUnescapeURL(u"%F4%90%80%80x"))', u'%3F%3F%3F%3Fx') # U+110000 (invalid 4-byte range start)
     test('llEscapeURL(llUnescapeURL(u"%F7%BF%BF%BFx"))', u'%3F%3F%3F%3Fx') # U+1FFFFF (invalid 4-byte range end)
