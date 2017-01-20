@@ -1302,7 +1302,7 @@ def do_tests():
 
     test('llUnescapeURL(u"%")', u'')
     test('llUnescapeURL(u"%%")', u'')
-    test('llUnescapeURL(u"%4%252Fabc")', u'\x40\x252Fabc')
+    test('llUnescapeURL(u"%4%252Fabc")', u'\x40252Fabc')
     test('llUnescapeURL(u"%%4%252Fabc")', u'\x04\x252Fabc')
     test('llEscapeURL(llUnescapeURL(u"%.44%25%%2Fa\u2190c"))', u'%044%25%02Fa%E2%86%90c')
     test('llEscapeURL(llUnescapeURL(u"%.44%25%%2Fa\u2190c%"))', u'%044%25%02Fa%E2%86%90c')

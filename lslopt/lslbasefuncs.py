@@ -1757,6 +1757,7 @@ def llUnescapeURL(s):
         c = s[i] # Second digit
         if c == u'%':
             ret += chr(v)
+            i += 1
             continue
         i += 1
         if u'0' <= c <= u'9' or u'A' <= c <= u'F' or u'a' <= c <= u'f':
