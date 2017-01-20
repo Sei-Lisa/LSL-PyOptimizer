@@ -1090,7 +1090,7 @@ def llFrand(lim):
         if val == lim:
             # this should never happen
             # (it can happen on denormals, but these cause output of 0.0)
-            val = 0.
+            val = 0. # pragma: no cover
         return val
 
     # Can't give a concrete value

@@ -1157,8 +1157,6 @@ def do_tests():
     test('''llListFindList([u"12345678-abcd-5678-1234-123456781234",
                             Key(u"12345678-abcd-5678-1234-123456781234")],
             [Key(u"12345678-abcd-5678-1234-123456781234")])''', 1)
-    test('llListInsertList([1,2,3],[4,5],-1)', [1,2,4,5,3])
-    test('llListInsertList([1,2,3],[4,5],-5)', [4,5,1,2,3])
 
     test('llIntegerToBase64(-680658713)', u'12345w==')
     test('llIntegerToBase64(-1)', u'/////w==')
@@ -1464,11 +1462,14 @@ def do_tests():
     test('llListReplaceList([0,1,2,3,4,5],[6,7,8],7,6)', [6,7,8])
     test('llListReplaceList([0,1,2,3,4,5],[6,7,8],7,8)', [0,1,2,3,4,5,6,7,8])
 
-    test('llMD5String(u"", 0)', u'1a9d5db22c73a993ff0b42f64b396873')
     test('llListInsertList([], [1], 0)', [1])
     test('llListInsertList([], [1], 3)', [1])
     test('llListInsertList([], [1], -1)', [1])
+    test('llListInsertList([1,2,3],[4,5],-1)', [1,2,4,5,3])
+    test('llListInsertList([1,2,3],[4,5],-5)', [4,5,1,2,3])
     test('llListInsertList([1,2,3,4,5],[9],-3)', [1,2,9,3,4,5])
+
+    test('llMD5String(u"", 0)', u'1a9d5db22c73a993ff0b42f64b396873')
 
     test('llGetEnv(u"")', u'')
     test('llGetEnv(u"yadda")', u'')
