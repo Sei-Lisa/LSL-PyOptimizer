@@ -352,6 +352,12 @@ def vr2s(v, DP=6):
         return u'<'+f2s(v[0],DP)+u', '+f2s(v[1],DP)+u', '+f2s(v[2],DP)+u'>'
     return u'<'+f2s(v[0],DP)+u', '+f2s(v[1],DP)+u', '+f2s(v[2],DP)+u', '+f2s(v[3],DP)+u'>'
 
+
+def qnz(q):
+    if all(x == 0. for x in q):
+        return Quaternion((0.,0.,0.,1.))
+    return q
+
 def InternalTypecast(val, out, InList, f32):
     """Type cast val to out, following LSL rules.
 
@@ -830,7 +836,7 @@ def llAcos(f):
 def llAngleBetween(r1, r2):
     assert isrotation(r1)
     assert isrotation(r2)
-    return llRot2Angle(div(r1, r2, f32=False))
+    return llRot2Angle(div(qnz(r1), qnz(r2), f32=False))
 
 def llAsin(f):
     assert isfloat(f)
@@ -1592,23 +1598,17 @@ def llRot2Euler(r):
 def llRot2Fwd(r):
     assert isrotation(r)
     v = Vector((1., 0., 0.))
-    if r == (0., 0., 0., 0.):
-        return v
-    return llVecNorm(mul(v, r, f32=False))
+    return llVecNorm(mul(v, qnz(r), f32=False))
 
 def llRot2Left(r):
     assert isrotation(r)
     v = Vector((0., 1., 0.))
-    if r == (0., 0., 0., 0.):
-        return v
-    return llVecNorm(mul(v, r, f32=False))
+    return llVecNorm(mul(v, qnz(r), f32=False))
 
 def llRot2Up(r):
     assert isrotation(r)
     v = Vector((0., 0., 1.))
-    if r == (0., 0., 0., 0.):
-        return v
-    return llVecNorm(mul(v, r, f32=False))
+    return llVecNorm(mul(v, qnz(r), f32=False))
 
 def llRotBetween(v1, v2):
     assert isvector(v1)
