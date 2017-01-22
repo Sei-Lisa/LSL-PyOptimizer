@@ -1356,7 +1356,7 @@ def llListSort(lst, stride, asc):
         if broken and ta in (unicode, Key):
             # Note this breaks type consistency between a and ta!
             # It should be OK because only equal types are compared.
-            a = a.encode('utf-32-be')
+            a = a.encode('utf-32-be') # pragma: no cover
         for j in xrange(i+stride, L, stride):
             b = lst[j]
             tb = type(b)
@@ -1368,7 +1368,7 @@ def llListSort(lst, stride, asc):
                     # (note NaNs compare as > thus the reversed condition!)
                 elif tb != Quaternion:
                     if broken and tb in (unicode, Key):
-                        b = b.encode('utf-32-be')
+                        b = b.encode('utf-32-be') # pragma: no cover
                     gt = not (a <= b) # float, integer, string, key all take this branch
                     # (note NaNs compare as > thus the reversed condition!)
             if gt ^ (asc != 1):
@@ -1381,7 +1381,7 @@ def llListSort(lst, stride, asc):
                     a = v2f(a)
                     a = a[0]*a[0] + a[1]*a[1] + a[2]*a[2]
                 if broken and ta in (unicode, Key):
-                    a = a.encode('utf-32-be')
+                    a = a.encode('utf-32-be') # pragma: no cover
     return lst
 
 def llListStatistics(op, lst):
