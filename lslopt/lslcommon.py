@@ -30,11 +30,6 @@ class Quaternion(tuple):
     def __repr__(self):
         return 'Quaternion(' + super(Quaternion, self).__repr__() + ')'
 
-# We don't yet support the LSO string model (arbitrary zero-terminated byte
-# sequences). This exception is  triggered to report attempts at using it.
-class ELSONotSupported(Exception):
-    pass
-
 # Recognized: 3763, 6466, 6495
 # BUG-3763 affected llXorBase64 (see lslbasefuncs.py). It's been fixed.
 # BUG-6466 is about some valid numbers in JSON not being accepted. It's fixed.

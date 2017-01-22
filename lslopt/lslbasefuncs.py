@@ -94,6 +94,11 @@ class ELSLInvalidType(Exception):
 class ELSLCantCompute(Exception):
     pass
 
+# We don't yet support the LSO string model (arbitrary zero-terminated byte
+# sequences). This exception is  triggered to report attempts at using it.
+class ELSONotSupported(Exception):
+    pass
+
 # LSL types are translated to Python types as follows:
 # * LSL string -> Python unicode
 # * LSL key -> Key (class derived from unicode, no significant changes except __repr__)
@@ -726,7 +731,7 @@ def mod(a, b, f32=True):
 def compare(a, b, Eq = True):
     """Calculate a == b when Eq is True, or a != b when not"""
 
-    # Defined for all types as long as there's one that can be cast to the other
+    # Defined for all types as long as one of them can be auto-cast to the other
     ta = type(a)
     tb = type(b)
     if ta in (int, float) and tb in (int, float):
@@ -808,7 +813,12 @@ def reduce(t):
 
 def llAbs(i):
     assert isinteger(i)
-    return abs(i) if i != -2147483648 else i
+    if i != -2147483648:
+        return abs(i)
+    if lslcommon.LSO:
+        return i
+    # Mono raises an OverflowException in this case.
+    raise ELSLCantCompute
 
 def llAcos(f):
     assert isfloat(f)
