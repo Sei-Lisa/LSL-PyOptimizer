@@ -514,37 +514,24 @@ def InternalUTF8toString(s):
 
     return zstr(ret)
 
-# The code of llDeleteSubList and llDeleteSubString is identical except for the type check
-def InternalDeleteSubSequence(val, start, end):
+# The code of llDeleteSubList and llDeleteSubString is identical except for the
+# type check. Same for llGetSubString and llList2List. They are all joined into
+# one single function.
+def InternalGetDeleteSubSequence(val, start, end, isGet):
     assert isinteger(start)
     assert isinteger(end)
     L = len(val)
-    if L == 0:
-        return val[:]
-
-    # Python does much of the same thing here, which helps a lot
-    if (start+L if start < 0 else start) <= (end+L if end < 0 else end):
-        if end == -1: end += L
-        return val[:start] + val[end+1:]
-    if end == -1: end += L
-    return val[end+1:start] # Exclusion range
-
-# The code of llGetSubString and llList2List is identical except for the type check
-def InternalGetSubSequence(val, start, end):
-    assert isinteger(start)
-    assert isinteger(end)
-    L = len(val)
-    if L == 0:
-        return val[:]
 
     # Python does much of the same thing as LSL here, which helps a lot
-    if start < 0: start += L
-    if end < 0: end += L
-    if start > end:
-        if end == -1: end += L
-        return val[:end+1] + val[start:] # Exclusion range
     if end == -1: end += L
-    return val[start:end+1]
+    if (start+L if start < 0 else start) > (end+L if end < 0 else end):
+        # Exclusion range - get/delete from end and start
+        if isGet:
+            return val[:end+1] + val[start:]
+        return val[end+1:start]
+    if isGet:
+        return val[start:end+1]
+    return val[:start] + val[end+1:]
 
 def typecast(val, out, InList=False, f32=True):
     """Type cast an item. Calls InternalList2Strings for lists and
@@ -1025,12 +1012,12 @@ def llCos(f):
 def llDeleteSubList(lst, start, end):
     # This acts as llList2List if there's wraparound
     assert islist(lst)
-    return InternalDeleteSubSequence(lst, start, end)
+    return InternalGetDeleteSubSequence(lst, start, end, isGet=False)
 
 def llDeleteSubString(s, start, end):
     # This acts as llGetSubString if there's wraparound
     assert isstring(s)
-    return InternalDeleteSubSequence(s, start, end)
+    return InternalGetDeleteSubSequence(s, start, end, isGet=False)
 
 def llDumpList2String(lst, sep):
     assert islist(lst)
@@ -1126,7 +1113,7 @@ def llGetListLength(lst):
 
 def llGetSubString(s, start, end):
     assert isstring(s)
-    return InternalGetSubSequence(s, start, end)
+    return InternalGetDeleteSubSequence(s, start, end, isGet=True)
 
 def llInsertString(s, pos, src):
     assert isstring(s)
@@ -1201,7 +1188,7 @@ def llList2List(lst, start, end):
     assert islist(lst)
     assert isinteger(start)
     assert isinteger(end)
-    return InternalGetSubSequence(lst, start, end)
+    return InternalGetDeleteSubSequence(lst, start, end, isGet=True)
 
 def llList2ListStrided(lst, start, end, stride):
     assert islist(lst)
