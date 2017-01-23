@@ -871,7 +871,7 @@ def llAxes2Rot(fwd, left, up):
         s = 0.5/r
 
         # For the case of ix+jy+kz > 0, it can return an unnormalized quaternion
-        return Quaternion((s*(left[2]-up[1]), s*(up[0]-fwd[2]), s*(fwd[1]-left[0]), r*0.5))
+        return Quaternion(F32((s*(left[2]-up[1]), s*(up[0]-fwd[2]), s*(fwd[1]-left[0]), r*0.5)))
 
     # Find a positive combo. LSL normalizes the result in these cases only, so we do the same.
 
