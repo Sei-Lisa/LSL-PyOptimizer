@@ -866,7 +866,7 @@ def llAxes2Rot(fwd, left, up):
     # One of the hardest.
 
     t = math.fsum((fwd[0], left[1], up[2]))
-    if t >= 0.: # no danger of division by zero or negative roots
+    if t > 0.: # no danger of division by zero or negative roots
         r = math.sqrt(1. + t)
         s = 0.5/r
 
@@ -892,9 +892,8 @@ def llAxes2Rot(fwd, left, up):
         q = (s*(up[0]+fwd[2]), s*(left[2]+up[1]), r*0.5, s*(fwd[1]-left[0]))
 
     # Normalize
-    if q == (0.,0.,0.,0.):
-        return Quaternion((0.,0.,0.,1.))
-    mag = math.fsum((q[0]*q[0], q[1]*q[1], q[2]*q[2], q[3]*q[3]))
+    q = qnz(q)
+    mag = math.sqrt(math.fsum((q[0]*q[0], q[1]*q[1], q[2]*q[2], q[3]*q[3])))
     return Quaternion(F32((q[0]/mag, q[1]/mag, q[2]/mag, q[3]/mag)))
 
 
