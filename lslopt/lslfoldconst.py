@@ -1049,7 +1049,7 @@ class foldconst(object):
         if nt in ('VECTOR', 'ROTATION', 'LIST'):
             isconst = True
             issef = True
-            for idx in xrange(len(child)-1, -1, -1):
+            for idx in xrange(len(child)):
                 self.FoldTree(child, idx)
                 if child[idx]['nt'] != 'CONST':
                     isconst = False
