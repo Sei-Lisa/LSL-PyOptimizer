@@ -358,6 +358,18 @@ def qnz(q):
         return Quaternion((0.,0.,0.,1.))
     return q
 
+def qnorm(q):
+    q = qnz(q)
+    mag2 = math.fsum((q[0]*q[0], q[1]*q[1], q[2]*q[2], q[3]*q[3]))
+    # Threshold for renormalization
+    eps_h = 1.0000021457672119140625 #float.fromhex('0x1.000024p0')
+    eps_l = 0.99999797344207763671875 # float.fromhex('0x1.FFFFBCp-1')
+    if mag2 >= eps_h or mag2 <= eps_l:
+        # Renormalize
+        mag2 = math.sqrt(mag2)
+        return Quaternion((q[0]/mag2, q[1]/mag2, q[2]/mag2, q[3]/mag2))
+    return q
+
 def InternalTypecast(val, out, InList, f32):
     """Type cast val to out, following LSL rules.
 
@@ -1580,12 +1592,16 @@ def llRot2Euler(r):
 
     # Another one of the hardest. The formula for Z angle in the
     # singularity case was inspired by the viewer code.
+    r = qnorm(r)
     y = 2*(r[0]*r[2] + r[1]*r[3])
 
-    # Check gimbal lock conditions
+    # Check gimbal lock condition
     if abs(y) > 0.99999:
-        return Vector(F32((0., math.asin(y), math.atan2(r[2]*r[3]+r[0]*r[1],
-            .5-(r[0]*r[0]+r[2]*r[2])))))
+        return Vector(F32((0.,
+                           math.asin(1. if y > 1. else y),
+                           math.atan2(r[2]*r[3]+r[0]*r[1],
+                                      .5-(r[0]*r[0]+r[2]*r[2]))
+                        )))
 
     qy2 = r[1]*r[1]
     return Vector(F32((
