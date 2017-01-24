@@ -1697,7 +1697,7 @@ def llRound(f):
     assert isfloat(f)
     if math.isnan(f) or math.isinf(f) or f >= 2147483647.5 or f < -2147483648.0:
         return -2147483648
-    return int(math.floor(f+0.5))
+    return int(math.floor(F32(f+0.5)))
 
 def llSHA1String(s):
     assert isstring(s)
