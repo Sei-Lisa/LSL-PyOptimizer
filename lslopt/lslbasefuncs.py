@@ -1097,6 +1097,8 @@ def llEuler2Rot(v):
 
 def llFabs(f):
     assert isfloat(f)
+    if f == 0.0 or math.isnan(f): # llFabs(-0.0) is -0.0; llFabs(-nan) is -nan
+        return f
     return math.fabs(f)
 
 def llFloor(f):
