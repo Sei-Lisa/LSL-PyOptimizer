@@ -1071,10 +1071,29 @@ def llEuler2Rot(v):
     c2 = math.cos(v[2]*0.5)
     s2 = math.sin(v[2]*0.5)
 
-    return Quaternion(F32((s0 * c1 * c2 + c0 * s1 * s2,
-                           c0 * s1 * c2 - s0 * c1 * s2,
-                           c0 * c1 * s2 + s0 * s1 * c2,
-                           c0 * c1 * c2 - s0 * s1 * s2)))
+    r = F32((s0 * c1 * c2 + c0 * s1 * s2,
+             c0 * s1 * c2 - s0 * c1 * s2,
+             c0 * c1 * s2 + s0 * s1 * c2,
+             c0 * c1 * c2 - s0 * s1 * s2))
+
+    # Fix the sign
+    c0 = math.cos(v[0])
+    s0 = math.sin(v[0])
+    c1 = math.cos(v[1])
+    s1 = math.sin(v[1])
+    c2 = math.cos(v[2])
+    s2 = math.sin(v[2])
+    d1 = c1*c2
+    d2 = c0*c2 - s0*s1*s2
+    d3 = c0*c1
+    if d1 + d2 + d3 > 0:
+        return Quaternion(-f for f in r) if r[3] < 0 else Quaternion(r)
+    i = 0
+    if d2 > d1:
+        i = 1
+    if d1 < d3 > d2:
+        i = 2
+    return Quaternion(-f for f in r) if r[i] < 0 else Quaternion(r)
 
 def llFabs(f):
     assert isfloat(f)
