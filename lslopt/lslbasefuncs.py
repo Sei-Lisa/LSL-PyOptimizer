@@ -1673,27 +1673,27 @@ def llRotBetween(v1, v2):
     return Quaternion((0., 0., 1., 0.)) # rotate around the Z-axis
 
     # Algorithm by Moon Metty (for reference)
-    dot = mul(v1, v2, f32=False)
-    cross = mod(v1, v2, f32=False)
-    csq = mul(cross, cross, f32=False)
-
-    ddc2 = dot*dot + csq
-
-    DenormalStart = float.fromhex('0x1p-149')
-    if ddc2 >= DenormalStart:
-        if csq >= DenormalStart:
-            s = math.sqrt(ddc2) + dot;
-            m = math.sqrt(csq + s*s);
-            return Quaternion(F32((cross[0]/m, cross[1]/m, cross[2]/m, s/m)))
-
-        # Deal with degenerate cases here
-        if dot > 0:
-            return ZERO_ROTATION
-        m = math.sqrt(v1[0]*v1[0] + v1[1]*v1[1])
-        if m >= DenormalStart:
-            return Quaternion(F32((v1[1]/m, -v1[0]/m, 0., 0.)))
-        return Quaternion((1., 0., 0., 0.))
-    return ZERO_ROTATION
+#    dot = mul(v1, v2, f32=False)
+#    cross = mod(v1, v2, f32=False)
+#    csq = mul(cross, cross, f32=False)
+#
+#    ddc2 = dot*dot + csq
+#
+#    DenormalStart = float.fromhex('0x1p-149')
+#    if ddc2 >= DenormalStart:
+#        if csq >= DenormalStart:
+#            s = math.sqrt(ddc2) + dot;
+#            m = math.sqrt(csq + s*s);
+#            return Quaternion(F32((cross[0]/m, cross[1]/m, cross[2]/m, s/m)))
+#
+#        # Deal with degenerate cases here
+#        if dot > 0:
+#            return ZERO_ROTATION
+#        m = math.sqrt(v1[0]*v1[0] + v1[1]*v1[1])
+#        if m >= DenormalStart:
+#            return Quaternion(F32((v1[1]/m, -v1[0]/m, 0., 0.)))
+#        return Quaternion((1., 0., 0., 0.))
+#    return ZERO_ROTATION
 
 def llRound(f):
     assert isfloat(f)
