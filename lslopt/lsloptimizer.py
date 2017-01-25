@@ -74,6 +74,7 @@ class optimizer(foldconst, renamer, deadcode):
         self.shrinknames = 'shrinknames' in options
 
         self.constfold = 'constfold' in options
+        self.optlistlength = 'listlength' in options
         self.dcr = 'dcr' in options
 
         # Math that works fine except in rare corner-cases can be optimized.

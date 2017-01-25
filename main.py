@@ -282,6 +282,7 @@ Case insensitive.
                        would keep a single copy of "longstring", while if the
                        strings are added, both "alongstring" and "blongstring"
                        take memory.
+  ListLength         + Optimize llGetListLength(arg) to arg!=[].
 
   Miscellaneous options
 
@@ -318,7 +319,7 @@ validoptions = frozenset(('extendedglobalexpr','breakcont','extendedtypecast',
     'extendedassignment','allowkeyconcat','allowmultistrings','duplabels',
     'lazylists','enableswitch','errmissingdefault','funcoverride','optimize',
     'optsigns','optfloats','constfold','dcr','shrinknames','addstrings',
-    'foldtabs','warntabs','processpre','explicitcast',
+    'foldtabs','warntabs','processpre','explicitcast','listlength',
     'help','lso','expr'
     # 'clear' is handled as a special case
 ))
@@ -334,6 +335,7 @@ def main(argv):
     options = set(('extendedglobalexpr','extendedtypecast','extendedassignment',
         'allowkeyconcat','allowmultistrings','processpre','warntabs','optimize',
         'optsigns','optfloats','constfold','dcr','errmissingdefault',
+        'listlength',
         ))
 
     assert not (options - validoptions), (u"Default options not present in"
