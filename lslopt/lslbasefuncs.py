@@ -1650,7 +1650,7 @@ def llRotBetween(v1, v2):
     assert isvector(v1)
     assert isvector(v2)
 
-    aabb = math.sqrt(mul(v1, v1, f32=False) * mul(v2, v2, f32=False)) # product of the squared lengths of the arguments
+    aabb = math.sqrt(mul(v1, v1, f32=False) * mul(v2, v2, f32=False)) # product of the lengths of the arguments
     if aabb == 0.:
         return ZERO_ROTATION # the arguments are too small, return zero rotation
     ab = mul(v1, v2, f32=False) / aabb # normalized dotproduct of the arguments (cosine)
