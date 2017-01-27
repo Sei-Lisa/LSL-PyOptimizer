@@ -242,6 +242,7 @@ llTakeCamera
 llTan
 llToLower
 llToUpper
+llUnescapeURL
 llVecDist
 llVecMag
 llVecNorm
