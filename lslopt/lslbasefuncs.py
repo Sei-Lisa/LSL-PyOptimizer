@@ -1650,50 +1650,37 @@ def llRotBetween(v1, v2):
     assert isvector(v1)
     assert isvector(v2)
 
-    aabb = math.sqrt(mul(v1, v1, f32=False) * mul(v2, v2, f32=False)) # product of the lengths of the arguments
-    if aabb == 0.:
-        return ZERO_ROTATION # the arguments are too small, return zero rotation
-    ab = mul(v1, v2, f32=False) / aabb # normalized dotproduct of the arguments (cosine)
-    c = Vector(((v1[1] * v2[2] - v1[2] * v2[1]) / aabb, # normalized crossproduct of the arguments
-                (v1[2] * v2[0] - v1[0] * v2[2]) / aabb,
-                (v1[0] * v2[1] - v1[1] * v2[0]) / aabb))
-    cc = mul(c, c, f32=False) # squared length of the normalized crossproduct (sine)
-    if cc != 0.: # test if the arguments are (anti)parallel
-        if ab > -0.7071067811865476: # test if the angle is smaller than 3/4 PI
-            s = 1. + ab # use the cosine to adjust the s-element
-        else:
-            s = cc / (1. + math.sqrt(1. - cc)); # use the sine to adjust the s-element
-        m = math.sqrt(cc + s * s) # the magnitude of the quaternion
-        return Quaternion(F32((c[0] / m, c[1] / m, c[2] / m, s / m))) # return the normalized quaternion
-    if ab > 0.: # test if the angle is smaller than PI/2
-        return ZERO_ROTATION # the arguments are parallel
-    m = math.sqrt(v1[0] * v1[0] + v1[1] * v1[1]) # the length of one argument projected on the XY-plane
-    if m != 0.:
-        return Quaternion(F32((v1[1] / m, -v1[0] / m, 0., 0.))) # return rotation with the axis in the XY-plane
-    return Quaternion((0., 0., 1., 0.)) # rotate around the Z-axis
-
-    # Algorithm by Moon Metty (for reference)
-#    dot = mul(v1, v2, f32=False)
-#    cross = mod(v1, v2, f32=False)
-#    csq = mul(cross, cross, f32=False)
-#
-#    ddc2 = dot*dot + csq
-#
-#    DenormalStart = float.fromhex('0x1p-149')
-#    if ddc2 >= DenormalStart:
-#        if csq >= DenormalStart:
-#            s = math.sqrt(ddc2) + dot;
-#            m = math.sqrt(csq + s*s);
-#            return Quaternion(F32((cross[0]/m, cross[1]/m, cross[2]/m, s/m)))
-#
-#        # Deal with degenerate cases here
-#        if dot > 0:
-#            return ZERO_ROTATION
-#        m = math.sqrt(v1[0]*v1[0] + v1[1]*v1[1])
-#        if m >= DenormalStart:
-#            return Quaternion(F32((v1[1]/m, -v1[0]/m, 0., 0.)))
-#        return Quaternion((1., 0., 0., 0.))
-#    return ZERO_ROTATION
+    # Loosely based on the "Bad" reference implementation and
+    # on SL source code (pre Moon Metty's changes).
+    # See <https://bitbucket.org/lindenlab/viewer-release/src/015080d8/indra/llmath/llquaternion.cpp#llquaternion.cpp-425>
+    v1 = llVecNorm(v1)
+    v2 = llVecNorm(v2)
+    dot = mul(v1, v2)
+    axis = mod(v1, v2)
+    threshold = float.fromhex('0x1.fffffcp-1')
+    if -threshold <= dot <= threshold:
+        # non-aligned - their cross product is a good axis
+        m = math.sqrt(mul(axis, axis) + (dot + 1.) * (dot + 1.))
+        return Quaternion(F32((axis[0] / m, axis[1] / m, axis[2] / m,
+                               (dot + 1.) / m)))
+    # about aligned - two cases to deal with
+    if dot > 0.:
+        # same signs
+        return Quaternion((0., 0., 0., 1.))
+    # opposite signs - find one vector in the plane perpendicular to
+    # either vector, to use as axis. We do this by choosing an arbitrary
+    # vector (<1,0,0> in our case), and calculating the cross product with it,
+    # which will be perpendicular to both. But matching the SL results requires
+    # another cross product of the input with the result, so we do that.
+    ortho = mod(mod(v1, Vector((1., 0., 0.))), v1)
+    ortho = Vector((0. if f == 0. else f for f in ortho)) # remove minus zero
+    m = mul(ortho, ortho)
+    if m < float.fromhex('0x1.b7cdfep-34'):
+        # The input vectors were aligned with <1,0,0>, so this was not a
+        # good choice. Return 180 deg. rotation over Z instead.
+        return Quaternion((0., 0., 1., 0.))
+    m = math.sqrt(m)
+    return Quaternion(F32((ortho[0] / m, ortho[1] / m, ortho[2] / m, 0.)))
 
 def llRound(f):
     assert isfloat(f)
