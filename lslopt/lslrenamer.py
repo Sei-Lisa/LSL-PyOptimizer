@@ -29,8 +29,10 @@ class renamer(object):
     CharSet1 = '_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
     CharSet2 = '0123456789_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
     # TODO: Derive these from builtins.txt somehow.
-    KwByLen = ((), (), ('do', 'if', 'PI'), ('for', 'key', 'EOF', 'Pop'),
-        ('jump', 'else', 'list', 'TRUE', 'LOOP', 'case'))
+    Kws = (frozenset({'do', 'if', 'PI',
+                      'for', 'key', 'EOF',
+                      'jump', 'else', 'list', 'TRUE', 'LOOP', 'case'
+                     }))
     def GetNextShortest(self):
         """Generate the next shortest possible identifier"""
         while True:
@@ -48,7 +50,7 @@ class renamer(object):
                 else:
                     self.WordRestOfChars.append(0)
 
-            if ret not in self.KwByLen[len(ret)] and ret not in self.UsedNames:
+            if ret not in self.Kws and ret not in self.UsedNames:
                 return ret
 
     def ShrinkNames(self):
