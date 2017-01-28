@@ -156,6 +156,8 @@ class renamer(object):
         # long distinct names.
         First = True
         restart = self.WordFirstChar
+        restartReusable = ReusableNames
+        ReusableNames = restartReusable.copy()
         for table in self.symtab:
             if First:
                 First = False
@@ -174,9 +176,8 @@ class renamer(object):
                         # Parameter tables are isolated from each other.
                         InParams = True
                         self.WordFirstChar = restart
+                        ReusableNames = restartReusable.copy()
                     # Same procedure as for global vars
-                    # Not the best strategy (using locally unique names would
-                    # do a better job) but hey.
                     if ReusableNames:
                         short = ReusableNames.pop()
                         self.UsedNames.add(short)
