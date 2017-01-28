@@ -483,9 +483,9 @@ class Test03_Optimizer(UnitTestCase):
             'default { timer() {} timer() {} }')
 
         p = self.parser.parse('default{timer(){\n'
-            'llLog(3);llLog(3.0);\n'
-            'llStringToBase64((key)"");llGetAgentInfo("");\n'
-            'llStringToBase64("");llGetAgentInfo((key)"");\n'
+            'llSetPrimitiveParams([llLog(3),llLog(3.0),\n'
+            'llStringToBase64((key)""),llGetAgentInfo(""),\n'
+            'llStringToBase64(""),llGetAgentInfo((key)"")]);\n'
             '}}\n'
         )
         self.opt.optimize(p, ('optimize','constfold'))
@@ -494,12 +494,14 @@ class Test03_Optimizer(UnitTestCase):
                               '{\n'
                               '    timer()\n'
                               '    {\n'
-                              '        1.0986123;\n'
-                              '        1.0986123;\n'
-                              '        "";\n'
-                              '        0;\n'
-                              '        "";\n'
-                              '        0;\n'
+                              '        llSetPrimitiveParams(\n'
+                              '            [ 1.0986123\n'
+                              '            , 1.0986123\n'
+                              '            , ""\n'
+                              '            , 0\n'
+                              '            , ""\n'
+                              '            , 0\n'
+                              '            ]);\n'
                               '    }\n'
                               '}\n'
                         )
