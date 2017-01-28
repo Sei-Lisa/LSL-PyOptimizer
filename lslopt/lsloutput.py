@@ -242,7 +242,7 @@ class outscript(object):
                 # binary operands, as they have a deceitful binding power when
                 # there's a unary minus downstream.
                 #
-                # FIXME: See if the parenthesizing of ~ and ! can be improved.
+                # TODO: See if the parenthesizing of ~ and ! can be improved.
                 elif lnt in ('~', '!'):
                     lparen = True
 
