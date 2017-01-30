@@ -913,11 +913,9 @@ class parser(object):
             return {'nt':'FNCALL', 't':sym['Type'], 'name':name, 'ch':args}
 
         sym = self.FindSymbolFull(val)
-        if sym is None:
+        if sym is None or sym['Kind'] != 'v':
             raise EParseUndefined(self)
 
-        if sym['Kind'] != 'v':
-            raise EParseTypeMismatch(self)
         typ = sym['Type']
         lvalue = {'nt':'IDENT', 't':typ, 'name':name, 'scope':sym['Scope']}
 
