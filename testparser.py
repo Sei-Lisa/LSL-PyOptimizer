@@ -167,7 +167,7 @@ class Test02_Parser(UnitTestCase):
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){string i;!i;}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){string i;++i;}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''g(){integer k;k=g();}''')
-        self.assertRaises(EParseTypeMismatch, self.parser.parse, '''g(){@x;x;}default{}state x{}''')
+        self.assertRaises(EParseUndefined, self.parser.parse, '''g(){@x;x;}default{}state x{}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''g(){print(g());}default{}''')
         self.assertRaises(EParseUndefined, self.parser.parse, '''g(){integer k;k();}''')
         self.assertRaises(EParseUndefined, self.parser.parse, '''g(){++x;}state x{}''')
