@@ -59,10 +59,10 @@ from base64 import b64encode, b64decode
 # The lookahead (?!i) is essential for parsing them that way without extra code.
 # Note that '|' in REs is order-sensitive.
 float_re = re.compile(ur'^\s*[+-]?(?:0(x)(?:[0-9a-f]+(?:\.[0-9a-f]*)?|\.[0-9a-f]+)(?:p[+-]?[0-9]+)?'
-                      ur'|(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e[+-]?[0-9]+)?|inf|nan)',
+                      ur'|(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e[+-]?[0-9]+)?|inf|(nan))',
                       re.I)
 vfloat_re = re.compile(ur'^\s*[+-]?(?:0(x)(?:[0-9a-f]+(?:\.[0-9a-f]*)?|\.[0-9a-f]+)(?:p[+-]?[0-9]+)?'
-                      ur'|(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e[+-]?[0-9]+)?|infinity|inf(?!i)|nan)',
+                      ur'|(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e[+-]?[0-9]+)?|infinity|inf(?!i)|(nan))',
                       re.I)
 
 int_re = re.compile(ur'^0(x)[0-9a-f]+|^\s*[+-]?[0-9]+', re.I)
@@ -421,13 +421,12 @@ def InternalTypecast(val, out, InList, f32):
                 return 0.0
             if match.group(1):
                 ret =  F32(float.fromhex(match.group(0)), f32)
+            elif match.group(2):
+                # (float)"-nan" produces NaN instead of Indet, even though
+                # (vector)"<-nan,0,0>" produces <Indet, 0., 0.>. Go figure.
+                ret = NaN
             else:
-                if match.group(0).lower() == '-nan':
-                    # (float)"-nan" produces NaN instead of Indet, even though
-                    # (vector)"<-nan,0,0>" produces <Indet, 0., 0.>. Go figure.
-                    ret = NaN
-                else:
-                    ret = F32(float(match.group(0)), f32)
+                ret = F32(float(match.group(0)), f32)
             if not lslcommon.LSO and abs(ret) < 1.1754943508222875e-38:
                 # Mono doesn't return denormals when using (float)"val"
                 # (but it returns them when using (vector)"<val,...>")
@@ -457,6 +456,8 @@ def InternalTypecast(val, out, InList, f32):
                     return Z
                 if match.group(1):
                     ret.append(F32(float.fromhex(match.group(0)), f32))
+                elif match.group(2):
+                    ret.append(Indet if match.group(0)[0] == '-' else NaN)
                 else:
                     ret.append(F32(float(match.group(0)), f32))
                 if len(ret) < dim:
