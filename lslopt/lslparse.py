@@ -885,7 +885,11 @@ class parser(object):
                 raise EParseTypeMismatch(self) if expr['t'] is None else EParseUndefined(self)
             self.expect(')')
             self.NextToken()
-            return {'nt':'PRINT', 't':None, 'ch':[expr]}
+            # Syntactically, print returns the same type as the expression.
+            # However, compilation in Mono throws an exception, and even in
+            # LSO, it throws a bounds check error when the result is a string
+            # or key or list and the returned value is used.
+            return {'nt':'PRINT', 't':expr['t'], 'ch':[expr]}
 
         if tok0 != 'IDENT':
             if tok0 == 'EOF':
