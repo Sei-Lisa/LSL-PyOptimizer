@@ -2668,12 +2668,18 @@ list lazy_list_set(list L, integer i, list v)
 
         return self.parse(script, options)
 
-    def __init__(self, builtins = 'builtins.txt', seftable = 'seftable.txt'):
+    def __init__(self, builtins = None, seftable = None):
         """Reads the library."""
 
         self.events = {}
         self.constants = {}
         self.funclibrary = {}
+
+        if builtins is None:
+            builtins = lslcommon.DataPath + 'builtins.txt'
+
+        if seftable is None:
+            seftable = lslcommon.DataPath + 'seftable.txt'
 
         self.parse_directive_re = None
 
@@ -2694,7 +2700,7 @@ list lazy_list_set(list L, integer i, list v)
         parse_num_re = re.compile(r'^\s*(-?(?=[0-9]|\.[0-9])[0-9]*((?:\.[0-9]*)?(?:[Ee][+-]?[0-9]+)?))\s*$')
         parse_str_re = re.compile(ur'^"((?:[^"\\]|\\.)*)"$')
 
-        f = open(lslcommon.DataPath + builtins, 'rb')
+        f = open(builtins, 'rb')
         try:
             linenum = 0
             try:
@@ -2850,7 +2856,7 @@ list lazy_list_set(list L, integer i, list v)
         #       that includes domain data (min, max) and possibly input
         #       parameter transformations e.g.
         #           llSensor(..., PI, ...) -> llSensor(..., 4, ...).
-        f = open(lslcommon.DataPath + seftable, 'rb')
+        f = open(seftable, 'rb')
         try:
             while True:
                 line = f.readline()
