@@ -157,14 +157,19 @@ class EParseInvalidBreak(EParse):
         super(EParseInvalidBreak, self).__init__(parser,
             u"'break' used outside a loop or switch"
             if parser.enableswitch and parser.breakcont
-            else u"'break' used outside a switch"
-            if parser.enableswitch
+            else u"'break' used outside a switch" if parser.enableswitch
             else u"'break' used outside a loop")
 
 class EParseInvalidCont(EParse):
     def __init__(self, parser):
         super(EParseInvalidCont, self).__init__(parser,
             u"'continue' used outside a loop")
+
+class EParseInvalidBrkContArg(EParse):
+    def __init__(self, parser):
+        super(EParseInvalidBrkContArg, self).__init__(parser,
+            u"Invalid argument to 'break' or 'continue'" if parser.breakcont
+            else u"Invalid argument to 'break'")
 
 class EParseInvalidBackslash(EParse):
     def __init__(self, parser):
@@ -1925,7 +1930,7 @@ list lazy_list_set(list L, integer i, list v)
             n = -1
             if self.tok[0] == 'INTEGER_VALUE':
                 if self.tok[1] <= 0:
-                    raise EParseInvalidBreak(self)
+                    raise EParseInvalidBrkContArg(self)
                 n = -self.tok[1]
                 self.NextToken()
             self.expect(';')
@@ -1933,7 +1938,7 @@ list lazy_list_set(list L, integer i, list v)
             try:
                 self.breakstack[n][2] = True
             except IndexError:
-                raise EParseInvalidBreak(self)
+                raise EParseInvalidBrkContArg(self)
             return {'nt':'JUMP', 't':None, 'name':self.breakstack[n][0],
                 'scope':self.breakstack[n][1]}
 
@@ -1944,7 +1949,7 @@ list lazy_list_set(list L, integer i, list v)
             n = -1
             if self.tok[0] == 'INTEGER_VALUE':
                 if self.tok[1] <= 0:
-                    raise EParseInvalidCont(self)
+                    raise EParseInvalidBrkContArg(self)
                 n = -self.tok[1]
                 self.NextToken()
             self.expect(';')
@@ -1964,7 +1969,7 @@ list lazy_list_set(list L, integer i, list v)
                     return {'nt':'JUMP', 't':None, 'name':self.breakstack[n][0],
                         'scope':self.breakstack[n][1]}
             except IndexError:
-                raise EParseInvalidCont(self)
+                raise EParseInvalidBrkContArg(self)
             self.continuestack[n][2] = True
             return {'nt':'JUMP', 't':None, 'name':self.continuestack[n][0],
                 'scope':self.continuestack[n][1]}
