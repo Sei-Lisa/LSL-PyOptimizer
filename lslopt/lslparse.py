@@ -2843,8 +2843,13 @@ list lazy_list_set(list L, integer i, list v)
                             warning(u"Invalid vector/rotation syntax in %s line %d: %s" % (ubuiltins, linenum, uline))
                     else:
                         assert typ == 'list'
-                        warning(u"List constants not supported in %s, line %d: %s" % (ubuiltins, linenum, uline))
-                        value = None
+                        if value[0:1] != '[' or value[-1:] != ']':
+                            warning(u"Invalid list value in %s, line %d: %s" % (ubuiltins, linenum, uline))
+                        elif value[1:-1].strip() != '':
+                            warning(u"Non-empty list constants not supported in %s, line %d: %s" % (ubuiltins, linenum, uline))
+                            value = None
+                        else:
+                            value = []
                     if value is not None:
                         self.constants[name] = value
 
