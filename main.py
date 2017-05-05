@@ -257,7 +257,7 @@ Case insensitive.
                        Firestorm, but not recommended. Note that the operand to
                        switch() may be evaluated more than once.
   ErrMissingDefault  + Throw an error in case the 'default:' label of a switch
-                       statement is missing.
+                       statement is missing. Only meaningful with EnableSwitch.
   FuncOverride       - Allow duplicate function definitions to override the
                        previous definition. For compatibility with Firestorm's
                        optimizer.
@@ -322,7 +322,9 @@ validoptions = frozenset(('extendedglobalexpr','breakcont','extendedtypecast',
     'lazylists','enableswitch','errmissingdefault','funcoverride','optimize',
     'optsigns','optfloats','constfold','dcr','shrinknames','addstrings',
     'foldtabs','warntabs','processpre','explicitcast','listlength',
-    'help','lso','expr'
+    'help',
+    # undocumented
+    'lso','expr','rsrclimit',
     # 'clear' is handled as a special case
 ))
 
@@ -492,6 +494,13 @@ def main(argv):
     del opts
 
     try:
+
+        if 'rsrclimit' in options:
+            import resource
+            resource.setrlimit(resource.RLIMIT_CPU, (5, 5))
+            resource.setrlimit(resource.RLIMIT_STACK, (393216, 393216))
+            resource.setrlimit(resource.RLIMIT_DATA, (4096, 4096))
+            resource.setrlimit(resource.RLIMIT_AS, (20001000, 20001000))
 
         if 'lso' in options:
             lslopt.lslcommon.LSO = True
