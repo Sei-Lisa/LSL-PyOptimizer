@@ -143,8 +143,8 @@ h1 { background: #2080C0; color: white; padding:25px 5% 8px; margin: 4% 7% 0px; 
 
 <pre><code><span>#define VERSION 1.13</span>
 <span>#define REVISION b</span>
-<span>#define VERBATIM_STRINGIFY(x) #x</span>
-<span>#define STRINGIFY(x) VERBATIM_STRINGIFY(x)</span>
+<span>#define VERBATIM_STRINGIFY(...) #__VA_ARGS__</span>
+<span>#define STRINGIFY(...) VERBATIM_STRINGIFY(__VA_ARGS__)</span>
 <span>...</span>
 <span>llOwnerSay("Program version " STRINGIFY(VERSION)</span>
 <span>           ", revision " STRINGIFY(REVISION));</span>
