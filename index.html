@@ -421,7 +421,7 @@ but this will cause an error:
 
 <h3><a id="optimizations-signs"></a>Signs</h3>
 
-<p>The sign at the beginning of a number (except in globals) takes up one byte of code, unless prefixed by a type cast (which does not, under Mono, take up code memory by itself if the destination type is the same). Small saving, but it adds up to the overall. Numbers are thus output with a type cast and surrounded by parentheses, e.g. <code>((float)-1.5)</code> instead of <code>-1.5</code>.</p>
+<p>The sign at the beginning of a number constant (except in globals) takes up one byte of code, unless prefixed by a type cast (which does not, under Mono, take up code memory by itself if the destination type is the same). Small saving, but it adds up to the overall. Numbers are thus output with a type cast and surrounded by parentheses, e.g. <code>((float)-1.5)</code> instead of <code>-1.5</code>.</p>
 
 <h3><a id="optimizations-string-constant-folding"></a>String constant folding</h3>
 
