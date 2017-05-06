@@ -238,10 +238,11 @@ Case insensitive.
   DupLabels          - Normally, a duplicate label within a function is allowed
                        by the syntax by using {{}} blocks; however, the server
                        will just refuse to save the script (under Mono) or do
-                       something completely unexpected (under LSO: all jumps
-                       will go to the last label with that name). This flag
-                       works around that limitation by replacing the names of
-                       the labels in the output with unique ones.
+                       something completely unexpected (under LSO: only the
+                       last jump will execute, and it will go to the last label
+                       with that name). This flag works around that limitation
+                       by replacing the names of the labels in the output with
+                       unique ones.
 
   Deprecated / compatibility syntax extensions options:
 
