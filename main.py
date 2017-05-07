@@ -285,7 +285,8 @@ Case insensitive.
                        would keep a single copy of "longstring", while if the
                        strings are added, both "alongstring" and "blongstring"
                        take memory.
-  ListLength         + Optimize llGetListLength(arg) to arg!=[].
+  ListLength         + Optimize llGetListLength(arg) to arg!=[]. Needs constant
+                       folding active to work.
 
   Miscellaneous options
 
