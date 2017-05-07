@@ -190,7 +190,7 @@ h1 { background: #2080C0; color: white; padding:25px 5% 8px; margin: 4% 7% 0px; 
 
 <p>Just as the variables, the labels are visible only within their own blocks or any nested block inside them. Unlike variables, labels are also visible if they are declared <em>after</em> the <code>jump</code> instruction that uses them, as long as it's within a block that encloses the label.</p>
 
-<p>However, that's only the theory, The compiler is prepared to work like that, but when there are more than one label with the same name, the underlying assembler only jumps to the last label (in the case of LSO) or fails and doesn't let the script to be saved (in the case of Mono).</p>
+<p>However, that's only the theory, The compiler is prepared to work like that, but when there is more than one label with the same name, the underlying assembler only jumps to the last label (in the case of LSO) or fails and doesn't let the script to be saved (in the case of Mono).</p>
 
 <p>This syntax extension fixes that situation by renaming the labels in the output, to give each a different name and allow Mono scripts to be saved, making the compiler work as intended.</p>
 
