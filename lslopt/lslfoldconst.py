@@ -1008,14 +1008,15 @@ class foldconst(object):
                 elif self.optlistlength and node['name'] == 'llGetListLength':
                     # Convert llGetListLength(expr) to (expr != [])
                     node = {'nt':'CONST', 't':'list', 'value':[]}
-                    parent[index] = node = {'nt':'!=', 't':'list', 'ch':[child[0], node]}
+                    parent[index] = node = {'nt':'!=', 't':'list',
+                                            'ch':[child[0], node]}
                 elif (node['name'] == 'llDumpList2String'
                       and child[1]['nt'] == 'CONST'
                       and child[1]['t'] in ('string', 'key')
                       and child[1]['value'] == u""):
                     # Convert llDumpList2String(expr, "") to (string)(expr)
-                    del child[1]
                     node['nt'] = 'CAST'
+                    del child[1]
                     del node['name']
             elif SEFargs and 'SEF' in self.symtab[0][node['name']]:
                 # The function is marked as SEF in the symbol table, and the
