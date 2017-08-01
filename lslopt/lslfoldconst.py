@@ -824,13 +824,15 @@ class foldconst(object):
 
                 if child[b]['nt'] == 'CONST':
                     val = child[b]['value']
-                    if val == 0 and nt == '|' or val == -1 and nt == '&':
+                    if nt == '|' and val == 0 or nt == '&' and (val == -1 or val == 1 and self.IsBool(child[a])):
                         # a|0  ->  a
                         # a&-1  ->  a
+                        # a&1  ->  a if a is boolean
                         parent[index] = child[a]
                         return
-                    if val == -1 and nt == '|' or val == 0 and nt == '&':
+                    if nt == '|' and (val == -1 or val == 1 and self.IsBool(child[a])) or nt == '&' and val == 0:
                         # a|-1  ->  -1 if a is SEF
+                        # a|1  ->  1 if a is bool and SEF
                         # a&0  ->  0 if a is SEF
                         if 'SEF' in child[a]:
                             parent[index] = child[b]
