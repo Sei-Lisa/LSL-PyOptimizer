@@ -103,6 +103,8 @@ class foldconst(object):
         nt = node['nt']
         if nt in ('<', '!', '>', '<=', '>=', '==', '||', '&&') \
            or nt == '!=' and node['ch'][0]['t'] != 'list' \
+           or nt == '&' and (self.IsBool(node['ch'][0]) or self.IsBool(node['ch'][1])) \
+           or nt in ('|', '^', '*') and self.IsBool(node['ch'][0]) and self.IsBool(node['ch'][1]) \
            or nt == 'CONST' and node['t'] == 'integer' and node['value'] in (0, 1):
             return True
 
