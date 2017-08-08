@@ -55,6 +55,12 @@ def fieldpos(inp, sep, n):
             return i
     return i + 1
 
+def GetLine(parser):
+    errorpos = parser.errorpos
+    lno = parser.script.count('\n', 0, errorpos)
+    cno = errorpos - fieldpos(parser.script, '\n', lno)
+    return (lno + 1, cno + 1)
+
 class EParse(Exception):
 
     def __init__(self, parser, msg):
@@ -1637,7 +1643,10 @@ list lazy_list_set(list L, integer i, list v)
             self.NextToken()
             self.expect('(')
             self.NextToken()
-            ret['ch'].append(self.Parse_expression())
+            condition = self.Parse_expression()
+            if condition['t'] != 'integer':
+                warning(u"IF Expression of type " + condition['t'].decode('utf8') + u" at " + repr(GetLine(self)))
+            ret['ch'].append(condition)
             self.expect(')')
             self.NextToken()
             # INCOMPATIBILITY NOTE: This is more permissive than LSL.
@@ -1677,6 +1686,8 @@ list lazy_list_set(list L, integer i, list v)
             self.expect('(')
             self.NextToken()
             condition = self.Parse_expression()
+            if condition['t'] != 'integer':
+                warning(u"WHILE Expression of type " + condition['t'].decode('utf8') + u" at " + repr(GetLine(self)))
             self.expect(')')
             self.NextToken()
             # To fix a problem with a corner case (LSL allows defining a label
@@ -1727,6 +1738,8 @@ list lazy_list_set(list L, integer i, list v)
             self.expect('(')
             self.NextToken()
             condition = self.Parse_expression()
+            if condition['t'] != 'integer':
+                warning(u"DO WHILE Expression of type " + condition['t'].decode('utf8') + u" at " + repr(GetLine(self)))
             self.expect(')')
             self.NextToken()
             self.expect(';')
@@ -1759,6 +1772,8 @@ list lazy_list_set(list L, integer i, list v)
             self.expect(';')
             self.NextToken()
             condition = self.Parse_expression()
+            if condition['t'] != 'integer':
+                warning(u"FOR Expression of type " + condition['t'].decode('utf8') + u" at " + repr(GetLine(self)))
             self.expect(';')
             self.NextToken()
             iterator = self.Parse_optional_expression_list()
