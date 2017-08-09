@@ -148,7 +148,10 @@ def ScriptHeader(script, avname):
     if avname:
         avname = ' - ' + avname
     return ('//start_unprocessed_text\n/*'
-        + re.sub(r'([*/])(?=[*|/])', r'\1|', script)
+        # + re.sub(r'([*/])(?=[*|/])', r'\1|', script) # FS's algorithm
+        # HACK: This won't break strings containing ** or /* or // like URLs,
+        # while still being compatible with FS.
+        + re.sub(r'([*/]\||\*(?=/))', r'\1|', script)
         + '*/\n//end_unprocessed_text\n//nfo_preprocessor_version 0\n'
           '//program_version LSL PyOptimizer v' + VERSION + avname
         + '\n//mono\n\n')
