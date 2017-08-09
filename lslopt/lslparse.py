@@ -1599,6 +1599,7 @@ list lazy_list_set(list L, integer i, list v)
             self.expect(';')
             self.NextToken()
             return jumpnode
+
         if tok0 == 'STATE':
             self.NextToken()
             if self.tok[0] not in ('DEFAULT', 'IDENT'):

@@ -561,11 +561,48 @@ class foldconst(object):
                         # "" + expr  ->  expr
                         # [] + expr  ->  expr
                         parent[index] = self.Cast(rval, optype)
-                    elif rnt == 'CONST' and not rval['value']:
+                        return
+                    if rnt == 'CONST' and not rval['value']:
                         # expr + 0.  ->  expr
                         # expr + ""  ->  expr
                         # expr + []  ->  expr
                         parent[index] = self.Cast(lval, optype)
+                        return
+
+                    if ltype == rtype == 'list':
+
+                        if (rnt == 'LIST' and len(rval['ch']) == 1
+                           or rnt == 'CAST'):
+                            # list + (list)element  ->  list + element
+                            # list + [element]  ->  list + element
+                            while True:
+                                # Remove nested typecasts: (list)(list)x -> x
+                                rval = parent[index]['ch'][1] = rval['ch'][0]
+                                if rval['nt'] != 'CAST' or rval['t'] != 'list':
+                                    break
+                            return
+                        if rnt == 'CONST' and len(rval['value']) == 1:
+                            # list + [constant]  ->  list + constant
+                            rval['value'] = rval['value'][0]
+                            rtype = rval['t'] = self.PythonType2LSL[type(rval['value'])]
+                            return
+
+                        if (lnt == 'LIST' and len(lval['ch']) == 1
+                           or lnt == 'CAST'):
+                            # (list)element + list  ->  element + list
+                            # [element] + list  ->  element + list
+                            while True:
+                                # Remove nested typecasts: (list)(list)x -> x
+                                lval = parent[index]['ch'][0] = lval['ch'][0]
+                                if lval['nt'] != 'CAST' or lval['t'] != 'list':
+                                    break
+                            return
+                        if lnt == 'CONST' and len(lval['value']) == 1:
+                            # [constant] + list  ->  constant + list
+                            lval['value'] = lval['value'][0]
+                            ltype = lval['t'] = self.PythonType2LSL[type(lval['value'])]
+                            return
+
                     return
 
                 # Must be two integers. This allows for a number of
