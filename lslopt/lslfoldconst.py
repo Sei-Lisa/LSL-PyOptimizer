@@ -540,6 +540,8 @@ class foldconst(object):
                     if lnt == 'CONST' and not lval['value']:
                         # [] + nonlist  ->  (list)nonlist
                         parent[index] = self.Cast(rval, optype)
+                        # node is SEF if rval is
+                        parent[index]['SEF'] = 'SEF' in rval
                     return
 
                 if optype in ('vector', 'rotation'):
@@ -561,12 +563,16 @@ class foldconst(object):
                         # "" + expr  ->  expr
                         # [] + expr  ->  expr
                         parent[index] = self.Cast(rval, optype)
+                        # node is SEF if rval is
+                        parent[index]['SEF'] = 'SEF' in rval
                         return
                     if rnt == 'CONST' and not rval['value']:
                         # expr + 0.  ->  expr
                         # expr + ""  ->  expr
                         # expr + []  ->  expr
                         parent[index] = self.Cast(lval, optype)
+                        # node is SEF if lval is
+                        parent[index]['SEF'] = 'SEF' in lval
                         return
 
                     if ltype == rtype == 'list':
@@ -1051,6 +1057,8 @@ class foldconst(object):
                     node = {'nt':'CONST', 't':'list', 'value':[]}
                     parent[index] = node = {'nt':'!=', 't':'integer',
                                             'ch':[child[0], node]}
+                    # SEF if the list is
+                    node['SEF'] = 'SEF' in child[0]
                 elif (node['name'] == 'llDumpList2String'
                       and child[1]['nt'] == 'CONST'
                       and child[1]['t'] in ('string', 'key')
