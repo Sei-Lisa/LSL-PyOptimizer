@@ -371,6 +371,17 @@ class foldconst(object):
             # !! does *not* cancel out (unless in cond)
             subexpr = child[0]
             snt = subexpr['nt']
+
+            if snt == 'FNCALL' and subexpr['name'] == 'llStringLength':
+                # !llStringLength(expr) -> expr == ""
+                parent[index] = {'nt':'==', 't':'integer',
+                                 'ch':[subexpr['ch'][0],
+                                       {'nt':'CONST', 't':'string',
+                                        'value':u""}]}
+                # new node is SEF if the argument to llStringLength is
+                if 'SEF' in subexpr['ch'][0]:
+                    parent[index]['SEF'] = True
+                return
             if 'SEF' in subexpr:
                 node['SEF'] = True
             if subexpr['nt'] == 'CONST':
