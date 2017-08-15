@@ -1049,7 +1049,7 @@ class foldconst(object):
                 elif self.optlistlength and node['name'] == 'llGetListLength':
                     # Convert llGetListLength(expr) to (expr != [])
                     node = {'nt':'CONST', 't':'list', 'value':[]}
-                    parent[index] = node = {'nt':'!=', 't':'list',
+                    parent[index] = node = {'nt':'!=', 't':'integer',
                                             'ch':[child[0], node]}
                 elif (node['name'] == 'llDumpList2String'
                       and child[1]['nt'] == 'CONST'
