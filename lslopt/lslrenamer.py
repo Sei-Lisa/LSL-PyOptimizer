@@ -24,6 +24,7 @@
 # A side effect of this change is that the script becomes unreadable gibberish.
 
 # TODO: Make a new counter per scope.
+# TODO: Reuse used library function names for UDF and event parameters.
 
 class renamer(object):
     CharSet1 = '_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
