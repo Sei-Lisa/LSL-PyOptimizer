@@ -130,14 +130,18 @@ class foldconst(object):
             return # Nothing to do if it's already simplified.
         child = node['ch'] if 'ch' in node else None
 
-        if nt == '!' and child[0]['nt'] == '!':
-            # bool(!!a) equals bool(a)
-            parent[index] = child[0]['ch'][0]
-            return
+        if nt == '!':
+            self.FoldCond(child, 0, True)
+
+            if child[0]['nt'] == '!':
+                # bool(!!a) equals bool(a)
+                parent[index] = child[0]['ch'][0]
+                return
 
         if nt == 'NEG':
             # bool(-a) equals bool(a)
             parent[index] = child[0]
+            self.FoldCond(parent, index, ParentIsNegation)
             return
 
         if nt in self.binary_ops and child[0]['t'] == child[1]['t'] == 'integer':
