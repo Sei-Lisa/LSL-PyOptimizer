@@ -35,6 +35,7 @@ class outscript(object):
         '||':1, '&&':1, '|':2, '^':3, '&':4, '==':5, '!=':5,
         '<':6, '<=':6, '>':6, '>=':6, '<<':7, '>>':7, '+':8, '-':8,# 'NEG':8,
         '*':9, '/':9, '%':9}#, '!':10, '~':10, '++':10, '--':10, }
+    assignment_ops = ('=', '+=', '-=', '*=', '/=','%=')
 
     def Value2LSL(self, value):
         tvalue = type(value)
@@ -220,7 +221,14 @@ class outscript(object):
             lparen = False
             rnt = child[1]['nt']
             rparen = False
-            if nt in self.op_priority:
+            if nt in self.assignment_ops and nt in self.op_priority:
+                # Assignment is right-associative, so it needs to be dealt with
+                # separately.
+                base_pri = self.op_priority[nt]
+                if rnt in self.op_priority:
+                    if self.op_priority[rnt] < base_pri: # should never happen
+                        rparen = True
+            elif nt in self.op_priority:
                 base_pri = self.op_priority[nt]
                 if lnt in self.op_priority:
                     if self.op_priority[lnt] < base_pri:
@@ -228,8 +236,8 @@ class outscript(object):
                 elif lnt == 'NEG' and base_pri > self.op_priority['-']:
                     lparen = True
 
-                # This situation has ugly cases due to the strange priority of
-                # unary minus. Consider the following two statements:
+                # This situation has ugly cases due to the strange precedence
+                # of unary minus. Consider the following two statements:
                 #     (~-a) * a
                 #     a * (~-a) * a
                 # In one case, the (~-a) is a left child; in the other, it's
