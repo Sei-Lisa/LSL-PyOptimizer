@@ -95,6 +95,24 @@ class foldconst(object):
             self.FoldTree(parent, index)
             return
 
+    def ExpandCondition(self, parent, index):
+        """IF, FOR, WHILE and DO...WHILE conditions accept several types, not
+        just integer. However, leaving them as-is generates longer code than if
+        we expand them and let the optimizer optimize, for float, vector and
+        rotation, and no matter the optimization in the case of list.
+        """
+        ctyp = parent[index]['t']
+        # Under LSO, this would break the fact that 1-element lists count as
+        # false, so we don't do it for LSO lists.
+        if ctyp in ('float', 'vector', 'rotation') or ctyp == 'list' and not lslcommon.LSO:
+            parent[index] = {'nt':'!=', 't':'integer', 'ch':[parent[index],
+                {'nt':'CONST', 't':ctyp, 'value':
+                 0.0 if ctyp == 'float'
+                 else lslfuncs.ZERO_VECTOR if ctyp == 'vector'
+                 else lslfuncs.ZERO_ROTATION if ctyp == 'rotation'
+                 else []}]}
+            parent[index]['SEF'] = 'SEF' in parent[index]['ch'][0]
+
     def IsBool(self, node):
         """Some operators return 0 or 1, and that allows simplification of
         boolean expressions. This function returns whether we know for sure
@@ -1171,6 +1189,7 @@ class foldconst(object):
 
         if nt == 'IF':
             # TODO: Swap IF/ELSE if both present and cond starts with !
+            self.ExpandCondition(child, 0)
             self.FoldTree(child, 0)
             self.FoldCond(child, 0)
             if child[0]['nt'] == 'CONST':
@@ -1239,6 +1258,7 @@ class foldconst(object):
             # anyway. Otherwise we just don't know if it may be infinite, even
             # if every component is SEF.
 
+            self.ExpandCondition(child, 0)
             self.FoldTree(child, 0)
             self.FoldCond(child, 0)
             if child[0]['nt'] == 'CONST':
@@ -1266,6 +1286,7 @@ class foldconst(object):
         if nt == 'DO':
             self.FoldTree(child, 0) # This one is always executed.
             self.FoldStmt(child, 0)
+            self.ExpandCondition(child, 1)
             self.FoldTree(child, 1)
             self.FoldCond(child, 1)
             # See if the latest part is a constant.
@@ -1280,7 +1301,8 @@ class foldconst(object):
             assert child[2]['nt'] == 'EXPRLIST'
             self.FoldAndRemoveEmptyStmts(child[0]['ch'])
 
-            self.FoldTree(child, 1) # Condition.
+            self.ExpandCondition(child, 1) # Condition.
+            self.FoldTree(child, 1)
             self.FoldCond(child, 1)
             if child[1]['nt'] == 'CONST':
                 # FOR is delicate. It can have multiple expressions at start.
