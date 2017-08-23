@@ -27,11 +27,95 @@ from lslfuncparams import OptimizeParams
 
 class foldconst(object):
 
+    # Type of each entry in llGetObjectDetails. Last: 38.
+    objDetailsTypes = 'issvrvkkkiiififfffkiiiiiiffkiviiksiisii'
+
+    # Compatibility: list extraction function / input type (by type's first
+    # letter), e.g. 'si' means llList2String can extract an integer.
+    listCompat = frozenset({'ss', 'sk', 'si', 'sf', 'sv', 'sr', 'ks', 'kk',
+                            'is', 'ii', 'if', 'fs', 'fi', 'ff', 'vv', 'rr'})
+
+    defaultListVals = {'llList2Integer':0, 'llList2Float':0.0,
+        'llList2String':u'',
+        # llList2Key is set programmatically in FoldScript
+        #'llList2Key':Key(u''),
+        'llList2Vector':Vector((0.,0.,0.)),
+        'llList2Rot':Quaternion((0.,0.,0.,1.))}
+
+    PythonType2LSL = {int: 'integer', float: 'float',
+        unicode: 'string', Key: 'key', Vector: 'vector',
+        Quaternion: 'rotation', list: 'list'}
+
+    LSLType2Python = {'integer':int, 'float':float,
+        'string':unicode, 'key':Key, 'vector':Vector,
+        'rotation':Quaternion, 'list':list}
+
     def isLocalVar(self, node):
         name = node['name']
         scope = node['scope']
         return self.symtab[scope][name]['Kind'] == 'v' \
             and 'Loc' not in self.symtab[scope][name]
+
+    def GetListNodeLength(self, node):
+        """Get the length of a list that is expressed as a CONST, LIST or CAST
+        node, or False if it can't be determined.
+        """
+        assert node['t'] == 'list'
+        nt = node['nt']
+        if nt == 'CAST':
+            if node['ch'][0]['t'] == 'list':
+                return self.GetListNodeLength(node['ch'][0])
+            return 1
+        if nt == 'CONST': # constant list
+            return len(node['value'])
+        if nt == 'LIST': # list constructor
+            return len(node['ch'])
+        return False
+
+    def GetListNodeElement(self, node, index):
+        """Get an element of a list expressed as a CONST, LIST or CAST node.
+        If the index is out of range, return False; otherwise the result can be
+        either a node or a constant.
+        """
+        assert node['t'] == 'list'
+        nt = node['nt']
+        if nt == 'CAST':
+            # (list)list_expr should have been handled in CAST
+            assert node['ch'][0]['t'] != 'list'
+
+            if index == 0 or index == -1:
+                return node['ch'][0]
+            return False
+        if nt == 'CONST':
+            try:
+                return node['value'][index]
+            except IndexError:
+                pass
+            return False
+        if nt == 'LIST':
+            try:
+                return node['ch'][index]
+            except IndexError:
+                return False
+        return False
+
+    def ConstFromNodeOrConst(self, nodeOrConst):
+        """Return the constant if the value is a node and represents a constant,
+        or if the value is directly a constant, and False otherwise.
+        """
+        if type(nodeOrConst) == dict:
+            if nodeOrConst['nt'] == 'CONST':
+                return nodeOrConst['value']
+            return False
+        return nodeOrConst
+
+    def TypeFromNodeOrConst(self, nodeOrConst):
+        """Return the LSL type of a node or constant."""
+        if nodeOrConst is False:
+            return False
+        if type(nodeOrConst) == dict:
+            return nodeOrConst['t']
+        return self.PythonType2LSL[type(nodeOrConst)]
 
     def FoldAndRemoveEmptyStmts(self, lst):
         """Utility function for elimination of useless expressions in FOR"""
@@ -1114,6 +1198,83 @@ class foldconst(object):
                     node['nt'] = 'CAST'
                     del child[1]
                     del node['name']
+                elif (name in ('llList2String', 'llList2Key', 'llList2Integer',
+                               'llList2Float', 'llList2Vector', 'llList2Rot')
+                      and child[1]['nt'] == 'CONST'):
+                    # 2nd arg to llList2XXXX must be integer
+                    assert child[1]['t'] == 'integer'
+
+                    listarg = child[0]
+                    idx = child[1]['value']
+                    value = self.GetListNodeElement(listarg, idx)
+                    tvalue = self.TypeFromNodeOrConst(value)
+                    const = self.ConstFromNodeOrConst(value)
+                    if const is not False and 'SEF' in node:
+                        # Managed to get a constant from a list, even if the
+                        # list wasn't constant. Handle the type conversion.
+                        if (node['t'][0] + tvalue[0]) in self.listCompat:
+                            const = lslfuncs.InternalTypecast(const,
+                                self.LSLType2Python[node['t']],
+                                InList=True, f32=True)
+                        else:
+                            const = self.defaultListVals[name]
+
+                        parent[index] = {'nt':'CONST', 't':node['t'],
+                                         'value':const, 'SEF':True}
+                        return
+
+                    if listarg['nt'] == 'FNCALL' and listarg['name'] == 'llGetObjectDetails':
+
+                        listarg = listarg['ch'][1] # make it the list argument of llGetObjectDetails
+                        value = self.GetListNodeElement(listarg, idx)
+                        tvalue = self.TypeFromNodeOrConst(value)
+                        const = self.ConstFromNodeOrConst(value)
+                        if type(const) == int and self.GetListNodeLength(listarg) == 1:
+                            # Some of these can be handled with a typecast to string.
+                            if name == 'llList2String':
+                                # turn the node into a cast of arg 0 to string
+                                node['nt'] = 'CAST'
+                                del child[1]
+                                del node['name']
+                                return
+                            # The other ones that support cast to string then to
+                            # the final type in some cases (depending on the
+                            # list type, which we know) are key/int/float.
+                            if (name == 'llList2Key' # checked via listCompat
+                                or (name == 'llList2Integer'
+                                    and self.objDetailsTypes[const:const+1]
+                                        in ('s', 'i')) # won't work for floats
+                                or (name == 'llList2Float'
+                                    and self.objDetailsTypes[const:const+1]
+                                        in ('s', 'i')) # won't work for floats
+                               ) and (node['t'][0]
+                                      + self.objDetailsTypes[const:const+1]
+                                     ) in self.listCompat:
+                                # ->  (key)((string)llGetObjectDetails...)
+                                # or (integer)((string)llGetObjectDetails...)
+                                node['nt'] = 'CAST'
+                                del child[1]
+                                del node['name']
+                                child[0] = {'nt':'CAST', 't':'string',
+                                            'ch':[child[0]]}
+                                if 'SEF' in child[0]['ch'][0]:
+                                    child[0]['SEF'] = True
+                                return
+
+                        # Check for type incompatibility or index out of range
+                        # and replace node with a constant if that's the case
+                        if (value is False
+                            or type(const) == int
+                               and (node['t'][0] + self.objDetailsTypes[const])
+                                   not in self.listCompat
+                           ) and 'SEF' in node:
+                            parent[index] = {'nt':'CONST', 't':node['t'],
+                                'value':self.defaultListVals[name],
+                                'SEF':True}
+
+                    del listarg, idx, value, tvalue, const
+                    # TODO: do something similar for llGet(Link)PrimitiveParams
+
             elif SEFargs and 'SEF' in self.symtab[0][name]:
                 # The function is marked as SEF in the symbol table, and the
                 # arguments are all side-effect-free. The result is SEF.
@@ -1458,6 +1619,12 @@ class foldconst(object):
 
         tree = self.tree
         self.CurEvent = None
+
+        # Patch the default values list for LSO
+        if lslcommon.LSO:
+            self.defaultListVals['llList2Key'] = Key(NULL_KEY)
+        else:
+            self.defaultListVals['llList2Key'] = Key(u"")
 
         # Constant folding pass. It does some other optimizations along the way.
         for idx in xrange(len(tree)):
