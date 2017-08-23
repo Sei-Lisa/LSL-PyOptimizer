@@ -18,7 +18,9 @@
 # Constant folding and simplification of expressions and statements.
 
 import lslcommon
+from lslcommon import Key, Vector, Quaternion
 import lslfuncs
+from lslfuncs import NULL_KEY, ZERO_VECTOR, ZERO_ROTATION
 import math
 from lslparse import warning
 from lslfuncparams import OptimizeParams
@@ -108,8 +110,8 @@ class foldconst(object):
             parent[index] = {'nt':'!=', 't':'integer', 'ch':[parent[index],
                 {'nt':'CONST', 't':ctyp, 'value':
                  0.0 if ctyp == 'float'
-                 else lslfuncs.ZERO_VECTOR if ctyp == 'vector'
-                 else lslfuncs.ZERO_ROTATION if ctyp == 'rotation'
+                 else ZERO_VECTOR if ctyp == 'vector'
+                 else ZERO_ROTATION if ctyp == 'rotation'
                  else []}]}
             parent[index]['SEF'] = 'SEF' in parent[index]['ch'][0]
 
@@ -1017,6 +1019,8 @@ class foldconst(object):
             return
 
         if nt == 'FNCALL':
+            name = node['name']
+
             SEFargs = True
             CONSTargs = True
             for idx in xrange(len(child)-1, -1, -1):
@@ -1028,7 +1032,7 @@ class foldconst(object):
                 if child[idx]['nt'] != 'CONST':
                     CONSTargs = False
 
-            sym = self.symtab[0][node['name']]
+            sym = self.symtab[0][name]
             OptimizeParams(node, sym)
             if 'Fn' in sym and ('SEF' in sym and sym['SEF'] or lslcommon.IsCalc):
                 # It's side-effect free if the children are and the function
@@ -1060,13 +1064,13 @@ class foldconst(object):
                             # make a shallow copy
                             args[argnum] = args[argnum][:]
                             for i in range(len(args[argnum])):
-                                if type(args[argnum][i]) == lslcommon.Quaternion:
+                                if type(args[argnum][i]) == Quaternion:
                                     args[argnum][i] = lslfuncs.q2f(args[argnum][i])
-                                elif type(args[argnum][i]) == lslcommon.Vector:
+                                elif type(args[argnum][i]) == Vector:
                                     args[argnum][i] = lslfuncs.v2f(args[argnum][i])
                     del argtypes
                     try:
-                        if node['name'][:10] == 'llDetected':
+                        if name[:10] == 'llDetected':
                             value = fn(*args, event=self.CurEvent)
                         else:
                             value = fn(*args)
@@ -1082,17 +1086,17 @@ class foldconst(object):
                             )
                         if generatesTabs:
                             if self.warntabs:
-                                warning(u"Can't optimize call to %s because it would generate a tab character (you can force the optimization with the 'foldtabs' option, or disable this warning by disabling the 'warntabs' option)." % node['name'].decode('utf8'))
+                                warning(u"Can't optimize call to %s because it would generate a tab character (you can force the optimization with the 'foldtabs' option, or disable this warning by disabling the 'warntabs' option)." % name.decode('utf8'))
                             return
                     parent[index] = {'nt':'CONST', 't':node['t'], 'value':value, 'SEF':True}
-                elif self.optlistlength and node['name'] == 'llGetListLength':
+                elif self.optlistlength and name == 'llGetListLength':
                     # Convert llGetListLength(expr) to (expr != [])
                     node = {'nt':'CONST', 't':'list', 'value':[]}
                     parent[index] = node = {'nt':'!=', 't':'integer',
                                             'ch':[child[0], node]}
                     # SEF if the list is
                     node['SEF'] = 'SEF' in child[0]
-                elif (node['name'] == 'llDumpList2String'
+                elif (name == 'llDumpList2String'
                       and child[1]['nt'] == 'CONST'
                       and child[1]['t'] in ('string', 'key')
                       and child[1]['value'] == u""):
@@ -1100,7 +1104,7 @@ class foldconst(object):
                     node['nt'] = 'CAST'
                     del child[1]
                     del node['name']
-            elif SEFargs and 'SEF' in self.symtab[0][node['name']]:
+            elif SEFargs and 'SEF' in self.symtab[0][name]:
                 # The function is marked as SEF in the symbol table, and the
                 # arguments are all side-effect-free. The result is SEF.
                 node['SEF'] = True
@@ -1151,11 +1155,11 @@ class foldconst(object):
                 if 'SEF' not in child[idx]:
                     issef = False
             if isconst:
-                value = [elem['value'] for elem in child]
+                value = [x['value'] for x in child]
                 if nt == 'VECTOR':
-                    value = lslfuncs.Vector([lslfuncs.ff(x) for x in value])
+                    value = Vector([lslfuncs.ff(x) for x in value])
                 elif nt == 'ROTATION':
-                    value = lslfuncs.Quaternion([lslfuncs.ff(x) for x in value])
+                    value = Quaternion([lslfuncs.ff(x) for x in value])
                 parent[index] = {'nt':'CONST', 'SEF':True, 't':node['t'],
                     'value':value}
                 return
@@ -1376,7 +1380,6 @@ class foldconst(object):
                 if node['t'] == 'integer' and child[0]['nt'] == 'CONST' \
                    and not child[0]['value']:
                     del node['ch']
-                    child = None
                     return
             else:
                 # Add assignment if vector, rotation or float.
@@ -1384,8 +1387,8 @@ class foldconst(object):
                     typ = node['t']
                     node['ch'] = [{'nt':'CONST', 't':typ, 'SEF': True,
                         'value': 0.0 if typ == 'float' else
-                                 lslfuncs.ZERO_VECTOR if typ == 'vector' else
-                                 lslfuncs.ZERO_ROTATION}]
+                                 ZERO_VECTOR if typ == 'vector' else
+                                 ZERO_ROTATION}]
             # Declarations always have side effects.
             return
 

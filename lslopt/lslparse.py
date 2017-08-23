@@ -413,9 +413,11 @@ class parser(object):
                     else:
                         filename = match.group(2)[1:-1]
                     # TODO: what do we do with the filename?
+                    filename # keep pyflakes happy
 
                     del filename
                 linenum = int(match.group(1))
+                linenum # keep pyflakes happy
                 # TODO: process line number
                 del linenum
             else:
