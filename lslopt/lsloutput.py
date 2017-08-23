@@ -161,7 +161,7 @@ class outscript(object):
                 return ret
             ret = '' if lslcommon.IsCalc else '\n'
             first = True
-            self.indentlevel += 1
+            self.indentlevel += 0 if lslcommon.IsCalc else 1
             for entry in value:
                 ret += self.dent() + ('[ ' if first else ', ')
                 save_listmode = self.listmode
@@ -169,8 +169,9 @@ class outscript(object):
                 ret += self.Value2LSL(entry) + '\n'
                 self.listmode = save_listmode
                 first = False
-            self.indentlevel -= 1
-            return ret + self.dent() + self.indent + ']'
+            ret += self.dent()
+            self.indentlevel -= 0 if lslcommon.IsCalc else 1
+            return ret + ']'
 
         assert False, u'Value of unknown type in Value2LSL: ' + repr(value)
 
@@ -291,7 +292,18 @@ class outscript(object):
 
         if nt == 'LIST':
             self.listmode = True
-            ret = '[' + self.OutExprList(child) + ']'
+            if len(child) < 5:
+                ret = '[' + self.OutExprList(child) + ']'
+            else:
+                self.indentlevel += 0 if lslcommon.IsCalc else 1
+                ret = '' if lslcommon.IsCalc else '\n'
+                first = True
+                for elem in child:
+                    ret += self.dent() + ('[ ' if first else ', ')
+                    ret += self.OutExpr(elem) + '\n'
+                    first = False
+                ret += self.dent() + ']'
+                self.indentlevel -= 0 if lslcommon.IsCalc else 1
             self.listmode = False
             return ret
 
