@@ -344,6 +344,16 @@ class foldconst(object):
                     parent[index] = {'nt':'CONST', 't':node['t'], 'SEF':True,
                         'value':lslfuncs.typecast(
                             child[0]['value'], self.LSL2PythonType[node['t']])}
+
+            # Remove casts of a type to the same type (NOP in Mono)
+            # This is not an optimization by itself, but it simplifies the job,
+            # by not needing to look into nested casts like (key)((key)...)
+            while node['nt'] == 'CAST' and child[0]['t'] == node['t']:
+                parent[index] = node = child[0]
+                if 'ch' not in node:
+                    break
+                child = node['ch']
+
             return
 
         if nt == 'NEG':
