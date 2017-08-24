@@ -29,6 +29,57 @@ class foldconst(object):
 
     # Type of each entry in llGetObjectDetails. Last: 38.
     objDetailsTypes = 'issvrvkkkiiififfffkiiiiiiffkiviiksiisii'
+    primParamsTypes = \
+        ( False, False # 0 (unassigned) and 1=PRIM_TYPE_LEGACY
+        , 'i' # 2=PRIM_MATERIAL
+        , 'i' # 3=PRIM_PHYSICS
+        , 'i' # 4=PRIM_TEMP_ON_REZ
+        , 'i' # 5=PRIM_PHANTOM
+        , 'v' # 6=PRIM_POSITION
+        , 'v' # 7=PRIM_SIZE
+        , 'r' # 8=PRIM_ROTATION
+        , 'i*' # 9=PRIM_TYPE
+        , False, False, False, False # 10, 11, 12, 13 (unassigned)
+        , False, False, False # 14, 15, 16 (unassigned)
+        , 'svvf' # 17=PRIM_TEXTURE
+        , 'vf' # 18=PRIM_COLOR
+        , 'ii' # 19=PRIM_BUMP_SHINY
+        , 'i' # 20=PRIM_FULLBRIGHT
+        , 'iiffffv' # 21=PRIM_FLEXIBLE
+        , 'i' # 22=PRIM_TEXGEN
+        , 'ivfff' # 23=PRIM_POINT_LIGHT
+        , False # 24 (unassigned)
+        , 'f' # 25=PRIM_GLOW
+        , 'svf' # 26=PRIM_TEXT
+        , 's' # 27=PRIM_NAME
+        , 's' # 28=PRIM_DESC
+        , 'r' # 29=PRIM_ROT_LOCAL
+        , 'i' # 30=PRIM_PHYSICS_SHAPE_TYPE
+        , False # 31 (unassigned)
+        , 'vff' # 32=PRIM_OMEGA
+        , 'v' # 33=PRIM_POS_LOCAL
+        , '' # 34=PRIM_LINK_TARGET
+        , 'v' # 35=PRIM_SLICE
+        , 'svvfvii' # 36=PRIM_SPECULAR
+        , 'svvf' # 37=PRIM_NORMAL
+        , 'ii' # 38=PRIM_ALPHA_MODE
+        , 'i' # 39=PRIM_ALLOW_UNSIT
+        , 'i' # 40=PRIM_SCRIPTED_SIT_ONLY
+        , 'ivv' # 41=PRIM_SIT_TARGET
+        )
+    # Primitive Params with arguments. F=face, L=link.
+    primParamsArgs = \
+        { 17: 'F' # 17=PRIM_TEXTURE
+        , 18: 'F' # 18=PRIM_COLOR
+        , 19: 'F' # 19=PRIM_BUMP_SHINY
+        , 20: 'F' # 20=PRIM_FULLBRIGHT
+        , 22: 'F' # PRIM_TEXGEN
+        , 25: 'F' # PRIM_GLOW
+        , 34: 'L' # PRIM_LINK_TARGET
+        , 36: 'F' # PRIM_SPECULAR
+        , 37: 'F' # PRIM_NORMAL
+        , 38: 'F' # PRIM_ALPHA_MODE
+        }
 
     # Compatibility: list extraction function / input type (by type's first
     # letter), e.g. 'si' means llList2String can extract an integer.
@@ -1272,8 +1323,91 @@ class foldconst(object):
                                 'value':self.defaultListVals[name],
                                 'SEF':True}
 
+                    elif listarg['nt'] == 'FNCALL' and listarg['name'] in (
+                         'llGetPrimitiveParams', 'llGetLinkPrimitiveParams'):
+                        # We're going to work with the primitive params list.
+                        listarg = listarg['ch'][
+                            0 if listarg['name'] == 'llGetPrimitiveParams'
+                            else 1]
+                        length = self.GetListNodeLength(listarg)
+                        if length is not False:
+                            # Construct a list (string) of return types.
+                            # A '*' in the list means the type can't be
+                            # determined past this point (used with PRIM_TYPE).
+                            i = 0
+                            returntypes = ''
+                            while i < length:
+                                param = self.GetListNodeElement(listarg, i)
+                                param = self.ConstFromNodeOrConst(param)
+                                if (param is False
+                                    or type(param) != int
+                                    # Parameters with arguments have
+                                    # side effects (errors).
+                                    # We could check whether there's a face
+                                    # argument and the face is 0, which is
+                                    # guaranteed to exist, but it's not worth
+                                    # the effort.
+                                    or param in self.primParamsArgs
+                                    or param < 0
+                                    or param >= len(self.primParamsTypes)
+                                    or self.primParamsTypes[param] is False
+                                   ):
+                                    # Can't process this list.
+                                    returntypes = '!'
+                                    break
+                                returntypes += self.primParamsTypes[param]
+                                i += 1
+                            if returntypes != '!':
+                                if (len(returntypes) == 1
+                                    and returntypes != '*'
+                                    and idx in (0, -1)
+                                   ):
+                                    if name == 'llList2String':
+                                        node['nt'] = 'CAST'
+                                        del child[1]
+                                        del node['name']
+                                        return
+                                    if ((name == 'llList2Key'
+                                         or name == 'llList2Integer'
+                                            and returntypes in ('s', 'i')
+                                         or name == 'llList2Float'
+                                            and returntypes in ('s', 'i')
+                                        )
+                                        and (node['t'][0] + returntypes)
+                                            in self.listCompat
+                                       ):
+                                        node['nt'] = 'CAST'
+                                        del child[1]
+                                        del node['name']
+                                        child[0] = {'nt':'CAST', 't':'string',
+                                                    'ch':[child[0]]}
+                                        if 'SEF' in child[0]['ch'][0]:
+                                            child[0]['SEF'] = True
+                                        return
+
+                                if (returntypes.find('*') == -1
+                                    or idx >= 0 and idx < returntypes.find('*')
+                                    or idx < 0 and idx > returntypes.rfind('*')
+                                                         - len(returntypes)
+                                   ):
+                                    # Check for type incompatibility or index
+                                    # out of range.
+                                    if idx < 0:
+                                        # s[-1:0] doesn't return the last char
+                                        # so we have to compensate
+                                        idx += len(returntypes)
+                                    if (node['t'][0] + returntypes[idx:idx+1]) \
+                                       not in self.listCompat \
+                                       and 'SEF' in node:
+                                        parent[index] = {'nt':'CONST',
+                                            't':node['t'],
+                                            'value':self.defaultListVals[name],
+                                            'SEF':True}
+                                        return
+
+                            del returntypes
+
                     del listarg, idx, value, tvalue, const
-                    # TODO: do something similar for llGet(Link)PrimitiveParams
 
             elif SEFargs and 'SEF' in self.symtab[0][name]:
                 # The function is marked as SEF in the symbol table, and the
