@@ -23,7 +23,7 @@ import lslfuncs
 from lslfuncs import NULL_KEY, ZERO_VECTOR, ZERO_ROTATION
 import math
 from lslparse import warning
-from lslfuncparams import OptimizeParams
+from lslfuncopt import OptimizeParams
 
 class foldconst(object):
 
