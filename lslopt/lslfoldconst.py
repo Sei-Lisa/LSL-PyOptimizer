@@ -18,88 +18,14 @@
 # Constant folding and simplification of expressions and statements.
 
 import lslcommon
-from lslcommon import Key, Vector, Quaternion
+from lslcommon import Vector, Quaternion
 import lslfuncs
-from lslfuncs import NULL_KEY, ZERO_VECTOR, ZERO_ROTATION
+from lslfuncs import ZERO_VECTOR, ZERO_ROTATION
 import math
 from lslparse import warning
-from lslfuncopt import OptimizeParams
+from lslfuncopt import OptimizeFunc, OptimizeArgs, FuncOptSetup
 
 class foldconst(object):
-
-    # Type of each entry in llGetObjectDetails. Last: 38.
-    objDetailsTypes = 'issvrvkkkiiififfffkiiiiiiffkiviiksiisii'
-    primParamsTypes = \
-        ( False, False # 0 (unassigned) and 1=PRIM_TYPE_LEGACY
-        , 'i' # 2=PRIM_MATERIAL
-        , 'i' # 3=PRIM_PHYSICS
-        , 'i' # 4=PRIM_TEMP_ON_REZ
-        , 'i' # 5=PRIM_PHANTOM
-        , 'v' # 6=PRIM_POSITION
-        , 'v' # 7=PRIM_SIZE
-        , 'r' # 8=PRIM_ROTATION
-        , 'i*' # 9=PRIM_TYPE
-        , False, False, False, False # 10, 11, 12, 13 (unassigned)
-        , False, False, False # 14, 15, 16 (unassigned)
-        , 'svvf' # 17=PRIM_TEXTURE
-        , 'vf' # 18=PRIM_COLOR
-        , 'ii' # 19=PRIM_BUMP_SHINY
-        , 'i' # 20=PRIM_FULLBRIGHT
-        , 'iiffffv' # 21=PRIM_FLEXIBLE
-        , 'i' # 22=PRIM_TEXGEN
-        , 'ivfff' # 23=PRIM_POINT_LIGHT
-        , False # 24 (unassigned)
-        , 'f' # 25=PRIM_GLOW
-        , 'svf' # 26=PRIM_TEXT
-        , 's' # 27=PRIM_NAME
-        , 's' # 28=PRIM_DESC
-        , 'r' # 29=PRIM_ROT_LOCAL
-        , 'i' # 30=PRIM_PHYSICS_SHAPE_TYPE
-        , False # 31 (unassigned)
-        , 'vff' # 32=PRIM_OMEGA
-        , 'v' # 33=PRIM_POS_LOCAL
-        , '' # 34=PRIM_LINK_TARGET
-        , 'v' # 35=PRIM_SLICE
-        , 'svvfvii' # 36=PRIM_SPECULAR
-        , 'svvf' # 37=PRIM_NORMAL
-        , 'ii' # 38=PRIM_ALPHA_MODE
-        , 'i' # 39=PRIM_ALLOW_UNSIT
-        , 'i' # 40=PRIM_SCRIPTED_SIT_ONLY
-        , 'ivv' # 41=PRIM_SIT_TARGET
-        )
-    # Primitive Params with arguments. F=face, L=link.
-    primParamsArgs = \
-        { 17: 'F' # 17=PRIM_TEXTURE
-        , 18: 'F' # 18=PRIM_COLOR
-        , 19: 'F' # 19=PRIM_BUMP_SHINY
-        , 20: 'F' # 20=PRIM_FULLBRIGHT
-        , 22: 'F' # PRIM_TEXGEN
-        , 25: 'F' # PRIM_GLOW
-        , 34: 'L' # PRIM_LINK_TARGET
-        , 36: 'F' # PRIM_SPECULAR
-        , 37: 'F' # PRIM_NORMAL
-        , 38: 'F' # PRIM_ALPHA_MODE
-        }
-
-    # Compatibility: list extraction function / input type (by type's first
-    # letter), e.g. 'si' means llList2String can extract an integer.
-    listCompat = frozenset({'ss', 'sk', 'si', 'sf', 'sv', 'sr', 'ks', 'kk',
-                            'is', 'ii', 'if', 'fs', 'fi', 'ff', 'vv', 'rr'})
-
-    defaultListVals = {'llList2Integer':0, 'llList2Float':0.0,
-        'llList2String':u'',
-        # llList2Key is set programmatically in FoldScript
-        #'llList2Key':Key(u''),
-        'llList2Vector':Vector((0.,0.,0.)),
-        'llList2Rot':Quaternion((0.,0.,0.,1.))}
-
-    PythonType2LSL = {int: 'integer', float: 'float',
-        unicode: 'string', Key: 'key', Vector: 'vector',
-        Quaternion: 'rotation', list: 'list'}
-
-    LSLType2Python = {'integer':int, 'float':float,
-        'string':unicode, 'key':Key, 'vector':Vector,
-        'rotation':Quaternion, 'list':list}
 
     def isLocalVar(self, node):
         name = node['name']
@@ -166,7 +92,7 @@ class foldconst(object):
             return False
         if type(nodeOrConst) == dict:
             return nodeOrConst['t']
-        return self.PythonType2LSL[type(nodeOrConst)]
+        return lslcommon.PythonType2LSL[type(nodeOrConst)]
 
     def FoldAndRemoveEmptyStmts(self, lst):
         """Utility function for elimination of useless expressions in FOR"""
@@ -478,7 +404,7 @@ class foldconst(object):
 
                     parent[index] = {'nt':'CONST', 't':node['t'], 'SEF':True,
                         'value':lslfuncs.typecast(
-                            child[0]['value'], self.LSL2PythonType[node['t']])}
+                            child[0]['value'], lslcommon.LSLType2Python[node['t']])}
 
             # Remove casts of a type to the same type (NOP in Mono)
             # This is not an optimization by itself, but it simplifies the job,
@@ -770,7 +696,7 @@ class foldconst(object):
                         if rnt == 'CONST' and len(rval['value']) == 1:
                             # list + [constant]  ->  list + constant
                             rval['value'] = rval['value'][0]
-                            rtype = rval['t'] = self.PythonType2LSL[type(rval['value'])]
+                            rtype = rval['t'] = lslcommon.PythonType2LSL[type(rval['value'])]
                             return
 
                         if (lnt == 'LIST' and len(lval['ch']) == 1
@@ -786,7 +712,7 @@ class foldconst(object):
                         if lnt == 'CONST' and len(lval['value']) == 1:
                             # [constant] + list  ->  constant + list
                             lval['value'] = lval['value'][0]
-                            ltype = lval['t'] = self.PythonType2LSL[type(lval['value'])]
+                            ltype = lval['t'] = lslcommon.PythonType2LSL[type(lval['value'])]
                             return
 
                     return
@@ -1178,241 +1104,87 @@ class foldconst(object):
                     CONSTargs = False
 
             sym = self.symtab[0][name]
-            OptimizeParams(node, sym)
-            if 'Fn' in sym and ('SEF' in sym and sym['SEF'] or lslcommon.IsCalc):
-                # It's side-effect free if the children are and the function
-                # is marked as SEF.
-                if SEFargs:
-                    node['SEF'] = True
-                if CONSTargs:
-                    # Call it
-                    fn = sym['Fn']
-                    args = [arg['value'] for arg in child]
-                    argtypes = sym['ParamTypes']
-                    assert(len(args) == len(argtypes))
-                    for argnum in range(len(args)):
-                        # Adapt types of params
-                        if argtypes[argnum] == 'string':
-                            args[argnum] = lslfuncs.fs(args[argnum])
-                        elif argtypes[argnum] == 'key':
-                            args[argnum] = lslfuncs.fk(args[argnum])
-                        elif argtypes[argnum] == 'float':
-                            args[argnum] = lslfuncs.ff(args[argnum])
-                        elif argtypes[argnum] == 'vector':
-                            args[argnum] = lslfuncs.v2f(args[argnum])
-                        elif argtypes[argnum] == 'quaternion':
-                            args[argnum] = lslfuncs.q2f(args[argnum])
-                        elif argtypes[argnum] == 'list':
-                            # ensure vectors and quaternions passed to
-                            # functions have only float components
-                            assert type(args[argnum]) == list
-                            # make a shallow copy
-                            args[argnum] = args[argnum][:]
-                            for i in range(len(args[argnum])):
-                                if type(args[argnum][i]) == Quaternion:
-                                    args[argnum][i] = lslfuncs.q2f(args[argnum][i])
-                                elif type(args[argnum][i]) == Vector:
-                                    args[argnum][i] = lslfuncs.v2f(args[argnum][i])
-                    del argtypes
-                    try:
-                        if name[:10] == 'llDetected':
-                            value = fn(*args, event=self.CurEvent)
-                        else:
-                            value = fn(*args)
-                    except lslfuncs.ELSLCantCompute:
-                        # Don't transform the tree if function is not computable
-                        return
+            OptimizeArgs(node, sym)
+            try:
+                if 'Fn' in sym and ('SEF' in sym or lslcommon.IsCalc):
+                    # It's side-effect free if the children are and the function
+                    # is marked as SEF.
+                    if SEFargs:
+                        node['SEF'] = True
+                    if CONSTargs:
+                        # Call it
+                        fn = sym['Fn']
+                        args = [arg['value'] for arg in child]
+                        argtypes = sym['ParamTypes']
+                        assert(len(args) == len(argtypes))
+                        for argnum in range(len(args)):
+                            # Adapt types of params
+                            if argtypes[argnum] == 'string':
+                                args[argnum] = lslfuncs.fs(args[argnum])
+                            elif argtypes[argnum] == 'key':
+                                args[argnum] = lslfuncs.fk(args[argnum])
+                            elif argtypes[argnum] == 'float':
+                                args[argnum] = lslfuncs.ff(args[argnum])
+                            elif argtypes[argnum] == 'vector':
+                                args[argnum] = lslfuncs.v2f(args[argnum])
+                            elif argtypes[argnum] == 'quaternion':
+                                args[argnum] = lslfuncs.q2f(args[argnum])
+                            elif argtypes[argnum] == 'list':
+                                # ensure vectors and quaternions passed to
+                                # functions have only float components
+                                assert type(args[argnum]) == list
+                                # make a shallow copy
+                                args[argnum] = args[argnum][:]
+                                for i in range(len(args[argnum])):
+                                    if type(args[argnum][i]) == Quaternion:
+                                        args[argnum][i] = lslfuncs.q2f(args[argnum][i])
+                                    elif type(args[argnum][i]) == Vector:
+                                        args[argnum][i] = lslfuncs.v2f(args[argnum][i])
+                        del argtypes
+                        try:
+                            # May raise ELSLCantCompute
+                            if name[:10] == 'llDetected':
+                                value = fn(*args, event=self.CurEvent)
+                            else:
+                                value = fn(*args)
+                        finally:
+                            del args
 
-                    del args
-                    if not self.foldtabs:
-                        generatesTabs = (
-                            isinstance(value, unicode) and '\t' in value
-                            or type(value) == list and any(isinstance(x, unicode) and '\t' in x for x in value)
-                            )
-                        if generatesTabs:
-                            if self.warntabs:
-                                warning(u"Can't optimize call to %s because it would generate a tab character (you can force the optimization with the 'foldtabs' option, or disable this warning by disabling the 'warntabs' option)." % name.decode('utf8'))
-                            return
-                    parent[index] = {'nt':'CONST', 't':node['t'], 'value':value, 'SEF':True}
-                elif self.optlistlength and name == 'llGetListLength':
-                    # Convert llGetListLength(expr) to (expr != [])
-                    node = {'nt':'CONST', 't':'list', 'value':[]}
-                    parent[index] = node = {'nt':'!=', 't':'integer',
-                                            'ch':[child[0], node]}
-                    # SEF if the list is
-                    node['SEF'] = 'SEF' in child[0]
-                elif (name == 'llDumpList2String'
-                      and child[1]['nt'] == 'CONST'
-                      and child[1]['t'] in ('string', 'key')
-                      and child[1]['value'] == u""):
-                    # Convert llDumpList2String(expr, "") to (string)(expr)
-                    node['nt'] = 'CAST'
-                    del child[1]
-                    del node['name']
-                elif (name in ('llList2String', 'llList2Key', 'llList2Integer',
-                               'llList2Float', 'llList2Vector', 'llList2Rot')
-                      and child[1]['nt'] == 'CONST'):
-                    # 2nd arg to llList2XXXX must be integer
-                    assert child[1]['t'] == 'integer'
-
-                    listarg = child[0]
-                    idx = child[1]['value']
-                    value = self.GetListNodeElement(listarg, idx)
-                    tvalue = self.TypeFromNodeOrConst(value)
-                    const = self.ConstFromNodeOrConst(value)
-                    if const is not False and 'SEF' in node:
-                        # Managed to get a constant from a list, even if the
-                        # list wasn't constant. Handle the type conversion.
-                        if (node['t'][0] + tvalue[0]) in self.listCompat:
-                            const = lslfuncs.InternalTypecast(const,
-                                self.LSLType2Python[node['t']],
-                                InList=True, f32=True)
-                        else:
-                            const = self.defaultListVals[name]
-
+                        if not self.foldtabs:
+                            generatesTabs = (
+                                isinstance(value, unicode) and '\t' in value
+                                or type(value) == list
+                                   and any(isinstance(x, unicode)
+                                           and '\t' in x for x in value)
+                                )
+                            if generatesTabs:
+                                if self.warntabs:
+                                    warning(u"Can't optimize call to %s"
+                                        u" because it would generate a tab"
+                                        u" character (you can force the "
+                                        u" optimization with the 'foldtabs'"
+                                        u" option, or disable this warning by"
+                                        u" disabling the 'warntabs' option)."
+                                        % name.decode('utf8'))
+                                raise lslfuncs.ELSLCantCompute()
+                        # Replace with a constant
                         parent[index] = {'nt':'CONST', 't':node['t'],
-                                         'value':const, 'SEF':True}
+                                         'value':value, 'SEF':True}
                         return
 
-                    if listarg['nt'] == 'FNCALL' and listarg['name'] == 'llGetObjectDetails':
+                elif SEFargs and 'SEF' in self.symtab[0][name]:
+                    # The function is marked as SEF in the symbol table, and the
+                    # arguments are all side-effect-free. The result is SEF.
+                    node['SEF'] = True
 
-                        listarg = listarg['ch'][1] # make it the list argument of llGetObjectDetails
-                        value = self.GetListNodeElement(listarg, idx)
-                        tvalue = self.TypeFromNodeOrConst(value)
-                        const = self.ConstFromNodeOrConst(value)
-                        if type(const) == int and self.GetListNodeLength(listarg) == 1:
-                            # Some of these can be handled with a typecast to string.
-                            if name == 'llList2String':
-                                # turn the node into a cast of arg 0 to string
-                                node['nt'] = 'CAST'
-                                del child[1]
-                                del node['name']
-                                return
-                            # The other ones that support cast to string then to
-                            # the final type in some cases (depending on the
-                            # list type, which we know) are key/int/float.
-                            if (name == 'llList2Key' # checked via listCompat
-                                or (name == 'llList2Integer'
-                                    and self.objDetailsTypes[const:const+1]
-                                        in ('s', 'i')) # won't work for floats
-                                or (name == 'llList2Float'
-                                    and self.objDetailsTypes[const:const+1]
-                                        in ('s', 'i')) # won't work for floats
-                               ) and (node['t'][0]
-                                      + self.objDetailsTypes[const:const+1]
-                                     ) in self.listCompat:
-                                # ->  (key)((string)llGetObjectDetails...)
-                                # or (integer)((string)llGetObjectDetails...)
-                                node['nt'] = 'CAST'
-                                del child[1]
-                                del node['name']
-                                child[0] = {'nt':'CAST', 't':'string',
-                                            'ch':[child[0]]}
-                                if 'SEF' in child[0]['ch'][0]:
-                                    child[0]['SEF'] = True
-                                return
+            except lslfuncs.ELSLCantCompute:
+                # Don't transform the tree if function is not computable
+                pass
 
-                        # Check for type incompatibility or index out of range
-                        # and replace node with a constant if that's the case
-                        if (value is False
-                            or type(const) == int
-                               and (node['t'][0] + self.objDetailsTypes[const])
-                                   not in self.listCompat
-                           ) and 'SEF' in node:
-                            parent[index] = {'nt':'CONST', 't':node['t'],
-                                'value':self.defaultListVals[name],
-                                'SEF':True}
+            # At this point, we have resolved whether the function is SEF,
+            # or whether the function resolves to a constant.
+            OptimizeFunc(self, parent, index)
 
-                    elif listarg['nt'] == 'FNCALL' and listarg['name'] in (
-                         'llGetPrimitiveParams', 'llGetLinkPrimitiveParams'):
-                        # We're going to work with the primitive params list.
-                        listarg = listarg['ch'][
-                            0 if listarg['name'] == 'llGetPrimitiveParams'
-                            else 1]
-                        length = self.GetListNodeLength(listarg)
-                        if length is not False:
-                            # Construct a list (string) of return types.
-                            # A '*' in the list means the type can't be
-                            # determined past this point (used with PRIM_TYPE).
-                            i = 0
-                            returntypes = ''
-                            while i < length:
-                                param = self.GetListNodeElement(listarg, i)
-                                param = self.ConstFromNodeOrConst(param)
-                                if (param is False
-                                    or type(param) != int
-                                    # Parameters with arguments have
-                                    # side effects (errors).
-                                    # We could check whether there's a face
-                                    # argument and the face is 0, which is
-                                    # guaranteed to exist, but it's not worth
-                                    # the effort.
-                                    or param in self.primParamsArgs
-                                    or param < 0
-                                    or param >= len(self.primParamsTypes)
-                                    or self.primParamsTypes[param] is False
-                                   ):
-                                    # Can't process this list.
-                                    returntypes = '!'
-                                    break
-                                returntypes += self.primParamsTypes[param]
-                                i += 1
-                            if returntypes != '!':
-                                if (len(returntypes) == 1
-                                    and returntypes != '*'
-                                    and idx in (0, -1)
-                                   ):
-                                    if name == 'llList2String':
-                                        node['nt'] = 'CAST'
-                                        del child[1]
-                                        del node['name']
-                                        return
-                                    if ((name == 'llList2Key'
-                                         or name == 'llList2Integer'
-                                            and returntypes in ('s', 'i')
-                                         or name == 'llList2Float'
-                                            and returntypes in ('s', 'i')
-                                        )
-                                        and (node['t'][0] + returntypes)
-                                            in self.listCompat
-                                       ):
-                                        node['nt'] = 'CAST'
-                                        del child[1]
-                                        del node['name']
-                                        child[0] = {'nt':'CAST', 't':'string',
-                                                    'ch':[child[0]]}
-                                        if 'SEF' in child[0]['ch'][0]:
-                                            child[0]['SEF'] = True
-                                        return
-
-                                if (returntypes.find('*') == -1
-                                    or idx >= 0 and idx < returntypes.find('*')
-                                    or idx < 0 and idx > returntypes.rfind('*')
-                                                         - len(returntypes)
-                                   ):
-                                    # Check for type incompatibility or index
-                                    # out of range.
-                                    if idx < 0:
-                                        # s[-1:0] doesn't return the last char
-                                        # so we have to compensate
-                                        idx += len(returntypes)
-                                    if (node['t'][0] + returntypes[idx:idx+1]) \
-                                       not in self.listCompat \
-                                       and 'SEF' in node:
-                                        parent[index] = {'nt':'CONST',
-                                            't':node['t'],
-                                            'value':self.defaultListVals[name],
-                                            'SEF':True}
-                                        return
-
-                            del returntypes
-
-                    del listarg, idx, value, tvalue, const
-
-            elif SEFargs and 'SEF' in self.symtab[0][name]:
-                # The function is marked as SEF in the symbol table, and the
-                # arguments are all side-effect-free. The result is SEF.
-                node['SEF'] = True
             return
 
         if nt == 'PRINT':
@@ -1754,11 +1526,7 @@ class foldconst(object):
         tree = self.tree
         self.CurEvent = None
 
-        # Patch the default values list for LSO
-        if lslcommon.LSO:
-            self.defaultListVals['llList2Key'] = Key(NULL_KEY)
-        else:
-            self.defaultListVals['llList2Key'] = Key(u"")
+        FuncOptSetup()
 
         # Constant folding pass. It does some other optimizations along the way.
         for idx in xrange(len(tree)):

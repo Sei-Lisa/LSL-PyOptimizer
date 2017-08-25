@@ -45,3 +45,13 @@ LSO = False
 IsCalc = False
 
 DataPath = ''
+
+# Conversion of LSL types to Python types and vice versa.
+
+PythonType2LSL = {int: 'integer', float: 'float',
+    unicode: 'string', Key: 'key', Vector: 'vector',
+    Quaternion: 'rotation', list: 'list'}
+
+LSLType2Python = {'integer':int, 'float':float,
+    'string':unicode, 'key':Key, 'vector':Vector,
+    'rotation':Quaternion, 'list':list}

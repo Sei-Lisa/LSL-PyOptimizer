@@ -37,13 +37,6 @@ class optimizer(foldconst, renamer, deadcode):
         '==','!=','|','^','&','||','&&'))
     assign_ops = frozenset(('=','+=','-=','*=','/=','%=','&=','|=','^=','<<=','>>='))
 
-    LSL2PythonType = {'integer':int, 'float':float, 'string':unicode, 'key':lslfuncs.Key,
-        'vector':lslfuncs.Vector, 'rotation':lslfuncs.Quaternion, 'list':list}
-
-    PythonType2LSL = {int: 'integer', float: 'float',
-        unicode: 'string', Key: 'key', Vector: 'vector',
-        Quaternion: 'rotation', list: 'list'}
-
     def Cast(self, value, newtype):
         """Return a CAST node if the types are not equal, otherwise the
         value unchanged.

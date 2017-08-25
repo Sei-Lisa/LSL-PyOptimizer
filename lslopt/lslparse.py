@@ -199,10 +199,6 @@ class parser(object):
     switch_keywords = frozenset(('switch', 'case', 'break', 'default'))
     types = frozenset(('integer','float','string','key','vector',
         'quaternion','rotation','list'))
-    PythonType2LSL = {int: 'integer', float: 'float',
-        unicode: 'string', Key: 'key', Vector: 'vector',
-        Quaternion: 'rotation', list: 'list'}
-
     PythonType2LSLToken = {int:'INTEGER_VALUE', float:'FLOAT_VALUE',
         unicode:'STRING_VALUE', Key:'KEY_VALUE', Vector:'VECTOR_VALUE',
         Quaternion:'ROTATION_VALUE', list:'LIST_VALUE'}
@@ -2069,7 +2065,8 @@ list lazy_list_set(list L, integer i, list v)
                 while self.tok[0] == 'STRING_VALUE':
                     val += self.tok[1]
                     self.NextToken()
-            return {'nt':'CONST', 't':self.PythonType2LSL[type(val)], 'value':val}
+            return {'nt':'CONST', 't':lslcommon.PythonType2LSL[type(val)],
+                    'value':val}
         if tok[0] == 'IDENT':
             sym = self.FindSymbolPartial(tok[1])
             if sym is None or sym['Kind'] != 'v':
