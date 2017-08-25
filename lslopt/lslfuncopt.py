@@ -107,7 +107,7 @@ listCompat = frozenset({'ss', 'sk', 'si', 'sf', 'sv', 'sr', 'ks', 'kk',
 
 defaultListVals = {'llList2Integer':0, 'llList2Float':0.0,
     'llList2String':u'',
-    # llList2Key is set programmatically in FoldScript
+    # llList2Key is set programmatically in FuncOptSetup
     #'llList2Key':Key(u''),
     'llList2Vector':Vector((0.,0.,0.)),
     'llList2Rot':Quaternion((0.,0.,0.,1.))}
