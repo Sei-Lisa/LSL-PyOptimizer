@@ -297,6 +297,16 @@ def OptimizeFunc(self, parent, index):
                 del returntypes
 
         del listarg, idx, value, tvalue, const
+        return
+
+    if name == 'llDialog':
+        if self.GetListNodeLength(child[2]) == 1:
+            button = self.ConstFromNodeOrConst(self.GetListNodeElement(child[2],
+                                                                       0))
+            if type(button) == unicode and button == u'OK':
+                # remove the element, as 'OK' is the default button in SL
+                child[2] = {'nt':'CONST','t':'list','value':[],'SEF':True}
+        return
 
 def FuncOptSetup():
     # Patch the default values list for LSO
