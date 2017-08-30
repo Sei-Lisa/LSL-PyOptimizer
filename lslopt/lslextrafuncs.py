@@ -19,7 +19,8 @@
 
 from lslcommon import Key, Vector #, Quaternion
 from lslbasefuncs import ELSLCantCompute, isinteger, iskey, islist, \
-  isvector, isstring, NULL_KEY, ZERO_VECTOR, ZERO_ROTATION, cond
+  isvector, isstring, NULL_KEY, ZERO_VECTOR, ZERO_ROTATION, \
+  TOUCH_INVALID_TEXCOORD, cond
 #isfloat, isrotation
 
 TouchEvents = ('touch', 'touch_start', 'touch_end')
@@ -101,7 +102,7 @@ def llDetectedTouchFace(idx, event=None):
     assert isinteger(idx)
     if 0 <= idx <= 15 and (event in TouchEvents or event is None):
         raise ELSLCantCompute
-    return 0
+    return -1 if event in DetectionEvents and 0 <= idx <= 15 else 0
 
 def llDetectedTouchNormal(idx, event=None):
     assert isinteger(idx)
@@ -119,13 +120,15 @@ def llDetectedTouchST(idx, event=None):
     assert isinteger(idx)
     if 0 <= idx <= 15 and (event in TouchEvents or event is None):
         raise ELSLCantCompute
-    return ZERO_VECTOR
+    return TOUCH_INVALID_TEXCOORD if event in DetectionEvents \
+        and 0 <= idx <= 15  else ZERO_VECTOR
 
 def llDetectedTouchUV(idx, event=None):
     assert isinteger(idx)
     if 0 <= idx <= 15 and (event in TouchEvents or event is None):
         raise ELSLCantCompute
-    return ZERO_VECTOR
+    return TOUCH_INVALID_TEXCOORD if event in DetectionEvents \
+        and 0 <= idx <= 15 else ZERO_VECTOR
 
 def llDetectedType(idx, event=None):
     assert isinteger(idx)

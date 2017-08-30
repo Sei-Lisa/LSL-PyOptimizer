@@ -74,6 +74,7 @@ b64_re = re.compile(ur'^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2,3})?')
 ZERO_VECTOR      = Vector((0.0, 0.0, 0.0))
 ZERO_ROTATION    = Quaternion((0.0, 0.0, 0.0, 1.0))
 NULL_KEY         = u'00000000-0000-0000-0000-000000000000'
+TOUCH_INVALID_TEXCOORD = Vector((-1.0, -1.0, 0.0))
 
 Infinity = float('inf')
 Indet = Infinity * 0
