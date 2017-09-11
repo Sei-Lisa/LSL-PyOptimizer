@@ -1275,7 +1275,7 @@ class foldconst(object):
             self.FoldCond(child, 0)
             if child[0]['nt'] == 'CONST':
                 # We might be able to remove one of the branches.
-                if child[0]['value']:
+                if lslfuncs.cond(child[0]['value']):
                     self.FoldTree(child, 1)
                     # If it has a state switch, the if() must be preserved
                     # (but the else branch may be removed).
@@ -1336,15 +1336,15 @@ class foldconst(object):
         if nt == 'WHILE':
             # Loops are not considered side-effect free. If the expression is
             # TRUE, it's definitely not SEF. If it's FALSE, it will be optimized
-            # anyway. Otherwise we just don't know if it may be infinite, even
-            # if every component is SEF.
+            # out anyway. Otherwise we just don't know if it may be infinite,
+            # even if every component is SEF.
 
             self.ExpandCondition(child, 0)
             self.FoldTree(child, 0)
             self.FoldCond(child, 0)
             if child[0]['nt'] == 'CONST':
                 # See if the whole WHILE can be eliminated.
-                if child[0]['value']:
+                if lslfuncs.cond(child[0]['value']):
                     # Endless loop which must be kept.
                     # Recurse on the statement.
                     self.FoldTree(child, 1)
@@ -1372,7 +1372,7 @@ class foldconst(object):
             self.FoldCond(child, 1)
             # See if the latest part is a constant.
             if child[1]['nt'] == 'CONST':
-                if not child[1]['value']:
+                if not lslfuncs.cond(child[1]['value']):
                     # Only one go. Replace with the statement(s).
                     parent[index] = child[0]
             return
@@ -1392,7 +1392,7 @@ class foldconst(object):
                 # They are expressions, no declarations or labels allowed, thus
                 # no new identifiers may be created in the new scope, but it
                 # still feels dodgy.
-                if child[1]['value']:
+                if lslfuncs.cond(child[1]['value']):
                     # Endless loop. Traverse the loop and the iterator.
                     self.FoldTree(child, 3)
                     self.FoldStmt(child, 3)
