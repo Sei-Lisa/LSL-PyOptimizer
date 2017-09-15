@@ -308,6 +308,19 @@ def OptimizeFunc(self, parent, index):
                 child[2] = {'nt':'CONST','t':'list','value':[],'SEF':True}
         return
 
+    if (name == 'llDeleteSubList'
+        or name == 'llListReplaceList' and child[1]['nt'] == 'CONST'
+           and not child[1]['value']
+       ):
+        # llDeleteSubList(x, 0, -1)  ->  [] if x is SEF
+        # llListReplaceList(x, [], 0, -1)  ->  [] if x is SEF
+        if ('SEF' in child[0]
+            and child[-2]['nt'] == 'CONST' and child[-1]['nt'] == 'CONST'
+            and child[-2]['value'] == 0 and child[-1]['value'] == -1
+           ):
+            parent[index] = {'nt':'CONST','SEF':True,'t':'list','value':[]}
+            return
+
 def FuncOptSetup():
     # Patch the default values list for LSO
     if lslcommon.LSO:
