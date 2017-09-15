@@ -22,8 +22,9 @@ import lslfuncs
 from lslfoldconst import foldconst
 from lslrenamer import renamer
 from lsldeadcode import deadcode
+from lsllastpass import lastpass
 
-class optimizer(foldconst, renamer, deadcode):
+class optimizer(foldconst, renamer, deadcode, lastpass):
 
     # Default values per type when declaring variables
     DefaultValues = {'integer': 0, 'float': 0.0, 'string': u'',
@@ -67,6 +68,7 @@ class optimizer(foldconst, renamer, deadcode):
 
         self.constfold = 'constfold' in options
         self.optlistlength = 'listlength' in options
+        self.optlistadd = 'listadd' in options
         self.dcr = 'dcr' in options
 
         # Math that works fine except in rare corner-cases can be optimized.
@@ -87,6 +89,8 @@ class optimizer(foldconst, renamer, deadcode):
         # Or make the first pass here if DCR is disabled.
         if self.constfold:
             self.FoldScript(warningpass=True)
+
+        self.LastPass()
 
         if self.shrinknames:
             self.ShrinkNames()

@@ -290,6 +290,7 @@ Case insensitive.
                        take memory.
   ListLength         + Optimize llGetListLength(arg) to arg!=[]. Needs constant
                        folding active to work.
+  ListAdd            + Convert [a,b,c...] to (list)a + b + c... if possible.
 
   Miscellaneous options
 
@@ -326,7 +327,7 @@ validoptions = frozenset(('extendedglobalexpr','breakcont','extendedtypecast',
     'extendedassignment','allowkeyconcat','allowmultistrings','duplabels',
     'lazylists','enableswitch','errmissingdefault','funcoverride','optimize',
     'optsigns','optfloats','constfold','dcr','shrinknames','addstrings',
-    'foldtabs','warntabs','processpre','explicitcast','listlength',
+    'foldtabs','warntabs','processpre','explicitcast','listlength','listadd',
     'help',
     # undocumented
     'lso','expr','rsrclimit',
@@ -344,7 +345,7 @@ def main(argv):
     options = set(('extendedglobalexpr','extendedtypecast','extendedassignment',
         'allowkeyconcat','allowmultistrings','processpre','warntabs','optimize',
         'optsigns','optfloats','constfold','dcr','errmissingdefault',
-        'listlength',
+        'listlength','listadd',
         ))
 
     assert not (options - validoptions), (u"Default options not present in"
