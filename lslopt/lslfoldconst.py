@@ -1053,13 +1053,14 @@ class foldconst(object):
 
             # We have a regular assignment either way now. Simplify the RHS.
             self.FoldTree(node['ch'], 1)
-            if child[0]['nt'] == child[1]['nt'] == 'IDENT' \
-               and child[1]['name'] == child[0]['name'] \
-               and child[1]['scope'] == child[0]['scope'] \
-               or child[0]['nt'] == child[1]['nt'] == 'FLD' \
-               and child[1]['ch'][0]['name'] == child[0]['ch'][0]['name'] \
-               and child[1]['ch'][0]['scope'] == child[0]['ch'][0]['scope'] \
-               and child[1]['fld'] == child[0]['fld']:
+            chkequal = child[1]['ch'][0] if child[1]['nt'] == '=' else child[1]
+            if child[0]['nt'] == chkequal['nt'] == 'IDENT' \
+               and chkequal['name'] == child[0]['name'] \
+               and chkequal['scope'] == child[0]['scope'] \
+               or child[0]['nt'] == chkequal['nt'] == 'FLD' \
+               and chkequal['ch'][0]['name'] == child[0]['ch'][0]['name'] \
+               and chkequal['ch'][0]['scope'] == child[0]['ch'][0]['scope'] \
+               and chkequal['fld'] == child[0]['fld']:
                 parent[index] = child[1]
             return
 
