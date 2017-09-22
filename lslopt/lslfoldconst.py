@@ -1060,8 +1060,7 @@ class foldconst(object):
                and child[1]['ch'][0]['name'] == child[0]['ch'][0]['name'] \
                and child[1]['ch'][0]['scope'] == child[0]['ch'][0]['scope'] \
                and child[1]['fld'] == child[0]['fld']:
-                node['SEF'] = True
-            self.FoldStmt(parent, index)
+                parent[index] = child[1]
             return
 
         if nt == 'IDENT' or nt == 'FLD':
