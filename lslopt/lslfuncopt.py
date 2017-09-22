@@ -195,10 +195,7 @@ def OptimizeFunc(self, parent, index):
                     node['nt'] = 'CAST'
                     del child[1]
                     del node['name']
-                    child[0] = {'nt':'CAST', 't':'string',
-                                'ch':[child[0]]}
-                    if 'SEF' in child[0]['ch'][0]:
-                        child[0]['SEF'] = True
+                    child[0] = self.Cast(child[0], 'string')
                     return
 
             # Check for type incompatibility or index out of range

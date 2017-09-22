@@ -45,31 +45,34 @@ class lastpass(object):
 
                 # This transformation makes it difficult to handle lists during
                 # optimization, that's why it's done in a separate pass.
-                top = child[0] if nt == '+' else None
-                elemnode = child[1] if nt == '+' else node
-                if 'SEF' in elemnode:
-                    elements = (elemnode['value'] if elemnode['nt'] == 'CONST'
-                                else elemnode['ch'])
-                    for v in elements:
-                        elem = v if elemnode['nt'] != 'CONST' else {
-                            'nt':'CONST',
-                            't':lslcommon.PythonType2LSL[type(v)],
+
+                # Make listnode be the LIST or CONST element.
+                listnode = child[1] if nt == '+' else node
+
+                # left is the leftmost element in the addition.
+                # left = None means the first element of the list must be
+                # turned into a cast within the loop.
+                left = child[0] if nt == '+' else None
+                if 'SEF' in listnode:
+                    for elem in (listnode['value'] if listnode['nt'] == 'CONST'
+                                 else listnode['ch']):
+                        elemnode = {'nt':'CONST',
+                            't':lslcommon.PythonType2LSL[type(elem)],
                             'SEF':True,
-                            'value':v}
-                        top = {'nt':'CAST', 't':'list', 'SEF':True,
-                               'ch':[elem]
-                              } if top is None else {
+                            'value':elem
+                            } if listnode['nt'] == 'CONST' else elem
+                        left = self.Cast(elemnode, 'list') if left is None else {
                                'nt':'+', 't':'list', 'SEF':True,
-                               'ch':[top, elem]
+                               'ch':[left, elemnode]
                               }
-                        del elem
-                    if top is not None:
-                        parent[index] = top
-                        nt = top['nt']
+                        del elemnode
+                    if left is not None: # it's none for empty lists
+                        parent[index] = left
                         # Do another pass on the result
                         self.RecursiveLastPass(parent, index)
-                    del top
                     return
+
+                del listnode, left
 
     def LastPassPostOrder(self, parent, index):
         pass
