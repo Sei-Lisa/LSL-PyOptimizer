@@ -893,6 +893,7 @@ class parser(object):
                 raise EParseUEOF(self)
             raise EParseSyntax(self)
         name = val
+        idpos = self.errorpos
         self.NextToken()
 
         # Course of action decided here.
@@ -904,9 +905,11 @@ class parser(object):
             # Functions are looked up in the global scope only.
             sym = self.FindSymbolFull(val, 0)
             if sym is None:
+                self.errorpos = idpos
                 raise EParseUndefined(self)
 
             if sym['Kind'] != 'f':
+                self.errorpos = idpos
                 raise EParseUndefined(self)
             args = self.Parse_optional_expression_list(sym['ParamTypes'])
             self.expect(')')
@@ -915,6 +918,7 @@ class parser(object):
 
         sym = self.FindSymbolFull(val)
         if sym is None or sym['Kind'] != 'v':
+            self.errorpos = idpos
             raise EParseUndefined(self)
 
         typ = sym['Type']
