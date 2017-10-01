@@ -44,26 +44,20 @@ def isalphanum_(c):
 def ishex(c):
     return '0' <= c <= '9' or 'A' <= c <= 'F' or 'a' <= c <= 'f'
 
-def fieldpos(inp, sep, n):
-    """Return the starting position of field n in a string inp that has zero or
-    more fields separated by sep
-    """
-    i = -1
-    for n in xrange(n):
-        i = inp.find(sep, i + 1)
-        if i < 0:
-            return i
-    return i + 1
+def GetErrLineCol(parser):
+    errorpos = parser.errorpos
+    lno = parser.script.count('\n', 0, errorpos)
+    lstart = parser.script.rfind('\n', 0, errorpos) + 1
+    # Find column number in characters
+    cno = len(parser.script[lstart:errorpos].decode('utf8'))
+    return (lno + 1, cno + 1)
 
 class EParse(Exception):
-
     def __init__(self, parser, msg):
         self.errorpos = parser.errorpos
-        self.lno = parser.script.count('\n', 0, self.errorpos)
-        self.cno = self.errorpos - fieldpos(parser.script, '\n', self.lno)
-        # Note the column number reported is in bytes.
+        self.lno, self.cno = GetErrLineCol(parser)
 
-        msg = u"(Line %d char %d): ERROR: %s" % (self.lno + 1, self.cno + 1, msg)
+        msg = u"(Line %d char %d): ERROR: %s" % (self.lno, self.cno, msg)
         super(EParse, self).__init__(msg)
 
 class EParseUEOF(EParse):
