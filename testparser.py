@@ -21,7 +21,7 @@
 from lslopt.lslparse import parser,EParseSyntax,EParseUEOF,EParseAlreadyDefined,\
     EParseUndefined,EParseTypeMismatch,EParseReturnShouldBeEmpty,EParseReturnIsEmpty,\
     EParseInvalidField,EParseFunctionMismatch,EParseDeclarationScope,\
-    EParseDuplicateLabel,EParseCantChangeState,EParseCodePathWithoutRet,fieldpos
+    EParseDuplicateLabel,EParseCantChangeState,EParseCodePathWithoutRet
 from lslopt.lsloutput import outscript
 from lslopt.lsloptimizer import optimizer
 from lslopt import lslfuncs
@@ -217,7 +217,6 @@ class Test02_Parser(UnitTestCase):
             ))
         print self.parser.scopeindex
 
-        self.assertEqual(fieldpos("a,b", ",", 3), -1)
         self.assertEqual(self.outscript.Value2LSL(lslfuncs.Key(u'')), '((key)"")')
         self.assertRaises(AssertionError, self.outscript.Value2LSL, '')
 
@@ -528,7 +527,7 @@ class Test03_Optimizer(UnitTestCase):
             self.assertFalse(True)
         except EParseSyntax as e:
             # should err before first closing brace
-            self.assertEqual(e.cno, 27)
+            self.assertEqual(e.cno, 28)
         except:
             # should raise no other exception
             self.assertFalse(True)

@@ -19,7 +19,7 @@
 
 # This is the main executable program that imports the libraries.
 
-from lslopt.lslparse import parser,EParse,fieldpos
+from lslopt.lslparse import parser,EParse
 from lslopt.lsloutput import outscript
 from lslopt.lsloptimizer import optimizer
 import sys, os, getopt, re
@@ -30,11 +30,29 @@ VERSION = '0.2.1beta'
 
 
 def ReportError(script, e):
-    lastpos = fieldpos(script, '\n', e.lno+1)-1
-    assert lastpos != -1
-    if lastpos < -1: lastpos = len(script) # may hit EOF
-    sys.stderr.write(script[fieldpos(script, '\n', e.lno):lastpos].decode('utf8') + u"\n")
-    sys.stderr.write(u" " * e.cno + u"^\n")
+    linestart = script.rfind(b'\n', 0, e.errorpos) + 1
+    lineend = script.find(b'\n', e.errorpos)
+    if lineend == -1: lineend = len(script) # may hit EOF
+
+    # When the encoding of stderr is unknown (e.g. when redirected to a file),
+    # output will be encoded in UTF-8; otherwise the terminal's encoding will
+    # be used.
+    enc = sys.stderr.encoding if sys.stderr.encoding is not None else 'utf8'
+
+    # Synchronize the UTF-8 encoded line with the output line in the
+    # terminal's encoding. We need to compensate for the fact that the
+    # reported column applies to the UTF-8 version of the script.
+    # 1. Trim the UTF-8 line.
+    err_frag = script[linestart:e.errorpos]
+    # 2. Convert to Unicode; encode in the target encoding with replacing.
+    err_frag = err_frag.decode('utf8').encode(enc, 'backslashreplace')
+    # 3. Collect our prize: the length of that in characters.
+    cno = len(err_frag.decode(enc))
+
+    # Write the whole line in the target encoding.
+    err_line = script[linestart:lineend] + b'\n'
+    sys.stderr.write(err_line.decode('utf8').encode(enc, 'backslashreplace'))
+    sys.stderr.write(u" " * cno + u"^\n")
     sys.stderr.write(e.args[0] + u"\n")
 
 class UniConvScript(object):
