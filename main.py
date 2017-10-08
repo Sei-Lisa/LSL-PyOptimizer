@@ -472,6 +472,7 @@ def main(argv):
                 mcpp_mode = True
                 preproc_cmdline = [
                     'mcpp', '-e', 'UTF-8', '-I-', '-N', '-3', '-j',
+                    '-V199901L',
                     ]
 
             if predefines:
