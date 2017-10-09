@@ -85,6 +85,7 @@ class EParseTypeMismatch(EParse):
 
 class EParseReturnShouldBeEmpty(EParse):
     def __init__(self, parser):
+        # When the types don't match, the error es EParseTypeMismatch instead.
         super(EParseReturnShouldBeEmpty, self).__init__(parser,
             u"Return statement type doesn't match function return type")
 
@@ -893,7 +894,7 @@ class parser(object):
                 raise EParseUEOF(self)
             raise EParseSyntax(self)
         name = val
-        idpos = self.errorpos
+        savepos = self.errorpos
         self.NextToken()
 
         # Course of action decided here.
@@ -905,11 +906,11 @@ class parser(object):
             # Functions are looked up in the global scope only.
             sym = self.FindSymbolFull(val, 0)
             if sym is None:
-                self.errorpos = idpos
+                self.errorpos = savepos
                 raise EParseUndefined(self)
 
             if sym['Kind'] != 'f':
-                self.errorpos = idpos
+                self.errorpos = savepos
                 raise EParseUndefined(self)
             args = self.Parse_optional_expression_list(sym['ParamTypes'])
             self.expect(')')
@@ -918,7 +919,7 @@ class parser(object):
 
         sym = self.FindSymbolFull(val)
         if sym is None or sym['Kind'] != 'v':
-            self.errorpos = idpos
+            self.errorpos = savepos
             raise EParseUndefined(self)
 
         typ = sym['Type']
@@ -1612,16 +1613,20 @@ list lazy_list_set(list L, integer i, list v)
             return {'nt':'STSW', 't':None, 'name':name, 'scope':0}
 
         if tok0 == 'RETURN':
+            savepos = self.errorpos
             self.NextToken()
             if self.tok[0] == ';':
                 value = None
             else:
+                savepos = self.errorpos
                 value = self.Parse_expression()
             self.expect(';')
             self.NextToken()
             if ReturnType is None and value is not None:
+                self.errorpos = savepos
                 raise EParseReturnShouldBeEmpty(self)
             if ReturnType is not None and value is None:
+                self.errorpos = savepos
                 raise EParseReturnIsEmpty(self)
             if value is None:
                 return {'nt':'RETURN', 't':None}
