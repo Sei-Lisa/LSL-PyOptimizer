@@ -46,18 +46,44 @@ def ishex(c):
 
 def GetErrLineCol(parser):
     errorpos = parser.errorpos
+    # Find zero-based line number
     lno = parser.script.count('\n', 0, errorpos)
+    # Find start of current line
     lstart = parser.script.rfind('\n', 0, errorpos) + 1
-    # Find column number in characters
+    # Find zero-based column number in characters
     cno = len(parser.script[lstart:errorpos].decode('utf8'))
-    return (lno + 1, cno + 1)
+    # Find in #line directives list
+    i = len(parser.linedir)
+    filename = '<stdin>'  # value to return if there's no #line before lno
+    while i:
+        i -= 1
+        line = parser.linedir[i]
+        # We wouldn't know where to report the error in this case:
+        assert lno != line[0], \
+            "Error position is in processed #line directive?!"
+
+        if line[0] < lno:  # found the last #line directive before lno
+            # replace the value of lno
+            lno = lno - line[0] + line[1] - 2
+            filename = line[2]
+            break
+
+    return (lno + 1, cno + 1, filename)
 
 class EParse(Exception):
     def __init__(self, parser, msg):
         self.errorpos = parser.errorpos
-        self.lno, self.cno = GetErrLineCol(parser)
+        self.lno, self.cno, self.fname = GetErrLineCol(parser)
+        filename = (self.fname.decode('utf8', 'replace')
+                 .replace(u'\\', ur'\\')
+                 .replace(u'"', ur'\"')
+                )
 
-        msg = u"(Line %d char %d): ERROR: %s" % (self.lno, self.cno, msg)
+        if parser.processpre and filename != '<stdin>':
+            msg = u"(Line %d char %d): ERROR in \"%s\": %s" % (self.lno,
+                self.cno, filename, msg)
+        else:
+            msg = u"(Line %d char %d): ERROR: %s" % (self.lno, self.cno, msg)
         super(EParse, self).__init__(msg)
 
 class EParseUEOF(EParse):
@@ -385,10 +411,11 @@ class parser(object):
         if self.parse_directive_re is None:
             self.parse_directive_re = re.compile(
                 r'^#\s*(?:'
-                    r'(?:[Ll][Ii][Nn][Ee]\s+)?(\d+)(?:\s+("(?:[^"\\]|\\.)*"))?'
+                    r'(?:line)?\s+(\d+)(?:\s+("(?:\\.|[^"])*")(?:\s+\d+)*)?'
                     r'|'
-                    r'([A-Za-z0-9_]+)\s+([A-Za-z0-9_]+)\s+([-+,A-Za-z0-9_]+)'
+                    r'([a-z0-9_]+)\s+([a-z0-9_]+)\s+([-+,a-z0-9_]+)'
                 r')\s*$'
+                , re.I
             )
         match = self.parse_directive_re.search(directive)
         if match is not None:
@@ -403,14 +430,17 @@ class parser(object):
                         filename = literal_eval(match.group(2))
                     else:
                         filename = match.group(2)[1:-1]
-                    # TODO: what do we do with the filename?
-                    filename # keep pyflakes happy
+                    self.lastFILE = filename
+                else:
+                    filename = self.lastFILE
 
-                    del filename
-                linenum = int(match.group(1))
-                linenum # keep pyflakes happy
-                # TODO: process line number
-                del linenum
+                # Referenced line number (in the #line directive)
+                reflinenum = int(match.group(1))
+                # Actual line number (where the #line directive itself is)
+                # FIXME: this is O(n^2); track line number instead of this hack
+                actlinenum = self.script.count('\n', 0, self.pos)
+                self.linedir.append((actlinenum, reflinenum, filename))
+                del actlinenum, reflinenum, filename
             else:
                 assert match.group(3) is not None
                 if match.group(3).lower() == 'pragma' and match.group(4) == 'OPT':
@@ -2496,11 +2526,13 @@ list lazy_list_set(list L, integer i, list v)
                 self.NextToken()
 
 
-    def parse(self, script, options = ()):
+    def parse(self, script, options = (), filename = '<stdin>'):
         """Parse the given stream with the given options.
 
         This function also builds the temporary globals table.
         """
+
+        self.filename = filename
 
         if type(script) is unicode:
             script = script.encode('utf8')
@@ -2606,6 +2638,12 @@ list lazy_list_set(list L, integer i, list v)
         self.symtab = [self.funclibrary.copy()]
         self.symtab[0][-1] = None
         self.scopeindex = 0
+
+        # Last preprocessor __FILE__. <stdin> means the current file.
+        self.lastFILE = '<stdin>'
+
+        # List of preprocessor #line directives.
+        self.linedir = []
 
         # This is a small hack to prevent circular definitions in globals when
         # extended expressions are enabled. When false (default), forward
