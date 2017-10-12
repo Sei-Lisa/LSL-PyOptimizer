@@ -75,9 +75,9 @@ class EParse(Exception):
         self.errorpos = parser.errorpos
         self.lno, self.cno, self.fname = GetErrLineCol(parser)
         filename = (self.fname.decode('utf8', 'replace')
-                 .replace(u'\\', ur'\\')
-                 .replace(u'"', ur'\"')
-                )
+                    .replace(u'\\', ur'\\')
+                    .replace(u'"', ur'\"')
+                   )
 
         if parser.processpre and filename != '<stdin>':
             msg = u"(Line %d char %d): ERROR in \"%s\": %s" % (self.lno,

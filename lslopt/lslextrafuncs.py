@@ -34,6 +34,23 @@ GetEnvSettings = ('agent_limit', 'dynamic_pathfinding', 'estate_id',
     'region_max_prims', # <http://wiki.secondlife.com/wiki/Release_Notes/Second_Life_RC_Magnum/16#16.11.02.321369>
     'region_object_bonus') # <http://wiki.secondlife.com/wiki/Release_Notes/Second_Life_RC_Magnum/16#16.12.03.322072>
 
+xp_error_messages = {
+    -1:u'unknown error id',
+    0:u'no error', 1:u'exceeded throttle', 2:u'experiences are disabled',
+    3:u'invalid parameters', 4:u'operation not permitted',
+    5:u'script not associated with an experience', 6:u'not found',
+    7:u'invalid experience', 8:u'experience is disabled',
+    9:u'experience is suspended', 10:u'unknown error',
+    11:u'experience data quota exceeded',
+    12:u'key-value store is disabled',
+    13:u'key-value store communication failed', 14:u'key doesn\'t exist',
+    15:u'retry update', 16:u'experience content rating too high',
+    17:u'not allowed to run in current location',
+    18:u'experience permissions request timed out'
+}
+
+valid_inventory_kinds = frozenset((0, 1, 3, 5, 6, 7, 10, 13, 20, 21))
+
 def llCloud(v):
     assert isvector(v)
     return 0.0
@@ -217,6 +234,57 @@ def llGetEnv(s):
     assert isstring(s)
     if s not in GetEnvSettings:
         return u""
+    raise ELSLCantCompute
+
+def llGetExperienceErrorMessage(errno):
+    assert isinteger(errno)
+    if errno < -1 or errno > 18:
+        errno = -1
+    return xp_error_messages[errno]
+
+def llGetExperienceList(id):
+    assert iskey(id)
+    # This function is not implemented and always returns empty list
+    return []
+
+def llGetHTTPHeader(id, s):
+    assert iskey(id)
+    assert isstring(s)
+    if not cond(id):
+        return u''
+    raise ELSLCantCompute
+
+def llGetInventoryKey(s):
+    assert isstring(s)
+    if s == u'':
+        return Key(NULL_KEY)
+    raise ELSLCantCompute
+
+def llGetInventoryName(kind, index):
+    assert isinteger(kind)
+    assert isinteger(index)
+    if kind != -1 and kind not in valid_inventory_kinds or index < 0:
+        return u''
+    raise ELSLCantCompute
+
+def llGetInventoryNumber(kind):
+    assert isinteger(kind)
+    if kind != -1 and kind not in valid_inventory_kinds:
+        return 0
+    raise ELSLCantCompute
+
+def llGetInventoryPermMask(item, category):
+    assert isstring(item)
+    assert isinteger(category)
+    if category < 0 or category > 4 or item == u'':
+        return 0
+    raise ELSLCantCompute
+
+
+def llGetOwnerKey(id):
+    assert iskey(id)
+    if not cond(id):
+        return Key(NULL_KEY)
     raise ELSLCantCompute
 
 # TODO: Add more predictable functions.
