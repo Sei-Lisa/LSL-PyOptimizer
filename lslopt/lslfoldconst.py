@@ -127,10 +127,17 @@ class foldconst(object):
         # They MUSt be SEF
         if 'SEF' not in node1 or 'SEF' not in node2:
             return False
-        # So far it's only accepted if both are identifiers.
+        # So far it's only accepted if both are identifiers or function calls,
+        # recursively.
         return (node1['nt'] == node2['nt'] == 'IDENT'
                 and node1['name'] == node2['name']
-                and node1['scope'] == node2['scope'])
+                and node1['scope'] == node2['scope']
+            or node1['nt'] == node2['nt'] == 'FNCALL'
+                and node1['name'] == node2['name']
+                and all(self.CompareTrees(node1['ch'][i],
+                                          node2['ch'][i])
+                        for i in xrange(len(node1['ch'])))
+            )
 
     def FoldStmt(self, parent, index):
         """Simplify a statement."""
