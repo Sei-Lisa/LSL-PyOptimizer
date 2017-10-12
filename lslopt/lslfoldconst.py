@@ -1115,32 +1115,7 @@ class foldconst(object):
                         # Call it
                         fn = sym['Fn']
                         args = [arg['value'] for arg in child]
-                        argtypes = sym['ParamTypes']
-                        assert(len(args) == len(argtypes))
-                        for argnum in range(len(args)):
-                            # Adapt types of params
-                            if argtypes[argnum] == 'string':
-                                args[argnum] = lslfuncs.fs(args[argnum])
-                            elif argtypes[argnum] == 'key':
-                                args[argnum] = lslfuncs.fk(args[argnum])
-                            elif argtypes[argnum] == 'float':
-                                args[argnum] = lslfuncs.ff(args[argnum])
-                            elif argtypes[argnum] == 'vector':
-                                args[argnum] = lslfuncs.v2f(args[argnum])
-                            elif argtypes[argnum] == 'quaternion':
-                                args[argnum] = lslfuncs.q2f(args[argnum])
-                            elif argtypes[argnum] == 'list':
-                                # ensure vectors and quaternions passed to
-                                # functions have only float components
-                                assert type(args[argnum]) == list
-                                # make a shallow copy
-                                args[argnum] = args[argnum][:]
-                                for i in range(len(args[argnum])):
-                                    if type(args[argnum][i]) == Quaternion:
-                                        args[argnum][i] = lslfuncs.q2f(args[argnum][i])
-                                    elif type(args[argnum][i]) == Vector:
-                                        args[argnum][i] = lslfuncs.v2f(args[argnum][i])
-                        del argtypes
+                        assert len(args) == len(sym['ParamTypes'])
                         try:
                             # May raise ELSLCantCompute
                             if name[:10] == 'llDetected':

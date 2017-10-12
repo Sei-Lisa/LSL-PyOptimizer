@@ -18,10 +18,10 @@
 # Extra functions that have predictable return values for certain arguments.
 
 from lslcommon import Key, Vector #, Quaternion
-from lslbasefuncs import ELSLCantCompute, isinteger, iskey, islist, \
-  isvector, isstring, NULL_KEY, ZERO_VECTOR, ZERO_ROTATION, \
+from lslbasefuncs import ELSLCantCompute, fi,ff,fs,fk,v2f,q2f,fl, \
+  NULL_KEY, ZERO_VECTOR, ZERO_ROTATION, \
   TOUCH_INVALID_TEXCOORD, cond
-#isfloat, isrotation
+ff, q2f  # keep pyflakes happy as these are not used
 
 TouchEvents = ('touch', 'touch_start', 'touch_end')
 DetectionEvents = ('touch', 'touch_start', 'touch_end',
@@ -52,147 +52,147 @@ xp_error_messages = {
 valid_inventory_kinds = frozenset((0, 1, 3, 5, 6, 7, 10, 13, 20, 21))
 
 def llCloud(v):
-    assert isvector(v)
+    v = v2f(v)
     return 0.0
 
 def llAvatarOnLinkSitTarget(link):
-    assert isinteger(link)
+    link = fi(link)
     if link > 255 or link == -2147483648:
         return Key(NULL_KEY)
     raise ELSLCantCompute
 
 def llDetectedGrab(idx, event=None):
-    assert isinteger(idx)
+    idx = fi(idx)
     if 0 <= idx <= 15 and (event == 'touch' or event is None):
         raise ELSLCantCompute
     return ZERO_VECTOR
 
 def llDetectedGroup(idx, event=None):
-    assert isinteger(idx)
+    idx = fi(idx)
     if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
         raise ELSLCantCompute
     return 0
 
 def llDetectedKey(idx, event=None):
-    assert isinteger(idx)
+    idx = fi(idx)
     if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
         raise ELSLCantCompute
     return Key(NULL_KEY)
 
 def llDetectedLinkNumber(idx, event=None):
-    assert isinteger(idx)
+    idx = fi(idx)
     if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
         raise ELSLCantCompute
     return 0
 
 def llDetectedName(idx, event=None):
-    assert isinteger(idx)
+    idx = fi(idx)
     if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
         raise ELSLCantCompute
     return NULL_KEY
 
 def llDetectedOwner(idx, event=None):
-    assert isinteger(idx)
+    idx = fi(idx)
     if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
         raise ELSLCantCompute
     return Key(NULL_KEY)
 
 def llDetectedPos(idx, event=None):
-    assert isinteger(idx)
+    idx = fi(idx)
     if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
         raise ELSLCantCompute
     return ZERO_VECTOR
 
 def llDetectedRot(idx, event=None):
-    assert isinteger(idx)
+    idx = fi(idx)
     if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
         raise ELSLCantCompute
     return ZERO_ROTATION
 
 def llDetectedTouchBinormal(idx, event=None):
-    assert isinteger(idx)
+    idx = fi(idx)
     if 0 <= idx <= 15 and (event in TouchEvents or event is None):
         raise ELSLCantCompute
     return ZERO_VECTOR
 
 def llDetectedTouchFace(idx, event=None):
-    assert isinteger(idx)
+    idx = fi(idx)
     if 0 <= idx <= 15 and (event in TouchEvents or event is None):
         raise ELSLCantCompute
     return -1 if event in DetectionEvents and 0 <= idx <= 15 else 0
 
 def llDetectedTouchNormal(idx, event=None):
-    assert isinteger(idx)
+    idx = fi(idx)
     if 0 <= idx <= 15 and (event in TouchEvents or event is None):
         raise ELSLCantCompute
     return ZERO_VECTOR
 
 def llDetectedTouchPos(idx, event=None):
-    assert isinteger(idx)
+    idx = fi(idx)
     if 0 <= idx <= 15 and (event in TouchEvents or event is None):
         raise ELSLCantCompute
     return ZERO_VECTOR
 
 def llDetectedTouchST(idx, event=None):
-    assert isinteger(idx)
+    idx = fi(idx)
     if 0 <= idx <= 15 and (event in TouchEvents or event is None):
         raise ELSLCantCompute
     return TOUCH_INVALID_TEXCOORD if event in DetectionEvents \
         and 0 <= idx <= 15  else ZERO_VECTOR
 
 def llDetectedTouchUV(idx, event=None):
-    assert isinteger(idx)
+    idx = fi(idx)
     if 0 <= idx <= 15 and (event in TouchEvents or event is None):
         raise ELSLCantCompute
     return TOUCH_INVALID_TEXCOORD if event in DetectionEvents \
         and 0 <= idx <= 15 else ZERO_VECTOR
 
 def llDetectedType(idx, event=None):
-    assert isinteger(idx)
+    idx = fi(idx)
     if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
         raise ELSLCantCompute
     return 0
 
 def llDetectedVel(idx, event=None):
-    assert isinteger(idx)
+    idx = fi(idx)
     if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
         raise ELSLCantCompute
     return ZERO_VECTOR
 
 def llEdgeOfWorld(v1, v2):
-    assert isvector(v1)
-    assert isvector(v2)
+    v1 = v2f(v1)
+    v2 = v2f(v2)
     if v2[0] == v2[1] == 0:
         return 1
     raise ELSLCantCompute
 
 def llGetAgentInfo(id):
-    assert iskey(id)
+    id = fk(id)
     if not cond(id):
         return 0
     raise ELSLCantCompute
 
 def llGetAgentLanguage(id):
-    assert iskey(id)
+    id = fk(id)
     if not cond(id):
         return u''
     raise ELSLCantCompute
 
 def llGetAgentList(scope, options):
-    assert isinteger(scope)
-    assert islist(options)
+    scope = fi(scope)
+    options = fl(options)
     if scope not in (1, 2, 4):
         return [u'INVALID_SCOPE']
     raise ELSLCantCompute
 
 def llGetAgentSize(id):
-    assert iskey(id)
+    id = fk(id)
     if not cond(id):
         return ZERO_VECTOR
     raise ELSLCantCompute
 
 def llGetAlpha(face):
-    assert isinteger(face)
+    face = fi(face)
     if face > 8:
         return 1.0
     # Negative face numbers return (float)llGetNumberOfSides(), which isn't
@@ -200,89 +200,89 @@ def llGetAlpha(face):
     raise ELSLCantCompute
 
 def llGetAnimation(id):
-    assert iskey(id)
+    id = fk(id)
     if not cond(id):
         return u''
     raise ELSLCantCompute
 
 def llGetAnimationList(id):
-    assert iskey(id)
+    id = fk(id)
     if not cond(id):
         return []
     raise ELSLCantCompute
 
 def llGetBoundingBox(id):
-    assert iskey(id)
+    id = fk(id)
     if not cond(id):
         return []
     raise ELSLCantCompute
 
 def llGetColor(face):
-    assert isinteger(face)
+    face = fi(face)
     if face > 8:
         return Vector((1.,1.,1.))
     # Returns face 0 when negative (can't be computed)
     raise ELSLCantCompute
 
 def llGetDisplayName(id):
-    assert iskey(id)
+    id = fk(id)
     if not cond(id):
         return u''
     raise ELSLCantCompute
 
 def llGetEnv(s):
-    assert isstring(s)
+    s = fs(s)
     if s not in GetEnvSettings:
         return u""
     raise ELSLCantCompute
 
 def llGetExperienceErrorMessage(errno):
-    assert isinteger(errno)
+    errno = fi(errno)
     if errno < -1 or errno > 18:
         errno = -1
     return xp_error_messages[errno]
 
 def llGetExperienceList(id):
-    assert iskey(id)
+    id = fk(id)
     # This function is not implemented and always returns empty list
     return []
 
 def llGetHTTPHeader(id, s):
-    assert iskey(id)
-    assert isstring(s)
+    id = fk(id)
+    s = fs(s)
     if not cond(id):
         return u''
     raise ELSLCantCompute
 
 def llGetInventoryKey(s):
-    assert isstring(s)
+    s = fs(s)
     if s == u'':
         return Key(NULL_KEY)
     raise ELSLCantCompute
 
 def llGetInventoryName(kind, index):
-    assert isinteger(kind)
-    assert isinteger(index)
+    kind = fi(kind)
+    index = fi(index)
     if kind != -1 and kind not in valid_inventory_kinds or index < 0:
         return u''
     raise ELSLCantCompute
 
 def llGetInventoryNumber(kind):
-    assert isinteger(kind)
+    kind = fi(kind)
     if kind != -1 and kind not in valid_inventory_kinds:
         return 0
     raise ELSLCantCompute
 
 def llGetInventoryPermMask(item, category):
-    assert isstring(item)
-    assert isinteger(category)
+    item = fs(item)
+    category = fi(category)
     if category < 0 or category > 4 or item == u'':
         return 0
     raise ELSLCantCompute
 
 
 def llGetOwnerKey(id):
-    assert iskey(id)
+    id = fk(id)
     if not cond(id):
         return Key(NULL_KEY)
     raise ELSLCantCompute

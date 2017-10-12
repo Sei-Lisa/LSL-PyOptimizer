@@ -262,30 +262,67 @@ def zstr(s):
         return s
     return s.__class__(s[:zi])
 
+def fi(x):
+    """Force x to be an int"""
+    if type(x) != int or not (-2147483648 <= x <= 2147483647):
+        raise ELSLInvalidType
+    return x
+
 def ff(x):
     """Force x to be a float"""
+    if int != type(x) != float:
+        raise ELSLInvalidType
     if type(x) != float:
-        x = float(x)
+        return InternalTypecast(x, float, False, True)
     return F32(x)
 
 def fk(k):
     """Force k to be a key"""
+    if unicode != type(k) != Key:
+        raise ELSLInvalidType
     if type(k) != Key:
-        k = Key(k)
+        k = InternalTypecast(k, Key, False, False)
     return k
 
 def fs(s):
     """Force s to be a string"""
+    if unicode != type(s) != Key:
+        raise ELSLInvalidType
     if type(s) != unicode:
-        s = unicode(s)
+        s = InternalTypecast(s, unicode, False, False)
     return s
 
+def fl(L):
+    """Force l to be a list, and its elements to have sane types."""
+    Lorig = L
+    if type(L) != list:
+        raise ELSLInvalidType
+    for i in xrange(len(L)):
+        t = type(L[i])
+        if t not in Types:
+            raise ELSLInvalidType
+        if t == Vector:
+            # copy on write
+            if L is Lorig:
+                L = L[:]
+            L[i] = v2f(L[i])
+        if t == Quaternion:
+            # copy on write
+            if L is Lorig:
+                L = L[:]
+            L[i] = q2f(L[i])
+    return L
+
 def q2f(q):
+    if type(q) != Quaternion:
+        raise ELSLInvalidType
     if type(q[0]) == type(q[1]) == type(q[2]) == type(q[3]) == float:
         return q
     return Quaternion((ff(q[0]), ff(q[1]), ff(q[2]), ff(q[3])))
 
 def v2f(v):
+    if type(v) != Vector:
+        raise ELSLInvalidType
     if type(v[0]) == type(v[1]) == type(v[2]) == float:
         return v
     return Vector((ff(v[0]), ff(v[1]), ff(v[2])))
@@ -543,8 +580,8 @@ def InternalUTF8toString(s):
 # type check. Same for llGetSubString and llList2List. They are all joined into
 # one single function.
 def InternalGetDeleteSubSequence(val, start, end, isGet):
-    assert isinteger(start)
-    assert isinteger(end)
+    start = fi(start)
+    end = fi(end)
     L = len(val)
 
     # Python does much of the same thing as LSL here, which helps a lot
@@ -800,27 +837,6 @@ def cond(x):
         return len(x) > 1
     return bool(x) # works fine for int, float, string, list
 
-def isinteger(x):
-    return type(x) == int
-
-def isfloat(x):
-    return type(x) == float
-
-def isvector(x):
-    return type(x) == Vector and len(x) == 3 and type(x[0]) == type(x[1]) == type(x[2]) == float
-
-def isrotation(x):
-    return type(x) == Quaternion and len(x) == 4 and type(x[0]) == type(x[1]) == type(x[2]) == type(x[3]) == float
-
-def isstring(x):
-    return type(x) == unicode
-
-def iskey(x):
-    return type(x) == Key
-
-def islist(x):
-    return type(x) == list
-
 def reduce(t):
     t = F32(t)
     if not t.is_integer():
@@ -832,7 +848,7 @@ def reduce(t):
 #
 
 def llAbs(i):
-    assert isinteger(i)
+    i = fi(i)
     if i != -2147483648:
         return abs(i)
     if lslcommon.LSO:
@@ -841,27 +857,27 @@ def llAbs(i):
     raise ELSLCantCompute
 
 def llAcos(f):
-    assert isfloat(f)
+    f = ff(f)
     try:
         return F32(math.acos(f))
     except ValueError:
         return NaN
 
 def llAngleBetween(r1, r2):
-    assert isrotation(r1)
-    assert isrotation(r2)
+    r1 = q2f(r1)
+    r2 = q2f(r2)
     return llRot2Angle(div(qnz(r1), qnz(r2), f32=False))
 
 def llAsin(f):
-    assert isfloat(f)
+    f = ff(f)
     try:
         return F32(math.asin(f))
     except ValueError:
         return NaN
 
 def llAtan2(y, x):
-    assert isfloat(y)
-    assert isfloat(x)
+    y = ff(y)
+    x = ff(x)
     if math.isnan(x) and math.isnan(y):
         if math.copysign(1, x) == -1 and math.copysign(1, y) == -1:
             return -NaN
@@ -873,9 +889,9 @@ def llAtan2(y, x):
     return F32(math.atan2(y, x))
 
 def llAxes2Rot(fwd, left, up):
-    assert isvector(fwd)
-    assert isvector(left)
-    assert isvector(up)
+    fwd  = v2f(fwd)
+    left = v2f(left)
+    up   = v2f(up)
 
     # One of the hardest.
 
@@ -912,8 +928,8 @@ def llAxes2Rot(fwd, left, up):
 
 
 def llAxisAngle2Rot(axis, angle):
-    assert isvector(axis)
-    assert isfloat(angle)
+    axis = v2f(axis)
+    angle = ff(angle)
     axis = llVecNorm(axis, f32=False)
     if axis == ZERO_VECTOR:
         angle = 0.
@@ -924,7 +940,7 @@ def llAxisAngle2Rot(axis, angle):
 # NOTE: This one does not always return the same value in LSL. When it isn't
 # deterministic, it raises ELSLCantCompute.
 def llBase64ToInteger(s):
-    assert isstring(s)
+    s = fs(s)
     if len(s) > 8:
         return 0
     s = b64_re.search(s).group()
@@ -959,7 +975,7 @@ b64tos_re = re.compile(
 )
 
 def llBase64ToString(s):
-    assert isstring(s)
+    s = fs(s)
     s = b64_re.search(s).group(0)
 
     # llUnescapeURL and llBase64ToString behave differently.
@@ -995,7 +1011,7 @@ def llBase64ToString(s):
     return InternalUTF8toString(bytes(byteseq))
 
 def llCSV2List(s):
-    assert isstring(s)
+    s = fs(s)
 
     bracketlevel = 0
     lastwascomma = True     # first space is eaten!!!
@@ -1025,13 +1041,13 @@ def llCSV2List(s):
     return ret
 
 def llCeil(f):
-    assert isfloat(f)
+    f = ff(f)
     if math.isnan(f) or math.isinf(f) or f >= 2147483648.0 or f < -2147483648.0:
         return -2147483648
     return int(math.ceil(f))
 
 def llCos(f):
-    assert isfloat(f)
+    f = ff(f)
     if math.isinf(f):
         return Indet
     if -9223372036854775808.0 < f < 9223372036854775808.0:
@@ -1040,21 +1056,21 @@ def llCos(f):
 
 def llDeleteSubList(lst, start, end):
     # This acts as llList2List if there's wraparound
-    assert islist(lst)
+    lst = fl(lst)
     return InternalGetDeleteSubSequence(lst, start, end, isGet=False)
 
 def llDeleteSubString(s, start, end):
     # This acts as llGetSubString if there's wraparound
-    assert isstring(s)
+    s = fs(s)
     return InternalGetDeleteSubSequence(s, start, end, isGet=False)
 
 def llDumpList2String(lst, sep):
-    assert islist(lst)
-    assert isstring(sep)
+    lst = fl(lst)
+    sep = fs(sep)
     return sep.join(InternalList2Strings(lst))
 
 def llEscapeURL(s):
-    assert isstring(s)
+    s = fs(s)
     s = s.encode('utf8') # get bytes
     ret = u''
     for c in s:
@@ -1065,7 +1081,7 @@ def llEscapeURL(s):
     return ret
 
 def llEuler2Rot(v):
-    assert isvector(v)
+    v = v2f(v)
     c0 = math.cos(v[0]*0.5)
     s0 = math.sin(v[0]*0.5)
     c1 = math.cos(v[1]*0.5)
@@ -1098,19 +1114,19 @@ def llEuler2Rot(v):
     return Quaternion(-f for f in r) if r[i] < 0 else Quaternion(r)
 
 def llFabs(f):
-    assert isfloat(f)
+    f = ff(f)
     if f == 0.0 or math.isnan(f): # llFabs(-0.0) is -0.0; llFabs(-nan) is -nan
         return f
     return math.fabs(f)
 
 def llFloor(f):
-    assert isfloat(f)
+    f = ff(f)
     if math.isnan(f) or math.isinf(f) or f >= 2147483648.0 or f < -2147483648.0:
         return -2147483648
     return int(math.floor(f))
 
 def llFrand(lim):
-    assert isfloat(lim)
+    lim = ff(lim)
     if math.isinf(lim):
         return 0.
     if abs(lim) < float.fromhex('0x1p-126'):
@@ -1148,8 +1164,8 @@ def llGenerateKey():
     raise ELSLCantCompute
 
 def llGetListEntryType(lst, pos):
-    assert islist(lst)
-    assert isinteger(pos)
+    lst = fl(lst)
+    pos = fi(pos)
     try:
         return Types[type(lst[pos])]
     except IndexError:
@@ -1158,26 +1174,26 @@ def llGetListEntryType(lst, pos):
         raise ELSLInvalidType
 
 def llGetListLength(lst):
-    assert islist(lst)
+    lst = fl(lst)
     return len(lst)
 
 def llGetSubString(s, start, end):
-    assert isstring(s)
+    s = fs(s)
     return InternalGetDeleteSubSequence(s, start, end, isGet=True)
 
 def llInsertString(s, pos, src):
-    assert isstring(s)
-    assert isinteger(pos)
-    assert isstring(src)
+    s = fs(s)
+    pos = fi(pos)
+    src = fs(src)
     if pos < 0: pos = 0 # llInsertString does not support negative indices
     return s[:pos] + src + s[pos:]
 
 def llIntegerToBase64(x):
-    assert isinteger(x)
+    x = fi(x)
     return b64encode(chr((x>>24)&255) + chr((x>>16)&255) + chr((x>>8)&255) + chr(x&255)).decode('utf8')
 
 def llList2CSV(lst):
-    assert islist(lst)
+    lst = fl(lst)
     ret = []
     for elem in lst:
         # This always uses LSO rules for float to string.
@@ -1194,8 +1210,8 @@ def llList2CSV(lst):
     return ret
 
 def llList2Float(lst, pos):
-    assert islist(lst)
-    assert isinteger(pos)
+    lst = fl(lst)
+    pos = fi(pos)
     try:
         elem = lst[pos]
         if type(elem) == float:
@@ -1207,8 +1223,8 @@ def llList2Float(lst, pos):
     return 0.0
 
 def llList2Integer(lst, pos):
-    assert islist(lst)
-    assert isinteger(pos)
+    lst = fl(lst)
+    pos = fi(pos)
     try:
         elem = lst[pos]
         if type(elem) == int:
@@ -1220,8 +1236,8 @@ def llList2Integer(lst, pos):
         return 0
 
 def llList2Key(lst, pos):
-    assert islist(lst)
-    assert isinteger(pos)
+    lst = fl(lst)
+    pos = fi(pos)
     try:
         elem = lst[pos]
         if type(elem) == Key:
@@ -1235,16 +1251,16 @@ def llList2Key(lst, pos):
     return Key(u'')
 
 def llList2List(lst, start, end):
-    assert islist(lst)
-    assert isinteger(start)
-    assert isinteger(end)
+    lst = fl(lst)
+    start = fi(start)
+    end = fi(end)
     return InternalGetDeleteSubSequence(lst, start, end, isGet=True)
 
 def llList2ListStrided(lst, start, end, stride):
-    assert islist(lst)
-    assert isinteger(start)
-    assert isinteger(end)
-    assert isinteger(stride)
+    lst = fl(lst)
+    start = fi(start)
+    end = fi(end)
+    stride = fi(stride)
     stride = abs(stride) if stride != 0 else 1
     L = len(lst)
     if start < 0: start += L
@@ -1260,13 +1276,13 @@ def llList2ListStrided(lst, start, end, stride):
     return lst[start:end+1:stride]
 
 def llList2Rot(lst, pos):
-    assert islist(lst)
-    assert isinteger(pos)
+    lst = fl(lst)
+    pos = fi(pos)
     try:
         elem = lst[pos]
         if type(elem) == Quaternion:
             # The list should not contain integer quaternion components, but
-            # we don't control that here. Instead we return the integer-less
+            # we don't err here if not. Instead we return the integer-less
             # quaternion when asked.
             return q2f(elem)
     except IndexError:
@@ -1274,8 +1290,8 @@ def llList2Rot(lst, pos):
     return ZERO_ROTATION
 
 def llList2String(lst, pos):
-    assert islist(lst)
-    assert isinteger(pos)
+    lst = fl(lst)
+    pos = fi(pos)
     try:
         return InternalTypecast(lst[pos], unicode, InList=True, f32=True)
     except IndexError:
@@ -1283,8 +1299,8 @@ def llList2String(lst, pos):
     return u''
 
 def llList2Vector(lst, pos):
-    assert islist(lst)
-    assert isinteger(pos)
+    lst = fl(lst)
+    pos = fi(pos)
     try:
         elem = lst[pos]
         if type(elem) == Vector:
@@ -1297,8 +1313,8 @@ def llList2Vector(lst, pos):
     return ZERO_VECTOR
 
 def llListFindList(lst, elems):
-    assert islist(lst)
-    assert islist(elems)
+    lst = fl(lst)
+    elems = fl(elems)
     # NaN is found in floats, but not in vectors
     L1 = len(lst)
     L2 = len(elems)
@@ -1346,9 +1362,9 @@ def llListFindList(lst, elems):
     return -1
 
 def llListInsertList(lst, elems, pos):
-    assert islist(lst)
-    assert islist(elems)
-    assert isinteger(pos)
+    lst = fl(lst)
+    elems = fl(elems)
+    pos = fi(pos)
     # Unlike llInsertString, this function does support negative indices.
     return lst[:pos] + elems + lst[pos:]
 
@@ -1356,10 +1372,10 @@ def llListInsertList(lst, elems, pos):
 #def llListRandomize(x):
 
 def llListReplaceList(lst, elems, start, end):
-    assert islist(lst)
-    assert islist(elems)
-    assert isinteger(start)
-    assert isinteger(end)
+    lst = fl(lst)
+    elems = fl(elems)
+    start = fi(start)
+    end = fi(end)
     L = len(lst)
     if start < -L:
         # llListReplaceList([0,1,2,3],[5],-5,-5) should return [0,1,2,3]
@@ -1374,9 +1390,9 @@ def llListReplaceList(lst, elems, start, end):
     return lst[:start] + elems + lst[end+1:]
 
 def llListSort(lst, stride, asc):
-    assert islist(lst)
-    assert isinteger(stride)
-    assert isinteger(asc)
+    lst = fl(lst)
+    stride = fi(stride)
+    asc = fi(asc)
     lst = lst[:] # make a copy
     L = len(lst)
     broken = u'\ufb1a' > u'\U0001d41a' # that happens on Windows
@@ -1422,8 +1438,8 @@ def llListSort(lst, stride, asc):
     return lst
 
 def llListStatistics(op, lst):
-    assert isinteger(op)
-    assert islist(lst)
+    op = fi(op)
+    lst = fl(lst)
 
     nums = []
     # Extract numbers in reverse order. LIST_STAT_MEDIAN uses that.
@@ -1495,26 +1511,26 @@ def llListStatistics(op, lst):
     return 0.0
 
 def llLog(f):
-    assert isfloat(f)
+    f = ff(f)
     if math.isinf(f) and f < 0 or math.isnan(f) or f <= 0.0:
         return 0.0
     return F32(math.log(f))
 
 def llLog10(f):
-    assert isfloat(f)
+    f = ff(f)
     if math.isinf(f) and f < 0 or math.isnan(f) or f <= 0.0:
         return 0.0
     return F32(math.log10(f))
 
 def llMD5String(s, salt):
-    assert isstring(s)
-    assert isinteger(salt)
+    s = fs(s)
+    salt = fi(salt)
     return hashlib.md5(zstr(s).encode('utf8') + b':' + bytes(salt)).hexdigest().decode('utf8')
 
 def llModPow(base, exp, mod):
-    assert isinteger(base)
-    assert isinteger(exp)
-    assert isinteger(mod)
+    base = fi(base)
+    exp = fi(exp)
+    mod = fi(mod)
     if not lslcommon.IsCalc:
         # This function has a delay, therefore it's not safe to compute it
         # unless in calculator mode.
@@ -1544,9 +1560,9 @@ def llModPow(base, exp, mod):
     return S32(ret)
 
 def llParseString2List(s, exc, inc, KeepNulls=False):
-    assert isstring(s)
-    assert islist(exc)
-    assert islist(inc)
+    s = fs(s)
+    exc = fl(exc)
+    inc = fl(inc)
     if s == u'' and KeepNulls:
         return [s]
     exc = exc[:8]
@@ -1569,8 +1585,8 @@ def llParseStringKeepNulls(s, exc, inc):
     return llParseString2List(s, exc, inc, KeepNulls=True)
 
 def llPow(base, exp):
-    assert isfloat(base)
-    assert isfloat(exp)
+    base = ff(base)
+    exp = ff(exp)
     try:
         # Python corner cases and LSL corner cases differ
 
@@ -1599,19 +1615,19 @@ def llPow(base, exp):
         return Indet
 
 def llRot2Angle(r):
-    assert isrotation(r)
+    r = q2f(r)
     # Used by llAngleBetween.
     # Version based on research by Moon Metty, Miranda Umino and Strife Onizuka
     return F32(2.*math.atan2(math.sqrt(math.fsum((r[0]*r[0], r[1]*r[1], r[2]*r[2]))), abs(r[3])));
 
 def llRot2Axis(r):
-    assert isrotation(r)
+    r = q2f(r)
     if r[3] < 0:
         return llVecNorm(Vector((-r[0], -r[1], -r[2])))
     return llVecNorm(Vector((r[0], r[1], r[2])))
 
 def llRot2Euler(r):
-    assert isrotation(r)
+    r = q2f(r)
 
     # Another one of the hardest. The formula for Z angle in the
     # singularity case was inspired by the viewer code.
@@ -1634,23 +1650,23 @@ def llRot2Euler(r):
         )))
 
 def llRot2Fwd(r):
-    assert isrotation(r)
+    r = q2f(r)
     v = Vector((1., 0., 0.))
     return llVecNorm(mul(v, qnz(r), f32=False))
 
 def llRot2Left(r):
-    assert isrotation(r)
+    r = q2f(r)
     v = Vector((0., 1., 0.))
     return llVecNorm(mul(v, qnz(r), f32=False))
 
 def llRot2Up(r):
-    assert isrotation(r)
+    r = q2f(r)
     v = Vector((0., 0., 1.))
     return llVecNorm(mul(v, qnz(r), f32=False))
 
 def llRotBetween(v1, v2):
-    assert isvector(v1)
-    assert isvector(v2)
+    v1 = v2f(v1)
+    v2 = v2f(v2)
 
     # Loosely based on the "Bad" reference implementation and
     # on SL source code (pre Moon Metty's changes).
@@ -1685,17 +1701,17 @@ def llRotBetween(v1, v2):
     return Quaternion(F32((ortho[0] / m, ortho[1] / m, ortho[2] / m, 0.)))
 
 def llRound(f):
-    assert isfloat(f)
+    f = ff(f)
     if math.isnan(f) or math.isinf(f) or f >= 2147483647.5 or f < -2147483648.0:
         return -2147483648
     return int(math.floor(F32(f+0.5)))
 
 def llSHA1String(s):
-    assert isstring(s)
+    s = fs(s)
     return hashlib.sha1(s.encode('utf8')).hexdigest().decode('utf8')
 
 def llSin(f):
-    assert isfloat(f)
+    f = ff(f)
     if math.isinf(f):
         return Indet
     if -9223372036854775808.0 < f < 9223372036854775808.0:
@@ -1703,23 +1719,23 @@ def llSin(f):
     return f
 
 def llSqrt(f):
-    assert isfloat(f)
+    f = ff(f)
     if f < 0.0:
         return Indet
     # LSL and Python both produce -0.0 when the input is -0.0.
     return F32(math.sqrt(f))
 
 def llStringLength(s):
-    assert isstring(s)
+    s = fs(s)
     return len(s)
 
 def llStringToBase64(s):
-    assert isstring(s)
+    s = fs(s)
     return b64encode(s.encode('utf8')).decode('utf8')
 
 def llStringTrim(s, mode):
-    assert isstring(s)
-    assert isinteger(mode)
+    s = fs(s)
+    mode = fi(mode)
     head = 0
     length = len(s)
     tail = length-1
@@ -1732,12 +1748,12 @@ def llStringTrim(s, mode):
     return s[head:tail+1]
 
 def llSubStringIndex(s, pattern):
-    assert isstring(s)
-    assert isstring(pattern)
+    s = fs(s)
+    pattern = fs(pattern)
     return s.find(pattern)
 
 def llTan(f):
-    assert isfloat(f)
+    f = ff(f)
     if math.isinf(f):
         return Indet
     if -9223372036854775808.0 < f < 9223372036854775808.0:
@@ -1745,19 +1761,19 @@ def llTan(f):
     return f
 
 def llToLower(s):
-    assert isstring(s)
+    s = fs(s)
     if lslcommon.LSO:
         return zstr(re.sub(u'[A-Z]', lambda x: x.group().lower(), s))
     return zstr(s.lower())
 
 def llToUpper(s):
-    assert isstring(s)
+    s = fs(s)
     if lslcommon.LSO:
         return zstr(re.sub(u'[a-z]', lambda x: x.group().upper(), s))
     return zstr(s.upper())
 
 def llUnescapeURL(s):
-    assert isstring(s)
+    s = fs(s)
     ret = b''
     L = len(s)
     i = 0
@@ -1788,8 +1804,8 @@ def llUnescapeURL(s):
     return InternalUTF8toString(ret)
 
 def llVecDist(v1, v2):
-    assert isvector(v1)
-    assert isvector(v2)
+    v1 = v2f(v1)
+    v2 = v2f(v2)
     # For improved accuracy, do the intermediate calcs as doubles
     vx = v1[0]-v2[0]
     vy = v1[1]-v2[1]
@@ -1797,19 +1813,19 @@ def llVecDist(v1, v2):
     return F32(math.sqrt(math.fsum((vx*vx, vy*vy, vz*vz))))
 
 def llVecMag(v):
-    assert isvector(v)
+    v = v2f(v)
     return F32(math.sqrt(math.fsum((v[0]*v[0], v[1]*v[1], v[2]*v[2]))))
 
 def llVecNorm(v, f32 = True):
-    assert isvector(v)
+    v = v2f(v)
     if v == ZERO_VECTOR:
         return v
     f = math.sqrt(math.fsum((v[0]*v[0], v[1]*v[1], v[2]*v[2])))
     return F32(Vector((v[0]/f,v[1]/f,v[2]/f)), f32)
 
 def llXorBase64(s, xor):
-    assert isstring(s)
-    assert isstring(xor)
+    s = fs(s)
+    xor = fs(xor)
 
     # Xor the underlying bytes.
 
@@ -1854,8 +1870,8 @@ def llXorBase64(s, xor):
     return b64encode(ret).decode('utf8')
 
 def llXorBase64Strings(s, xor):
-    assert isstring(s)
-    assert isstring(xor)
+    s = fs(s)
+    xor = fs(xor)
 
     if not lslcommon.IsCalc:
         # This function has a delay, therefore it's not safe to compute it
@@ -1897,8 +1913,8 @@ def llXorBase64Strings(s, xor):
     return ret
 
 def llXorBase64StringsCorrect(s, xor):
-    assert isstring(s)
-    assert isstring(xor)
+    s = fs(s)
+    xor = fs(xor)
 
     # Xor the underlying bytes but repeating the xor parameter pattern at the first zero (SCR-35).
 

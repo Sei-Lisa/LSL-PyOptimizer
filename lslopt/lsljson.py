@@ -20,7 +20,7 @@
 import re
 import math
 from lslcommon import *
-from lslbasefuncs import llStringTrim, isstring, islist, InternalTypecast
+from lslbasefuncs import llStringTrim, fs, fl, InternalTypecast
 
 # INCOMPATIBILITY NOTE: The JSON functions in SL have very weird behaviour
 # in corner cases. Despite our best efforts, that behaviour is not replicated
@@ -494,7 +494,7 @@ def InternalJson2Elem(json):
     return json
 
 def llJson2List(json):
-    assert isstring(json)
+    json = fs(json)
     json = llStringTrim(json, 3) # STRING_TRIM
 
     if json == u'':
@@ -577,8 +577,8 @@ def llJson2List(json):
     return [InternalJson2Elem(json)]
 
 def llJsonGetValue(json, lst):
-    assert isstring(json)
-    assert islist(lst)
+    json = fs(json)
+    lst = fl(lst)
     return InternalJsonFindValue(json, lst, ReturnsToken=False)
 
 # llJsonSetValue was finally not implemented. This is a failed attempt
@@ -613,9 +613,9 @@ def llJsonGetValue(json, lst):
 
 
 def llJsonSetValue(json, lst, val):
-    assert isstring(json)
-    assert islist(lst)
-    assert isstring(val)
+    json = fs(json)
+    lst = fl(lst)
+    val = fs(val)
     if lst == []:
         # [] replaces the entire string no matter if it was invalid
         if val == JSON_DELETE:
@@ -631,16 +631,16 @@ def llJsonSetValue(json, lst, val):
 '''
 
 def llJsonValueType(json, lst):
-    assert isstring(json)
-    assert islist(lst)
+    json = fs(json)
+    lst = fl(lst)
     ret = InternalJsonFindValue(json, lst, ReturnsToken=True)
     if ret == JSON_INVALID:
         return ret
     return ret[2]
 
 def llList2Json(kind, lst):
-    assert isstring(kind)
-    assert islist(lst)
+    kind = fs(kind)
+    lst = fl(lst)
 
     if kind == JSON_OBJECT:
         ret = u'{'

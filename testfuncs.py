@@ -1381,9 +1381,10 @@ def do_tests():
     test('llList2CSV(llParseStringKeepNulls(u"1abc2ab3abc4",[u"ab"],[u"ab"]))',
                 u'1, c2, 3, c4')
     test('llParseStringKeepNulls(u"",[],[])', [u""])
-    test('llParseStringKeepNulls(u"",[],[""])', [u""])
-    test('llParseStringKeepNulls(u"",[""],[])', [u""])
-    test('llParseStringKeepNulls(u"",[""],[""])', [u""])
+    shouldexcept('llParseStringKeepNulls(u"",[],[""])', ELSLInvalidType)
+    test('llParseStringKeepNulls(u"",[],[u""])', [u""])
+    test('llParseStringKeepNulls(u"",[u""],[])', [u""])
+    test('llParseStringKeepNulls(u"",[u""],[u""])', [u""])
     test('llParseString2List(u"",[],[])', [])
     test('llParseString2List(u"",[],[u""])', [])
     test('llParseString2List(u"",[u""],[])', [])
@@ -1592,7 +1593,7 @@ def do_tests():
     test(r'llJsonGetValue(u"{\"a\":[1],\"a\":[2],\"a\":[3]}", [u"a",0])', u'3')
     test(r'llJsonGetValue(u"{\"a\":[2,3,[4]],\"a\":1}", [u"a", 2, 0])', JSON_INVALID)
 
-    test(r'llJsonGetValue(u"{\"a\":1,}",["a"])', JSON_INVALID)
+    test(r'llJsonGetValue(u"{\"a\":1,}",[u"a"])', JSON_INVALID)
 
 
     test(r'llJsonGetValue(u"[3,4,5,[6,7,8],:9,10]", [1])', JSON_INVALID) # *ing crap! ALL entries are tested before the result is returned...
