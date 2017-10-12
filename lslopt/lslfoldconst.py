@@ -122,6 +122,16 @@ class foldconst(object):
                 return True
         return False
 
+    def CompareTrees(self, node1, node2):
+        """Try to compare two subtrees to see if they are equivalent."""
+        # They MUSt be SEF
+        if 'SEF' not in node1 or 'SEF' not in node2:
+            return False
+        # So far it's only accepted if both are identifiers.
+        return (node1['nt'] == node2['nt'] == 'IDENT'
+                and node1['name'] == node2['name']
+                and node1['scope'] == node2['scope'])
+
     def FoldStmt(self, parent, index):
         """Simplify a statement."""
         node = parent[index]
@@ -574,7 +584,7 @@ class foldconst(object):
                     else:
                         result = lslfuncs.less(op1, op2)
                     if nt in ('>=', '<='):
-                        result = 1-result
+                        result = 1 - result
                 elif nt == '|':
                     result = op1 | op2
                 elif nt == '^':
@@ -985,6 +995,33 @@ class foldconst(object):
                         # a&0  ->  0 if a is SEF
                         if 'SEF' in child[a]:
                             parent[index] = child[b]
+
+                # Apply boolean distributivity
+                opposite = '&' if nt == '|' else '|'
+                if child[0]['nt'] == child[1]['nt'] == opposite:
+                    left = child[0]['ch']
+                    right = child[1]['ch']
+                    for c, d in ((0, 0), (0, 1), (1, 0), (1, 1)):
+                        if self.CompareTrees(left[c], right[d]):
+                            child[1]['nt'] = nt
+                            nt = node['nt'] = opposite
+                            opposite = child[1]['nt']
+                            right[d] = left[1 - c]
+                            child[0] = left[c]
+                            break
+
+                # Apply absorption, possibly after distributivity
+                if child[0]['nt'] == opposite or child[1]['nt'] == opposite:
+                    c = 0 if child[1]['nt'] == opposite else 1
+                    for d in (0, 1):
+                        if (self.CompareTrees(child[c], child[1 - c]['ch'][d])
+                            and 'SEF' in child[1 - c]['ch'][1 - d]
+                           ):
+                            node = parent[index] = child[c]
+                            nt = node['nt']
+                            child = node['ch'] if 'ch' in node else None
+                            break
+
                 return
 
             if nt == '^':
