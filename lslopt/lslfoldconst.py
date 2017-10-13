@@ -242,6 +242,42 @@ class foldconst(object):
             self.FoldCond(parent, index, ParentIsNegation)
             return
 
+        # Specific optimization to catch a bitwise test appearing frequently.
+        # If b and c are nonzero constant powers of two:
+        #   !(a & b) | !(a & c)  ->  ~(a|~(b|c))
+        # e.g. if (a & 4  &&  a & 8)  ->  if (!~(a|-13))
+        if (nt == '|'
+            and child[0]['nt'] == '!' and child[0]['ch'][0]['nt'] == '&'
+            and child[1]['nt'] == '!' and child[1]['ch'][0]['nt'] == '&'
+           ):
+            and1 = child[0]['ch'][0]['ch']
+            and2 = child[1]['ch'][0]['ch']
+            a, b, c, d = 0, 1, 0, 1
+            if and1[b]['nt'] != 'CONST':
+                a, b = b, a
+            if and2[d]['nt'] != 'CONST':
+                c, d = d, c
+            if and1[b]['nt'] == and2[d]['nt'] == 'CONST':
+                val1 = and1[b]['value']
+                val2 = and2[d]['value']
+                if (val1 and val2
+                    # power of 2
+                    and ((val1 & (val1 - 1)) == 0 or val1 == -2147483648)
+                    and ((val2 & (val2 - 1)) == 0 or val2 == -2147483648)
+                    and self.CompareTrees(and1[a], and2[c])
+                   ):
+                    # Check passed
+                    child[0] = and1[a]
+                    child[1] = and1[b]
+                    child[1]['value'] = ~(val1 | val2)
+                    parent[index] = {'nt':'~', 't':'integer', 'ch':[node]}
+                    if 'SEF' in node:
+                        parent[index]['SEF'] = True
+                    self.FoldCond(parent, index, ParentIsNegation)
+                    return
+                del val1, val2
+            del a, b, c, d, and1, and2
+
         if nt in self.binary_ops and child[0]['t'] == child[1]['t'] == 'integer':
             if nt == '!=':
                 if child[0]['nt'] == 'CONST' and child[0]['value'] == 1 \
