@@ -255,6 +255,8 @@ def S32(val):
 
 def zstr(s):
     if not isinstance(s, unicode):
+        # This can only be the result of an internal error; call attention to
+        # it by raising ELSLInvalidType instead of ELSLTypeMismatch.
         raise ELSLInvalidType
 
     zi = s.find(u'\0')
@@ -265,13 +267,13 @@ def zstr(s):
 def fi(x):
     """Force x to be an int"""
     if type(x) != int or not (-2147483648 <= x <= 2147483647):
-        raise ELSLInvalidType
+        raise ELSLTypeMismatch
     return x
 
 def ff(x):
     """Force x to be a float"""
     if int != type(x) != float:
-        raise ELSLInvalidType
+        raise ELSLTypeMismatch
     if type(x) != float:
         return InternalTypecast(x, float, False, True)
     return F32(x)
@@ -279,7 +281,7 @@ def ff(x):
 def fk(k):
     """Force k to be a key"""
     if unicode != type(k) != Key:
-        raise ELSLInvalidType
+        raise ELSLTypeMismatch
     if type(k) != Key:
         k = InternalTypecast(k, Key, False, False)
     return k
@@ -287,7 +289,7 @@ def fk(k):
 def fs(s):
     """Force s to be a string"""
     if unicode != type(s) != Key:
-        raise ELSLInvalidType
+        raise ELSLTypeMismatch
     if type(s) != unicode:
         s = InternalTypecast(s, unicode, False, False)
     return s
@@ -296,7 +298,7 @@ def fl(L):
     """Force l to be a list, and its elements to have sane types."""
     Lorig = L
     if type(L) != list:
-        raise ELSLInvalidType
+        raise ELSLTypeMismatch
     for i in xrange(len(L)):
         t = type(L[i])
         if t not in Types:
@@ -315,14 +317,14 @@ def fl(L):
 
 def q2f(q):
     if type(q) != Quaternion:
-        raise ELSLInvalidType
+        raise ELSLTypeMismatch
     if type(q[0]) == type(q[1]) == type(q[2]) == type(q[3]) == float:
         return q
     return Quaternion((ff(q[0]), ff(q[1]), ff(q[2]), ff(q[3])))
 
 def v2f(v):
     if type(v) != Vector:
-        raise ELSLInvalidType
+        raise ELSLTypeMismatch
     if type(v[0]) == type(v[1]) == type(v[2]) == float:
         return v
     return Vector((ff(v[0]), ff(v[1]), ff(v[2])))
@@ -1169,8 +1171,10 @@ def llGetListEntryType(lst, pos):
     try:
         return Types[type(lst[pos])]
     except IndexError:
+        # list index out of bounds
         return 0 # TYPE_INVALID
     except KeyError:
+        # type of element not in Types
         raise ELSLInvalidType
 
 def llGetListLength(lst):
