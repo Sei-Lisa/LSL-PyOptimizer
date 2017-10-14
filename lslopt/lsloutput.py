@@ -21,7 +21,7 @@ import lslfuncs
 import lslcommon
 from lslcommon import Key, Vector, Quaternion
 from lslparse import warning
-import math
+from math import copysign
 
 class outscript(object):
 
@@ -71,19 +71,17 @@ class outscript(object):
         if tvalue == float:
             if self.optfloats and value.is_integer() and -2147483648.0 <= value < 2147483648.0:
                 if self.globalmode and not self.listmode:
-                    if value == 0 and math.copysign(1, value) == -1:
+                    if value == 0 and copysign(1, value) == -1:
                         return '-0.'
                     return str(int(value))
                 elif not self.globalmode:
                     # Important inside lists!!
-                    if value == 0 and math.copysign(1, value) == -1:
+                    if value == 0 and copysign(1, value) == -1:
                         return '(-(float)0)'
                     return '((float)' + str(int(value)) + ')'
             s = repr(value)
             if s == 'nan':
-                if math.copysign(1, value) < 0: # Indeterminate
-                    return '(1e40*0)'
-                return '((float)"NaN")' # this shouldn't appear in globals
+                return '(1e40*0)' if copysign(1, value) < 0 else '(-1e40*0)'
             if s == 'inf':
                 return '1e40'
             if s == '-inf':
