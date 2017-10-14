@@ -680,14 +680,14 @@ def mul(a, b, f32=True):
         if tb in (int, float):
             if ta == tb == int:
                 return S32(a*b)
+            if math.isnan(a) and math.isnan(b) and math.copysign(1, a) != math.copysign(1, b):
+                return NaN
             return F32(ff(a)*ff(b), f32)
         if tb != Vector:
             # scalar * quat is not defined
             raise ELSLTypeMismatch
         # scalar * vector
-        a = ff(a)
-        b = v2f(b)
-        return Vector(F32((a*b[0], a*b[1], a*b[2]), f32))
+        a, ta, b, tb = b, tb, a, ta  # turn into vector * scalar
 
     if ta == Quaternion:
         # quat * scalar and quat * vector are not defined
@@ -707,7 +707,7 @@ def mul(a, b, f32=True):
     if tb in (int, float):
         a = v2f(a)
         b = ff(b)
-        return Vector(F32((a[0]*b, a[1]*b, a[2]*b), f32))
+        return Vector(F32((mul(a[0], b), mul(a[1], b), mul(a[2], b)), f32))
 
     if tb == Vector:
         # scalar product
@@ -763,8 +763,12 @@ def div(a, b, f32=True):
         if ta == Vector:
             a = v2f(a)
             b = ff(b)
-            return Vector(F32((a[0]/b, a[1]/b, a[2]/b), f32))
-    if tb == Quaternion: # division by a rotation is multiplication by the conjugate of the rotation
+            return Vector(F32(tuple(NaN if math.isnan(x) and math.isnan(b)
+                                           and math.copysign(1, x)
+                                               != math.copysign(1, b)
+                                           else x/b
+                                           for x in a), f32))
+    if tb == Quaternion:  # division by a rotation is multiplication by the conjugate of the rotation
         # defer the remaining type checks to mul()
         return mul(a, Quaternion((-b[0],-b[1],-b[2],b[3])), f32)
     raise ELSLTypeMismatch
