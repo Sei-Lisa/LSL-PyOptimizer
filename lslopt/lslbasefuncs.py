@@ -826,6 +826,8 @@ def less(a, b):
 def cond(x):
     """Test whether x evaluates to True in a condition (if, while, for, ...)"""
     tx = type(x)
+    if tx not in Types:
+        raise ELSLInvalidType
     if tx == Key:
         if x == NULL_KEY or len(x) != 36:
             return False
