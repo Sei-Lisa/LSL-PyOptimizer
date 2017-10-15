@@ -362,7 +362,8 @@ class deadcode(object):
         """Recursively checks if the children are used, deleting those that are
         not.
         """
-        if 'ch' not in curnode:
+        if 'ch' not in curnode or (curnode['nt'] == 'DECL'
+                                   and curnode['scope'] == 0):
             return
         # NOTE: Should not depend on 'Loc', since the nodes that are the
         # destination of 'Loc' are renumbered as we delete stuff from globals.
