@@ -223,8 +223,19 @@ class deadcode(object):
             node['X'] = True
             if child is not None:
                 if 'orig' in child[0]:
-                    self.MarkReferences(child[0]['orig'])
-                    child[0]['X'] = child[0]['orig']['X']
+                    orig = child[0]['orig']
+                    self.MarkReferences(orig)
+                    child[0]['X'] = orig['X']
+                    if orig['nt'] == 'LIST':
+                        # Add fake writes to variables used in list elements in
+                        # 'orig', so they don't get deleted (Issue #3)
+                        for subnode in orig['ch']:
+                            if subnode['nt'] == 'IDENT':
+                                # can only happen in globals
+                                assert subnode['scope'] == 0
+                                sym = self.symtab[0][subnode['name']]
+                                sym['W'] = False
+                                self.tree[sym['Loc']]['X'] = True
                 else:
                     self.MarkReferences(child[0])
             return True
