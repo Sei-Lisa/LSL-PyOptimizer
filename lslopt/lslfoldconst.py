@@ -1125,6 +1125,7 @@ class foldconst(object):
                             parent[index] = child[b]
 
                 # Apply boolean distributivity
+                applied = False
                 opposite = '&' if nt == '|' else '|'
                 if child[0]['nt'] == child[1]['nt'] == opposite:
                     left = child[0]['ch']
@@ -1136,6 +1137,7 @@ class foldconst(object):
                             opposite = child[1]['nt']
                             right[d] = left[1 - c]
                             child[0] = left[c]
+                            applied = True
                             break
 
                 # Apply absorption, possibly after distributivity
@@ -1148,7 +1150,12 @@ class foldconst(object):
                             node = parent[index] = child[c]
                             nt = node['nt']
                             child = node['ch'] if 'ch' in node else None
+                            applied = True
                             break
+
+                if applied:
+                    # Re-fold
+                    self.FoldTree(parent, index)
 
                 return
 
