@@ -124,7 +124,10 @@ class foldconst(object):
 
     def CompareTrees(self, node1, node2):
         """Try to compare two subtrees to see if they are equivalent."""
-        # They MUSt be SEF
+        # They MUST be SEF
+        # FIXME: They must also be stable, i.e. return the same value
+        #        in two successive calls with a certain degree of certainty.
+        #        Counterexamples are llFrand, llGetTimestamp.
         if 'SEF' not in node1 or 'SEF' not in node2:
             return False
         # So far it's only accepted if both are identifiers or function calls,
@@ -985,6 +988,42 @@ class foldconst(object):
                             return
                 return
 
+            if nt == '==':
+                if child[0]['t'] == child[1]['t'] == 'integer':
+                    # Deal with operands in any order
+                    a, b = 0, 1
+                    if child[b]['nt'] != 'CONST':
+                        a, b = 1, 0
+
+                    if child[b]['nt'] == 'CONST':
+                        if child[b]['value'] in (-1, 0, 1):
+                            node = child[a]
+                            SEF = 'SEF' in node
+                            if child[b]['value'] == -1:
+                                node = {'nt':'~', 't':'integer', 'ch':[node]}
+                                if SEF: node['SEF'] = True
+                            elif child[b]['value'] == 1:
+                                node = {'nt':'NEG', 't':'integer', 'ch':[node]}
+                                if SEF: node['SEF'] = True
+                                node = {'nt':'~', 't':'integer', 'ch':[node]}
+                                if SEF: node['SEF'] = True
+                            node = parent[index] = {'nt':'!', 't':'integer',
+                                                    'ch':[node]}
+                            if SEF: node['SEF'] = True
+                            del child
+                            self.FoldTree(parent, index)
+                            return
+                # While this is tempting, it can only be done for identifiers.
+                # Counterexample: llFrand(1) == llFrand(1) would
+                # almost always return FALSE. After CompareTrees is fixed,
+                # we can reinstate it.
+                #if self.CompareTrees(child[0], child[1]):
+                #    # a == a  ->  1
+                #    parent[index] = {'nt':'CONST', 't':'integer', 'value':1,
+                #                     'SEF':True}
+                #    return
+                return
+
             if nt in ('<=', '>=') or nt == '!=' and child[0]['t'] != 'list':
                 # Except for list != list, all these comparisons are compiled
                 # as !(a>b) etc. so we transform them here in order to reduce
@@ -997,7 +1036,8 @@ class foldconst(object):
 
             if nt == '>':
                 # Invert the inequalities to avoid doubling the cases to check.
-                # a>b  -->   b<a
+                # a>b  ->   b<a
+                # FIXME: This is only possible if at most one is non-SEF.
                 nt = node['nt'] = '<'
                 child[1], child[0] = child[0], child[1]
                 # fall through to check for '<'
