@@ -271,86 +271,6 @@ class foldconst(object):
             self.FoldCond(parent, index, ParentIsNegation)
             return
 
-        if nt == '|':
-            # In FoldCond(a | b), both a and b are conds themselves.
-            self.FoldCond(child, 0)
-            self.FoldCond(child, 1)
-
-        # Specific optimization to catch a bitwise test appearing frequently.
-        # If b and c are nonzero constant powers of two:
-        #   !(a & b) | !(a & c)  ->  ~(a|~(b|c))
-        # e.g. if (a & 4  &&  a & 8)  ->  if (!~(a|-13))
-        if (nt == '|'
-            and child[0]['nt'] == '!' and child[0]['ch'][0]['nt'] == '&'
-            and child[1]['nt'] == '!' and child[1]['ch'][0]['nt'] == '&'
-           ):
-            and1 = child[0]['ch'][0]['ch']
-            and2 = child[1]['ch'][0]['ch']
-            a, b, c, d = 0, 1, 0, 1
-            if and1[b]['nt'] != 'CONST':
-                a, b = b, a
-            if and2[d]['nt'] != 'CONST':
-                c, d = d, c
-            if and1[b]['nt'] == and2[d]['nt'] == 'CONST':
-                val1 = and1[b]['value']
-                val2 = and2[d]['value']
-                if (val1 and val2
-                    # power of 2
-                    and ((val1 & (val1 - 1)) == 0 or val1 == -2147483648)
-                    and ((val2 & (val2 - 1)) == 0 or val2 == -2147483648)
-                    and self.CompareTrees(and1[a], and2[c])
-                   ):
-                    # Check passed
-                    child[0] = and1[a]
-                    child[1] = and1[b]
-                    child[1]['value'] = ~(val1 | val2)
-                    parent[index] = {'nt':'~', 't':'integer', 'ch':[node]}
-                    if 'SEF' in node:
-                        parent[index]['SEF'] = True
-                    self.FoldCond(parent, index, ParentIsNegation)
-                    return
-                del val1, val2
-            del a, b, c, d, and1, and2
-
-        if nt == '|':
-            # Absorb further flags, to allow chaining of &&
-            # If ~r and s are constants, and s is a power of two:
-            #   (!~(x|~r) && x&s)  ->  !~(x|(~r&~s))
-            # This is implemented as:
-            #   ~(x|~r) | !(x&s)  ->  ~(x|~(r|s))
-            # because that's the intermediate result after conversion of &&.
-            # a and b are going to be the children of the main |
-            # a is going to be child that has the ~
-            # b is the other child (with the !)
-            # c is the child of ~ which has x
-            # d is the child of ~ with the constant ~r
-            # e is the child of ! which has x
-            # f is the child of ! with the constant s
-            a, b = 0, 1
-            if child[a]['nt'] != '~':
-               a, b = b, a
-            c, d = 0, 1
-            if child[a]['nt'] == '~' and child[a]['ch'][0]['nt'] == '|':
-                if child[a]['ch'][0]['ch'][d]['nt'] != 'CONST':
-                    c, d = d, c
-            e, f = 0, 1
-            if child[b]['nt'] == '!' and child[b]['ch'][0]['nt'] == '&':
-                if child[b]['ch'][0]['ch'][f]['nt'] != 'CONST':
-                    e, f = f, e
-            # All pointers are ready to check applicability.
-            if (child[a]['nt'] == '~' and child[a]['ch'][0]['nt'] == '|'
-                and child[b]['nt'] == '!' and child[b]['ch'][0]['nt'] == '&'
-               ):
-                ch1 = child[a]['ch'][0]['ch']
-                ch2 = child[b]['ch'][0]['ch']
-                if (ch1[d]['nt'] == 'CONST' and ch2[f]['nt'] == 'CONST'
-                    and (ch2[f]['value'] & (ch2[f]['value'] - 1)) == 0
-                   ):
-                    if self.CompareTrees(ch1[c], ch2[e]):
-                        # We're in that case. Apply optimization.
-                        parent[index] = child[a]
-                        ch1[d]['value'] &= ~ch2[f]['value']
-                        return
 
         if nt in self.binary_ops and child[0]['t'] == child[1]['t'] == 'integer':
             if nt == '!=':
@@ -384,10 +304,93 @@ class foldconst(object):
                 # Put constant in child[b] if present
                 if child[b]['nt'] != 'CONST':
                     a, b = 1, 0
-                if child[b]['nt'] == 'CONST' and child[b]['value'] and 'SEF' in child[a]:
-                    parent[index] = child[b]
-                    child[b]['value'] = -1
+                if (child[b]['nt'] == 'CONST' and child[b]['value']
+                    and 'SEF' in child[a]
+                   ):
+                    node = parent[index] = child[b]
+                    node['value'] = -1
                     return
+                del a, b
+
+                # Specific optimization to catch a bitwise test appearing frequently.
+                # If b and c are nonzero constant powers of two:
+                #   !(a & b) | !(a & c)  ->  ~(a|~(b|c))
+                # e.g. if (a & 4  &&  a & 8)  ->  if (!~(a|-13))
+                if (child[0]['nt'] == '!' and child[0]['ch'][0]['nt'] == '&'
+                    and child[1]['nt'] == '!' and child[1]['ch'][0]['nt'] == '&'
+                   ):
+                    and1 = child[0]['ch'][0]['ch']
+                    and2 = child[1]['ch'][0]['ch']
+                    a, b, c, d = 0, 1, 0, 1
+                    if and1[b]['nt'] != 'CONST':
+                        a, b = b, a
+                    if and2[d]['nt'] != 'CONST':
+                        c, d = d, c
+                    if and1[b]['nt'] == and2[d]['nt'] == 'CONST':
+                        val1 = and1[b]['value']
+                        val2 = and2[d]['value']
+                        if (val1 and val2
+                            # power of 2
+                            and (val1 & (val1 - 1) & 0xFFFFFFFF) == 0
+                            and (val2 & (val2 - 1) & 0xFFFFFFFF) == 0
+                            and self.CompareTrees(and1[a], and2[c])
+                           ):
+                            # Check passed
+                            child[0] = and1[a]
+                            child[1] = and1[b]
+                            child[1]['value'] = ~(val1 | val2)
+                            parent[index] = {'nt':'~', 't':'integer',
+                                             'ch':[node]}
+                            if 'SEF' in node:
+                                parent[index]['SEF'] = True
+                            self.FoldCond(parent, index, ParentIsNegation)
+                            return
+                        del val1, val2
+                    del a, b, c, d, and1, and2
+
+                if nt == '|':
+                    # Absorb further flags, to allow chaining of &&
+                    # If ~r and s are constants, and s is a power of two:
+                    #   (!~(x|~r) && x&s)  ->  !~(x|(~r&~s))
+                    # This is implemented as:
+                    #   ~(x|~r) | !(x&s)  ->  ~(x|~(r|s))
+                    # because that's the intermediate result after conversion of &&.
+                    # a and b are going to be the children of the main |
+                    # a is going to be child that has the ~
+                    # b is the other child (with the !)
+                    # c is the child of ~ which has x
+                    # d is the child of ~ with the constant ~r
+                    # e is the child of ! which has x
+                    # f is the child of ! with the constant s
+                    a, b = 0, 1
+                    if child[a]['nt'] != '~':
+                       a, b = b, a
+                    c, d = 0, 1
+                    if child[a]['nt'] == '~' and child[a]['ch'][0]['nt'] == '|':
+                        if child[a]['ch'][0]['ch'][d]['nt'] != 'CONST':
+                            c, d = d, c
+                    e, f = 0, 1
+                    if child[b]['nt'] == '!' and child[b]['ch'][0]['nt'] == '&':
+                        if child[b]['ch'][0]['ch'][f]['nt'] != 'CONST':
+                            e, f = f, e
+                    # All pointers are ready to check applicability.
+                    if (child[a]['nt'] == '~' and child[a]['ch'][0]['nt'] == '|'
+                        and child[b]['nt'] == '!' and child[b]['ch'][0]['nt'] == '&'
+                       ):
+                        ch1 = child[a]['ch'][0]['ch']
+                        ch2 = child[b]['ch'][0]['ch']
+                        if (ch1[d]['nt'] == 'CONST' and ch2[f]['nt'] == 'CONST'
+                            and (ch2[f]['value'] & (ch2[f]['value'] - 1)) == 0
+                           ):
+                            if self.CompareTrees(ch1[c], ch2[e]):
+                                # We're in that case. Apply optimization.
+                                parent[index] = child[a]
+                                ch1[d]['value'] &= ~ch2[f]['value']
+                                return
+                        del ch1, ch2
+
+                    del a, b, c, d, e, f
+
 
                 # Check if the operands are a negation ('!') or can be inverted
                 # without adding more than 1 byte and are boolean.
