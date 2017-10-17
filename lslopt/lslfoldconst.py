@@ -286,6 +286,46 @@ class foldconst(object):
                 del val1, val2
             del a, b, c, d, and1, and2
 
+        if nt == '|':
+            # Absorb further flags, to allow chaining of &&
+            # If ~r and s are constants, and s is a power of two:
+            #   (!~(x|~r) && x&s)  ->  !~(x|(~r&~s))
+            # This is implemented as:
+            #   ~(x|~r) | !(x&s)  ->  ~(x|~(r|s))
+            # because that's the intermediate result after conversion of &&.
+            # a and b are going to be the children of the main |
+            # a is going to be child that has the ~
+            # b is the other child (with the !)
+            # c is the child of ~ which has x
+            # d is the child of ~ with the constant ~r
+            # e is the child of ! which has x
+            # f is the child of ! with the constant s
+            a, b = 0, 1
+            if child[a]['nt'] != '~':
+               a, b = b, a
+            c, d = 0, 1
+            if child[a]['nt'] == '~' and child[a]['ch'][0]['nt'] == '|':
+                if child[a]['ch'][0]['ch'][d]['nt'] != 'CONST':
+                    c, d = d, c
+            e, f = 0, 1
+            if child[b]['nt'] == '!' and child[b]['ch'][0]['nt'] == '&':
+                if child[b]['ch'][0]['ch'][f]['nt'] != 'CONST':
+                    e, f = f, e
+            # All pointers are ready to check applicability.
+            if (child[a]['nt'] == '~' and child[a]['ch'][0]['nt'] == '|'
+                and child[b]['nt'] == '!' and child[b]['ch'][0]['nt'] == '&'
+               ):
+                ch1 = child[a]['ch'][0]['ch']
+                ch2 = child[b]['ch'][0]['ch']
+                if (ch1[d]['nt'] == 'CONST' and ch2[f]['nt'] == 'CONST'
+                    and (ch2[f]['value'] & (ch2[f]['value'] - 1)) == 0
+                   ):
+                    if self.CompareTrees(ch1[c], ch2[e]):
+                        # We're in that case. Apply optimization.
+                        parent[index] = child[a]
+                        ch1[d]['value'] &= ~ch2[f]['value']
+                        return
+
         if nt in self.binary_ops and child[0]['t'] == child[1]['t'] == 'integer':
             if nt == '!=':
                 if child[0]['nt'] == 'CONST' and child[0]['value'] == 1 \
