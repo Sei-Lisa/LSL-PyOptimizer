@@ -379,7 +379,8 @@ class foldconst(object):
                     ch1 = child[a]['ch'][0]['ch']
                     ch2 = child[b]['ch'][0]['ch']
                     if (ch1[d]['nt'] == 'CONST' and ch2[f]['nt'] == 'CONST'
-                        and (ch2[f]['value'] & (ch2[f]['value'] - 1)) == 0
+                        and (ch2[f]['value'] & (ch2[f]['value'] - 1)
+                             & 0xFFFFFFFF) == 0
                        ):
                         if self.CompareTrees(ch1[c], ch2[e]):
                             # We're in that case. Apply optimization.
