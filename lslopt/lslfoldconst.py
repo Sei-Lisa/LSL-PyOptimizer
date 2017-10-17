@@ -245,6 +245,11 @@ class foldconst(object):
             self.FoldCond(parent, index, ParentIsNegation)
             return
 
+        if nt == '|':
+            # In FoldCond(a | b), both a and b are conds themselves.
+            self.FoldCond(child, 0)
+            self.FoldCond(child, 1)
+
         # Specific optimization to catch a bitwise test appearing frequently.
         # If b and c are nonzero constant powers of two:
         #   !(a & b) | !(a & c)  ->  ~(a|~(b|c))
