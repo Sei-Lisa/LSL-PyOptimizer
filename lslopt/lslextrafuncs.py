@@ -142,17 +142,27 @@ def llDetectedTouchPos(idx, event=None):
 
 def llDetectedTouchST(idx, event=None):
     idx = fi(idx)
-    if 0 <= idx <= 15 and (event in TouchEvents or event is None):
+    if 0 <= idx <= 15 and (event is None or event in DetectionEvents):
+        # In detection events that are not touch events, it returns
+        # TOUCH_INVALID_TEXCOORD if idx < num, else ZERO_VECTOR,
+        # but we only know that num >= 1.
+        if idx == 0 and event is not None and event not in TouchEvents:
+            # index 0 always exists, so we know the result
+            return TOUCH_INVALID_TEXCOORD
         raise ELSLCantCompute
-    return TOUCH_INVALID_TEXCOORD if event in DetectionEvents \
-        and 0 <= idx <= 15  else ZERO_VECTOR
+    return ZERO_VECTOR
 
 def llDetectedTouchUV(idx, event=None):
     idx = fi(idx)
-    if 0 <= idx <= 15 and (event in TouchEvents or event is None):
+    if 0 <= idx <= 15 and (event is None or event in DetectionEvents):
+        # In detection events that are not touch events, it returns
+        # TOUCH_INVALID_TEXCOORD if idx < num, else ZERO_VECTOR,
+        # but we only know that num >= 1.
+        if idx == 0 and event is not None and event not in TouchEvents:
+            # index 0 always exists, so we know the result
+            return TOUCH_INVALID_TEXCOORD
         raise ELSLCantCompute
-    return TOUCH_INVALID_TEXCOORD if event in DetectionEvents \
-        and 0 <= idx <= 15 else ZERO_VECTOR
+    return ZERO_VECTOR
 
 def llDetectedType(idx, event=None):
     idx = fi(idx)
