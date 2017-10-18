@@ -61,6 +61,13 @@ def llAvatarOnLinkSitTarget(link):
         return Key(NULL_KEY)
     raise ELSLCantCompute
 
+# llClearPrimMedia always has side effects (emits errors for every face that
+# is not supported)
+def llClearLinkMedia(link, face):
+    if link > 255 or link == -2147483648:
+        return 0
+    raise ELSLCantCompute
+
 def llDetectedGrab(idx, event=None):
     idx = fi(idx)
     if 0 <= idx <= 15 and (event == 'touch' or event is None):
