@@ -78,7 +78,7 @@ TOUCH_INVALID_TEXCOORD = Vector((-1.0, -1.0, 0.0))
 
 Infinity = float('inf')
 Indet = Infinity * 0
-NaN = -Indet # Don't use float("nan") - Windows gets upset.
+NaN = -Indet  # Don't use float("nan") - Windows gets upset.
 
 class ELSLTypeMismatch(Exception):
     def __init__(self):
@@ -110,13 +110,13 @@ class ELSONotSupported(Exception):
 # * LSL list -> Python list
 
 Types = {
-        int:            1, # TYPE_INTEGER
-        float:          2, # TYPE_FLOAT
-        unicode:        3, # TYPE_STRING
-        Key:            4, # TYPE_KEY
-        Vector:         5, # TYPE_VECTOR
-        Quaternion:     6, # TYPE_ROTATION
-        list:           0, # TYPE_INVALID
+        int:            1,  # TYPE_INTEGER
+        float:          2,  # TYPE_FLOAT
+        unicode:        3,  # TYPE_STRING
+        Key:            4,  # TYPE_KEY
+        Vector:         5,  # TYPE_VECTOR
+        Quaternion:     6,  # TYPE_ROTATION
+        list:           0,  # TYPE_INVALID
         }
 
 # Utility functions
@@ -124,10 +124,10 @@ Types = {
 def F32(f, f32=True):
     """Truncate a float to have a precision equivalent to IEEE single"""
 
-    if not f32: # don't truncate
+    if not f32:  # don't truncate
         return f
 
-    if isinstance(f, tuple): # vector, quaternion
+    if isinstance(f, tuple):  # vector, quaternion
         return f.__class__(F32(i) for i in f)
 
     # Alternative to the big blurb below. This relies on the machine using IEEE-754, though.
@@ -221,7 +221,7 @@ def F32(f, f32=True):
 #    if f < 0.000000000000000000000000000000000000011754943508222875079687365372222456778186655567720875215087517062784172594547271728515625:
 #        # Denormal range
 #        f *= 713623846352979940529142984724747568191373312.0
-#        e = 0.00000000000000000000000000000000000000000000140129846432481707092372958328991613128026194187651577175706828388979108268586060148663818836212158203125 # 2^-149
+#        e = 0.00000000000000000000000000000000000000000000140129846432481707092372958328991613128026194187651577175706828388979108268586060148663818836212158203125  # 2^-149
 #    else:
 #        e = 1.0
 #        # This first loop is an optimization to get closer to the destination faster for very small numbers
@@ -335,13 +335,13 @@ def f2s(val, DP=6):
     if math.isnan(val):
         return u'NaN'
     if lslcommon.LSO or val == 0.:
-        return u'%.*f' % (DP, val) # deals with -0.0 too
+        return u'%.*f' % (DP, val)  # deals with -0.0 too
 
     # Format according to Mono rules (7 decimals after the DP, found experimentally)
     s = u'%.*f' % (DP+7, val)
 
     if s[:DP+3] == u'-0.' + '0'*DP and s[DP+3] < u'5':
-        return u'0.' + '0'*DP # underflown negatives return 0.0 except for -0.0 dealt with above
+        return u'0.' + '0'*DP  # underflown negatives return 0.0 except for -0.0 dealt with above
 
     # Separate the sign
     sgn = u'-' if s[0] == u'-' else u''
@@ -368,42 +368,38 @@ def f2s(val, DP=6):
     if s[i if i != dot else i+1] >= u'5':
         # Rounding - increment s[:i] storing result into new_s
         new_s = u''
-        ci = i-1 # carry index
+        ci = i-1  # carry index
         while ci >= 0 and s[ci] == u'9':
             new_s = u'0' + new_s
             ci -= 1
             if ci == dot:
-                ci -= 1 # skip over the dot
-                new_s = u'.' + new_s # but add it to new_s
+                ci -= 1  # skip over the dot
+                new_s = u'.' + new_s  # but add it to new_s
         if ci < 0:
-            new_s = u'1' + new_s # 9...9 -> 10...0
+            new_s = u'1' + new_s  # 9...9 -> 10...0
         else:
             # increment s[ci] e.g. 43999 -> 44000
-            new_s = s[:ci] + chr(ord(s[ci])+1) + new_s
+            new_s = s[:ci] + chr(ord(s[ci]) + 1) + new_s
     else:
         new_s = s[:i]
 
     if i <= dot:
-        return sgn + new_s + u'0'*(dot-i) + u'.' + u'0'*DP
-    return sgn + new_s + u'0'*(dot+1+DP-i)
+        return sgn + new_s + u'0' * (dot - i) + u'.' + u'0' * DP
+    return sgn + new_s + u'0' * (dot + 1 + DP - i)
 
 def vr2s(v, DP=6):
-    if type(v) == Vector:
-        return u'<'+f2s(v[0],DP)+u', '+f2s(v[1],DP)+u', '+f2s(v[2],DP)+u'>'
-    return u'<'+f2s(v[0],DP)+u', '+f2s(v[1],DP)+u', '+f2s(v[2],DP)+u', '+f2s(v[3],DP)+u'>'
-
+    assert len(v) == (3 if type(v) == Vector else 4)
+    return u'<' + ', '.join(f2s(x, DP) for x in v) + u'>'
 
 def qnz(q):
-    if all(x == 0. for x in q):
-        return Quaternion((0.,0.,0.,1.))
-    return q
+    return Quaternion((0.,0.,0.,1.)) if all(x == 0. for x in q) else q
 
 def qnorm(q):
     q = qnz(q)
     mag2 = math.fsum((q[0]*q[0], q[1]*q[1], q[2]*q[2], q[3]*q[3]))
     # Threshold for renormalization
-    eps_h = 1.0000021457672119140625 #float.fromhex('0x1.000024p0')
-    eps_l = 0.99999797344207763671875 # float.fromhex('0x1.FFFFBCp-1')
+    eps_h = 1.0000021457672119140625  # float.fromhex('0x1.000024p0')
+    eps_l = 0.99999797344207763671875  # float.fromhex('0x1.FFFFBCp-1')
     if mag2 >= eps_h or mag2 <= eps_l:
         # Renormalize
         mag2 = math.sqrt(mag2)
@@ -421,7 +417,7 @@ def InternalTypecast(val, out, InList, f32):
     if out == list:
         return [val]
 
-    if tval == int: # integer
+    if tval == int:  # integer
         val = S32(val)
         if out == int: return val
         if out == float: return F32(val, f32)
@@ -445,7 +441,7 @@ def InternalTypecast(val, out, InList, f32):
         if out == Quaternion: return val
         if out == unicode: return vr2s(val, 6 if InList else 5)
         raise ELSLTypeMismatch
-    if tval == Key: # key
+    if tval == Key:  # key
         if out == Key: return zstr(val)
         if out == unicode: return zstr(unicode(val))
         raise ELSLTypeMismatch
@@ -505,10 +501,10 @@ def InternalTypecast(val, out, InList, f32):
                     if val[i:i+1] != u',':
                         return Z
                     val = val[i+1:]
-            return out(ret) # convert type
+            return out(ret)  # convert type
 
     # To avoid mutual recursion, this was moved:
-    #if tval == list: # etc.
+    #if tval == list:  # etc.
 
     raise ELSLInvalidType
 
@@ -590,12 +586,8 @@ def InternalGetDeleteSubSequence(val, start, end, isGet):
     if end == -1: end += L
     if (start+L if start < 0 else start) > (end+L if end < 0 else end):
         # Exclusion range - get/delete from end and start
-        if isGet:
-            return val[:end+1] + val[start:]
-        return val[end+1:start]
-    if isGet:
-        return val[start:end+1]
-    return val[:start] + val[end+1:]
+        return val[:end+1] + val[start:] if isGet else val[end+1:start]
+    return val[start:end+1] if isGet else val[:start] + val[end+1:]
 
 def typecast(val, out, InList=False, f32=True):
     """Type cast an item. Calls InternalList2Strings for lists and
@@ -603,7 +595,7 @@ def typecast(val, out, InList=False, f32=True):
     """
     if type(val) == list:
         if out == list:
-            return val # NOTE: We're not duplicating it here.
+            return val  # NOTE: We're not duplicating it here.
         if out == unicode:
             return u''.join(InternalList2Strings(val))
         raise ELSLTypeMismatch
@@ -680,8 +672,10 @@ def mul(a, b, f32=True):
         if tb in (int, float):
             if ta == tb == int:
                 return S32(a*b)
-            if math.isnan(a) and math.isnan(b) and math.copysign(1, a) != math.copysign(1, b):
-                return NaN
+            if math.isnan(a) and math.isnan(b):
+                return (-NaN
+                        if math.copysign(1, a) == math.copysign(1, b) == -1
+                        else NaN)
             return F32(ff(a)*ff(b), f32)
         if tb != Vector:
             # scalar * quat is not defined
@@ -702,7 +696,7 @@ def mul(a, b, f32=True):
                                a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]), f32))
 
     if ta != Vector:
-        raise ELSLInvalidType # Should never happen at this point
+        raise ELSLInvalidType  # Should never happen at this point
 
     if tb in (int, float):
         a = v2f(a)
@@ -716,7 +710,7 @@ def mul(a, b, f32=True):
         return F32(math.fsum((a[0]*b[0], a[1]*b[1], a[2]*b[2])), f32)
 
     if tb != Quaternion:
-        raise ELSLInvalidType # Should never happen at this point
+        raise ELSLInvalidType  # Should never happen at this point
 
     # vector * quaternion: perform conjugation
     #v = mul(Quaternion((-b[0], -b[1], -b[2], b[3])), mul(Quaternion((a[0], a[1], a[2], 0.0)), b, f32=False))
@@ -729,11 +723,11 @@ def mul(a, b, f32=True):
                     a[1]*2*(b[0]*b[1]-b[2]*b[3]),
                     a[2]*2*(b[0]*b[2]+b[1]*b[3]))),
         math.fsum(( a[0]*2*(b[0]*b[1]+b[2]*b[3]),
-                   -a[1]*(b[0]*b[0]-b[1]*b[1]+b[2]*b[2]-b[3]*b[3]), # notice minus sign
+                   -a[1]*(b[0]*b[0]-b[1]*b[1]+b[2]*b[2]-b[3]*b[3]),  # notice minus sign
                     a[2]*2*(b[1]*b[2]-b[0]*b[3]))),
         math.fsum(( a[0]*2*(b[0]*b[2]-b[1]*b[3]),
                     a[1]*2*(b[1]*b[2]+b[0]*b[3]),
-                   -a[2]*(b[0]*b[0]+b[1]*b[1]-b[2]*b[2]-b[3]*b[3]))) # notice minus sign
+                   -a[2]*(b[0]*b[0]+b[1]*b[1]-b[2]*b[2]-b[3]*b[3])))  # notice minus sign
         ), f32))
 
 def div(a, b, f32=True):
@@ -751,13 +745,13 @@ def div(a, b, f32=True):
             if ta == int and tb == int:
                 # special case
                 if a == -2147483648 and b == -1:
-                    return a # this could be handled by using S32 but it's probably faster this way
+                    return a  # this could be handled by using S32 but it's probably faster this way
                 if (a < 0) ^ (b < 0):
                     # signs differ - Python rounds towards -inf, we need rounding towards 0
                     return -(a//-b)
                 return a//b
             ret = F32(ff(a)/ff(b), f32)
-            if math.isnan(ret): # A NaN result gives a math error.
+            if math.isnan(ret):  # A NaN result gives a math error.
                 raise ELSLMathError
             return ret
         if ta == Vector:
@@ -803,15 +797,13 @@ def compare(a, b, Eq = True):
             ret = a == b
         else:
             ret = ff(a) == ff(b)
-        return int(ret) if Eq else 1-ret
+        return int(ret == Eq)
     if ta in (unicode, Key) and tb in (unicode, Key):
-        ret = 0 if a == b else 1 if a > b or not lslcommon.LSO else -1
+        ret = 0 if a == b else 1 if not lslcommon.LSO  or a > b else -1
         return int(not ret) if Eq else ret
     if ta == tb in (Vector, Quaternion):
-        for ae,be in zip(a,b):
-            if ae != be:
-                return int(not Eq)
-        return int(Eq)
+        ret = not any(ae != be for ae, be in zip(a, b))
+        return int(ret == Eq)
     if ta == tb == list:
         ret = len(a) - len(b)
         return int(not ret) if Eq else ret
@@ -843,12 +835,12 @@ def cond(x):
     if lslcommon.LSO and tx == list:
         # SVC-689: lists of 1 element count as false
         return len(x) > 1
-    return bool(x) # works fine for int, float, string, list
+    return bool(x)  # works fine for int, float, string, list
 
 def reduce(t):
     t = F32(t)
     if not t.is_integer():
-        return t # Accurate-ish until big numbers come into play
+        return t  # Accurate-ish until big numbers come into play
     return int(t * 18446744073709551616) % 115904311329233965478 / 18446744073709551616.
 
 #
@@ -887,12 +879,10 @@ def llAtan2(y, x):
     y = ff(y)
     x = ff(x)
     if math.isnan(x) and math.isnan(y):
-        if math.copysign(1, x) == -1 and math.copysign(1, y) == -1:
-            return -NaN
-        return NaN
-    elif math.isnan(x):
+        return mul(x, y)
+    if math.isnan(x):
         return x
-    elif math.isnan(y):
+    if math.isnan(y):
         return y
     return F32(math.atan2(y, x))
 
@@ -904,7 +894,7 @@ def llAxes2Rot(fwd, left, up):
     # One of the hardest.
 
     t = math.fsum((fwd[0], left[1], up[2]))
-    if t > 0.: # no danger of division by zero or negative roots
+    if t > 0.:  # no danger of division by zero or negative roots
         r = math.sqrt(1. + t)
         s = 0.5/r
 
@@ -913,12 +903,12 @@ def llAxes2Rot(fwd, left, up):
 
     # Find a positive combo. LSL normalizes the result in these cases only, so we do the same.
 
-    if left[1] <= fwd[0] >= up[2]: # is fwd[0] the greatest?
+    if left[1] <= fwd[0] >= up[2]:  # is fwd[0] the greatest?
         r = math.sqrt(1. + fwd[0] - left[1] - up[2])
         s = 0.5/r
         q = (r*0.5, s*(fwd[1]+left[0]), s*(up[0]+fwd[2]), s*(left[2]-up[1]))
 
-    elif fwd[0] <= left[1] >= up[2]: # is left[1] the greatest?
+    elif fwd[0] <= left[1] >= up[2]:  # is left[1] the greatest?
         r = math.sqrt(1. - fwd[0] + left[1] - up[2])
         s = 0.5/r
         q = (s*(fwd[1]+left[0]), r*0.5, s*(left[2]+up[1]), s*(up[0]-fwd[2]))
@@ -933,7 +923,6 @@ def llAxes2Rot(fwd, left, up):
     q = qnz(q)
     mag = math.sqrt(math.fsum((q[0]*q[0], q[1]*q[1], q[2]*q[2], q[3]*q[3])))
     return Quaternion(F32((q[0]/mag, q[1]/mag, q[2]/mag, q[3]/mag)))
-
 
 def llAxisAngle2Rot(axis, angle):
     axis = v2f(axis)
@@ -964,7 +953,7 @@ def llBase64ToInteger(s):
 b64tos_re = re.compile(
     b'('
       # Those pass through and are caught by InternalUTF8toString:
-      b'\x00$' # NUL at last position (zstr removes it)
+      b'\x00$'  # NUL at last position (zstr removes it)
       b'|[\x09\x0A\x0F\x1F-\x7F\xFE\xFF]|[\xC2-\xDF][\x80-\xBF]'
       b'|(?:\xE0[\xA0-\xBF]|[\xE1-\xEF][\x80-\xBF])[\x80-\xBF]'
       b'|(?:\xF0[\x90-\xBF]|[\xF1-\xF7][\x80-\xBF])[\x80-\xBF]{2}'
@@ -979,7 +968,7 @@ b64tos_re = re.compile(
       b'|[\xF0-\xF7][\x80-\xBF]{0,3}'
       b'|[\xF8-\xFB][\x80-\xBF]{0,4}'
       b'|[\xFC-\xFD][\x80-\xBF]{0,5}'
-    b')|(.)' # should never be reached
+    b')|(.)'  # should never be reached
 )
 
 def llBase64ToString(s):
@@ -1033,7 +1022,7 @@ def llCSV2List(s):
                 bracketlevel += 1
             elif c == u'>':
                 bracketlevel -= 1
-        elif lastwascomma and c == u' ': # eat space after comma
+        elif lastwascomma and c == u' ':  # eat space after comma
             lastwascomma = False
             lastidx = i+1
         else:
@@ -1079,7 +1068,7 @@ def llDumpList2String(lst, sep):
 
 def llEscapeURL(s):
     s = fs(s)
-    s = s.encode('utf8') # get bytes
+    s = s.encode('utf8')  # get bytes
     ret = u''
     for c in s:
         if b'A' <= c <= b'Z' or b'a' <= c <= b'z' or b'0' <= c <= b'9':
@@ -1123,7 +1112,7 @@ def llEuler2Rot(v):
 
 def llFabs(f):
     f = ff(f)
-    if f == 0.0 or math.isnan(f): # llFabs(-0.0) is -0.0; llFabs(-nan) is -nan
+    if f == 0.0 or math.isnan(f):  # llFabs(-0.0) is -0.0; llFabs(-nan) is -nan
         return f
     return math.fabs(f)
 
@@ -1151,7 +1140,7 @@ def llFrand(lim):
         if val == lim:
             # this should never happen
             # (it can happen on denormals, but these cause output of 0.0)
-            val = 0. # pragma: no cover
+            val = 0.  # pragma: no cover
         return val
 
     # Can't give a concrete value
@@ -1165,8 +1154,7 @@ def llGenerateKey():
         s = hashlib.md5((u'%.17g %f %f' % (time.time(), random.random(),
                                            random.random())).encode('utf8')
                        ).hexdigest()
-        return Key(s[:8] + '-' + s[8:12] + '-' + s[12:16] + '-' + s[16:20]
-                   + '-' + s[20:32])
+        return Key('-'.join((s[:8], s[8:12], s[12:16], s[16:20], s[20:32])))
 
     # Can't give a concrete value
     raise ELSLCantCompute
@@ -1178,7 +1166,7 @@ def llGetListEntryType(lst, pos):
         return Types[type(lst[pos])]
     except IndexError:
         # list index out of bounds
-        return 0 # TYPE_INVALID
+        return 0  # TYPE_INVALID
     except KeyError:
         # type of element not in Types
         raise ELSLInvalidType
@@ -1195,12 +1183,13 @@ def llInsertString(s, pos, src):
     s = fs(s)
     pos = fi(pos)
     src = fs(src)
-    if pos < 0: pos = 0 # llInsertString does not support negative indices
+    if pos < 0: pos = 0  # llInsertString does not support negative indices
     return s[:pos] + src + s[pos:]
 
 def llIntegerToBase64(x):
     x = fi(x)
-    return b64encode(chr((x>>24)&255) + chr((x>>16)&255) + chr((x>>8)&255) + chr(x&255)).decode('utf8')
+    return b64encode(chr((x>>24)&255) + chr((x>>16)&255) + chr((x>>8)&255)
+                     + chr(x&255)).decode('utf8')
 
 def llList2CSV(lst):
     lst = fl(lst)
@@ -1329,7 +1318,7 @@ def llListFindList(lst, elems):
     L1 = len(lst)
     L2 = len(elems)
     if L2 > L1:
-        return -1 # can't find a sublist longer than the original list
+        return -1  # can't find a sublist longer than the original list
     if L2 == 0:
         # empty list is always found at position 0 in Mono,
         # and in LSO if the first list isn't empty
@@ -1357,15 +1346,15 @@ def llListFindList(lst, elems):
                 # Unfortunately, Python fails to consider (NaN,) != (NaN,) sometimes
                 # so we need to implement our own test
                 for e1e,e2e in zip(e1,e2):
-                    if e1e != e2e: # NaNs are considered different to themselves here as normal
+                    if e1e != e2e:  # NaNs are considered different to themselves here as normal
                         # Mismatch in vector/quaternion sub-element
                         break
                 else:
                     # No mismatch in any sub-element, try next list element
                     continue
-                break # discrepancy found
+                break  # discrepancy found
             elif type(e1) != type(e2) or e1 != e2:
-                break # mismatch
+                break  # mismatch
         else:
             # no mismatch
             return i
@@ -1403,9 +1392,9 @@ def llListSort(lst, stride, asc):
     lst = fl(lst)
     stride = fi(stride)
     asc = fi(asc)
-    lst = lst[:] # make a copy
+    lst = lst[:]  # make a copy
     L = len(lst)
-    broken = u'\ufb1a' > u'\U0001d41a' # that happens on Windows
+    broken = u'\ufb1a' > u'\U0001d41a'  # that happens on Windows
     if stride < 1: stride = 1
     if L % stride:
         return lst
@@ -1414,12 +1403,12 @@ def llListSort(lst, stride, asc):
         a = lst[i]
         ta = type(a)
         if ta == Vector:
-            a = v2f(a) # list should contain vectors made only of floats
+            a = v2f(a)  # list should contain vectors made only of floats
             a = a[0]*a[0] + a[1]*a[1] + a[2]*a[2]
         if broken and ta in (unicode, Key):
             # Note this breaks type consistency between a and ta!
             # It should be OK because only equal types are compared.
-            a = a.encode('utf-32-be') # pragma: no cover
+            a = a.encode('utf-32-be')  # pragma: no cover
         for j in xrange(i+stride, L, stride):
             b = lst[j]
             tb = type(b)
@@ -1431,8 +1420,8 @@ def llListSort(lst, stride, asc):
                     # (note NaNs compare as > thus the reversed condition!)
                 elif tb != Quaternion:
                     if broken and tb in (unicode, Key):
-                        b = b.encode('utf-32-be') # pragma: no cover
-                    gt = not (a <= b) # float, integer, string, key all take this branch
+                        b = b.encode('utf-32-be')  # pragma: no cover
+                    gt = not (a <= b)  # float, integer, string, key all take this branch
                     # (note NaNs compare as > thus the reversed condition!)
             if gt ^ (asc != 1):
                 # swap
@@ -1444,7 +1433,7 @@ def llListSort(lst, stride, asc):
                     a = v2f(a)
                     a = a[0]*a[0] + a[1]*a[1] + a[2]*a[2]
                 if broken and ta in (unicode, Key):
-                    a = a.encode('utf-32-be') # pragma: no cover
+                    a = a.encode('utf-32-be')  # pragma: no cover
     return lst
 
 def llListStatistics(op, lst):
@@ -1460,10 +1449,10 @@ def llListStatistics(op, lst):
     if nums == []:
         return 0.0
 
-    if op == 8: # LIST_STAT_NUM_COUNT
+    if op == 8:  # LIST_STAT_NUM_COUNT
         return float(len(nums))
 
-    if op in (0, 1, 2) : # LIST_STAT_RANGE, LIST_STAT_MIN, LIST_STAT_MAX
+    if op in (0, 1, 2):  # LIST_STAT_RANGE, LIST_STAT_MIN, LIST_STAT_MAX
         min = None
         for elem in nums:
             if min is None:
@@ -1475,7 +1464,7 @@ def llListStatistics(op, lst):
                     max = elem
         return F32(max - min if op == 0 else min if op == 1 else max)
 
-    if op == 4: # LIST_STAT_MEDIAN requires special treatment
+    if op == 4:  # LIST_STAT_MEDIAN requires special treatment
         # The function behaves very strangely with NaNs. This seems to reproduce it:
 
         # llListSort seems to do the right thing with NaNs as needed by the median.
@@ -1485,7 +1474,7 @@ def llListStatistics(op, lst):
             return F32(nums[L>>1])
         return F32((nums[(L>>1)-1] + nums[L>>1])*0.5)
 
-    if op in (3, 5, 6, 7): # LIST_STAT_MEAN, STD_DEV, SUM, SUM_SQUARES
+    if op in (3, 5, 6, 7):  # LIST_STAT_MEAN, STD_DEV, SUM, SUM_SQUARES
         sum = 0.
         sumsq = 0.
         mean = 0.
@@ -1499,15 +1488,15 @@ def llListStatistics(op, lst):
             mean += delta/N
             M2 += delta*(elem-mean)
 
-        if op == 5: # LIST_STAT_STD_DEV
+        if op == 5:  # LIST_STAT_STD_DEV
             return 0. if N == 1. else F32(math.sqrt(M2/(N-1.)))
-        if op == 6: # LIST_STAT_SUM
+        if op == 6:  # LIST_STAT_SUM
             return F32(sum)
-        if op == 7: # LIST_STAT_SUM_SQUARES
+        if op == 7:  # LIST_STAT_SUM_SQUARES
             return F32(sumsq)
         return F32(mean)
 
-    if op == 9: # LIST_STAT_GEOMETRIC_MEAN
+    if op == 9:  # LIST_STAT_GEOMETRIC_MEAN
         N = 0.
         GMlog = 0.
         for elem in nums:
@@ -1551,12 +1540,9 @@ def llModPow(base, exp, mod):
     if exp == 0:
         return 1
     # Convert all numbers to unsigned
-    if base < 0:
-        base += 4294967296
-    if exp < 0:
-        exp += 4294967296
-    if mod < 0:
-        mod += 4294967296
+    base &= 0xFFFFFFFF
+    exp  &= 0xFFFFFFFF
+    mod  &= 0xFFFFFFFF
     prod = base
     ret = 1
     while True:
@@ -1606,22 +1592,22 @@ def llPow(base, exp):
         if exp == 0.0:
             return 1.0
 
-        if base == 0.0: # Python gives exception on these, LSL returns stuff
+        if base == 0.0:  # Python gives exception on these, LSL returns stuff
             if math.isinf(exp) and exp < 0:
-                return Infinity # llPow(0.0, -inf) = inf
+                return Infinity  # llPow(0.0, -inf) = inf
 
             if exp < 0.0:
                 # Negative finite exponent cases
                 if math.copysign(1, base) < 0 and exp.is_integer() and not (exp/2.).is_integer():
-                    return -Infinity # llPow(-0.0, -odd_integer) = -inf
+                    return -Infinity  # llPow(-0.0, -odd_integer) = -inf
                 return Infinity
 
         elif abs(base) == 1.0 and math.isinf(exp):
-            return NaN # Python says 1.0
+            return NaN  # Python says 1.0
 
         f = F32(math.pow(base, exp))
-        return 0.0 if f == 0.0 else f # don't return -0.0
-    except ValueError: # should happen only with negative base and noninteger exponent
+        return 0.0 if f == 0.0 else f  # don't return -0.0
+    except ValueError:  # should happen only with negative base and noninteger exponent
         return Indet
 
 def llRot2Angle(r):
@@ -1701,7 +1687,7 @@ def llRotBetween(v1, v2):
     # which will be perpendicular to both. But matching the SL results requires
     # another cross product of the input with the result, so we do that.
     ortho = mod(mod(v1, Vector((1., 0., 0.))), v1)
-    ortho = Vector((0. if f == 0. else f for f in ortho)) # remove minus zero
+    ortho = Vector((0. if f == 0. else f for f in ortho))  # remove minus zero
     m = mul(ortho, ortho)
     if m < float.fromhex('0x1.b7cdfep-34'):
         # The input vectors were aligned with <1,0,0>, so this was not a
@@ -1749,10 +1735,10 @@ def llStringTrim(s, mode):
     head = 0
     length = len(s)
     tail = length-1
-    if mode & 1: # STRING_TRIM_HEAD
+    if mode & 1:  # STRING_TRIM_HEAD
         while head < length and s[head] in u'\x09\x0a\x0b\x0c\x0d\x20':
             head += 1
-    if mode & 2: # STRING_TRIM_TAIL
+    if mode & 2:  # STRING_TRIM_TAIL
         while tail >= head and s[tail] in u'\x09\x0a\x0b\x0c\x0d\x20':
             tail -= 1
     return s[head:tail+1]
@@ -1795,14 +1781,14 @@ def llUnescapeURL(s):
             continue
         if i >= L:
             break
-        c = s[i] # First digit
+        c = s[i]  # First digit
         i += 1
         if i >= L:
             break
         v = 0
         if u'0' <= c <= u'9' or u'A' <= c <= u'F' or u'a' <= c <= u'f':
             v = int(c, 16)<<4
-        c = s[i] # Second digit
+        c = s[i]  # Second digit
         if c == u'%':
             ret += chr(v)
             i += 1
