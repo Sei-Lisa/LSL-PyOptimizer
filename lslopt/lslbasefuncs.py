@@ -867,7 +867,7 @@ def llAbs(i):
 def llAcos(f):
     f = ff(f)
     try:
-        return F32(math.acos(f))
+        return F32(math.acos(f)) if not math.isnan(f) else f
     except ValueError:
         return NaN
 
@@ -879,7 +879,7 @@ def llAngleBetween(r1, r2):
 def llAsin(f):
     f = ff(f)
     try:
-        return F32(math.asin(f))
+        return F32(math.asin(f)) if not math.isnan(f) else f
     except ValueError:
         return NaN
 
