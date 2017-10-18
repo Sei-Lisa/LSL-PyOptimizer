@@ -228,6 +228,12 @@ def llGetAnimationList(id):
         return []
     raise ELSLCantCompute
 
+def llGetAttachedList(id):
+    id = fk(id)
+    if not cond(id):
+        return [u'NOT FOUND']
+    raise ELSLCantCompute
+
 def llGetBoundingBox(id):
     id = fk(id)
     if not cond(id):
