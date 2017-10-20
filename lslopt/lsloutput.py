@@ -19,8 +19,7 @@
 
 import lslfuncs
 import lslcommon
-from lslcommon import Key, Vector, Quaternion
-from lslparse import warning
+from lslcommon import Key, Vector, Quaternion, warning
 from math import copysign
 
 class outscript(object):

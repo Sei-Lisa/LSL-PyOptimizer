@@ -15,6 +15,10 @@
 #    You should have received a copy of the GNU General Public License
 #    along with LSL PyOptimizer. If not, see <http://www.gnu.org/licenses/>.
 
+# Classes, functions and variables for use of all modules.
+
+import sys
+
 # These types just wrap the Python types to make type() work on them.
 # There are no ops defined on them or anything.
 
@@ -46,6 +50,13 @@ IsCalc = False
 
 DataPath = ''
 
+# Language
+
+# These are hardcoded because additions or modifications imply
+# important changes to the code anyway.
+types = frozenset(('integer','float','string','key','vector',
+    'quaternion','rotation','list'))
+
 # Conversion of LSL types to Python types and vice versa.
 
 PythonType2LSL = {int: 'integer', float: 'float',
@@ -55,3 +66,7 @@ PythonType2LSL = {int: 'integer', float: 'float',
 LSLType2Python = {'integer':int, 'float':float,
     'string':unicode, 'key':Key, 'vector':Vector,
     'rotation':Quaternion, 'list':list}
+
+def warning(txt):
+    assert type(txt) == unicode
+    sys.stderr.write(u"WARNING: " + txt + u"\n")

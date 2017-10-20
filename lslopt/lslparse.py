@@ -20,17 +20,12 @@
 
 # TODO: Add info to be able to propagate error position to the source.
 
-from lslcommon import Key, Vector, Quaternion
-import lslcommon
-import lslfuncs
-import sys, re
+from lslcommon import Key, Vector, Quaternion, types
+import lslcommon, lslfuncs
+import re
 
 # Note this module was basically written from bottom to top, which may help
 # reading it.
-
-def warning(txt):
-    assert type(txt) == unicode
-    sys.stderr.write(u"WARNING: " + txt + u"\n")
 
 def isdigit(c):
     return '0' <= c <= '9'
@@ -218,8 +213,7 @@ class parser(object):
         'if', 'else', 'for', 'do', 'while', 'print', 'TRUE', 'FALSE'))
     brkcont_keywords = frozenset(('break', 'continue'))
     switch_keywords = frozenset(('switch', 'case', 'break', 'default'))
-    types = frozenset(('integer','float','string','key','vector',
-        'quaternion','rotation','list'))
+
     PythonType2LSLToken = {int:'INTEGER_VALUE', float:'FLOAT_VALUE',
         unicode:'STRING_VALUE', Key:'KEY_VALUE', Vector:'VECTOR_VALUE',
         Quaternion:'ROTATION_VALUE', list:'LIST_VALUE'}
@@ -366,7 +360,7 @@ class parser(object):
             if not self.enableswitch and value:
                 self.keywords |= self.switch_keywords
             elif self.enableswitch and not value:
-                self.keywords = self.base_keywords
+                self.keywords = self.base_keywords.copy()
                 if self.breakcont:
                     self.keywords |= self.brkcont_keywords
 
@@ -377,7 +371,7 @@ class parser(object):
             if not self.breakcont and value:
                 self.keywords |= self.brkcont_keywords
             elif self.breakcont and not value:
-                self.keywords = self.base_keywords
+                self.keywords = self.base_keywords.copy()
                 if self.enableswitch:
                     self.keywords |= self.switch_keywords
 
@@ -572,7 +566,7 @@ class parser(object):
                     # Got an identifier - check if it's a reserved word
                     if ident in self.keywords:
                         return (ident.upper(),)
-                    if ident in self.types:
+                    if ident in types:
                         if ident == 'quaternion':
                             ident = 'rotation' # Normalize types
                         return ('TYPE',ident)
@@ -909,7 +903,7 @@ class parser(object):
             self.expect('(')
             self.NextToken()
             expr = self.Parse_expression()
-            if expr['t'] not in self.types:
+            if expr['t'] not in types:
                 raise EParseTypeMismatch(self) if expr['t'] is None else EParseUndefined(self)
             self.expect(')')
             self.NextToken()
@@ -1036,7 +1030,7 @@ list lazy_list_set(list L, integer i, list v)
             self.NextToken()
             expr = self.Parse_expression()
             rtyp = expr['t']
-            if rtyp not in self.types:
+            if rtyp not in types:
                 raise EParseTypeMismatch(self)
             if typ in ('integer', 'float'):
                 # LSL admits integer *= float (go figger).
@@ -1215,9 +1209,9 @@ list lazy_list_set(list L, integer i, list v)
                 return {'nt':'FNCALL', 't':sym['Type'], 'name':fn, 'scope':0,
                     'ch':expr['ch']}
 
-            if typ == 'list' and basetype in self.types \
+            if typ == 'list' and basetype in types \
                or basetype in ('integer', 'float') and typ in ('integer', 'float', 'string') \
-               or basetype == 'string' and typ in self.types \
+               or basetype == 'string' and typ in types \
                or basetype == 'key' and typ in ('string', 'key') \
                or basetype == 'vector' and typ in ('string', 'vector') \
                or basetype == 'rotation' and typ in ('string', 'rotation') \
@@ -1288,7 +1282,7 @@ list lazy_list_set(list L, integer i, list v)
         while self.tok[0] in ('+', '-'):
             op = self.tok[0]
             ltype = term['t']
-            if op == '+' and ltype not in self.types \
+            if op == '+' and ltype not in types \
                or op == '-' and ltype not in ('integer', 'float',
                                               'vector', 'rotation'):
                 raise EParseTypeMismatch(self)
@@ -1300,7 +1294,7 @@ list lazy_list_set(list L, integer i, list v)
             # doesn't seem necessary to check rtype. But there's the case
             # where the first element is a list, where the types don't need to
             # match but the second type must make sense.
-            if op == '+' and rtype not in self.types:
+            if op == '+' and rtype not in types:
                #or op == '-' and rtype not in ('integer', 'float',
                #                               'vector', 'rotation'):
                 raise EParseTypeMismatch(self)
@@ -1393,7 +1387,7 @@ list lazy_list_set(list L, integer i, list v)
         while self.tok[0] in ('==', '!='):
             op = self.tok[0]
             ltype = comparison['t']
-            if ltype not in self.types:
+            if ltype not in types:
                 raise EParseTypeMismatch(self)
             self.NextToken()
             rexpr = self.Parse_inequality()
@@ -1520,7 +1514,7 @@ list lazy_list_set(list L, integer i, list v)
                     except EParseTypeMismatch:
                         raise EParseFunctionMismatch(self)
                 elif expected_types is False: # don't accept void expressions
-                    if expr['t'] not in self.types:
+                    if expr['t'] not in types:
                         raise EParseTypeMismatch(self)
                 idx += 1
                 ret.append(expr)
@@ -2526,11 +2520,23 @@ list lazy_list_set(list L, integer i, list v)
                 self.NextToken()
 
 
-    def parse(self, script, options = (), filename = '<stdin>'):
-        """Parse the given stream with the given options.
+    def parse(self, script, options = (), filename = '<stdin>', lib = None):
+        """Parse the given string with the given options.
+
+        If given, lib replaces the library passed in __init__.
+
+        filename is the filename of the current file, for error reporting.
+        '<stdin>' means errors in this file won't include a filename.
+        #line directives change the filename.
 
         This function also builds the temporary globals table.
         """
+
+        if lib is None:
+            lib = self.lib
+        self.events = lib[0]
+        self.constants = lib[1]
+        self.funclibrary = lib[2]
 
         self.filename = filename
 
@@ -2540,7 +2546,7 @@ list lazy_list_set(list L, integer i, list v)
         self.script = script
         self.length = len(script)
 
-        self.keywords = self.base_keywords
+        self.keywords = self.base_keywords.copy()
 
         self.labelcnt = 0
 
@@ -2704,218 +2710,23 @@ list lazy_list_set(list L, integer i, list v)
 
         return treesymtab
 
-    def parsefile(self, filename, options = set()):
-        """Convenience function to parse a file"""
+    def parsefile(self, filename, options = set(), lib = None):
+        """Convenience function to parse a file rather than a string."""
         f = open(filename, 'r')
         try:
             script = f.read()
         finally:
             f.close()
 
-        return self.parse(script, options)
+        return self.parse(script, options, lib = lib)
 
-    def __init__(self, builtins = None, seftable = None):
-        """Reads the library."""
+    def __init__(self, lib = None):
+        """Initialization of library and lazy compilation.
 
-        self.events = {}
-        self.constants = {}
-        self.funclibrary = {}
-
-        if builtins is None:
-            builtins = lslcommon.DataPath + 'builtins.txt'
-
-        if seftable is None:
-            seftable = lslcommon.DataPath + 'seftable.txt'
+        lib is a tuple of three dictionaries: events, constants and functions,
+        in the format returned by lslloadlib.LoadLibrary().
+        """
 
         self.parse_directive_re = None
 
-        # Library read code
-
-        parse_lin_re = re.compile(
-            r'^\s*([a-z]+)\s+'
-            r'([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*('
-                r'[a-z]+\s+[a-zA-Z_][a-zA-Z0-9_]*'
-                r'(?:\s*,\s*[a-z]+\s+[a-zA-Z_][a-zA-Z0-9_]*)*'
-            r')?\s*\)\s*$'
-            r'|'
-            r'^\s*const\s+([a-z]+)'
-            r'\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.*?)\s*$'
-            r'|'
-            r'^\s*(?:#.*|//.*)?$')
-        parse_arg_re = re.compile(r'^\s*([a-z]+)\s+[a-zA-Z_][a-zA-Z0-9_]*\s*$')
-        parse_num_re = re.compile(r'^\s*(-?(?=[0-9]|\.[0-9])[0-9]*((?:\.[0-9]*)?(?:[Ee][+-]?[0-9]+)?))\s*$')
-        parse_str_re = re.compile(ur'^"((?:[^"\\]|\\.)*)"$')
-
-        f = open(builtins, 'rb')
-        try:
-            linenum = 0
-            try:
-                ubuiltins = builtins.decode(sys.getfilesystemencoding())
-            except UnicodeDecodeError:
-                # This is just a guess at the filename encoding.
-                ubuiltins = builtins.decode('iso-8859-15')
-            while True:
-                linenum += 1
-                line = f.readline()
-                if not line: break
-                if line[-1] == '\n': line = line[:-1]
-                try:
-                    uline = line.decode('utf8')
-                except UnicodeDecodeError:
-                    warning(u"Bad Unicode in %s line %d" % (ubuiltins, linenum))
-                    continue
-                match = parse_lin_re.search(line)
-                if not match:
-                    warning(u"Syntax error in %s, line %d" % (ubuiltins, linenum))
-                    continue
-                if match.group(1):
-                    # event or function
-                    typ = match.group(1)
-                    if typ == 'quaternion':
-                        typ = 'rotation'
-                    if typ == 'void':
-                        typ = None
-                    elif typ != 'event' and typ not in self.types:
-                        warning(u"Invalid type in %s, line %d: %s" % (ubuiltins, linenum, typ))
-                        continue
-                    args = []
-                    arglist = match.group(3)
-                    if arglist:
-                        arglist = arglist.split(',')
-                        bad = False
-                        for arg in arglist:
-                            argtyp = parse_arg_re.search(arg).group(1)
-                            if argtyp not in self.types:
-                                uargtyp = argtyp.decode('utf8')
-                                warning(u"Invalid type in %s, line %d: %s" % (ubuiltins, linenum, uargtyp))
-                                del uargtyp
-                                bad = True
-                                break
-                            args.append(argtyp)
-                        if bad:
-                            continue
-                    name = match.group(2)
-                    if typ == 'event':
-                        if name in self.events:
-                            uname = name.decode('utf8')
-                            warning(u"Event at line %d was already defined in %s, overwriting: %s" % (linenum, ubuiltins, uname))
-                            del uname
-                        self.events[name] = tuple(args)
-                    else:
-                        # Library functions go to the functions table. If
-                        # they are implemented in lslfuncs.*, they get a
-                        # reference to the implementation; otherwise None.
-                        if name in self.funclibrary:
-                            uname = name.decode('utf8')
-                            warning(u"Function at line %d was already defined in %s, overwriting: %s" % (linenum, ubuiltins, uname))
-                            del uname
-                        fn = getattr(lslfuncs, name, None)
-                        self.funclibrary[name] = {'Kind':'f', 'Type':typ, 'ParamTypes':args}
-                        if fn is not None:
-                            self.funclibrary[name]['Fn'] = fn
-                elif match.group(4):
-                    # constant
-                    name = match.group(5)
-                    if name in self.constants:
-                        uname = name.decode('utf8')
-                        warning(u"Global at line %d was already defined in %s, overwriting: %s" % (linenum, ubuiltins, uname))
-                        del uname
-                    typ = match.group(4)
-                    if typ not in self.types:
-                        utyp = typ.decode('utf8')
-                        warning(u"Invalid type in %s, line %d: %s" % (ubuiltins, linenum, utyp))
-                        del utyp
-                        continue
-                    if typ == 'quaternion':
-                        typ = 'rotation'
-                    value = match.group(6)
-                    if typ == 'integer':
-                        value = int(value, 0)
-                    elif typ == 'float':
-                        value = lslfuncs.F32(float(value))
-                    elif typ == 'string':
-                        value = value.decode('utf8')
-                        if parse_str_re.search(value):
-                            esc = False
-                            tmp = value[1:-1]
-                            value = u''
-                            for c in tmp:
-                                if esc:
-                                    if c == u'n':
-                                        c = u'\n'
-                                    elif c == u't':
-                                        c = u'    '
-                                    value += c
-                                    esc = False
-                                elif c == u'\\':
-                                    esc = True
-                                else:
-                                    value += c
-                            #if typ == 'key':
-                            #    value = Key(value)
-                        else:
-                            warning(u"Invalid string in %s line %d: %s" % (ubuiltins, linenum, uline))
-                            value = None
-                    elif typ == 'key':
-                        warning(u"Key constants not supported in %s, line %d: %s" % (ubuiltins, linenum, uline))
-                        value = None
-                    elif typ in ('vector', 'rotation'):
-                        try:
-                            if value[0:1] != '<' or value[-1:] != '>':
-                                raise ValueError
-                            value = value[1:-1].split(',')
-                            if len(value) != (3 if typ == 'vector' else 4):
-                                raise ValueError
-                            num = parse_num_re.search(value[0])
-                            if not num:
-                                raise ValueError
-                            value[0] = lslfuncs.F32(float(num.group(1)))
-                            num = parse_num_re.search(value[1])
-                            if not num:
-                                raise ValueError
-                            value[1] = lslfuncs.F32(float(num.group(1)))
-                            num = parse_num_re.search(value[2])
-                            if not num:
-                                raise ValueError
-                            value[2] = lslfuncs.F32(float(num.group(1)))
-                            if typ == 'vector':
-                                value = Vector(value)
-                            else:
-                                num = parse_num_re.search(value[3])
-                                if not num:
-                                    raise ValueError
-                                value[3] = lslfuncs.F32(float(num.group(1)))
-                                value = Quaternion(value)
-                        except ValueError:
-                            warning(u"Invalid vector/rotation syntax in %s line %d: %s" % (ubuiltins, linenum, uline))
-                    else:
-                        assert typ == 'list'
-                        if value[0:1] != '[' or value[-1:] != ']':
-                            warning(u"Invalid list value in %s, line %d: %s" % (ubuiltins, linenum, uline))
-                        elif value[1:-1].strip() != '':
-                            warning(u"Non-empty list constants not supported in %s, line %d: %s" % (ubuiltins, linenum, uline))
-                            value = None
-                        else:
-                            value = []
-                    if value is not None:
-                        self.constants[name] = value
-
-        finally:
-            f.close()
-
-        # Load the side-effect-free table as well.
-        # TODO: Transform the SEF Table into a function properties table
-        #       that includes domain data (min, max) and possibly input
-        #       parameter transformations e.g.
-        #           llSensor(..., PI, ...) -> llSensor(..., 4, ...).
-        f = open(seftable, 'rb')
-        try:
-            while True:
-                line = f.readline()
-                if line == '':
-                    break
-                line = line.strip()
-                if line and line[0] != '#' and line in self.funclibrary:
-                    self.funclibrary[line]['SEF'] = True
-        finally:
-            f.close()
+        self.lib = lib if lib is not None else ({}, {}, {})

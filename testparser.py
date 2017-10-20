@@ -24,7 +24,7 @@ from lslopt.lslparse import parser,EParseSyntax,EParseUEOF,EParseAlreadyDefined,
     EParseDuplicateLabel,EParseCantChangeState,EParseCodePathWithoutRet
 from lslopt.lsloutput import outscript
 from lslopt.lsloptimizer import optimizer
-from lslopt import lslfuncs
+from lslopt import lslfuncs, lslloadlib
 import unittest
 import os
 import lslopt.lslcommon
@@ -34,13 +34,13 @@ class UnitTestCase(unittest.TestCase):
 
 class Test01_LibraryLoader(UnitTestCase):
     def test_coverage(self):
-        parser(builtins='builtins-unittest.txt')
-        parser()
+        parser(lslloadlib.LoadLibrary(builtins='builtins-unittest.txt'))
+        parser(lslloadlib.LoadLibrary())
 
 
 class Test02_Parser(UnitTestCase):
     def setUp(self):
-        self.parser = parser()
+        self.parser = parser(lslloadlib.LoadLibrary())
         self.outscript = outscript()
 
     def test_coverage(self):
@@ -248,7 +248,7 @@ class Test02_Parser(UnitTestCase):
 
 class Test03_Optimizer(UnitTestCase):
     def setUp(self):
-        self.parser = parser()
+        self.parser = parser(lslloadlib.LoadLibrary())
         self.opt = optimizer()
         self.outscript = outscript()
 

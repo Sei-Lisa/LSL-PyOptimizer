@@ -18,11 +18,10 @@
 # Constant folding and simplification of expressions and statements.
 
 import lslcommon
-from lslcommon import Vector, Quaternion
+from lslcommon import Vector, Quaternion, warning
 import lslfuncs
 from lslfuncs import ZERO_VECTOR, ZERO_ROTATION
 import math
-from lslparse import warning
 from lslfuncopt import OptimizeFunc, OptimizeArgs, FuncOptSetup
 
 

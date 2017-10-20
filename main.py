@@ -24,6 +24,7 @@ from lslopt.lsloutput import outscript
 from lslopt.lsloptimizer import optimizer
 import sys, os, getopt, re
 import lslopt.lslcommon
+import lslopt.lslloadlib
 
 
 VERSION = '0.2.1beta'
@@ -651,7 +652,8 @@ def main(argv):
 
         if not preshow:
 
-            p = parser(builtins, seftable)
+            lib = lslopt.lslloadlib.LoadLibrary(builtins, seftable)
+            p = parser(lib)
             try:
                 ts = p.parse(script, options,
                              fname if fname != '-' else '<stdin>')
