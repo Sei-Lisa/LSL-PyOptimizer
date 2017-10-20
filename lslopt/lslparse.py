@@ -2750,8 +2750,9 @@ list lazy_list_set(list L, integer i, list v)
         try:
             linenum = 0
             try:
-                ubuiltins = builtins.decode('utf8')
+                ubuiltins = builtins.decode(sys.getfilesystemencoding())
             except UnicodeDecodeError:
+                # This is just a guess at the filename encoding.
                 ubuiltins = builtins.decode('iso-8859-15')
             while True:
                 linenum += 1
