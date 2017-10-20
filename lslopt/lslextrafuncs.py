@@ -244,7 +244,7 @@ def llGetColor(face):
     face = fi(face)
     if face > 8:
         return Vector((1.,1.,1.))
-    # Returns face 0 when negative (can't be computed)
+    # Returns the average colour when negative (can't be computed)
     raise ELSLCantCompute
 
 def llGetDisplayName(id):
@@ -308,6 +308,12 @@ def llGetOwnerKey(id):
     id = fk(id)
     if not cond(id):
         return Key(NULL_KEY)
+    raise ELSLCantCompute
+
+def llGetStatus(mask):
+    # leave out STATUS_DIE_AT_EDGE and STATUS_CAST_SHADOWS
+    if (mask & 0b10101111111) == 0:
+        return 0
     raise ELSLCantCompute
 
 # TODO: Add more predictable functions.
