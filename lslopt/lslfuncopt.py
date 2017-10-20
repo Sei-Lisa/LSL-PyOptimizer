@@ -46,7 +46,7 @@ def OptimizeArgs(node, sym):
                         params[i]['type'] = 'string'
 
 
-# Type of each entry in llGetObjectDetails. Last: 38.
+# Type of each entry in llGetObjectDetails. Last: 38 (OBJECT_SIT_COUNT).
 objDetailsTypes = 'issvrvkkkiiififfffkiiiiiiffkiviiksiisii'
 primParamsTypes = \
     ( False, False # 0 (unassigned) and 1=PRIM_TYPE_LEGACY
