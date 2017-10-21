@@ -1084,15 +1084,11 @@ class foldconst(object):
                             del child
                             self.FoldTree(parent, index)
                             return
-                # While this is tempting, it can only be done for identifiers.
-                # Counterexample: llFrand(1) == llFrand(1) would
-                # almost always return FALSE. After CompareTrees is fixed,
-                # we can reinstate it.
-                #if self.CompareTrees(child[0], child[1]):
-                #    # a == a  ->  1
-                #    parent[index] = {'nt':'CONST', 't':'integer', 'value':1,
-                #                     'SEF':True}
-                #    return
+                if self.CompareTrees(child[0], child[1]):
+                    # a == a  ->  1
+                    parent[index] = {'nt':'CONST', 't':'integer', 'value':1,
+                                     'SEF':True}
+                    return
                 return
 
             if nt in ('<=', '>=') or nt == '!=' and child[0]['t'] != 'list':
