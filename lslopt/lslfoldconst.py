@@ -640,6 +640,12 @@ class foldconst(object):
                     subexpr['ch'] = [subexpr['ch'][b], subexpr['ch'][a]]
                     parent[index] = subexpr
                     return
+            if snt == '!=':
+                subexpr['nt'] = '=='
+                parent[index] = subexpr
+                self.FoldTree(parent, index)
+                return
+
             return
 
         if nt == '~':
