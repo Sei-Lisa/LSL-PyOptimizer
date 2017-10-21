@@ -394,14 +394,17 @@ def LoadLibrary(builtins = None, fndata = None):
         ui = i.decode('utf8')
         if 'NeedsData' in functions[i]:
             del functions[i]['NeedsData']
-            warning(u"Library data: Function %s has no data" % i)
+            warning(u"Library data: Function %s has no data." % i)
         if 'min' in functions[i] and 'max' in functions[i]:
             if functions[i]['min'] > functions[i]['max']:
-                warning(u"Library data: Function %s has min > max: min=%s max=%s"
+                warning(u"Library data: Function %s has min > max:"
+                        u" min=%s max=%s, removing both."
                         % (ui, repr(functions[i]['min']).decode('utf8'),
                            repr(functions[i]['max'])))
+                del functions[i]['min'], functions[i]['max']
         if 'SEF' in functions[i] and 'delay' in functions[i]:
             warning(u"Library data: Side-effect-free function %s contradicts"
-                    u" delay" % ui)
+                    u" delay. Removing SEF." % ui)
+            del functions[i]['SEF']
 
     return events, constants, functions
