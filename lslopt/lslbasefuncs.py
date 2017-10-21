@@ -799,7 +799,8 @@ def compare(a, b, Eq = True):
             ret = ff(a) == ff(b)
         return int(ret == Eq)
     if ta in (unicode, Key) and tb in (unicode, Key):
-        ret = 0 if a == b else 1 if not lslcommon.LSO  or a > b else -1
+        ret = 0 if a == b else 1 if (not lslcommon.LSO
+            or a.encode('utf8') > b.encode('utf8')) else -1
         return int(not ret) if Eq else ret
     if ta == tb in (Vector, Quaternion):
         ret = not any(ae != be for ae, be in zip(a, b))
@@ -1405,7 +1406,10 @@ def llListSort(lst, stride, asc):
         if ta == Vector:
             a = v2f(a)  # list should contain vectors made only of floats
             a = a[0]*a[0] + a[1]*a[1] + a[2]*a[2]
-        if broken and ta in (unicode, Key):
+        if lslcommon.LSO:
+            # LSO compares bytes, not Unicode.
+            a = a.encode('utf8')
+        elif broken and ta in (unicode, Key):
             # Note this breaks type consistency between a and ta!
             # It should be OK because only equal types are compared.
             a = a.encode('utf-32-be')  # pragma: no cover
@@ -1419,7 +1423,9 @@ def llListSort(lst, stride, asc):
                     gt = not (a <= b[0]*b[0] + b[1]*b[1] + b[2]*b[2])
                     # (note NaNs compare as > thus the reversed condition!)
                 elif tb != Quaternion:
-                    if broken and tb in (unicode, Key):
+                    if lslcommon.LSO:
+                        b = b.encode('utf8')
+                    elif broken and tb in (unicode, Key):
                         b = b.encode('utf-32-be')  # pragma: no cover
                     gt = not (a <= b)  # float, integer, string, key all take this branch
                     # (note NaNs compare as > thus the reversed condition!)
