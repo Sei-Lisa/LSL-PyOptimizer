@@ -110,7 +110,9 @@ def LoadLibrary(builtins = None, fndata = None):
                 if typ == 'event':
                     if name in events:
                         uname = name.decode('utf8')
-                        warning(u"Event at line %d was already defined in %s, overwriting: %s" % (linenum, ubuiltins, uname))
+                        warning(u"Event at line %d was already defined in %s,"
+                                u" overwriting: %s"
+                                % (linenum, ubuiltins, uname))
                         del uname
                     events[name] = tuple(args)
                 else:
@@ -119,7 +121,9 @@ def LoadLibrary(builtins = None, fndata = None):
                     # reference to the implementation; otherwise None.
                     if name in functions:
                         uname = name.decode('utf8')
-                        warning(u"Function at line %d was already defined in %s, overwriting: %s" % (linenum, ubuiltins, uname))
+                        warning(u"Function at line %d was already defined"
+                                u" in %s, overwriting: %s"
+                                % (linenum, ubuiltins, uname))
                         del uname
                     fn = getattr(lslfuncs, name, None)
                     functions[name] = {'Kind':'f', 'Type':typ,
@@ -131,12 +135,14 @@ def LoadLibrary(builtins = None, fndata = None):
                 name = match.group(5)
                 if name in constants:
                     uname = name.decode('utf8')
-                    warning(u"Global at line %d was already defined in %s, overwriting: %s" % (linenum, ubuiltins, uname))
+                    warning(u"Global at line %d was already defined in %s,"
+                            u" overwriting: %s" % (linenum, ubuiltins, uname))
                     del uname
                 typ = match.group(4)
                 if typ not in types:
                     utyp = typ.decode('utf8')
-                    warning(u"Invalid type in %s, line %d: %s" % (ubuiltins, linenum, utyp))
+                    warning(u"Invalid type in %s, line %d: %s"
+                            % (ubuiltins, linenum, utyp))
                     del utyp
                     continue
                 if typ == 'quaternion':
@@ -167,10 +173,12 @@ def LoadLibrary(builtins = None, fndata = None):
                         #if typ == 'key':
                         #    value = Key(value)
                     else:
-                        warning(u"Invalid string in %s line %d: %s" % (ubuiltins, linenum, uline))
+                        warning(u"Invalid string in %s line %d: %s"
+                                % (ubuiltins, linenum, uline))
                         value = None
                 elif typ == 'key':
-                    warning(u"Key constants not supported in %s, line %d: %s" % (ubuiltins, linenum, uline))
+                    warning(u"Key constants not supported in %s, line %d: %s"
+                            % (ubuiltins, linenum, uline))
                     value = None
                 elif typ in ('vector', 'rotation'):
                     try:
@@ -200,13 +208,17 @@ def LoadLibrary(builtins = None, fndata = None):
                             value[3] = lslfuncs.F32(float(num.group(1)))
                             value = Quaternion(value)
                     except ValueError:
-                        warning(u"Invalid vector/rotation syntax in %s line %d: %s" % (ubuiltins, linenum, uline))
+                        warning(u"Invalid vector/rotation syntax in %s"
+                                u" line %d: %s" % (ubuiltins, linenum, uline))
                 else:
                     assert typ == 'list'
                     if value[0:1] != '[' or value[-1:] != ']':
-                        warning(u"Invalid list value in %s, line %d: %s" % (ubuiltins, linenum, uline))
+                        warning(u"Invalid list value in %s, line %d: %s"
+                                % (ubuiltins, linenum, uline))
                     elif value[1:-1].strip() != '':
-                        warning(u"Non-empty list constants not supported in %s, line %d: %s" % (ubuiltins, linenum, uline))
+                        warning(u"Non-empty list constants not supported"
+                                u" in %s, line %d: %s"
+                                % (ubuiltins, linenum, uline))
                         value = None
                     else:
                         value = []
@@ -382,13 +394,14 @@ def LoadLibrary(builtins = None, fndata = None):
         ui = i.decode('utf8')
         if 'NeedsData' in functions[i]:
             del functions[i]['NeedsData']
-            warning(u"Function %s has no data" % i)
+            warning(u"Library data: Function %s has no data" % i)
         if 'min' in functions[i] and 'max' in functions[i]:
             if functions[i]['min'] > functions[i]['max']:
-                warning(u"Function %s has min > max: min=%s max=%s"
+                warning(u"Library data: Function %s has min > max: min=%s max=%s"
                         % (ui, repr(functions[i]['min']).decode('utf8'),
                            repr(functions[i]['max'])))
         if 'SEF' in functions[i] and 'delay' in functions[i]:
-            warning(u"Side-effect-free function %s contradicts delay" % ui)
+            warning(u"Library data: Side-effect-free function %s contradicts"
+                    u" delay" % ui)
 
     return events, constants, functions
