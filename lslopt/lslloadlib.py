@@ -126,7 +126,7 @@ def LoadLibrary(builtins = None, fndata = None):
                                 % (linenum, ubuiltins, uname))
                         del uname
                     fn = getattr(lslfuncs, name, None)
-                    functions[name] = {'Kind':'f', 'Type':typ,
+                    functions[name] = {'Kind':'f', 'Type':typ, 'uns':True,
                                        'ParamTypes':args, 'NeedsData':True}
                     if fn is not None:
                         functions[name]['Fn'] = fn
@@ -316,7 +316,7 @@ def LoadLibrary(builtins = None, fndata = None):
                 # passed all tests
                 curr_fn = name
                 skipping = False
-                del functions[name]['NeedsData']
+                del functions[name]['NeedsData'], functions[name]['uns']
 
             else:
                 match_flag = parse_flag_re.search(line)
