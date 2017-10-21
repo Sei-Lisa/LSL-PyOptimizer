@@ -1,0 +1,1455 @@
+# Function properties table
+#
+# Copyright © 2015-2017 Sei Lisa. All rights reserved.
+#
+#    This file is part of LSL PyOptimizer.
+#
+#    LSL PyOptimizer is free software: you can redistribute it and/or
+#    modify it under the terms of the GNU General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    LSL PyOptimizer is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with LSL PyOptimizer. If not, see <http://www.gnu.org/licenses/>.
+
+# This file provides information to the optimizer about the behaviour of
+# functions. This knowledge can help perform a better job at optimizing.
+# All functions present in builtins.txt must be here and vice versa.
+
+# Flags are entered with a dash at the beginning of the line, then a space,
+# then the flag. Flags apply to the function they are under.
+#
+# Available flags:
+#
+#  stable:
+#    Two successive calls with the same parameters are assumed to return
+#    the same results in most reasonable cases. When it's stable and SEF
+#    it's posible to simplify two identical calls into one. Example:
+#    llGetPermissions(). Counterexample: llFrand(). This is the default;
+#    unstable functions must be marked as such. Does not apply to void
+#    functions.
+#
+#  unstable:
+#    Not stable.
+#
+#  variable:
+#    Not stable. Alias for unstable.
+#
+#  delay <value>:
+#    Function has a delay.
+#
+#  SEF [if <condition>]:
+#    Side-effect free. The function has no side effects when executed,
+#    which means that when used in a situation where it does nothing,
+#    it can be removed without affecting execution. Example:
+#    llGetNumberOfPrims(). All functions with delay have a side effect
+#    (the delay itself).
+#
+#    With if <condition>, the function is SEF if the parameters are
+#    found to meet the condition. Syntax of <condition> is explained below.
+#
+#  min:
+#    Applied to functions that return integer or float. Specifies the
+#    minimum value it may return. If not present, assume the minimum
+#    possible (-inf for floats, -2147483648 for integers). Use like this:
+#
+#     - min <min value>
+#
+#  max:
+#    Like min, but for the maximum value.
+#
+#  return <value> [if <condition>]:
+#    Self-explanatory. There can be several; they are evaluated in order.
+#    <value> can be a parameter or a LSL constant. <condition> is explaned
+#    below.
+#
+#  <condition>
+#    Subset of LSL expressions using only  (, ), ==, !=, <, <=, >, >=,
+#    &&, ||, constants, function parameters and one function. As an extension,
+#    Python-like operator chaining works, e.g. a < b < c or a == b == c.
+#    && has more priority than ||.
+#    The type of comparisons is bool and can't be used as integer.
+#    Lists are compared for equal. Elements in lists, vectors and
+#    rotations must be constants.
+#
+#    ['<' and '>' need spaces around them when they are comparisons;
+#    vectors need to have no space after '<' or before '>'.] -> Let's not,
+#    and see what happens.
+#
+#    Strings are automatically type cast to key when necessary, and integers
+#    to floats, but not vice versa. Function bool nulluuid(key k) is allowed.
+#
+#    There's a pseudo-parameter of type string that is always available:
+#    event (the event where the function is called, if known; else "")
+
+# A comment like this:
+#
+# physics caveat
+#
+# means that tests show it's apparently stable because physics are
+# recomputed every frame, and the frame doesn't change that often.
+
+integer llAbs( integer val )
+- SEF
+- min 0
+
+float llAcos( float val )
+- SEF
+
+void llAddToLandBanList( key avatar, float hours )
+- delay 0.1
+
+void llAddToLandPassList( key avatar, float hours )
+- delay 0.1
+
+void llAdjustSoundVolume( float volume )
+- delay 0.1
+
+integer llAgentInExperience( key agent )
+- SEF
+- min 0
+- max 1
+
+void llAllowInventoryDrop( integer add )
+
+float llAngleBetween( rotation a, rotation b )
+- SEF
+
+void llApplyImpulse( vector force, integer local )
+
+void llApplyRotationalImpulse( vector force, integer local )
+
+float llAsin( float val )
+- SEF
+
+float llAtan2( float y, float x )
+- SEF
+
+void llAttachToAvatar( integer attach_point )
+
+void llAttachToAvatarTemp( integer attach_point )
+
+key llAvatarOnLinkSitTarget( integer link )
+- SEF
+- return "00000000-0000-0000-0000-000000000000" if link < -2147483647 || link > 256
+
+key llAvatarOnSitTarget(  )
+- SEF
+
+rotation llAxes2Rot( vector fwd, vector left, vector up )
+- SEF
+
+rotation llAxisAngle2Rot( vector axis, float angle )
+- SEF
+
+integer llBase64ToInteger( string str )
+# While it's unstable for some strings, we ignore that part.
+- SEF
+
+string llBase64ToString( string str )
+- SEF
+
+void llBreakAllLinks(  )
+
+void llBreakLink( integer linknum )
+- SEF if linknum > 256
+
+list llCSV2List( string src )
+- SEF
+
+list llCastRay( vector start, vector end, list params )
+- SEF
+
+integer llCeil( float val )
+- SEF
+
+void llClearCameraParams(  )
+
+void llClearExperiencePermissions( key agent )
+
+integer llClearLinkMedia( integer link, integer face )
+- min 0
+- max 2001
+- SEF if link > 256 || link < -2147483647
+- return 0 if link < -2147483647 || link > 256
+
+integer llClearPrimMedia( integer face )
+- delay 1.0
+- min 0
+- max 2001
+
+void llCloseRemoteDataChannel( key channel )
+- delay 1.0
+
+float llCloud( vector offset )
+- SEF
+- min 0
+- max 0
+- return 0
+
+void llCollisionFilter( string name, key id, integer accept )
+
+void llCollisionSound( string impact_sound, float impact_volume )
+
+void llCollisionSprite( string impact_sprite )
+- SEF
+
+float llCos( float theta )
+- SEF
+- min -1
+- max 1
+
+void llCreateCharacter( list options )
+
+key llCreateKeyValue( string k, string v )
+- unstable
+
+void llCreateLink( key target, integer parent )
+- delay 1.0
+
+key llDataSizeKeyValue(  )
+- unstable
+
+void llDeleteCharacter(  )
+
+key llDeleteKeyValue( string k )
+- unstable
+
+list llDeleteSubList( list src, integer start, integer end )
+- SEF
+
+string llDeleteSubString( string src, integer start, integer end )
+- SEF
+
+void llDetachFromAvatar(  )
+
+vector llDetectedGrab( integer number )
+- SEF
+# llDetectedGrab() only works for touch(), not for touch_start() etc.
+- return <0,0,0> if event != "" && event != "touch" || number < 0 || number > 15
+integer llDetectedGroup( integer number )
+- SEF
+- min 0
+- max 1
+- return 0 if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+
+key llDetectedKey( integer number )
+- SEF
+- return "00000000-0000-0000-0000-000000000000" if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+
+integer llDetectedLinkNumber( integer number )
+- SEF
+- min 0
+- max 256
+- return 0 if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+
+string llDetectedName( integer number )
+- SEF
+- return "00000000-0000-0000-0000-000000000000" if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+
+key llDetectedOwner( integer number )
+- SEF
+- return "00000000-0000-0000-0000-000000000000" if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+
+vector llDetectedPos( integer number )
+- SEF
+- return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+
+rotation llDetectedRot( integer number )
+- SEF
+- return <0,0,0,1> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+
+vector llDetectedTouchBinormal( integer number )
+- SEF
+- return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" || number < 0 || number > 15
+
+integer llDetectedTouchFace( integer number )
+- SEF
+- min -1
+- max 8
+- return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" || number < 0 || number > 15
+
+vector llDetectedTouchNormal( integer number )
+- SEF
+- return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" || number < 0 || number > 15
+
+vector llDetectedTouchPos( integer number )
+- SEF
+- return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" || number < 0 || number > 15
+
+vector llDetectedTouchST( integer number )
+- SEF
+- return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+- return <-1,-1,0> if (event == "collision" || event == "collision_start" || event == "collision_end" || event == "sensor") && number == 0
+
+vector llDetectedTouchUV( integer number )
+- SEF
+- return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+- return <-1,-1,0> if (event == "collision" || event == "collision_start" || event == "collision_end" || event == "sensor") && number == 0
+
+integer llDetectedType( integer number )
+- SEF
+- min 0
+- max 15
+- return 0 if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+
+vector llDetectedVel( integer number )
+- SEF
+- return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+
+void llDialog( key avatar, string message, list buttons, integer chat_channel )
+- delay 1.0
+
+void llDie(  )
+
+string llDumpList2String( list src, string separator )
+- SEF
+
+integer llEdgeOfWorld( vector pos, vector dir )
+- SEF
+
+void llEjectFromLand( key avatar )
+
+void llEmail( string address, string subject, string message )
+- delay 20.0
+
+string llEscapeURL( string url )
+- SEF
+
+rotation llEuler2Rot( vector v )
+- SEF
+
+void llEvade( key target, list options )
+
+void llExecCharacterCmd( integer cmd, list options )
+
+float llFabs( float val )
+- SEF
+- min 0
+
+void llFleeFrom( vector source, float radius, list options )
+
+integer llFloor( float val )
+- SEF
+
+void llForceMouselook( integer mouselook )
+
+float llFrand( float mag )
+- unstable
+- SEF
+
+key llGenerateKey(  )
+- unstable
+- SEF
+
+vector llGetAccel(  )
+# physics caveat
+#- unstable
+- SEF
+
+integer llGetAgentInfo( key id )
+- SEF
+- return 0 if nulluuid(id)
+
+string llGetAgentLanguage( key avatar )
+- SEF
+- return "" if nulluuid(id)
+
+list llGetAgentList( integer scope, list options )
+- SEF
+- return "INVALID_SCOPE" if scope != 1 && scope != 2 && scope != 4
+
+vector llGetAgentSize( key id )
+- SEF
+- return <0,0,0> if nulluuid(id)
+
+float llGetAlpha( integer face )
+- SEF
+- return 1 if face > 8
+
+float llGetAndResetTime(  )
+- unstable
+
+string llGetAnimation( key id )
+- SEF
+- return "" if nulluuid(id)
+
+list llGetAnimationList( key id )
+- SEF
+- return "" if nulluuid(id)
+
+string llGetAnimationOverride( string anim_state )
+# may err, therefore not SEF
+
+integer llGetAttached(  )
+- SEF
+- min 0
+- max 55
+
+list llGetAttachedList( key agent )
+- SEF
+- return ["NOT FOUND"] if nulluuid(agent)
+
+list llGetBoundingBox( key object )
+- SEF
+- return [] if nulluuid(object)
+
+vector llGetCameraPos(  )
+# it errs therefore not SEF
+
+rotation llGetCameraRot(  )
+# it errs therefore not SEF
+
+vector llGetCenterOfMass(  )
+- SEF
+
+list llGetClosestNavPoint( vector point, list options )
+# Claimed to have a delay, but such delay is 1 frame (?)
+- SEF
+
+vector llGetColor( integer face )
+- SEF
+- return <1,1,1> if face > 8
+
+key llGetCreator(  )
+- SEF
+
+string llGetDate(  )
+- SEF
+
+string llGetDisplayName( key id )
+- SEF
+- return "" if nulluuid(id)
+
+float llGetEnergy(  )
+# physics caveat
+#- unstable
+- SEF
+- min 0
+- max 1
+
+string llGetEnv( string name )
+- SEF
+- return "" if name == ""
+
+list llGetExperienceDetails( key experience_id )
+- SEF
+
+string llGetExperienceErrorMessage( integer value )
+- SEF
+- return "no error" if value == 0
+- return "exceeded throttle" if value == 1
+- return "experiences are disabled" if value == 2
+- return "invalid parameters" if value == 3
+- return "operation not permitted" if value == 4
+- return "script not associated with an experience" if value == 5
+- return "not found" if value == 6
+- return "invalid experience" if value == 7
+- return "experience is disabled" if value == 8
+- return "experience is suspended" if value == 9
+- return "unknown error" if value == 10
+- return "experience data quota exceeded" if value == 11
+- return "key-value store is disabled" if value == 12
+- return "key-value store communication failed" if value == 13
+- return "key doesn't exist" if value == 14
+- return "retry update" if value == 15
+- return "experience content rating too high" if value == 16
+- return "not allowed to run in current location" if value == 17
+- return "experience permissions request timed out" if value == 18
+- return "unknown error id"
+
+list llGetExperienceList( key agent )
+- SEF
+- return []
+
+vector llGetForce(  )
+- SEF
+
+integer llGetFreeMemory(  )
+- SEF
+- min 0
+- max 65536
+
+integer llGetFreeURLs(  )
+- SEF
+- min 0
+- max 65536
+
+float llGetGMTclock(  )
+- SEF
+- min 0
+- max 86399
+
+vector llGetGeometricCenter(  )
+- SEF
+
+string llGetHTTPHeader( key request_id, string header )
+- SEF
+- return "" if nulluuid(request_id)
+
+key llGetInventoryCreator( string item )
+- SEF
+
+key llGetInventoryKey( string name )
+- SEF
+- return "00000000-0000-0000-0000-000000000000" if name == ""
+
+string llGetInventoryName( integer type, integer number )
+- SEF
+- return "" if type != -1 && type != 0 && type != 1 && type != 3 && type != 5 && type != 6 && type != 7 && type != 10 && type != 13 && type != 20 && type != 21 || number < 0
+
+integer llGetInventoryNumber( integer type )
+- SEF
+- return 0 if type != -1 && type != 0 && type != 1 && type != 3 && type != 5 && type != 6 && type != 7 && type != 10 && type != 13 && type != 20 && type != 21
+
+integer llGetInventoryPermMask( string item, integer mask )
+- SEF
+- return 0 if mask < 0 || mask > 4 || item == ""
+
+# we've completed up to here
+
+integer llGetInventoryType( string name )
+- SEF
+
+key llGetKey(  )
+- SEF
+
+key llGetLandOwnerAt( vector pos )
+- SEF
+
+key llGetLinkKey( integer linknumber )
+- SEF
+
+list llGetLinkMedia( integer link, integer face, list params )
+- SEF
+
+string llGetLinkName( integer linknumber )
+- SEF
+
+integer llGetLinkNumber(  )
+- SEF
+
+integer llGetLinkNumberOfSides( integer link )
+- SEF
+
+list llGetLinkPrimitiveParams( integer linknumber, list rules )
+- SEF
+
+integer llGetListEntryType( list src, integer index )
+- SEF
+
+integer llGetListLength( list src )
+- SEF
+
+vector llGetLocalPos(  )
+# physics caveat
+#- unstable
+- SEF
+
+rotation llGetLocalRot(  )
+# physics caveat
+#- unstable
+- SEF
+
+float llGetMass(  )
+- SEF
+
+float llGetMassMKS(  )
+- SEF
+
+float llGetMaxScaleFactor(  )
+- SEF
+
+integer llGetMemoryLimit(  )
+- SEF
+
+float llGetMinScaleFactor(  )
+- SEF
+
+void llGetNextEmail( string address, string subject )
+
+key llGetNotecardLine( string name, integer line )
+- unstable
+- delay 0.1
+
+key llGetNumberOfNotecardLines( string name )
+- unstable
+- delay 0.1
+
+integer llGetNumberOfPrims(  )
+- SEF
+
+integer llGetNumberOfSides(  )
+- SEF
+
+string llGetObjectDesc(  )
+- SEF
+
+list llGetObjectDetails( key id, list params )
+# physics caveat
+#- unstable
+- SEF
+
+float llGetObjectMass( key id )
+- SEF
+
+string llGetObjectName(  )
+- SEF
+
+integer llGetObjectPermMask( integer mask )
+- SEF
+
+integer llGetObjectPrimCount( key object_id )
+- SEF
+
+vector llGetOmega(  )
+# physics caveat
+#- unstable
+- SEF
+
+key llGetOwner(  )
+- SEF
+
+key llGetOwnerKey( key id )
+- SEF
+- return "00000000-0000-0000-0000-000000000000" if nulluuid(id)
+
+list llGetParcelDetails( vector pos, list params )
+- SEF
+
+integer llGetParcelFlags( vector pos )
+- SEF
+
+integer llGetParcelMaxPrims( vector pos, integer sim_wide )
+- SEF
+
+string llGetParcelMusicURL(  )
+- SEF
+
+integer llGetParcelPrimCount( vector pos, integer category, integer sim_wide )
+- SEF
+
+list llGetParcelPrimOwners( vector pos )
+- delay 2.0
+
+integer llGetPermissions(  )
+- SEF
+
+key llGetPermissionsKey(  )
+- SEF
+
+list llGetPhysicsMaterial(  )
+- SEF
+
+vector llGetPos(  )
+# physics caveat
+#- unstable
+- SEF
+
+list llGetPrimMediaParams( integer face, list params )
+- delay 1.0
+
+list llGetPrimitiveParams( list params )
+- delay 0.2
+
+integer llGetRegionAgentCount(  )
+- SEF
+
+vector llGetRegionCorner(  )
+- SEF
+
+float llGetRegionFPS(  )
+- SEF
+
+integer llGetRegionFlags(  )
+- SEF
+
+string llGetRegionName(  )
+- SEF
+
+float llGetRegionTimeDilation(  )
+- SEF
+
+vector llGetRootPosition(  )
+# physics caveat
+#- unstable
+- SEF
+
+rotation llGetRootRotation(  )
+# physics caveat
+#- unstable
+- SEF
+
+rotation llGetRot(  )
+# physics caveat
+#- unstable
+- SEF
+
+integer llGetSPMaxMemory(  )
+- SEF
+
+vector llGetScale(  )
+- SEF
+
+string llGetScriptName(  )
+- SEF
+
+integer llGetScriptState( string name )
+- SEF
+
+float llGetSimStats( integer stat_type )
+- SEF
+
+string llGetSimulatorHostname(  )
+- delay 10.0
+
+integer llGetStartParameter(  )
+- SEF
+
+list llGetStaticPath( vector start, vector end, float radius, list params )
+# believed to be side-effect free
+- SEF
+
+integer llGetStatus( integer status )
+- SEF
+- min 0
+- max 1
+
+string llGetSubString( string src, integer start, integer end )
+- SEF
+
+vector llGetSunDirection(  )
+- SEF
+
+string llGetTexture( integer face )
+- SEF
+- return "00000000-0000-0000-0000-000000000000" if face > 8
+
+vector llGetTextureOffset( integer face )
+- SEF
+- return <0,0,0> if face > 8
+
+float llGetTextureRot( integer side )
+- SEF
+- return 0 if side > 8
+
+vector llGetTextureScale( integer side )
+- SEF
+- return <0,0,0> if side > 8
+
+float llGetTime(  )
+- SEF
+# It's stable within the same frame.
+
+float llGetTimeOfDay(  )
+- unstable
+- SEF
+
+string llGetTimestamp(  )
+- unstable
+- SEF
+
+vector llGetTorque(  )
+- SEF
+
+integer llGetUnixTime(  )
+- SEF
+
+integer llGetUsedMemory(  )
+- unstable
+- SEF
+
+string llGetUsername( key id )
+- SEF
+
+vector llGetVel(  )
+# physics caveat
+#- unstable
+- SEF
+
+float llGetWallclock(  )
+- SEF
+- min 0
+- max 86399
+
+void llGiveInventory( key destination, string inventory )
+# delay only applies if giving to avatars
+# (delay is not important because it's not applied when SEF)
+#- delay 2.0
+- SEF if nulluuid(destination)
+
+void llGiveInventoryList( key target, string folder, list inventory )
+- delay 3.0
+
+integer llGiveMoney( key destination, integer amount )
+- min 0
+- max 0
+
+void llGodLikeRezObject( key inventory, vector pos )
+
+float llGround( vector offset )
+- SEF
+- min 0
+
+vector llGroundContour( vector offset )
+- SEF
+
+vector llGroundNormal( vector offset )
+- SEF
+
+void llGroundRepel( float height, integer water, float tau )
+
+vector llGroundSlope( vector offset )
+- SEF
+
+key llHTTPRequest( string url, list parameters, string body )
+- unstable
+
+void llHTTPResponse( key request_id, integer status, string body )
+
+string llInsertString( string dst, integer position, string src )
+- SEF
+
+void llInstantMessage( key user, string message )
+- delay 2.0
+
+string llIntegerToBase64( integer number )
+- SEF
+
+list llJson2List( string json )
+- SEF
+
+string llJsonGetValue( string json, list specifiers )
+- SEF
+
+string llJsonSetValue( string json, list specifiers, string value )
+- SEF
+
+string llJsonValueType( string json, list specifiers )
+- SEF
+
+string llKey2Name( key id )
+- SEF
+
+key llKeyCountKeyValue(  )
+- unstable
+
+key llKeysKeyValue( integer start, integer count )
+- unstable
+
+void llLinkParticleSystem( integer linknumber, list rules )
+- SEF if linknumber > 256
+
+void llLinkSitTarget( integer link, vector offset, rotation rot )
+- SEF if link > 256
+
+string llList2CSV( list src )
+- SEF
+
+float llList2Float( list src, integer index )
+- SEF
+
+integer llList2Integer( list src, integer index )
+- SEF
+
+string llList2Json( string type, list values )
+- SEF
+
+key llList2Key( list src, integer index )
+- SEF
+
+list llList2List( list src, integer start, integer end )
+- SEF
+
+list llList2ListStrided( list src, integer start, integer end, integer stride )
+- SEF
+
+rotation llList2Rot( list src, integer index )
+- SEF
+
+string llList2String( list src, integer index )
+- SEF
+
+vector llList2Vector( list src, integer index )
+- SEF
+
+integer llListFindList( list src, list test )
+- SEF
+
+list llListInsertList( list dest, list src, integer start )
+- SEF
+
+list llListRandomize( list src, integer stride )
+- unstable
+- SEF
+
+list llListReplaceList( list dest, list src, integer start, integer end )
+- SEF
+
+list llListSort( list src, integer stride, integer ascending )
+- SEF
+
+float llListStatistics( integer operation, list src )
+- SEF
+
+integer llListen( integer channel, string name, key id, string msg )
+
+void llListenControl( integer number, integer active )
+- SEF if number == 0
+
+void llListenRemove( integer number )
+- SEF if number == 0
+
+void llLoadURL( key avatar, string message, string url )
+- delay 0.1
+
+float llLog( float val )
+- SEF
+
+float llLog10( float val )
+- SEF
+
+void llLookAt( vector target, float strength, float damping )
+
+void llLoopSound( string sound, float volume )
+
+void llLoopSoundMaster( string sound, float volume )
+
+void llLoopSoundSlave( string sound, float volume )
+
+string llMD5String( string src, integer nonce )
+- SEF
+
+void llMakeExplosion( integer particles, float scale, float vel, float lifetime, float arc, string texture, vector offset )
+- delay 0.1
+
+void llMakeFire( integer particles, float scale, float vel, float lifetime, float arc, string texture, vector offset )
+- delay 0.1
+
+void llMakeFountain( integer particles, float scale, float vel, float lifetime, float arc, integer bounce, string texture, vector offset, float bounce_offset )
+- delay 0.1
+
+void llMakeSmoke( integer particles, float scale, float vel, float lifetime, float arc, string texture, vector offset )
+- delay 0.1
+
+integer llManageEstateAccess( integer action, key id )
+# TODO: Find what happens on invalid action codes, to see if they are SEF.
+- min 0
+- max 1
+
+void llMapDestination( string simname, vector pos, vector look_at )
+- delay 1.0
+
+void llMessageLinked( integer linknum, integer num, string str, key id )
+- SEF if linknum > 256
+
+void llMinEventDelay( float delay )
+
+integer llModPow( integer a, integer b, integer c )
+- delay 1.0
+
+void llModifyLand( integer action, integer brush )
+
+void llMoveToTarget( vector target, float tau )
+
+void llNavigateTo( vector point, list options )
+
+void llOffsetTexture( float u, float v, integer face )
+- delay 0.2
+
+void llOpenRemoteDataChannel(  )
+- delay 1.0
+
+integer llOverMyLand( key id )
+- SEF
+- min 0
+- max 1
+# assumed:
+- return 0 if nulluuid(id)
+
+void llOwnerSay( string msg )
+
+void llParcelMediaCommandList( list command )
+- delay 2.0
+
+list llParcelMediaQuery( list query )
+- delay 2.0
+
+list llParseString2List( string src, list separators, list spacers )
+- SEF
+
+list llParseStringKeepNulls( string src, list separators, list spacers )
+- SEF
+
+void llParticleSystem( list rules )
+
+void llPassCollisions( integer pass )
+
+void llPassTouches( integer pass )
+
+void llPatrolPoints( list points, list options )
+
+void llPlaySound( string sound, float volume )
+
+void llPlaySoundSlave( string sound, float volume )
+
+void llPointAt( vector pos )
+- SEF
+
+float llPow( float base, float exponent )
+- SEF
+
+void llPreloadSound( string sound )
+- delay 1.0
+
+void llPursue( key target, list options )
+
+void llPushObject( key id, vector impulse, vector ang_impulse, integer local )
+
+key llReadKeyValue( string k )
+- unstable
+
+void llRefreshPrimURL(  )
+# emits an error -> has side effects
+- delay 20.0
+
+void llRegionSay( integer channel, string msg )
+# channel 0 emits an error -> not SEF
+
+void llRegionSayTo( key target, integer channel, string msg )
+
+void llReleaseCamera( key avatar )
+- SEF
+
+void llReleaseControls(  )
+
+void llReleaseURL( string url )
+- SEF if url == ""
+
+void llRemoteDataReply( key channel, key message_id, string sdata, integer idata )
+- delay 3.0
+
+void llRemoteDataSetRegion(  )
+
+void llRemoteLoadScript( key target, string name, integer running, integer start_param )
+# emits an error -> has side effects
+- delay 3.0
+
+void llRemoteLoadScriptPin( key target, string name, integer pin, integer running, integer start_param )
+- delay 3.0
+
+void llRemoveFromLandBanList( key avatar )
+- delay 0.1
+
+void llRemoveFromLandPassList( key avatar )
+- delay 0.1
+
+void llRemoveInventory( string item )
+
+void llRemoveVehicleFlags( integer flags )
+
+key llRequestAgentData( key id, integer data )
+- unstable
+- delay 0.1
+
+key llRequestDisplayName( key id )
+- unstable
+- SEF if nulluuid(id)
+
+void llRequestExperiencePermissions( key agent, string name )
+
+key llRequestInventoryData( string name )
+- unstable
+- delay 1.0
+
+void llRequestPermissions( key agent, integer perm )
+- SEF if perm == 0
+
+key llRequestSecureURL(  )
+- unstable
+
+key llRequestSimulatorData( string simulator, integer data )
+- unstable
+- delay 1.0
+
+key llRequestURL(  )
+- unstable
+
+key llRequestUsername( key id )
+- unstable
+
+void llResetAnimationOverride( string anim_state )
+
+void llResetLandBanList(  )
+- delay 0.1
+
+void llResetLandPassList(  )
+- delay 0.1
+
+void llResetOtherScript( string name )
+
+void llResetScript(  )
+- stop
+
+void llResetTime(  )
+
+integer llReturnObjectsByID( list objects )
+- min -5
+- max 65536
+
+integer llReturnObjectsByOwner( key owner, integer scope )
+# assumed unstable
+- unstable
+- min -5
+- max 65536
+
+void llRezAtRoot( string inventory, vector pos, vector vel, rotation rot, integer param )
+- delay 0.1
+
+void llRezObject( string inventory, vector pos, vector vel, rotation rot, integer param )
+- delay 0.1
+
+float llRot2Angle( rotation rot )
+- SEF
+
+vector llRot2Axis( rotation rot )
+- SEF
+
+vector llRot2Euler( rotation q )
+- SEF
+
+vector llRot2Fwd( rotation q )
+- SEF
+
+vector llRot2Left( rotation q )
+- SEF
+
+vector llRot2Up( rotation q )
+- SEF
+
+rotation llRotBetween( vector v1, vector v2 )
+- SEF
+
+void llRotLookAt( rotation target, float strength, float damping )
+
+integer llRotTarget( rotation rot, float error )
+- unstable
+
+void llRotTargetRemove( integer number )
+
+void llRotateTexture( float angle, integer face )
+- delay 0.2
+
+integer llRound( float val )
+- SEF
+
+string llSHA1String( string src )
+- SEF
+
+integer llSameGroup( key id )
+- SEF
+- min 0
+- max 1
+
+void llSay( integer channel, string msg )
+
+integer llScaleByFactor( float scaling_factor )
+- unstable
+- min 0
+- max 1
+
+void llScaleTexture( float u, float v, integer face )
+- delay 0.2
+
+integer llScriptDanger( vector pos )
+- SEF
+- min 0
+- max 1
+
+void llScriptProfiler( integer flags )
+
+key llSendRemoteData( key channel, string dest, integer idata, string sdata )
+- unstable
+- delay 3.0
+
+void llSensor( string name, key id, integer type, float range, float arc )
+# type == 0 || range == 0 cancels a sensor in this frame.
+
+void llSensorRemove(  )
+
+void llSensorRepeat( string name, key id, integer type, float range, float arc, float rate )
+
+void llSetAlpha( float alpha, integer face )
+- SEF if face > 8
+
+void llSetAngularVelocity( vector angular_velocity, integer local )
+
+void llSetAnimationOverride( string anim_state, string anim )
+
+void llSetBuoyancy( float buoyancy )
+
+void llSetCameraAtOffset( vector offset )
+
+void llSetCameraEyeOffset( vector offset )
+
+void llSetCameraParams( list rules )
+
+void llSetClickAction( integer action )
+
+void llSetColor( vector color, integer face )
+- SEF if face > 8
+
+void llSetContentType( key request_id, integer content_type )
+- SEF if nulluuid(request_id)
+
+void llSetDamage( float damage )
+
+void llSetForce( vector force, integer local )
+
+void llSetForceAndTorque( vector force, vector torque, integer local )
+
+void llSetHoverHeight( float height, integer water, float tau )
+
+void llSetInventoryPermMask( string item, integer mask, integer value )
+
+void llSetKeyframedMotion( list keyframes, list options )
+
+void llSetLinkAlpha( integer linknumber, float alpha, integer face )
+- SEF if linknumber > 256 || face > 8
+
+void llSetLinkCamera( integer link, vector eye, vector at )
+- SEF if link > 256
+
+void llSetLinkColor( integer linknumber, vector color, integer face )
+- SEF if linknumber > 256 || face > 8
+
+integer llSetLinkMedia( integer link, integer face, list params )
+- SEF if link > 256
+
+void llSetLinkPrimitiveParams( integer linknumber, list rules )
+- delay 0.2
+
+void llSetLinkPrimitiveParamsFast( integer linknumber, list rules )
+- SEF if linknumber > 256
+
+void llSetLinkTexture( integer linknumber, string texture, integer face )
+- delay 0.2
+
+void llSetLinkTextureAnim( integer link, integer mode, integer face, integer sizex, integer sizey, float start, float length, float rate )
+- SEF if linknumber > 256
+
+void llSetLocalRot( rotation rot )
+- delay 0.2
+
+integer llSetMemoryLimit( integer limit )
+- SEF if limit <= 0
+- min 0
+- max 1
+
+void llSetObjectDesc( string desc )
+
+void llSetObjectName( string name )
+
+void llSetObjectPermMask( integer mask, integer value )
+
+void llSetParcelMusicURL( string url )
+- delay 2.0
+
+void llSetPayPrice( integer price, list quick_pay_buttons )
+
+void llSetPhysicsMaterial( integer flags, float gravity_multiplier, float restitution, float friction, float density )
+- SEF if flags == 0
+
+void llSetPos( vector pos )
+- delay 0.2
+
+integer llSetPrimMediaParams( integer face, list params )
+- delay 1.0
+
+void llSetPrimURL( string url )
+# emits an error -> has side effects
+- delay 20.0
+
+void llSetPrimitiveParams( list rules )
+- delay 0.2
+
+integer llSetRegionPos( vector pos )
+# unstable because it may fail when becoming more accurate and positioning
+# over an invalid parcel
+- unstable
+- min 0
+- max 1
+
+void llSetRemoteScriptAccessPin( integer pin )
+- delay 0.2
+
+void llSetRot( rotation rot )
+- delay 0.2
+
+void llSetScale( vector scale )
+
+void llSetScriptState( string name, integer run )
+
+void llSetSitText( string text )
+
+void llSetSoundQueueing( integer queue )
+
+void llSetSoundRadius( float radius )
+
+void llSetStatus( integer status, integer value )
+
+void llSetText( string text, vector color, float alpha )
+
+void llSetTexture( string texture, integer face )
+- delay 0.2
+
+void llSetTextureAnim( integer mode, integer face, integer sizex, integer sizey, float start, float length, float rate )
+
+void llSetTimerEvent( float sec )
+
+void llSetTorque( vector torque, integer local )
+
+void llSetTouchText( string text )
+
+void llSetVehicleFlags( integer flags )
+
+void llSetVehicleFloatParam( integer param, float value )
+
+void llSetVehicleRotationParam( integer param, rotation rot )
+
+void llSetVehicleType( integer type )
+
+void llSetVehicleVectorParam( integer param, vector vec )
+
+void llSetVelocity( vector velocity, integer local )
+
+void llShout( integer channel, string msg )
+
+float llSin( float theta )
+- SEF
+
+integer llSitOnLink( key agent_id, integer link )
+- min -7
+- max 1
+
+void llSitTarget( vector offset, rotation rot )
+
+void llSleep( float sec )
+
+void llSound( string sound, float volume, integer queue, integer loop )
+
+void llSoundPreload( string sound )
+
+float llSqrt( float val )
+- SEF
+
+void llStartAnimation( string anim )
+
+void llStopAnimation( string anim )
+
+void llStopHover(  )
+
+void llStopLookAt(  )
+
+void llStopMoveToTarget(  )
+
+void llStopPointAt(  )
+
+void llStopSound(  )
+
+integer llStringLength( string str )
+- SEF
+
+string llStringToBase64( string str )
+- SEF
+
+string llStringTrim( string src, integer trim_type )
+- SEF
+
+integer llSubStringIndex( string source, string pattern )
+- SEF
+
+void llTakeCamera( key avatar )
+- SEF
+
+void llTakeControls( integer controls, integer accept, integer pass_on )
+
+float llTan( float theta )
+- SEF
+
+integer llTarget( vector position, float range )
+- unstable
+
+void llTargetOmega( vector axis, float spinrate, float gain )
+
+void llTargetRemove( integer number )
+- SEF if number == 0
+
+void llTeleportAgent( key avatar, string landmark, vector position, vector look_at )
+
+void llTeleportAgentGlobalCoords( key agent, vector global_coordinates, vector region_coordinates, vector look_at )
+
+void llTeleportAgentHome( key id )
+- delay 5.0
+
+void llTextBox( key avatar, string message, integer chat_channel )
+- delay 1.0
+
+string llToLower( string src )
+- SEF
+
+string llToUpper( string src )
+- SEF
+
+key llTransferLindenDollars( key destination, integer amount )
+- unstable
+
+void llTriggerSound( string sound, float volume )
+
+void llTriggerSoundLimited( string sound, float volume, vector top_north_east, vector bottom_south_west )
+
+void llUnSit( key id )
+
+string llUnescapeURL( string url )
+- SEF
+
+void llUpdateCharacter( list options )
+
+key llUpdateKeyValue( string k, string v, integer checked, string original_value )
+- unstable
+
+float llVecDist( vector v1, vector v2 )
+- SEF
+
+float llVecMag( vector v )
+- SEF
+
+vector llVecNorm( vector v )
+- SEF
+
+void llVolumeDetect( integer detect )
+
+void llWanderWithin( vector center, vector radius, list options )
+
+float llWater( vector offset )
+- SEF
+- min 0
+
+void llWhisper( integer channel, string msg )
+
+vector llWind( vector offset )
+- SEF
+
+string llXorBase64( string str1, string str2 )
+- SEF
+
+string llXorBase64Strings( string str1, string str2 )
+- delay 0.3
+
+string llXorBase64StringsCorrect( string str1, string str2 )
+- SEF

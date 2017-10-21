@@ -203,7 +203,7 @@ Usage: {progname}
     [--version]                 print this program's version
     [-o|--output=<filename>]    output to file rather than stdout
     [-b|--builtins=<filename>]  use a builtins file other than builtins.txt
-    [-S|--seftable=<filename>]  use a SEF table file other than seftable.txt
+    [-L|--libdata=<filename>]   use a function data file other than fndata.txt
     [-H|--header]               add the script as a comment in Firestorm format
     [-T|--timestamp]            add a timestamp as a comment at the beginning
     [-y|--python-exceptions]    when an exception is raised, show a stack trace
@@ -380,12 +380,12 @@ def main(argv):
         % (b"', '".join(options - validoptions)).decode('utf8'))
 
     try:
-        opts, args = getopt.gnu_getopt(argv[1:], 'hO:o:p:P:HTyb:S:',
+        opts, args = getopt.gnu_getopt(argv[1:], 'hO:o:p:P:HTyb:L:',
             ('optimizer-options=', 'help', 'version', 'output=', 'header',
             'timestamp','python-exceptions',
             'preproc=', 'precmd=', 'prearg=', 'prenodef', 'preshow',
             'avid=', 'avname=', 'assetid=', 'shortname=', 'builtins='
-            'seftable='))
+            'libdata='))
     except getopt.GetoptError as e:
         Usage(argv[0])
         sys.stderr.write(u"\nError: " + str(e).decode('utf8') + u"\n")
@@ -405,7 +405,7 @@ def main(argv):
     preshow = False
     raise_exception = False
     builtins = None
-    seftable = None
+    libdata = None
 
     for opt, arg in opts:
         if type(opt) is unicode:
@@ -452,8 +452,8 @@ def main(argv):
         elif opt in ('-b', '--builtins'):
             builtins = arg
 
-        elif opt in ('-S', '--seftable'):
-            seftable = arg
+        elif opt in ('-L', '--libdata'):
+            libdata = arg
 
         elif opt in ('-y', '--python-exceptions'):
             raise_exception = True
@@ -652,7 +652,7 @@ def main(argv):
 
         if not preshow:
 
-            lib = lslopt.lslloadlib.LoadLibrary(builtins, seftable)
+            lib = lslopt.lslloadlib.LoadLibrary(builtins, libdata)
             p = parser(lib)
             try:
                 ts = p.parse(script, options,

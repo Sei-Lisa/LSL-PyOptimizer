@@ -21,16 +21,16 @@ import sys, re
 from lslcommon import types, warning, Vector, Quaternion
 import lslcommon, lslfuncs
 
-def LoadLibrary(builtins = None, seftable = None):
-    """Load builtins.txt and seftable.txt (or the given filenames) and return
+def LoadLibrary(builtins = None, fndata = None):
+    """Load builtins.txt and fndata.txt (or the given filenames) and return
     a tuple with the events, constants and functions, each in a dict.
     """
 
     if builtins is None:
         builtins = lslcommon.DataPath + 'builtins.txt'
 
-    if seftable is None:
-        seftable = lslcommon.DataPath + 'seftable.txt'
+    if fndata is None:
+        fndata = lslcommon.DataPath + 'fndata.txt'
 
     events = {}
     constants = {}
@@ -50,8 +50,10 @@ def LoadLibrary(builtins = None, seftable = None):
         r'\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.*?)\s*$'
         r'|'
         r'^\s*(?:#.*|//.*)?$')
-    parse_arg_re = re.compile(r'^\s*([a-z]+)\s+[a-zA-Z_][a-zA-Z0-9_]*\s*$')
-    parse_num_re = re.compile(r'^\s*(-?(?=[0-9]|\.[0-9])[0-9]*((?:\.[0-9]*)?(?:[Ee][+-]?[0-9]+)?))\s*$')
+    parse_arg_re = re.compile(r'^\s*([a-z]+)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*$')
+    parse_fp_re  = re.compile(r'^\s*(-?(?=[0-9]|\.[0-9])[0-9]*'
+                              r'((?:\.[0-9]*)?(?:[Ee][+-]?[0-9]+)?))\s*$')
+    parse_int_re = re.compile(r'^\s*(-?0x[0-9A-Fa-f]+|-?[0-9]+)\s*$')
     parse_str_re = re.compile(ur'^"((?:[^"\\]|\\.)*)"$')
 
     f = open(builtins, 'rb')
@@ -84,7 +86,8 @@ def LoadLibrary(builtins = None, seftable = None):
                 if typ == 'void':
                     typ = None
                 elif typ != 'event' and typ not in types:
-                    warning(u"Invalid type in %s, line %d: %s" % (ubuiltins, linenum, typ))
+                    warning(u"Invalid type in %s, line %d: %s"
+                            % (ubuiltins, linenum, typ))
                     continue
                 args = []
                 arglist = match.group(3)
@@ -95,7 +98,8 @@ def LoadLibrary(builtins = None, seftable = None):
                         argtyp = parse_arg_re.search(arg).group(1)
                         if argtyp not in types:
                             uargtyp = argtyp.decode('utf8')
-                            warning(u"Invalid type in %s, line %d: %s" % (ubuiltins, linenum, uargtyp))
+                            warning(u"Invalid type in %s, line %d: %s"
+                                    % (ubuiltins, linenum, uargtyp))
                             del uargtyp
                             bad = True
                             break
@@ -118,7 +122,8 @@ def LoadLibrary(builtins = None, seftable = None):
                         warning(u"Function at line %d was already defined in %s, overwriting: %s" % (linenum, ubuiltins, uname))
                         del uname
                     fn = getattr(lslfuncs, name, None)
-                    functions[name] = {'Kind':'f', 'Type':typ, 'ParamTypes':args}
+                    functions[name] = {'Kind':'f', 'Type':typ,
+                                       'ParamTypes':args, 'NeedsData':True}
                     if fn is not None:
                         functions[name]['Fn'] = fn
             elif match.group(4):
@@ -174,22 +179,22 @@ def LoadLibrary(builtins = None, seftable = None):
                         value = value[1:-1].split(',')
                         if len(value) != (3 if typ == 'vector' else 4):
                             raise ValueError
-                        num = parse_num_re.search(value[0])
+                        num = parse_fp_re.search(value[0])
                         if not num:
                             raise ValueError
                         value[0] = lslfuncs.F32(float(num.group(1)))
-                        num = parse_num_re.search(value[1])
+                        num = parse_fp_re.search(value[1])
                         if not num:
                             raise ValueError
                         value[1] = lslfuncs.F32(float(num.group(1)))
-                        num = parse_num_re.search(value[2])
+                        num = parse_fp_re.search(value[2])
                         if not num:
                             raise ValueError
                         value[2] = lslfuncs.F32(float(num.group(1)))
                         if typ == 'vector':
                             value = Vector(value)
                         else:
-                            num = parse_num_re.search(value[3])
+                            num = parse_fp_re.search(value[3])
                             if not num:
                                 raise ValueError
                             value[3] = lslfuncs.F32(float(num.group(1)))
@@ -211,20 +216,200 @@ def LoadLibrary(builtins = None, seftable = None):
     finally:
         f.close()
 
-    # Load the side-effect-free table as well.
-    # TODO: Transform the SEF Table into a function properties table
-    #       that includes domain data (min, max) and stability data
-    #       (whether multiple successive calls return the same result)
-    f = open(seftable, 'rb')
+    # Load the function data table as well.
+
+    parse_flag_re = re.compile(r'^\s*-\s+(?:(?:(sef)|return\s+'
+        r'("(?:\\.|[^"])*"|<[^>]+>|[-+0-9x.e]+'  # strings, vectors, numbers
+        r'|\[(?:[^]"]|"(?:\\.|[^"])*")*\]))'      # lists
+        r'(?:\s+if\s+(.*\S))?'
+        r'|(unstable|stop)|(min|max|delay)\s+([-0-9.]+))\s*$', re.I)
+
+    # TODO: "quaternion" doesn't compare equal to "rotation" even if they are
+    #       equivalent. Canonicalize it before comparison, to avoid false
+    #       reports of mismatches.
+    f = open(fndata, 'rb')
+    try:
+        linenum = 0
+        curr_fn = None
+        skipping = False
+        try:
+            ufndata = fndata.decode(sys.getfilesystemencoding())
+        except UnicodeDecodeError:
+            # This is just a guess at the filename encoding.
+            ufndata = fndata.decode('iso-8859-15')
+        while True:
+            linenum += 1
+            line = f.readline()
+            if not line: break
+            if line[-1] == '\n': line = line[:-1]
+            try:
+                uline = line.decode('utf8')
+            except UnicodeDecodeError:
+                warning(u"Bad Unicode in %s line %d" % (ufndata, linenum))
+                continue
+            match_fn = parse_lin_re.search(line)
+            if match_fn and not match_fn.group(4) and not match_fn.group(1):
+                # comment or empty
+                continue
+
+            rettype = match_fn.group(1) if match_fn else None
+            if match_fn and (rettype == 'void' or rettype in types):
+                skipping = True  # until proven otherwise
+                name = match_fn.group(2)
+                uname = name.decode('utf8')
+                if name not in functions:
+                    warning(u"Function %s is not in builtins, in %s line %d,"
+                            u" skipping."
+                            % (uname, ufndata, linenum))
+                    continue
+                rettype = rettype if rettype != 'void' else None
+                if rettype != functions[name]['Type']:
+                    warning(u"Function %s returns invalid type, in %s line %d,"
+                            u" skipping."
+                            % (uname, ufndata, linenum))
+                    continue
+                argnames = []
+                arglist = match_fn.group(3)
+                current_args = functions[name]['ParamTypes']
+                if arglist:
+                    arglist = arglist.split(',')
+                    if len(current_args) != len(arglist):
+                        warning(u"Parameter list mismatch in %s line %d,"
+                                u" function %s. Skipping."
+                                % (ufndata, linenum, uname))
+                        continue
+
+                    bad = False  # used to 'continue' at this loop level
+                    for idx, arg in enumerate(arglist):
+                        argmatch = parse_arg_re.search(arg)
+                        argtyp = argmatch.group(1)
+                        argname = argmatch.group(2)
+                        if current_args[idx] != argtyp:
+                            warning(u"Parameter list mismatch in %s line %d,"
+                                    u" function %s. Skipping."
+                                    % (ufndata, linenum, uname))
+                            bad = True
+                            break
+                        argnames.append(argname)
+                    if bad:
+                        del bad
+                        continue
+                    del bad
+
+                if 'NeedsData' not in functions[name]:
+                    warning(u"Duplicate function %s in %s line %d. Skipping."
+                            % (uname, ufndata, linenum))
+                    continue
+
+                # passed all tests
+                curr_fn = name
+                skipping = False
+                del functions[name]['NeedsData']
+
+            else:
+                match_flag = parse_flag_re.search(line)
+                if match_flag:
+                    if curr_fn is None and not skipping:
+                        warning(u"Flags present before any function in %s"
+                                u" line %d: %s" % (ufndata, linenum, uline))
+                        skipping = True
+                        continue
+                    if not skipping:
+                        ucurr_fn = curr_fn.decode('utf8')
+                        if match_flag.group(1):
+                            # SEF
+                            # We don't handle conditions yet. Take the
+                            # condition as never met for now (every function
+                            # that is conditionally SEF is taken as not SEF)
+                            if not match_flag.group(3):
+                                functions[curr_fn]['SEF'] = True
+                        elif match_flag.group(2):
+                            pass # return not handled yet
+                        elif (match_flag.group(4)
+                              and match_flag.group(4).lower() == 'unstable'
+                             ):
+                            functions[curr_fn]['uns'] = True
+                        elif match_flag.group(4):  # must be stop
+                            functions[curr_fn]['stop'] = True
+                        elif match_flag.group(5).lower() in ('min', 'max'):
+                            minmax = match_flag.group(5).lower()
+                            value = match_flag.group(6)
+                            typ = functions[curr_fn]['Type']
+                            if typ == 'integer':
+                                good = parse_int_re.search(value)
+                                if good:
+                                    value = lslfuncs.S32(int(good.group(1), 0))
+                            elif typ == 'float':
+                                good = parse_fp_re.search(value)
+                                if good:
+                                    value = lslfuncs.F32(float(good.group(1)))
+                            else:
+                                good = False
+                            if good:
+                                functions[curr_fn][minmax] = value
+                            else:
+                                warning(u"Type mismatch or value error in %s"
+                                        u" line %d: %s"
+                                        % (ufndata, linenum, uline))
+                                continue
+                        else:  # delay
+                            value = parse_fp_re.search(match_flag.group(6))
+                            if not value:
+                                warning(u"Invalid delay value in %s"
+                                        u" line %d: %s"
+                                        % (ufndata, linenum, uline))
+                                continue
+
+                            value = float(value.group(1))  # no need to F32
+                            if value != 0 and 'SEF' in functions[curr_fn]:
+                                warning(u"Side-effect-free function"
+                                        u" %s contradicts delay, in %s"
+                                        u" line %d"
+                                        % (ucurr_fn, ufndata, linenum))
+                                continue
+
+                            functions[curr_fn]['delay'] = value
+                        #word = match_flag.group(1) or match_flag.group(2) or match_flag.group(4) or match_flag.group(5)
+                        #print curr_fn, repr(word)
+                else:
+                    warning(u"Syntax error in %s line %d, skipping: %s"
+                            % (ufndata, linenum, uline))
+                    continue
+
+    finally:
+        f.close()
+
+    # Post-checks
+    for i in functions:
+        ui = i.decode('utf8')
+        if 'NeedsData' in functions[i]:
+            del functions[i]['NeedsData']
+            warning(u"Function %s has no data" % i)
+        if 'min' in functions[i] and 'max' in functions[i]:
+            if functions[i]['min'] > functions[i]['max']:
+                warning(u"Function %s has min > max: min=%s max=%s"
+                        % (ui, repr(functions[i]['min']).decode('utf8'),
+                           repr(functions[i]['max'])))
+        if 'SEF' in functions[i] and 'delay' in functions[i]:
+            warning(u"Side-effect-free function %s contradicts delay" % ui)
+
+    # FIXME: Temp: Load the seftable to compare it with the ftable.
+    f = open('seftable.txt', 'rb')
     try:
         while True:
             line = f.readline()
             if line == '':
                 break
             line = line.strip()
-            if line and line[0] != '#' and line in functions:
-                functions[line]['SEF'] = True
+            if line and line[0] != '#':# and line in functions:
+                #if 'SEF' not in functions[line]:
+                #    warning(u"Function %s SEF mismatch" % line)
+                #functions[line]['SEF2'] = True
+                pass
     finally:
         f.close()
+    for line in functions:
+        if 'SEF' in functions[line] and 'SEF2' not in functions[line]:
+            pass#warning(u"Function %s SEF mismatch2" % line)
 
     return events, constants, functions
