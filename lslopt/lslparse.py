@@ -2474,7 +2474,8 @@ list lazy_list_set(list L, integer i, list v)
                         elif self.tok[0] == '}':
                             bracelevel -= 1
                         self.NextToken()
-                    ret[name] = {'Kind':'f','Type':typ,'ParamTypes':params}
+                    ret[name] = {'Kind':'f', 'Type':typ, 'ParamTypes':params,
+                                 'uns':True}
 
                 elif typ is None:
                     return ret # A variable needs a type
