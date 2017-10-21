@@ -369,8 +369,6 @@ def LoadLibrary(builtins = None, fndata = None):
                                 continue
 
                             functions[curr_fn]['delay'] = value
-                        #word = match_flag.group(1) or match_flag.group(2) or match_flag.group(4) or match_flag.group(5)
-                        #print curr_fn, repr(word)
                 else:
                     warning(u"Syntax error in %s line %d, skipping: %s"
                             % (ufndata, linenum, uline))
@@ -392,24 +390,5 @@ def LoadLibrary(builtins = None, fndata = None):
                            repr(functions[i]['max'])))
         if 'SEF' in functions[i] and 'delay' in functions[i]:
             warning(u"Side-effect-free function %s contradicts delay" % ui)
-
-    # FIXME: Temp: Load the seftable to compare it with the ftable.
-    f = open('seftable.txt', 'rb')
-    try:
-        while True:
-            line = f.readline()
-            if line == '':
-                break
-            line = line.strip()
-            if line and line[0] != '#':# and line in functions:
-                #if 'SEF' not in functions[line]:
-                #    warning(u"Function %s SEF mismatch" % line)
-                #functions[line]['SEF2'] = True
-                pass
-    finally:
-        f.close()
-    for line in functions:
-        if 'SEF' in functions[line] and 'SEF2' not in functions[line]:
-            pass#warning(u"Function %s SEF mismatch2" % line)
 
     return events, constants, functions
