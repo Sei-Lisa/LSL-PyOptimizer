@@ -149,10 +149,7 @@ class foldconst(object):
 
     def CompareTrees(self, node1, node2):
         """Try to compare two subtrees to see if they are equivalent."""
-        # They MUST be SEF
-        # FIXME: They must also be stable, i.e. return the same value
-        #        in two successive calls with a certain degree of certainty.
-        #        Counterexamples are llFrand, llGetTimestamp.
+        # They MUST be SEF and stable.
         if 'SEF' not in node1 or 'SEF' not in node2:
             return False
         # So far it's only accepted if both are identifiers or function calls,
@@ -162,6 +159,7 @@ class foldconst(object):
                 and node1['scope'] == node2['scope']
             or node1['nt'] == node2['nt'] == 'FNCALL'
                 and node1['name'] == node2['name']
+                and 'uns' not in self.symtab[0][node1['name']]
                 and all(self.CompareTrees(node1['ch'][i],
                                           node2['ch'][i])
                         for i in xrange(len(node1['ch'])))
