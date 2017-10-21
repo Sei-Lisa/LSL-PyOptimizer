@@ -163,6 +163,9 @@ class foldconst(object):
                 and all(self.CompareTrees(node1['ch'][i],
                                           node2['ch'][i])
                         for i in xrange(len(node1['ch'])))
+            or node1['nt'] == node2['nt'] == 'CAST'
+                and node1['t'] == node2['t']
+                and self.CompareTrees(node1['ch'][0], node2['ch'][0])
             )
 
     def FoldStmt(self, parent, index):
