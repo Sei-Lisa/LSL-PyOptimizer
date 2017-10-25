@@ -114,7 +114,7 @@ def LoadLibrary(builtins = None, fndata = None):
                                 u" overwriting: %s"
                                 % (linenum, ubuiltins, uname))
                         del uname
-                    events[name] = tuple(args)
+                    events[name] = {'pt':tuple(args), 'NeedsData':True}
                 else:
                     # Library functions go to the functions table. If
                     # they are implemented in lslfuncs.*, they get a
@@ -243,6 +243,7 @@ def LoadLibrary(builtins = None, fndata = None):
     try:
         linenum = 0
         curr_fn = None
+        curr_ty = None
         skipping = False
         try:
             ufndata = fndata.decode(sys.getfilesystemencoding())
@@ -265,30 +266,37 @@ def LoadLibrary(builtins = None, fndata = None):
                 continue
 
             rettype = match_fn.group(1) if match_fn else None
-            if match_fn and (rettype == 'void' or rettype in types):
+            if match_fn and (rettype in ('void', 'event') or rettype in types):
                 skipping = True  # until proven otherwise
                 name = match_fn.group(2)
                 uname = name.decode('utf8')
-                if name not in functions:
-                    warning(u"Function %s is not in builtins, in %s line %d,"
+                if (rettype == 'event' and name not in events
+                    or rettype != 'event' and name not in functions
+                   ):
+                    warning(u"%s %s is not in builtins, in %s line %d,"
                             u" skipping."
-                            % (uname, ufndata, linenum))
+                            % (u"Function" if rettype != 'event' else u"Event",
+                               uname, ufndata, linenum))
                     continue
                 rettype = rettype if rettype != 'void' else None
-                if rettype != functions[name]['Type']:
+                if 'event' != rettype != functions[name]['Type']:
                     warning(u"Function %s returns invalid type, in %s line %d,"
                             u" skipping."
                             % (uname, ufndata, linenum))
                     continue
                 argnames = []
                 arglist = match_fn.group(3)
-                current_args = functions[name]['ParamTypes']
+                current_args = (functions[name]['ParamTypes']
+                                if rettype != 'event'
+                                else events[name]['pt'])
                 if arglist:
                     arglist = arglist.split(',')
                     if len(current_args) != len(arglist):
                         warning(u"Parameter list mismatch in %s line %d,"
-                                u" function %s. Skipping."
-                                % (ufndata, linenum, uname))
+                                u" %s %s. Skipping."
+                                % (ufndata, linenum,
+                                   u"function" if rettype != 'event'
+                                   else u"event", uname))
                         continue
 
                     bad = False  # used to 'continue' at this loop level
@@ -298,8 +306,10 @@ def LoadLibrary(builtins = None, fndata = None):
                         argname = argmatch.group(2)
                         if current_args[idx] != argtyp:
                             warning(u"Parameter list mismatch in %s line %d,"
-                                    u" function %s. Skipping."
-                                    % (ufndata, linenum, uname))
+                                    u" %s %s. Skipping."
+                                    % (ufndata, linenum,
+                                       u"function" if rettype != 'event'
+                                       else u"event", uname))
                             bad = True
                             break
                         argnames.append(argname)
@@ -308,22 +318,29 @@ def LoadLibrary(builtins = None, fndata = None):
                         continue
                     del bad
 
-                if 'NeedsData' not in functions[name]:
-                    warning(u"Duplicate function %s in %s line %d. Skipping."
-                            % (uname, ufndata, linenum))
+                if 'NeedsData' not in (functions[name] if rettype != 'event'
+                                       else events[name]):
+                    warning(u"Duplicate %s %s in %s line %d. Skipping."
+                            % (u"function" if rettype != 'event' else u"event",
+                               uname, ufndata, linenum))
                     continue
 
                 # passed all tests
                 curr_fn = name
+                curr_ty = rettype
                 skipping = False
-                del functions[name]['NeedsData'], functions[name]['uns']
+                if curr_ty == 'event':
+                    del events[name]['NeedsData']
+                else:
+                    del functions[name]['NeedsData'], functions[name]['uns']
 
             else:
                 match_flag = parse_flag_re.search(line)
                 if match_flag:
                     if curr_fn is None and not skipping:
-                        warning(u"Flags present before any function in %s"
-                                u" line %d: %s" % (ufndata, linenum, uline))
+                        warning(u"Flags present before any function or event"
+                                u" in %s line %d: %s"
+                                % (ufndata, linenum, uline))
                         skipping = True
                         continue
                     if not skipping:
@@ -333,8 +350,22 @@ def LoadLibrary(builtins = None, fndata = None):
                             # We don't handle conditions yet. Take the
                             # condition as never met for now (every function
                             # that is conditionally SEF is taken as not SEF)
-                            if not match_flag.group(3):
-                                functions[curr_fn]['SEF'] = True
+                            if curr_ty == 'event' and match_flag.group(3):
+                                warning(u"Events do not support conditions"
+                                        u" in SEF flags, in line %d, event %s"
+                                        % (ufndata, linenum, ucurr_fn))
+                                continue
+                            elif curr_ty == 'event':
+                                events[curr_fn]['SEF'] = True
+                            else:
+                                if not match_flag.group(3):
+                                    functions[curr_fn]['SEF'] = True
+
+                        elif curr_ty == 'event':
+                            warning(u"Events only support bare SEF flags"
+                                    u", in line %d, event %s. Omitting %s."
+                                    % (ufndata, linenum, ucurr_fn, uline))
+                            continue
                         elif match_flag.group(2):
                             pass # return not handled yet
                         elif (match_flag.group(4)
@@ -394,7 +425,8 @@ def LoadLibrary(builtins = None, fndata = None):
         ui = i.decode('utf8')
         if 'NeedsData' in functions[i]:
             del functions[i]['NeedsData']
-            warning(u"Library data: Function %s has no data." % ui)
+            warning(u"Library data, file %s: Function %s has no data."
+                    % (ufndata, ui))
         if 'min' in functions[i] and 'max' in functions[i]:
             if functions[i]['min'] > functions[i]['max']:
                 warning(u"Library data: Function %s has min > max:"
@@ -406,5 +438,11 @@ def LoadLibrary(builtins = None, fndata = None):
             warning(u"Library data: Side-effect-free function %s contradicts"
                     u" delay. Removing SEF." % ui)
             del functions[i]['SEF']
+    for i in events:
+        ui = i.decode('utf8')
+        if 'NeedsData' in events[i]:
+            del events[i]['NeedsData']
+            warning(u"Library data, file %s: Event %s has no data."
+                    % (ufndata, ui))
 
     return events, constants, functions

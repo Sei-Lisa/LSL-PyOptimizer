@@ -18,11 +18,13 @@
 #    along with LSL PyOptimizer. If not, see <http://www.gnu.org/licenses/>.
 
 # This file provides information to the optimizer about the behaviour of
-# functions. This knowledge can help perform a better job at optimizing.
-# All functions present in builtins.txt must be here and vice versa.
+# functions and events. This knowledge can help perform a better job at
+# optimizing. All functions and events present in builtins.txt must be here
+# and vice versa.
 
 # Flags are entered with a dash at the beginning of the line, then a space,
-# then the flag. Flags apply to the function they are under.
+# then the flag. Flags apply to the function they are under. There can be none
+# before the first function.
 #
 # Available flags:
 #
@@ -1453,4 +1455,129 @@ string llXorBase64Strings( string str1, string str2 )
 - delay 0.3
 
 string llXorBase64StringsCorrect( string str1, string str2 )
+- SEF
+
+
+###################################################################
+
+# Events are SEF if a script with an empty event can't be
+# distinguished from a script without that event except for the
+# extra CPU and memory consumption.
+
+event at_rot_target( integer tnum, rotation targetrot, rotation ourrot )
+- SEF
+
+event at_target( integer tnum, vector targetpos, vector ourpos )
+- SEF
+
+event attach( key id )
+- SEF
+
+event changed( integer change )
+- SEF
+
+event collision( integer num_detected )
+# Prevents events in the parent from triggering, depending on llPassCollisions,
+# therefore not SEF.
+
+event collision_end( integer num_detected )
+# Same as with collision().
+
+event collision_start( integer num_detected )
+# Same as with collision().
+
+event control( key id, integer level, integer edge )
+- SEF
+
+event dataserver( key queryid, string data )
+- SEF
+
+event email( string time, string address, string subj, string message, integer num_left )
+- SEF
+
+event experience_permissions( key agent )
+- SEF
+
+event experience_permissions_denied( key agent, integer reason )
+- SEF
+
+event http_request( key id, string method, string body )
+# Since you can't see the URL, you can't notice the difference.
+- SEF
+
+event http_response( key request_id, integer status, list metadata, string body )
+- SEF
+
+event land_collision( vector pos )
+# Same as with collision().
+
+event land_collision_end( vector pos )
+# Same as with collision().
+
+event land_collision_start( vector pos )
+# Same as with collision().
+
+event link_message( integer sender_num, integer num, string str, key id )
+- SEF
+
+event listen( integer channel, string name, key id, string message )
+- SEF
+
+event money( key id, integer amount )
+# Adds Pay menu option, therefore not SEF.
+
+event moving_end(  )
+- SEF
+
+event moving_start(  )
+- SEF
+
+event no_sensor(  )
+- SEF
+
+event not_at_rot_target(  )
+- SEF
+
+event not_at_target(  )
+- SEF
+
+event object_rez( key id )
+- SEF
+
+event on_rez( integer start_param )
+- SEF
+
+event path_update( integer type, list reserved )
+- SEF
+
+event remote_data( integer event_type, key channel, key message_id, string sender, integer idata, string sdata )
+- SEF
+
+event run_time_permissions( integer perm )
+- SEF
+
+event sensor( integer num_detected )
+# There was a time when this was necessary for no_sensor() to trigger, but
+# that's no longer the case.
+- SEF
+
+event state_entry(  )
+- SEF
+
+event state_exit(  )
+- SEF
+
+event timer(  )
+- SEF
+
+event touch( integer num_detected )
+# Adds hand cursor.
+
+event touch_end( integer num_detected )
+# Adds hand cursor.
+
+event touch_start( integer num_detected )
+# Adds hand cursor.
+
+event transaction_result( key id, integer success, string data )
 - SEF

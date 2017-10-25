@@ -2208,7 +2208,7 @@ list lazy_list_set(list L, integer i, list v)
             self.NextToken()
             # NOTE: Parse_events: This is a bit crude, as the error is given at the end of the param list.
             # To do it correctly, we can pass the parameter list to Parse_optional_param_list().
-            if tuple(params[0]) != self.events[name]:
+            if tuple(params[0]) != self.events[name]['pt']:
                 raise EParseSyntax(self)
             self.locallabels = set()
             body = self.Parse_code_block(None)
