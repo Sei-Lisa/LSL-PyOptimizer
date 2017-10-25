@@ -168,6 +168,14 @@ class foldconst(object):
                 and self.CompareTrees(node1['ch'][0], node2['ch'][0])
             )
 
+    def FnSEF(self, node):
+        '''Applied to function call nodes, return whether the node corresponds
+        to a SEF function.
+        '''
+        assert node['nt'] == 'FNCALL'
+        sym = self.symtab[0][node['name']]
+        return 'SEF' in sym and sym['SEF'] is True
+
     def FoldStmt(self, parent, index):
         """Simplify a statement."""
         node = parent[index]
@@ -198,7 +206,9 @@ class foldconst(object):
         # If the statement is a function call and the function is marked as SEF
         # at this point, it means the arguments are not SEF. Replace the node
         # in that case with a block.
-        if node['nt'] == 'FNCALL' and 'SEF' in self.symtab[0][node['name']] and 'Loc' in self.symtab[0][node['name']]:
+        if (node['nt'] == 'FNCALL' and 'Loc' in self.symtab[0][node['name']]
+            and self.FnSEF(node)
+           ):
             parent[index] = {'nt':'{}', 't':None, 'ch':
                 [{'nt':'EXPR','t':x['t'],'ch':[x]} for x in node['ch']]}
             self.FoldTree(parent, index)
@@ -1314,7 +1324,7 @@ class foldconst(object):
             sym = self.symtab[0][name]
             OptimizeArgs(node, sym)
             try:
-                if 'Fn' in sym and ('SEF' in sym or lslcommon.IsCalc):
+                if 'Fn' in sym and (self.FnSEF(node) or lslcommon.IsCalc):
                     # It's side-effect free if the children are and the function
                     # is marked as SEF.
                     if SEFargs:
@@ -1383,7 +1393,7 @@ class foldconst(object):
             return
 
         if nt == 'FNDEF':
-            # used when folding llDetected* function calls
+            # CurEvent is needed when folding llDetected* function calls
             if 'scope' in node:
                 # function definition
                 self.CurEvent = None
