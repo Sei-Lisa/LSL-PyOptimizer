@@ -544,6 +544,8 @@ list llGetLinkPrimitiveParams( integer linknumber, list rules )
 
 integer llGetListEntryType( list src, integer index )
 - SEF
+- min 0
+- max 6
 
 integer llGetListLength( list src )
 - SEF
@@ -882,6 +884,7 @@ vector llList2Vector( list src, integer index )
 
 integer llListFindList( list src, list test )
 - SEF
+- min -1
 
 list llListInsertList( list dest, list src, integer start )
 - SEF
@@ -1376,6 +1379,7 @@ string llStringTrim( string src, integer trim_type )
 
 integer llSubStringIndex( string source, string pattern )
 - SEF
+- min -1
 
 void llTakeCamera( key avatar )
 - SEF
