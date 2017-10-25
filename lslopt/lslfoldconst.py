@@ -322,8 +322,8 @@ class foldconst(object):
                     return
                 del a, b
 
-                # Specific optimization to catch a bitwise test appearing frequently.
-                # If b and c are nonzero constant powers of two:
+                # Specific optimization to catch a frequent bitwise test.
+                # If b and c are constant powers of two:
                 #   !(a & b) | !(a & c)  ->  ~(a|~(b|c))
                 # e.g. if (a & 4  &&  a & 8)  ->  if (!~(a|-13))
                 if (child[0]['nt'] == '!' and child[0]['ch'][0]['nt'] == '&'
