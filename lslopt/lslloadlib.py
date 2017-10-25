@@ -394,7 +394,7 @@ def LoadLibrary(builtins = None, fndata = None):
         ui = i.decode('utf8')
         if 'NeedsData' in functions[i]:
             del functions[i]['NeedsData']
-            warning(u"Library data: Function %s has no data." % i)
+            warning(u"Library data: Function %s has no data." % ui)
         if 'min' in functions[i] and 'max' in functions[i]:
             if functions[i]['min'] > functions[i]['max']:
                 warning(u"Library data: Function %s has min > max:"
