@@ -1068,7 +1068,8 @@ key llRequestInventoryData( string name )
 - delay 1.0
 
 void llRequestPermissions( key agent, integer perm )
-- SEF if perm == 0
+# if agent does not exist, it errs, so this is not true:
+#- SEF if perm == 0
 
 key llRequestSecureURL(  )
 - unstable
