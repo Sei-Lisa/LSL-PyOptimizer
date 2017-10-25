@@ -1207,23 +1207,28 @@ class foldconst(object):
                 if nt == '||':
                     parent[index] = node = {'nt':'!', 't':'integer', 'ch':[
                         {'nt':'!', 't':'integer', 'ch':[
-                            {'nt':'|',  't':'integer', 'ch':[child[0], child[1]]}
+                            {'nt':'|', 't':'integer', 'ch':[child[0], child[1]]}
                         ]}]}
                     if SEF:
-                        node['SEF'] = node['ch'][0]['SEF'] = node['ch'][0]['ch'][0]['SEF'] = True
+                        # propagate SEF to the two ! and the OR
+                        node['SEF'] = node['ch'][0]['SEF'] = True
+                        node['ch'][0]['ch'][0]['SEF'] = True
                 else:
-                    parent[index] = node = {'nt':'!', 't':'integer', 'ch':[
-                        {'nt':'|', 't':'integer', 'ch':[
+                    orchildren = [
                             {'nt':'!',  't':'integer', 'ch':[child[0]]}
                             ,
                             {'nt':'!',  't':'integer', 'ch':[child[1]]}
-                        ]}]}
+                        ]
+                    parent[index] = node = {'nt':'!', 't':'integer', 'ch':[
+                        {'nt':'|', 't':'integer', 'ch':orchildren}]}
                     if SEF:
+                        # propagate SEF to the the OR and parent !
                         node['SEF'] = node['ch'][0]['SEF'] = True
-                    if 'SEF' in node['ch'][0]['ch'][0]['ch'][0]:
-                        node['ch'][0]['ch'][0]['SEF'] = True
-                    if 'SEF' in node['ch'][0]['ch'][1]['ch'][0]:
-                        node['ch'][0]['ch'][1]['SEF'] = True
+                    # propagate SEF to the ! that are children of the OR
+                    if 'SEF' in orchildren[0]['ch'][0]:
+                        orchildren[0]['SEF'] = True
+                    if 'SEF' in orchildren[1]['ch'][0]:
+                        orchildren[1]['SEF'] = True
                 # Make another pass with the substitution
                 self.FoldTree(parent, index)
                 return
