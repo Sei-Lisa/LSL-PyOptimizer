@@ -481,15 +481,53 @@ class foldconst(object):
 
                 return
 
-            # This optimization turns out to be counter-productive for some
-            # common cases, e.g. it turns i >= 0 into !(i & 0x80000000)
-            # instead of the more optimal (integer)-1 < i. So we revert it
-            # where appropriate (in FoldTree, case '!', and above, case '|').
-            if nt == '<':
-                if child[1]['nt'] == 'CONST' and child[1]['value'] == 0:
-                    nt = node['nt'] = '&'
-                    child[1]['value'] = int(-2147483648)
-                    # Fall through to check & 0x80000000
+            if nt == '<' and child[0]['t'] == child[1]['t'] == 'integer':
+                sym = None
+                for a in (0, 1):
+                    if child[a]['nt'] == 'FNCALL':
+                        sym = self.symtab[0][child[a]['name']]
+                        break
+
+                # cond(FNCALL < 0)  ->  cond(~FNCALL) if min == -1
+                if (child[1]['nt'] == 'CONST' and child[1]['value'] == 0
+                    and child[0]['nt'] == 'FNCALL'
+                    and 'min' in sym and sym['min'] == -1
+                   ):
+                    node = parent[index] = {'nt':'~', 't':'integer',
+                        'ch':[child[0]]}
+                    self.FoldTree(parent, index)
+                    return
+
+                # cond(FNCALL > -1)  ->  cond(!~FNCALL) if min == -1
+                if (child[0]['nt'] == 'CONST' and child[0]['value'] == -1
+                    and child[1]['nt'] == 'FNCALL'
+                    and 'min' in sym and sym['min'] == -1
+                   ):
+                    node = parent[index] = {'nt':'!', 't':'integer',
+                        'ch':[{'nt':'~', 't':'integer',
+                             'ch':[child[1]]}
+                        ]}
+                    self.FoldTree(parent, index)
+                    return
+
+                # cond(FNCALL < 1)  ->  cond(!FNCALL) if min == 0
+                if (child[1]['nt'] == 'CONST' and child[1]['value'] == 1
+                    and child[0]['nt'] == 'FNCALL'
+                    and 'min' in sym and sym['min'] == 0
+                   ):
+                    node = parent[index] = {'nt':'!', 't':'integer',
+                        'ch':[child[0]]}
+                    self.FoldTree(parent, index)
+                    return
+
+                # cond(FNCALL > 0)  ->  cond(FNCALL) if min == 0
+                if (child[0]['nt'] == 'CONST' and child[0]['value'] == 0
+                    and child[1]['nt'] == 'FNCALL'
+                    and 'min' in sym and sym['min'] == 0
+                   ):
+                    node = parent[index] = child[1]
+                    self.FoldTree(parent, index)
+                    return
 
             if nt == '&':
 
@@ -1129,6 +1167,50 @@ class foldconst(object):
                 # fall through to check for '<'
 
             if nt == '<':
+                if child[0]['t'] == child[1]['t'] in ('integer', 'float'):
+                    if (child[0]['nt'] == 'CONST'
+                        and child[1]['nt'] == 'FNCALL'
+                        and self.FnSEF(child[1])
+                       ):
+                        # CONST < FNCALL aka FNCALL > CONST
+                        # when FNCALL.max <= CONST: always false
+                        # when CONST < FNCALL.min: always true
+                        if ('max' in self.symtab[0][child[1]['name']]
+                            and child[0]['value'] >=
+                                self.symtab[0][child[1]['name']]['max']
+                           ):
+                            parent[index] = {'nt':'CONST', 't':'integer',
+                                             'SEF':True, 'value':0}
+                            return
+                        if ('min' in self.symtab[0][child[1]['name']]
+                            and child[0]['value'] <
+                                self.symtab[0][child[1]['name']]['min']
+                           ):
+                            parent[index] = {'nt':'CONST', 't':'integer',
+                                             'SEF':True, 'value':1}
+                            return
+                    if (child[1]['nt'] == 'CONST'
+                        and child[0]['nt'] == 'FNCALL'
+                        and self.FnSEF(child[0])
+                       ):
+                        # FNCALL < CONST
+                        # when CONST > FNCALL.max: always true
+                        # when CONST <= FNCALL.min: always false
+                        if ('max' in self.symtab[0][child[0]['name']]
+                            and child[1]['value'] >
+                                self.symtab[0][child[0]['name']]['max']
+                           ):
+                            parent[index] = {'nt':'CONST', 't':'integer',
+                                             'SEF':True, 'value':1}
+                            return
+                        if ('min' in self.symtab[0][child[0]['name']]
+                            and child[1]['value'] <=
+                                self.symtab[0][child[0]['name']]['min']
+                           ):
+                            parent[index] = {'nt':'CONST', 't':'integer',
+                                             'SEF':True, 'value':0}
+                            return
+
                 # Convert 2147483647<i and i<-2147483648 to i&0
                 if child[0]['t'] == child[1]['t'] == 'integer' \
                    and (child[0]['nt'] == 'CONST' and child[0]['value'] == 2147483647
@@ -1136,7 +1218,7 @@ class foldconst(object):
                     a, b = 0, 1
                     # Put the constant in child[b]
                     if child[a]['nt'] == 'CONST':
-                        a, b = 1, 0
+                        a, b = b, a
                     nt = node['nt'] = '&'
                     child[b]['value'] = 0
                     # fall through to check for '&'
