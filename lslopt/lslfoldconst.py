@@ -1177,15 +1177,15 @@ class foldconst(object):
                         # when FNCALL.max <= CONST: always false
                         # when CONST < FNCALL.min: always true
                         if ('max' in self.symtab[0][child[1]['name']]
-                            and child[0]['value'] >=
-                                self.symtab[0][child[1]['name']]['max']
+                            and not lslfuncs.less(child[0]['value'],
+                                self.symtab[0][child[1]['name']]['max'])
                            ):
                             parent[index] = {'nt':'CONST', 't':'integer',
                                              'SEF':True, 'value':0}
                             return
                         if ('min' in self.symtab[0][child[1]['name']]
-                            and child[0]['value'] <
-                                self.symtab[0][child[1]['name']]['min']
+                            and lslfuncs.less(child[0]['value'],
+                                self.symtab[0][child[1]['name']]['min'])
                            ):
                             parent[index] = {'nt':'CONST', 't':'integer',
                                              'SEF':True, 'value':1}
@@ -1198,15 +1198,17 @@ class foldconst(object):
                         # when CONST > FNCALL.max: always true
                         # when CONST <= FNCALL.min: always false
                         if ('max' in self.symtab[0][child[0]['name']]
-                            and child[1]['value'] >
+                            and lslfuncs.less(
                                 self.symtab[0][child[0]['name']]['max']
+                                , child[1]['value'])
                            ):
                             parent[index] = {'nt':'CONST', 't':'integer',
                                              'SEF':True, 'value':1}
                             return
                         if ('min' in self.symtab[0][child[0]['name']]
-                            and child[1]['value'] <=
-                                self.symtab[0][child[0]['name']]['min']
+                            and not lslfuncs.less(
+                                self.symtab[0][child[0]['name']]['min'],
+                                child[1]['value'])
                            ):
                             parent[index] = {'nt':'CONST', 't':'integer',
                                              'SEF':True, 'value':0}
