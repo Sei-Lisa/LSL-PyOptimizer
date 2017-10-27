@@ -549,6 +549,7 @@ integer llGetListEntryType( list src, integer index )
 
 integer llGetListLength( list src )
 - SEF
+- min 0
 
 vector llGetLocalPos(  )
 # physics caveat
@@ -1370,6 +1371,7 @@ void llStopSound(  )
 
 integer llStringLength( string str )
 - SEF
+- min 0
 
 string llStringToBase64( string str )
 - SEF
