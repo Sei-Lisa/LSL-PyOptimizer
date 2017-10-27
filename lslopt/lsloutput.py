@@ -329,10 +329,20 @@ class outscript(object):
             paren = False
             if nt == 'NEG':
                 ret = '-'
+                if (lnt == 'CONST' and child[0]['t'] == 'integer'
+                    and child[0]['value'] < 0
+                   ):
+                    # shortcut
+                    ret += str(child[0]['value'] + 4294967296)
+                    return ret
                 if lnt in self.op_priority:
                     paren = self.op_priority[lnt] <= self.op_priority['-']
-                elif lnt == 'NEG' or lnt == '--V':
-                    ret += ' ' # don't output -- as that's a different token
+                elif (lnt == 'NEG' or lnt == '--V'
+                      or lnt == 'CONST'
+                         and child[0]['t'] == 'float'
+                         and child[0]['value'] < 0
+                     ):
+                    ret += ' ' # don't output "--" as that's a different token
             else:
                 if lnt in self.op_priority:
                     paren = True
