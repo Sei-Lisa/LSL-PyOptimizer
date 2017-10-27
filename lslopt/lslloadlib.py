@@ -234,7 +234,8 @@ def LoadLibrary(builtins = None, fndata = None):
         r'("(?:\\.|[^"])*"|<[^>]+>|[-+0-9x.e]+'  # strings, vectors, numbers
         r'|\[(?:[^]"]|"(?:\\.|[^"])*")*\]))'      # lists
         r'(?:\s+if\s+(.*\S))?'
-        r'|(unstable|stop)|(min|max|delay)\s+([-0-9.]+))\s*$', re.I)
+        r'|(unstable|stop|strlen|detect|touch|grab)'
+        r'|(min|max|delay)\s+([-0-9.]+))\s*$', re.I)
 
     # TODO: "quaternion" doesn't compare equal to "rotation" even if they are
     #       equivalent. Canonicalize it before comparison, to avoid false
@@ -352,8 +353,9 @@ def LoadLibrary(builtins = None, fndata = None):
                             # that is conditionally SEF is taken as not SEF)
                             if curr_ty == 'event' and match_flag.group(3):
                                 warning(u"Events do not support conditions"
-                                        u" in SEF flags, in line %d, event %s"
-                                        % (ufndata, linenum, ucurr_fn))
+                                        u" in SEF flags, in line %d, event %s."
+                                        u" Omitting: %s"
+                                        % (linenum, ucurr_fn, uline))
                                 continue
                             elif curr_ty == 'event':
                                 events[curr_fn]['SEF'] = True
@@ -362,18 +364,24 @@ def LoadLibrary(builtins = None, fndata = None):
                                     functions[curr_fn]['SEF'] = True
 
                         elif curr_ty == 'event':
-                            warning(u"Events only support bare SEF flags"
-                                    u", in line %d, event %s. Omitting %s."
-                                    % (ufndata, linenum, ucurr_fn, uline))
+                            if match_flag.group(4):
+                                flag = match_flag.group(4).lower()
+                                if flag in ('detect','touch','grab'):
+                                    events[curr_fn][flag] = True
+                                else:
+                                    warning(u"Events only support a few flags"
+                                            u", in line %d, event %s."
+                                            u" Omitting: %s"
+                                            % (linenum, ucurr_fn, uline))
                             continue
                         elif match_flag.group(2):
                             pass # return not handled yet
-                        elif (match_flag.group(4)
-                              and match_flag.group(4).lower() == 'unstable'
-                             ):
-                            functions[curr_fn]['uns'] = True
-                        elif match_flag.group(4):  # must be stop
-                            functions[curr_fn]['stop'] = True
+                        elif match_flag.group(4):
+                            flag = match_flag.group(4).lower()
+                            if flag == 'unstable':
+                                functions[curr_fn]['uns'] = True
+                            else:
+                                functions[curr_fn][flag] = True
                         elif match_flag.group(5).lower() in ('min', 'max'):
                             minmax = match_flag.group(5).lower()
                             value = match_flag.group(6)

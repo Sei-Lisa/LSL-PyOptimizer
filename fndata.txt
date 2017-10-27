@@ -34,13 +34,23 @@
 #    it's posible to simplify two identical calls into one. Example:
 #    llGetPermissions(). Counterexample: llFrand(). This is the default;
 #    unstable functions must be marked as such. Does not apply to void
-#    functions.
+#    functions. This flag is not implemented; 'unstable' is.
 #
 #  unstable:
-#    Not stable.
+#    Not stable. This flag IS implemented.
 #
-#  variable:
-#    Not stable. Alias for unstable.
+#  strlen:
+#    Marks the function as accepting one unique parameter of type string,
+#    and returning 0 is equivalent to the parameter being an empty string.
+#
+#  detect:
+#    Marks the function/event as being a detection one.
+#
+#  touch:
+#    Marks the event as being a touch event.
+#
+#  grab:
+#    Marks the event as enabling grab detection.
 #
 #  delay <value>:
 #    Function has a delay.
@@ -231,76 +241,93 @@ string llDeleteSubString( string src, integer start, integer end )
 void llDetachFromAvatar(  )
 
 vector llDetectedGrab( integer number )
+- detect
 - SEF
 # llDetectedGrab() only works for touch(), not for touch_start() etc.
 - return <0,0,0> if event != "" && event != "touch" || number < 0 || number > 15
+
 integer llDetectedGroup( integer number )
+- detect
 - SEF
 - min 0
 - max 1
 - return 0 if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
 
 key llDetectedKey( integer number )
+- detect
 - SEF
 - return "00000000-0000-0000-0000-000000000000" if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
 
 integer llDetectedLinkNumber( integer number )
+- detect
 - SEF
 - min 0
 - max 256
 - return 0 if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
 
 string llDetectedName( integer number )
+- detect
 - SEF
 - return "00000000-0000-0000-0000-000000000000" if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
 
 key llDetectedOwner( integer number )
+- detect
 - SEF
 - return "00000000-0000-0000-0000-000000000000" if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
 
 vector llDetectedPos( integer number )
+- detect
 - SEF
 - return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
 
 rotation llDetectedRot( integer number )
+- detect
 - SEF
 - return <0,0,0,1> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
 
 vector llDetectedTouchBinormal( integer number )
+- detect
 - SEF
 - return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" || number < 0 || number > 15
 
 integer llDetectedTouchFace( integer number )
+- detect
 - SEF
 - min -1
 - max 8
 - return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" || number < 0 || number > 15
 
 vector llDetectedTouchNormal( integer number )
+- detect
 - SEF
 - return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" || number < 0 || number > 15
 
 vector llDetectedTouchPos( integer number )
+- detect
 - SEF
 - return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" || number < 0 || number > 15
 
 vector llDetectedTouchST( integer number )
+- detect
 - SEF
 - return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
 - return <-1,-1,0> if (event == "collision" || event == "collision_start" || event == "collision_end" || event == "sensor") && number == 0
 
 vector llDetectedTouchUV( integer number )
+- detect
 - SEF
 - return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
 - return <-1,-1,0> if (event == "collision" || event == "collision_start" || event == "collision_end" || event == "sensor") && number == 0
 
 integer llDetectedType( integer number )
+- detect
 - SEF
 - min 0
 - max 15
 - return 0 if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
 
 vector llDetectedVel( integer number )
+- detect
 - SEF
 - return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
 
@@ -1372,6 +1399,7 @@ void llStopSound(  )
 integer llStringLength( string str )
 - SEF
 - min 0
+- strlen
 
 string llStringToBase64( string str )
 - SEF
@@ -1483,14 +1511,17 @@ event changed( integer change )
 - SEF
 
 event collision( integer num_detected )
+- detect
 # Prevents events in the parent from triggering, depending on llPassCollisions,
 # therefore not SEF.
 
 event collision_end( integer num_detected )
-# Same as with collision().
+- detect
+# Not SEF; see collision().
 
 event collision_start( integer num_detected )
-# Same as with collision().
+- detect
+# Not SEF; see collision().
 
 event control( key id, integer level, integer edge )
 - SEF
@@ -1563,8 +1594,9 @@ event run_time_permissions( integer perm )
 - SEF
 
 event sensor( integer num_detected )
+- detect
 # There was a time when this was necessary for no_sensor() to trigger, but
-# that's no longer the case.
+# that's no longer the case and it is SEF now.
 - SEF
 
 event state_entry(  )
@@ -1577,13 +1609,20 @@ event timer(  )
 - SEF
 
 event touch( integer num_detected )
-# Adds hand cursor.
+- touch
+- detect
+- grab
+# Not SEF for the same reasons as collision(); also it adds a hand cursor.
 
 event touch_end( integer num_detected )
-# Adds hand cursor.
+- touch
+- detect
+# Not SEF; see touch().
 
 event touch_start( integer num_detected )
-# Adds hand cursor.
+- touch
+- detect
+# Not SEF; see touch().
 
 event transaction_result( key id, integer success, string data )
 - SEF
