@@ -267,6 +267,22 @@ class foldconst(object):
             return # Nothing to do if it's already simplified.
         child = node['ch'] if 'ch' in node else None
 
+        if nt == 'FNCALL' and node['name'] == 'llStringLength':
+            # llStringLength(expr)  ->  !(expr == "")
+            node = {'nt':'==', 't':'integer',
+                             'ch':[child[0],
+                                   {'nt':'CONST', 't':'string',
+                                    'value':u''}]}
+            node = {'nt':'!', 't':'integer', 'ch':[node]}
+            # new node is SEF if the argument to llStringLength is
+            if 'SEF' in child[0]:
+                node['SEF'] = True
+                node['ch'][0]['SEF'] = True
+            parent[index] = node
+            nt = '!'
+            child = node['ch']
+            # fall through to keep optimizing if necessary
+
         if nt == '!':
             self.FoldCond(child, 0, True)
 
@@ -280,7 +296,6 @@ class foldconst(object):
             parent[index] = child[0]
             self.FoldCond(parent, index, ParentIsNegation)
             return
-
 
         if nt in self.binary_ops and child[0]['t'] == child[1]['t'] == 'integer':
             if nt == '!=':
@@ -645,16 +660,6 @@ class foldconst(object):
             subexpr = child[0]
             snt = subexpr['nt']
 
-            if snt == 'FNCALL' and subexpr['name'] == 'llStringLength':
-                # !llStringLength(expr) -> expr == ""
-                parent[index] = {'nt':'==', 't':'integer',
-                                 'ch':[subexpr['ch'][0],
-                                       {'nt':'CONST', 't':'string',
-                                        'value':u""}]}
-                # new node is SEF if the argument to llStringLength is
-                if 'SEF' in subexpr['ch'][0]:
-                    parent[index]['SEF'] = True
-                return
             if 'SEF' in subexpr:
                 node['SEF'] = True
             if subexpr['nt'] == 'CONST':
@@ -1419,6 +1424,7 @@ class foldconst(object):
                         fn = sym['Fn']
                         args = [arg['value'] for arg in child]
                         assert len(args) == len(sym['ParamTypes'])
+
                         try:
                             # May raise ELSLCantCompute
                             if name[:10] == 'llDetected':
