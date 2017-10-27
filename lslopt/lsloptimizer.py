@@ -99,3 +99,6 @@ class optimizer(foldconst, renamer, deadcode, lastpass):
         del self.tree
         del self.symtab
         return treesymtab
+
+    def __init__(self, lib):
+        self.events = lib[0]

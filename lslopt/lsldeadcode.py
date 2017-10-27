@@ -20,16 +20,6 @@
 import lslfuncs
 
 class deadcode(object):
-    # Functions that cause the rest of the current block to never be executed
-    # e.g. default { state_entry() { llResetScript(); llSetPos(<3,3,3>); } }
-    # in that example, llSetPos is dead code because llResetScript does not let
-    # it execute. llRemoveInventory(llGetScriptName()), llDetachFromAvatar()
-    # and llDie() come close, but evidence shows that it's not the case and the
-    # script can execute some more lines before stopping.
-    # llScriptState(..., FALSE) allows resuming after it, so whatever comes
-    # next isn't really dead code.
-    # TODO: check if there are any more than this one.
-    TerminatorFuncs = ('llResetScript',)
 
     def MarkReferences(self, node):
         """Marks each node it passes through as executed (X), and each variable
@@ -185,7 +175,7 @@ class deadcode(object):
                     self.MarkReferences(self.tree[sym['Loc']])
                 node['X'] = self.tree[sym['Loc']]['X']
             else:
-                node['X'] = node['name'] not in self.TerminatorFuncs
+                node['X'] = 'stop' not in sym
             # Note that JUMP analysis is incomplete. To do it correctly, we
             # should follow the jump right to its destination, in order to know
             # if that branch leads to a RETURN or completely stops the event.

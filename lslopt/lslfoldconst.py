@@ -267,7 +267,7 @@ class foldconst(object):
             return # Nothing to do if it's already simplified.
         child = node['ch'] if 'ch' in node else None
 
-        if nt == 'FNCALL' and node['name'] == 'llStringLength':
+        if nt == 'FNCALL' and 'strlen' in self.symtab[0][node['name']]:
             # llStringLength(expr)  ->  !(expr == "")
             node = {'nt':'==', 't':'integer',
                              'ch':[child[0],
@@ -1427,8 +1427,10 @@ class foldconst(object):
 
                         try:
                             # May raise ELSLCantCompute
-                            if name[:10] == 'llDetected':
-                                value = fn(*args, event=self.CurEvent)
+                            if 'detect' in self.symtab[0][name]:
+                                value = fn(*args,
+                                           evsym=None if self.CurEvent is None
+                                           else self.events[self.CurEvent])
                             else:
                                 value = fn(*args)
                         finally:

@@ -662,7 +662,7 @@ def main(argv):
                 return 1
             del p, script
 
-            opt = optimizer()
+            opt = optimizer(lib)
             ts = opt.optimize(ts, options)
             del opt
 

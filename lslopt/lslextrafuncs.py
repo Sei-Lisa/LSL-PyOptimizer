@@ -23,16 +23,12 @@ from lslbasefuncs import ELSLCantCompute, fi,ff,fs,fk,v2f,q2f,fl, \
   TOUCH_INVALID_TEXCOORD, cond
 ff, q2f  # keep pyflakes happy as these are not used
 
-TouchEvents = ('touch', 'touch_start', 'touch_end')
-DetectionEvents = ('touch', 'touch_start', 'touch_end',
-                   'collision', 'collision_start', 'collision_end',
-                   'sensor')
-GetEnvSettings = ('agent_limit', 'dynamic_pathfinding', 'estate_id',
+GetEnvSettings = frozenset(('agent_limit', 'dynamic_pathfinding', 'estate_id',
     'estate_name', 'frame_number', 'region_cpu_ratio', 'region_idle',
     'region_product_name', 'region_product_sku', 'region_start_time',
     'sim_channel', 'sim_version', 'simulator_hostname',
     'region_max_prims', # <http://wiki.secondlife.com/wiki/Release_Notes/Second_Life_RC_Magnum/16#16.11.02.321369>
-    'region_object_bonus') # <http://wiki.secondlife.com/wiki/Release_Notes/Second_Life_RC_Magnum/16#16.12.03.322072>
+    'region_object_bonus')) # <http://wiki.secondlife.com/wiki/Release_Notes/Second_Life_RC_Magnum/16#16.12.03.322072>
 
 xp_error_messages = {
     -1:u'unknown error id',
@@ -68,111 +64,111 @@ def llClearLinkMedia(link, face):
         return 0
     raise ELSLCantCompute
 
-def llDetectedGrab(idx, event=None):
+def llDetectedGrab(idx, evsym=None):
     idx = fi(idx)
-    if 0 <= idx <= 15 and (event == 'touch' or event is None):
+    if 0 <= idx <= 15 and (evsym is None or 'grab' in evsym):
         raise ELSLCantCompute
     return ZERO_VECTOR
 
-def llDetectedGroup(idx, event=None):
+def llDetectedGroup(idx, evsym=None):
     idx = fi(idx)
-    if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
+    if 0 <= idx <= 15 and (evsym is None or 'detect' in evsym):
         raise ELSLCantCompute
     return 0
 
-def llDetectedKey(idx, event=None):
+def llDetectedKey(idx, evsym=None):
     idx = fi(idx)
-    if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
+    if 0 <= idx <= 15 and (evsym is None or 'detect' in evsym):
         raise ELSLCantCompute
     return Key(NULL_KEY)
 
-def llDetectedLinkNumber(idx, event=None):
+def llDetectedLinkNumber(idx, evsym=None):
     idx = fi(idx)
-    if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
+    if 0 <= idx <= 15 and (evsym is None or 'detect' in evsym):
         raise ELSLCantCompute
     return 0
 
-def llDetectedName(idx, event=None):
+def llDetectedName(idx, evsym=None):
     idx = fi(idx)
-    if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
+    if 0 <= idx <= 15 and (evsym is None or 'detect' in evsym):
         raise ELSLCantCompute
     return NULL_KEY
 
-def llDetectedOwner(idx, event=None):
+def llDetectedOwner(idx, evsym=None):
     idx = fi(idx)
-    if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
+    if 0 <= idx <= 15 and (evsym is None or 'detect' in evsym):
         raise ELSLCantCompute
     return Key(NULL_KEY)
 
-def llDetectedPos(idx, event=None):
+def llDetectedPos(idx, evsym=None):
     idx = fi(idx)
-    if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
+    if 0 <= idx <= 15 and (evsym is None or 'detect' in evsym):
         raise ELSLCantCompute
     return ZERO_VECTOR
 
-def llDetectedRot(idx, event=None):
+def llDetectedRot(idx, evsym=None):
     idx = fi(idx)
-    if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
+    if 0 <= idx <= 15 and (evsym is None or 'detect' in evsym):
         raise ELSLCantCompute
     return ZERO_ROTATION
 
-def llDetectedTouchBinormal(idx, event=None):
+def llDetectedTouchBinormal(idx, evsym=None):
     idx = fi(idx)
-    if 0 <= idx <= 15 and (event in TouchEvents or event is None):
+    if 0 <= idx <= 15 and (evsym is None or 'touch' in evsym):
         raise ELSLCantCompute
     return ZERO_VECTOR
 
-def llDetectedTouchFace(idx, event=None):
+def llDetectedTouchFace(idx, evsym=None):
     idx = fi(idx)
-    if 0 <= idx <= 15 and (event in TouchEvents or event is None):
+    if 0 <= idx <= 15 and (evsym is None or 'touch' in evsym):
         raise ELSLCantCompute
-    return -1 if event in DetectionEvents and 0 <= idx <= 15 else 0
+    return -1 if 'detect' in evsym and 0 <= idx <= 15 else 0
 
-def llDetectedTouchNormal(idx, event=None):
+def llDetectedTouchNormal(idx, evsym=None):
     idx = fi(idx)
-    if 0 <= idx <= 15 and (event in TouchEvents or event is None):
-        raise ELSLCantCompute
-    return ZERO_VECTOR
-
-def llDetectedTouchPos(idx, event=None):
-    idx = fi(idx)
-    if 0 <= idx <= 15 and (event in TouchEvents or event is None):
+    if 0 <= idx <= 15 and (evsym is None or 'touch' in evsym):
         raise ELSLCantCompute
     return ZERO_VECTOR
 
-def llDetectedTouchST(idx, event=None):
+def llDetectedTouchPos(idx, evsym=None):
     idx = fi(idx)
-    if 0 <= idx <= 15 and (event is None or event in DetectionEvents):
+    if 0 <= idx <= 15 and (evsym is None or 'touch' in evsym):
+        raise ELSLCantCompute
+    return ZERO_VECTOR
+
+def llDetectedTouchST(idx, evsym=None):
+    idx = fi(idx)
+    if 0 <= idx <= 15 and (evsym is None or 'detect' in evsym):
         # In detection events that are not touch events, it returns
         # TOUCH_INVALID_TEXCOORD if idx < num, else ZERO_VECTOR,
         # but we only know that num >= 1.
-        if idx == 0 and event is not None and event not in TouchEvents:
+        if idx == 0 and evsym is not None and 'touch' not in evsym:
             # index 0 always exists, so we know the result
             return TOUCH_INVALID_TEXCOORD
         raise ELSLCantCompute
     return ZERO_VECTOR
 
-def llDetectedTouchUV(idx, event=None):
+def llDetectedTouchUV(idx, evsym=None):
     idx = fi(idx)
-    if 0 <= idx <= 15 and (event is None or event in DetectionEvents):
+    if 0 <= idx <= 15 and (evsym is None or 'detect' in evsym):
         # In detection events that are not touch events, it returns
         # TOUCH_INVALID_TEXCOORD if idx < num, else ZERO_VECTOR,
         # but we only know that num >= 1.
-        if idx == 0 and event is not None and event not in TouchEvents:
+        if idx == 0 and evsym is not None and 'touch' not in evsym:
             # index 0 always exists, so we know the result
             return TOUCH_INVALID_TEXCOORD
         raise ELSLCantCompute
     return ZERO_VECTOR
 
-def llDetectedType(idx, event=None):
+def llDetectedType(idx, evsym=None):
     idx = fi(idx)
-    if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
+    if 0 <= idx <= 15 and (evsym is None or 'detect' in evsym):
         raise ELSLCantCompute
     return 0
 
-def llDetectedVel(idx, event=None):
+def llDetectedVel(idx, evsym=None):
     idx = fi(idx)
-    if 0 <= idx <= 15 and (event in DetectionEvents or event is None):
+    if 0 <= idx <= 15 and (evsym is None or 'detect' in evsym):
         raise ELSLCantCompute
     return ZERO_VECTOR
 

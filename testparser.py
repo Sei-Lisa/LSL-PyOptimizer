@@ -248,8 +248,9 @@ class Test02_Parser(UnitTestCase):
 
 class Test03_Optimizer(UnitTestCase):
     def setUp(self):
-        self.parser = parser(lslloadlib.LoadLibrary())
-        self.opt = optimizer()
+        lib = lslloadlib.LoadLibrary()
+        self.parser = parser(lib)
+        self.opt = optimizer(lib)
         self.outscript = outscript()
 
     def test_coverage(self):
