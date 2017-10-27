@@ -1158,10 +1158,11 @@ class foldconst(object):
                 self.FoldTree(parent, index)
                 return
 
-            if nt == '>':
+            if nt == '>' and ('SEF' in child[0] and 'SEF' in child[1]
+                or child[0]['nt'] == 'CONST' or child[1]['nt'] == 'CONST'
+               ):
                 # Invert the inequalities to avoid doubling the cases to check.
                 # a>b  ->   b<a
-                # FIXME: This is only possible if at most one is non-SEF.
                 nt = node['nt'] = '<'
                 child[1], child[0] = child[0], child[1]
                 # fall through to check for '<'
