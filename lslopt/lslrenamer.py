@@ -30,10 +30,10 @@ class renamer(object):
     CharSet1 = '_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
     CharSet2 = '0123456789_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
     # TODO: Derive these from builtins.txt somehow.
-    Kws = (frozenset({'do', 'if', 'PI',
-                      'for', 'key', 'EOF',
-                      'jump', 'else', 'list', 'TRUE', 'LOOP', 'case'
-                     }))
+    Kws = frozenset({'do', 'if', 'PI',
+                     'for', 'key', 'EOF',
+                     'jump', 'else', 'list', 'TRUE', 'LOOP', 'case'
+                     })
     def GetNextShortest(self):
         """Generate the next shortest possible identifier"""
         while True:
@@ -89,8 +89,11 @@ class renamer(object):
                 assert False, 'Invalid kind at this scope: ' \
                     + kind # pragma: no cover
 
-        # We make three passes, one for states, then functions, then globals,
-        # in that order.
+        # We make four passes, one for states, then functions, then globals,
+        # then parameter names and locals, in that order.
+
+        # State names are usable as short identifiers for parameters.
+        stateNames = []
 
         for name in states:
             # States have top priority. Here's why. An internal event function
@@ -111,6 +114,7 @@ class renamer(object):
             entry = globaldefs[name]
             if name != 'default':
                 name = entry['NewName'] = self.GetNextShortest()
+                stateNames.append(name)
             # Find also the event names it uses, to add them for reuse.
             for node in self.tree[entry['Loc']]['ch']:
                 assert node['nt'] == 'FNDEF'
@@ -159,6 +163,10 @@ class renamer(object):
         restart = self.WordFirstChar
         restartReusable = ReusableNames
         ReusableNames = restartReusable.copy()
+        restartState = stateNames;
+        stateNames = restartState[:]
+        restartUsed = self.UsedNames;
+        self.UsedNames = restartUsed.copy()
         for table in self.symtab:
             if First:
                 First = False
@@ -178,10 +186,16 @@ class renamer(object):
                         InParams = True
                         self.WordFirstChar = restart
                         ReusableNames = restartReusable.copy()
+                        stateNames = restartState[:]
+                        self.UsedNames = restartUsed.copy()
                     # Same procedure as for global vars
                     if ReusableNames:
                         short = ReusableNames.pop()
                         self.UsedNames.add(short)
+                    elif stateNames:
+                        short = stateNames.pop()
+                        # No need to add it to UsedNames because
+                        # GetNextShortest will always start past it anyway.
                     else:
                         short = self.GetNextShortest()
                     table[name]['NewName'] = short
