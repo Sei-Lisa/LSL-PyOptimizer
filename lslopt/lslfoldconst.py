@@ -131,17 +131,20 @@ class foldconst(object):
             else:
                 idx += 1
 
-    def DoesSomething(self, node):
+    def DoesSomething(self, node, labels = True):
         """Tell if a subtree does something or is just empty statements
-        (a pure combination of ';' and '{}')
+        (a pure combination of ';' and '{}'). Labels are the top level are
+        considered to do something if labels is True, and vice versa.
 
-        Not to be confused with lslparse.does_something which includes labels,
-        and applies to a block's statement list, not to a node.
+        Not to be confused with lslparse.does_something which always includes
+        labels, and applies to a block's statement list, not to a node.
         """
-        if node['nt'] != ';':
+        maybe_label = ';' if labels else '@'
+        if maybe_label != node['nt'] != ';':
             if node['nt'] == '{}':
                 for subnode in node['ch']:
-                    if self.DoesSomething(subnode):
+                    # Labels embedded in {} are not reachable. They do nothing.
+                    if self.DoesSomething(subnode, labels = False):
                         return True
             else:
                 return True
