@@ -226,12 +226,15 @@ class foldconst(object):
         ctyp = parent[index]['t']
         # Under LSO, this would break the fact that 1-element lists count as
         # false, so we don't do it for LSO lists.
-        if ctyp in ('float', 'vector', 'rotation') or ctyp == 'list' and not lslcommon.LSO:
+        if (ctyp in ('float', 'vector', 'rotation', 'string')
+            or ctyp == 'list' and not lslcommon.LSO
+           ):
             parent[index] = {'nt':'!=', 't':'integer', 'ch':[parent[index],
                 {'nt':'CONST', 't':ctyp, 'value':
                  0.0 if ctyp == 'float'
                  else ZERO_VECTOR if ctyp == 'vector'
                  else ZERO_ROTATION if ctyp == 'rotation'
+                 else u"" if ctyp == 'string'
                  else []}]}
             parent[index]['SEF'] = 'SEF' in parent[index]['ch'][0]
 
@@ -1573,7 +1576,6 @@ class foldconst(object):
             return
 
         if nt == 'IF':
-            # TODO: Swap IF/ELSE if both present and cond starts with !
             self.ExpandCondition(child, 0)
             self.FoldTree(child, 0)
             self.FoldCond(child, 0)
@@ -1630,9 +1632,45 @@ class foldconst(object):
                 if len(child) > 2:
                     self.FoldTree(child, 2)
                     self.FoldStmt(child, 2)
+                    if self.DoesSomething(child[2]):
+                        # Check if we can gain something by negating the
+                        # expression.
+                        # Swap 'if' and 'else' branch when the condition has
+                        # a '!' prefix
+                        if child[0]['nt'] == '!':
+                            child[0] = child[0]['ch'][0]
+                            child[1], child[2] = child[2], child[1]
+                        # Swap them if condition is '==' with integer operands
+                        if (child[0]['nt'] == '=='
+                              and child[0]['ch'][0]['t']
+                                  == child[0]['ch'][1]['t'] == 'integer'
+                             ):
+                            child[0]['nt'] = '^'
+                            child[1], child[2] = child[2], child[1]
+                    # Re-test just in case we swapped in the previous check.
                     if not self.DoesSomething(child[2]):
                         # no point in "... else ;" - remove else branch
                         del child[2]
+                if not self.DoesSomething(child[1]):
+                    # if (X) ;  ->  X;
+                    if len(child) == 2:
+                        parent[index] = child[0]
+                        # It has been promoted to statement. Fold it.
+                        # (Will remove it if SEF)
+                        self.FoldStmt(child, 0)
+                        return
+
+                    # If type(X) != Key, then:
+                    # if (X) ; else {stuff}  ->  if (!X) {stuff}
+                    if child[0]['t'] != 'key':
+                        # We've already converted all other types to equivalent
+                        # comparisons
+                        assert child[0]['t'] == 'integer'
+                        child[0] = {'nt':'!', 't':'integer', 'ch':[child[0]]}
+                        del child[1]
+                        self.FoldTree(child, 0)
+                        self.FoldCond(child, 0)
+
             if all('SEF' in subnode for subnode in child):
                 node['SEF'] = True
             return
