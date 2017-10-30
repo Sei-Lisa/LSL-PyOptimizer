@@ -1497,6 +1497,15 @@ class foldconst(object):
                 # event definition
                 self.CurEvent = node['name']
             self.FoldTree(child, 0)
+
+            # Test if the event is empty and SEF, and remove it if so.
+            if ('scope' not in node and not self.DoesSomething(child[0],
+                labels = False) and 'SEF' in self.events[node['name']]
+               ):
+                # Delete ourselves.
+                del parent[index]
+                return
+
             # TODO: This works, but analysis of code paths is DCR's thing
             # and this is incomplete, e.g. x(){{return;}} is not detected.
             while 'ch' in child[0] and child[0]['ch']:
@@ -1534,8 +1543,14 @@ class foldconst(object):
             return
 
         if nt == 'STDEF':
-            for idx in xrange(len(child)):
+            for idx in xrange(len(child) - 1, -1, -1):
                 self.FoldTree(child, idx)
+            if not child:
+                # All events removed - add a dummy timer()
+                child.append({'nt':'FNDEF', 't':None, 'name':'timer',
+                              'pscope':0, 'ptypes':[], 'pnames':[],
+                              'ch':[{'nt':'{}', 't':None, 'ch':[]}]
+                             })
             return
 
         if nt == '{}':
