@@ -1622,6 +1622,11 @@ list lazy_list_set(list L, integer i, list v)
             return jumpnode
 
         if tok0 == 'STATE':
+            if self.localevents is None:
+                if AllowStSw is False:
+                    raise EParseCantChangeState(self)
+                if AllowStSw is None:
+                    self.SuspiciousStSw.append(self.errorpos)
             self.NextToken()
             if self.tok[0] not in ('DEFAULT', 'IDENT'):
                 raise EParseSyntax(self)
@@ -1632,8 +1637,6 @@ list lazy_list_set(list L, integer i, list v)
             self.NextToken()
             self.expect(';')
             self.NextToken()
-            if self.localevents is None and not AllowStSw:
-                raise EParseCantChangeState(self)
             return {'nt':'STSW', 't':None, 'name':name, 'scope':0}
 
         if tok0 == 'RETURN':
@@ -1666,20 +1669,21 @@ list lazy_list_set(list L, integer i, list v)
             ret['ch'].append(self.Parse_expression())
             self.expect(')')
             self.NextToken()
-            # INCOMPATIBILITY NOTE: This is more permissive than LSL.
-            # In LSL, an if...then...else does NOT allow a state change
-            # in either branch. Only an if...then without else does.
-            # BUT since the decision to allow or not needs to be taken before
-            # the 'else' is found, we're not going to check the branch after
-            # parsing, only for the sake of reporting that error. The compiler
-            # will report it.
-            ret['ch'].append(self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = InsideLoop))
+            saveSuspiciousStSw = self.SuspiciousStSw
+            self.SuspiciousStSw = []
+            ret['ch'].append(self.Parse_statement(ReturnType, AllowStSw = None, InsideLoop = InsideLoop))
             if self.tok[0] == 'ELSE':
+                if AllowStSw is False and self.SuspiciousStSw:
+                    self.errorpos = self.SuspiciousStSw[0]
+                    raise EParseCantChangeState(self)
                 LastIsReturn = 'LIR' in ret['ch'][1]
                 self.NextToken()
                 ret['ch'].append(self.Parse_statement(ReturnType, AllowStSw = AllowStSw, InsideLoop = InsideLoop))
+                if AllowStSw is None:
+                    saveSuspiciousStSw += self.SuspiciousStSw
                 if LastIsReturn and 'LIR' in ret['ch'][2]:
                     ret['LIR'] = True
+            self.SuspiciousStSw = saveSuspiciousStSw
             return ret
 
         if tok0 == 'WHILE':
@@ -2652,6 +2656,9 @@ list lazy_list_set(list L, integer i, list v)
         # List of preprocessor #line directives.
         self.linedir = []
 
+        # List of positions with suspicious state change statements.
+        self.SuspiciousStSw = []
+
         # This is a small hack to prevent circular definitions in globals when
         # extended expressions are enabled. When false (default), forward
         # globals are allowed; if true, only already seen globals are permitted.
@@ -2677,7 +2684,7 @@ list lazy_list_set(list L, integer i, list v)
         # incomplete parsing pass, gathering globals with their types and
         # function arguments. And that's what we do.
 
-        self.scanglobals = True # Tell the lexer not to process directives
+        self.scanglobals = True  # Tell the lexer not to process directives
         self.pos = self.errorpos = 0
         self.linestart = True
         self.tok = self.GetToken()
