@@ -130,21 +130,49 @@ class foldconst(object):
         # They MUST be SEF and stable.
         if 'SEF' not in node1 or 'SEF' not in node2:
             return False
-        # So far it's only accepted if both are identifiers or function calls,
-        # recursively.
-        return (node1['nt'] == node2['nt'] == 'IDENT'
+        if node1['t'] != node2['t']:
+            return False
+        # It's not complete yet.
+        nt1 = node1['nt']
+        if nt1 == node2['nt']:
+            if (nt1 == 'IDENT'
                 and node1['name'] == node2['name']
                 and node1['scope'] == node2['scope']
-            or node1['nt'] == node2['nt'] == 'FNCALL'
+               ):
+                return True
+            if (nt1 == 'FNCALL'
                 and node1['name'] == node2['name']
                 and 'uns' not in self.symtab[0][node1['name']]
                 and all(self.CompareTrees(node1['ch'][i],
                                           node2['ch'][i])
                         for i in xrange(len(node1['ch'])))
-            or node1['nt'] == node2['nt'] == 'CAST'
-                and node1['t'] == node2['t']
+               ):
+                return True
+            if (nt1 == 'CAST'
                 and self.CompareTrees(node1['ch'][0], node2['ch'][0])
-            )
+               ):
+                return True
+            if nt1 == 'CONST' and node1['value'] == node2['value']:
+                return True
+            if (nt1 in ('!', '~', 'NEG')
+                and self.CompareTrees(node1['ch'][0], node2['ch'][0])
+               ):
+                return True
+            if (nt1 in self.binary_ops
+                and self.CompareTrees(node1['ch'][0], node2['ch'][0])
+                and self.CompareTrees(node1['ch'][1], node2['ch'][1])
+               ):
+                return True
+            if ((nt1 in ('*', '^', '&', '|', '==')  # commutative
+                 or nt1 == '+'
+                 and node1['ch'][0]['t'] not in ('list', 'string')
+                 and node2['ch'][0]['t'] not in ('list', 'string')
+                )
+                and self.CompareTrees(node1['ch'][0], node2['ch'][1])
+                and self.CompareTrees(node1['ch'][1], node2['ch'][0])
+               ):
+                return True
+        return False
 
     def FnSEF(self, node):
         '''Applied to function call nodes, return whether the node corresponds
