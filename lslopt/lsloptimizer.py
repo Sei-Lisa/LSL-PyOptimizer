@@ -90,10 +90,10 @@ class optimizer(foldconst, renamer, deadcode, lastpass):
         if self.constfold:
             self.FoldScript(warningpass=True)
 
-        self.LastPass()
+        names = self.LastPass()
 
         if self.shrinknames:
-            self.ShrinkNames()
+            self.ShrinkNames(UsableAsParams = names['libfuncs'])
 
         treesymtab = (self.tree, self.symtab)
         del self.tree

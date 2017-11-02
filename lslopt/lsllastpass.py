@@ -106,6 +106,13 @@ class lastpass(object):
                 self.BadStCh = True
             return
 
+        if nt == 'FNCALL':
+            # lslrenamer can benefit from a list of used library functions,
+            # so provide it.
+            if 'Loc' not in self.symtab[0][node['name']]:
+                # system library function
+                self.usedlibfuncs.add(node['name'])
+
     def LastPassPostOrder(self, parent, index):
         node = parent[index]
         nt = node['nt']
@@ -154,11 +161,14 @@ class lastpass(object):
         self.subinfo = subinfo
 
     def LastPass(self):
+        """Last optimizations pass"""
+
         self.globalmode = False
 
         tree = self.tree
 
-        # Last optimizations pass
+        self.usedlibfuncs = set()
+
         # self.subinfo is subtree-local info.
         self.subinfo = {}
         for idx in xrange(len(tree)):
@@ -168,4 +178,4 @@ class lastpass(object):
                 self.globalmode = False
             else:
                 self.RecursiveLastPass(tree, idx)
-    pass
+        return {'libfuncs':self.usedlibfuncs}

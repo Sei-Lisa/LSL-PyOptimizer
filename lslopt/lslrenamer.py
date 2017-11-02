@@ -23,13 +23,9 @@
 #
 # A side effect of this change is that the script becomes unreadable gibberish.
 
-# TODO: Make a new counter per scope.
-# TODO: Reuse used library function names for UDF and event parameters.
-
 class renamer(object):
     CharSet1 = '_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
     CharSet2 = '0123456789_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
-    # TODO: Derive these from builtins.txt somehow.
     Kws = frozenset({'do', 'if', 'PI',
                      'for', 'key', 'EOF',
                      'jump', 'else', 'list', 'TRUE', 'LOOP', 'case'
@@ -54,7 +50,7 @@ class renamer(object):
             if ret not in self.Kws and ret not in self.UsedNames:
                 return ret
 
-    def ShrinkNames(self):
+    def ShrinkNames(self, UsableAsGlobals = None, UsableAsParams = None):
         """Implements the shrinknames option."""
         self.WordFirstChar = 0
         self.WordRestOfChars = []
@@ -66,11 +62,13 @@ class renamer(object):
             'System', 'UThread', 'UThreadStackFrame', 'Pop',
             'IsRestoring', 'IsSaveDue', 'ResumeVoid',
             ])
+        if UsableAsGlobals is not None:
+            ReusableNames |= UsableAsGlobals
 
         # Names from ReusableNames that have already been used
         self.UsedNames = set()
 
-        # Make a first pass to separate the symbols into three categories.
+        # Make a preliminary pass to separate the symbols into three categories
         globalvars = []
         states = []
         functions = []
@@ -89,8 +87,8 @@ class renamer(object):
                 assert False, 'Invalid kind at this scope: ' \
                     + kind # pragma: no cover
 
-        # We make four passes, one for states, then functions, then globals,
-        # then parameter names and locals, in that order.
+        # We make four passes, one for states, then function names, then
+        # global names, then parameter names and locals, in that order.
 
         # State names are usable as short identifiers for parameters.
         stateNames = []
@@ -159,6 +157,8 @@ class renamer(object):
 
         # Do the same for function and event parameter names. Pure locals get
         # long distinct names.
+        if UsableAsParams is not None:
+            ReusableNames |= UsableAsParams
         First = True
         restart = self.WordFirstChar
         restartReusable = ReusableNames
