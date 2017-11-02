@@ -820,6 +820,17 @@ class foldconst(object):
                 # Tough one. Remove neutral elements for the diverse types,
                 # and more.
 
+                # expr + -expr  ->  0
+                # -expr + expr  ->  0
+                if (child[0]['nt'] == 'NEG'
+                    and self.CompareTrees(child[0]['ch'][0], child[1])
+                    or child[1]['nt'] == 'NEG'
+                    and self.CompareTrees(child[1]['ch'][0], child[0])
+                   ):
+                    parent[index] = {'nt':'CONST', 't':'integer', 'value':0,
+                                     'SEF':True}
+                    return
+
                 # Addition of integers, strings, and lists is associative.
                 # Addition of floats, vectors and rotations would be, except
                 # for FP precision.
@@ -1156,7 +1167,7 @@ class foldconst(object):
                             self.FoldTree(parent, index)
                             return
                 if self.CompareTrees(child[0], child[1]):
-                    # a == a  ->  1
+                    # expr == expr  ->  1
                     parent[index] = {'nt':'CONST', 't':'integer', 'value':1,
                                      'SEF':True}
                     return
@@ -1182,6 +1193,11 @@ class foldconst(object):
                 # fall through to check for '<'
 
             if nt == '<':
+                # expr < expr  ->  0
+                if self.CompareTrees(child[0], child[1]):
+                    parent[index] = {'nt':'CONST', 't':'integer', 'value':0,
+                                     'SEF':True}
+                    return
                 if child[0]['t'] == child[1]['t'] in ('integer', 'float'):
                     if (child[0]['nt'] == 'CONST'
                         and child[1]['nt'] == 'FNCALL'
@@ -1243,6 +1259,12 @@ class foldconst(object):
                     return
 
             if nt in ('&', '|'):
+                # expr & expr  ->  expr
+                # expr | expr  ->  expr
+                if self.CompareTrees(child[0], child[1]):
+                    parent[index] = child[0]
+                    return
+
                 # Deal with operands in any order
                 a, b = 0, 1
                 # Put constant in child[b]
@@ -1300,6 +1322,11 @@ class foldconst(object):
                 return
 
             if nt == '^':
+                # expr ^ expr  ->  0
+                if self.CompareTrees(child[0], child[1]):
+                    parent[index] = {'nt':'CONST', 't':'integer', 'value':0,
+                                     'SEF':True}
+                    return
                 a, b = 0, 1
                 if child[a]['nt'] == 'CONST':
                     a, b = 1, 0
