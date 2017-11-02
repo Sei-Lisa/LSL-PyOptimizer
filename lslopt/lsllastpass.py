@@ -38,25 +38,31 @@ class lastpass(object):
             # is found while monitoring state changes.
             self.subinfo['StChAreBad'] = 'scope' in node
             self.BadStCh = False
+            return
 
         if nt == 'IF':
             if len(child) == 2:
                 # Don't monitor the children.
                 self.subinfo['StChAreBad'] = False
+            return
 
         if nt == 'DO':
             self.subinfo['StChAreBad'] = False
+            return
 
         if nt == 'FOR':
             self.subinfo['StChAreBad'] = False
+            return
 
         if nt == 'WHILE':
             self.subinfo['StChAreBad'] = False
+            return
 
         if nt == 'STSW':
             if self.subinfo['StChAreBad']:
                 # Found one.
                 self.BadStCh = True
+            return
 
         if (self.optlistadd and not self.globalmode
             and (nt == 'CONST' and node['t'] == 'list' or nt == 'LIST'
