@@ -31,39 +31,6 @@ class lastpass(object):
         nt = node['nt']
         child = node['ch'] if 'ch' in node else None
 
-        if nt == 'FNDEF':
-            # StChAreBad will be True if this is a user-defined function,
-            # where state changes are considered bad.
-            # BadStCh will be True if at least one state change statement
-            # is found while monitoring state changes.
-            self.subinfo['StChAreBad'] = 'scope' in node
-            self.BadStCh = False
-            return
-
-        if nt == 'IF':
-            if len(child) == 2:
-                # Don't monitor the children.
-                self.subinfo['StChAreBad'] = False
-            return
-
-        if nt == 'DO':
-            self.subinfo['StChAreBad'] = False
-            return
-
-        if nt == 'FOR':
-            self.subinfo['StChAreBad'] = False
-            return
-
-        if nt == 'WHILE':
-            self.subinfo['StChAreBad'] = False
-            return
-
-        if nt == 'STSW':
-            if self.subinfo['StChAreBad']:
-                # Found one.
-                self.BadStCh = True
-            return
-
         if (self.optlistadd and not self.globalmode
             and (nt == 'CONST' and node['t'] == 'list' or nt == 'LIST'
                  or nt == '+' and child[0]['t'] == 'list' and
@@ -105,6 +72,39 @@ class lastpass(object):
                     return
 
                 del listnode, left
+
+        if nt == 'FNDEF':
+            # StChAreBad will be True if this is a user-defined function,
+            # where state changes are considered bad.
+            # BadStCh will be True if at least one state change statement
+            # is found while monitoring state changes.
+            self.subinfo['StChAreBad'] = 'scope' in node
+            self.BadStCh = False
+            return
+
+        if nt == 'IF':
+            if len(child) == 2:
+                # Don't monitor the children.
+                self.subinfo['StChAreBad'] = False
+            return
+
+        if nt == 'DO':
+            self.subinfo['StChAreBad'] = False
+            return
+
+        if nt == 'FOR':
+            self.subinfo['StChAreBad'] = False
+            return
+
+        if nt == 'WHILE':
+            self.subinfo['StChAreBad'] = False
+            return
+
+        if nt == 'STSW':
+            if self.subinfo['StChAreBad']:
+                # Found one.
+                self.BadStCh = True
+            return
 
     def LastPassPostOrder(self, parent, index):
         node = parent[index]
