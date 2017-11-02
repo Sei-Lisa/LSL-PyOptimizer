@@ -67,6 +67,10 @@ LSLType2Python = {'integer':int, 'float':float,
     'string':unicode, 'key':Key, 'vector':Vector,
     'rotation':Quaternion, 'list':list}
 
+LSLTypeDefaults = {'integer':0, 'float':0.0, 'string':u'', 'key':Key(u''),
+    'vector':Vector((0.,0.,0.)), 'rotation':Quaternion((0.,0.,0.,1.)),
+    'list':[]}
+
 def warning(txt):
     assert type(txt) == unicode
     sys.stderr.write(u"WARNING: " + txt + u"\n")

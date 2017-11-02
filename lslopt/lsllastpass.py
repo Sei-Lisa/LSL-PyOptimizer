@@ -31,6 +31,33 @@ class lastpass(object):
         nt = node['nt']
         child = node['ch'] if 'ch' in node else None
 
+        if nt == 'FNDEF':
+            # StChAreBad will be True if this is a user-defined function,
+            # where state changes are considered bad.
+            # BadStCh will be True if at least one state change statement
+            # is found while monitoring state changes.
+            self.subinfo['StChAreBad'] = 'scope' in node
+            self.BadStCh = False
+
+        if nt == 'IF':
+            if len(child) == 2:
+                # Don't monitor the children.
+                self.subinfo['StChAreBad'] = False
+
+        if nt == 'DO':
+            self.subinfo['StChAreBad'] = False
+
+        if nt == 'FOR':
+            self.subinfo['StChAreBad'] = False
+
+        if nt == 'WHILE':
+            self.subinfo['StChAreBad'] = False
+
+        if nt == 'STSW':
+            if self.subinfo['StChAreBad']:
+                # Found one.
+                self.BadStCh = True
+
         if (self.optlistadd and not self.globalmode
             and (nt == 'CONST' and node['t'] == 'list' or nt == 'LIST'
                  or nt == '+' and child[0]['t'] == 'list' and
@@ -61,10 +88,9 @@ class lastpass(object):
                             'SEF':True,
                             'value':elem
                             } if listnode['nt'] == 'CONST' else elem
-                        left = self.Cast(elemnode, 'list') if left is None else {
-                               'nt':'+', 't':'list', 'SEF':True,
-                               'ch':[left, elemnode]
-                              }
+                        left = (self.Cast(elemnode, 'list') if left is None
+                                else {'nt':'+', 't':'list', 'SEF':True,
+                                      'ch':[left, elemnode]})
                         del elemnode
                     if left is not None: # it's none for empty lists
                         parent[index] = left
@@ -75,9 +101,40 @@ class lastpass(object):
                 del listnode, left
 
     def LastPassPostOrder(self, parent, index):
-        pass
+        node = parent[index]
+        nt = node['nt']
+        child = node['ch'] if 'ch' in node else None
+
+        if nt == 'FNDEF':
+            if 'scope' in node and self.BadStCh:
+                # There is at least one bad state change statement in the
+                # function (must be the result of optimization).
+                # Insert dummy IF(1){...} statement covering the whole function
+                # (if it returs a value, insert a return statement too).
+                child[0] = {'nt':'{}', 't':None, 'ch':[
+                    {'nt':'IF', 't':None, 'ch':[
+                        {'nt':'CONST', 't':'integer', 'value':1},
+                        child[0]
+                    ]}
+                ]}
+                child = node['ch']
+                if node['t'] is not None:
+                    # Inserting a state switch in a function that returns a
+                    # value must count as one of the dumbest things to do.
+                    # We do as best as we can: add a return statement with the
+                    # default value for the type.
+                    child[0]['ch'].append({'nt':'RETURN', 't':None, 'ch':[
+                            {'nt':'CONST', 't':node['t'],
+                             'value':lslcommon.LSLTypeDefaults[node['t']]
+                            }]
+                        })
+            del self.BadStCh
+            return
+
 
     def RecursiveLastPass(self, parent, index):
+        subinfo = self.subinfo
+        self.subinfo = subinfo.copy()
         self.LastPassPreOrder(parent, index)
 
         if 'ch' in parent[index]:
@@ -88,6 +145,7 @@ class lastpass(object):
                 idx += 1
 
         self.LastPassPostOrder(parent, index)
+        self.subinfo = subinfo
 
     def LastPass(self):
         self.globalmode = False
@@ -95,6 +153,8 @@ class lastpass(object):
         tree = self.tree
 
         # Last optimizations pass
+        # self.subinfo is subtree-local info.
+        self.subinfo = {}
         for idx in xrange(len(tree)):
             if tree[idx]['nt'] == 'DECL':
                 self.globalmode = True

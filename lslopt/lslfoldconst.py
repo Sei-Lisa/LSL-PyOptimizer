@@ -1543,8 +1543,6 @@ class foldconst(object):
                      or child[idx]['nt'] == '{}' and not child[idx]['ch']:
                     del child[idx]
                 else:
-                    if 'StSw' in child[idx]:
-                        node['StSw'] = True
                     idx += 1
             if issef:
                 node['SEF'] = True
@@ -1558,27 +1556,14 @@ class foldconst(object):
                 # We might be able to remove one of the branches.
                 if lslfuncs.cond(child[0]['value']):
                     self.FoldTree(child, 1)
-                    # If it has a state switch, the if() must be preserved
-                    # (but the else branch may be removed).
-                    if 'StSw' in child[1]:
-                        # TODO: Get rid of StSw craziness and make another pass
-                        # to put them under conditionals if present (if bald
-                        # state switches are present, it means they are the
-                        # result of optimization so they must be wrapped in an
-                        # IF statement). The current approach leaves unnecessary
-                        # IFs behind.
-                        if len(child) == 3 and child[2]['nt'] != '@':
-                            del child[2] # Delete ELSE if present
-                            return
-                    else:
-                        self.FoldStmt(child, 1)
-                        if len(child) == 3 and child[2]['nt'] == '@':
-                            # Corner case. The label is in the same scope as
-                            # this statement, so it must be preserved just in
-                            # case it's jumped to.
-                            return
-                        parent[index] = child[1]
+                    self.FoldStmt(child, 1)
+                    if len(child) == 3 and child[2]['nt'] == '@':
+                        # Corner case. The label is in the same scope as
+                        # this statement, so it must be preserved just in
+                        # case it's jumped to.
                         return
+                    parent[index] = child[1]
+                    return
                 elif len(child) == 3:
                     self.FoldTree(child, 2)
                     self.FoldStmt(child, 2)
@@ -1788,7 +1773,6 @@ class foldconst(object):
 
         if nt == 'STSW':
             # State switch always has side effects.
-            node['StSw'] = True
             return
 
         if nt == 'SUBIDX':

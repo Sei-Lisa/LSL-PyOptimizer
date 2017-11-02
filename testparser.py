@@ -272,7 +272,7 @@ class Test03_Optimizer(UnitTestCase):
             vector vvvv2=vvvv;
             float ffff3 = v.z;
             integer fn(){
-                if (1) state default; else return 2;
+                if (1) state default;
                 return fn();}
 
             default{touch(integer n){
