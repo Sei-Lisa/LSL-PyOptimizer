@@ -25,31 +25,6 @@ import math
 from lslfuncopt import OptimizeFunc, OptimizeArgs, FuncOptSetup
 
 
-# Debug
-import sys
-def print_node(node, indent):
-    nt = node['nt']
-    write = sys.stdout.write
-    spaces = ' ' * (indent*4+2)
-    write('%s{ nt:%s\n' % (' '*(indent*4), nt))
-    if 't' in node:
-        write('%s,t:%s\n' % (spaces, node['t']))
-    if 'name' in node:
-        write('%s,name:%s\n' % (spaces, node['name']))
-    if 'value' in node:
-        write('%s,value:%s\n' % (spaces, repr(node['value'])))
-
-    for prop in node:
-        if prop not in ('ch', 'nt', 't', 'name', 'value','X','SEF'):
-            write('%s,%s:%s\n' % (spaces, prop, repr(node[prop])))
-    if 'ch' in node:
-        write(spaces + ',ch:[\n')
-        for subnode in node['ch']:
-            print_node(subnode, indent+1)
-        write(spaces + ']\n')
-    write(' '*(indent*4) + '}\n\n')
-
-
 class foldconst(object):
 
     def isLocalVar(self, node):
