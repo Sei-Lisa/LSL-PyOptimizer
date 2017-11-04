@@ -893,35 +893,52 @@ class foldconst(object):
                     if ltype == rtype == 'list':
 
                         if (rnt == 'LIST' and len(rval['ch']) == 1
-                           or rnt == 'CAST'):
+                            or rnt == 'CONST' and len(rval['value']) == 1
+                            or rnt == 'CAST'
+                           ):
                             # list + (list)element  ->  list + element
                             # list + [element]  ->  list + element
-                            while True:
-                                # Remove nested typecasts: (list)(list)x -> x
+                            while rnt == 'CAST' and rval['t'] == 'list':
+                                # Remove nested typecasts
+                                # e.g. list + (list)((list)x)  ->  list + x
                                 rval = parent[index]['ch'][1] = rval['ch'][0]
-                                if rval['nt'] != 'CAST' or rval['t'] != 'list':
-                                    break
-                            return
-                        if rnt == 'CONST' and len(rval['value']) == 1:
-                            # list + [constant]  ->  list + constant
-                            rval['value'] = rval['value'][0]
-                            rtype = rval['t'] = lslcommon.PythonType2LSL[type(rval['value'])]
+                                rnt = rval['nt']
+                            if (rnt == 'LIST' and len(rval['ch']) == 1
+                               and rval['ch'][0]['t'] != 'list'):
+                                # Finally, remove [] wrapper if it's not
+                                # list within list
+                                rval = child[1] = rval['ch'][0]
+                                rnt = rval['nt']
+                            if rnt == 'CONST' and len(rval['value']) == 1:
+                                # list + [constant]  ->  list + constant
+                                rval['value'] = rval['value'][0]
+                                rtype = rval['t'] = lslcommon.PythonType2LSL[
+                                    type(rval['value'])]
                             return
 
                         if (lnt == 'LIST' and len(lval['ch']) == 1
-                           or lnt == 'CAST'):
+                            or lnt == 'CONST' and len(lval['value']) == 1
+                            or lnt == 'CAST'
+                           ):
                             # (list)element + list  ->  element + list
                             # [element] + list  ->  element + list
-                            while True:
-                                # Remove nested typecasts: (list)(list)x -> x
+                            # (list)[element] + list  ->  element + list
+                            while lnt == 'CAST' and lval['t'] == 'list':
+                                # Remove nested typecasts
+                                # e.g. (list)((list)x) + list  ->  x + list
                                 lval = parent[index]['ch'][0] = lval['ch'][0]
-                                if lval['nt'] != 'CAST' or lval['t'] != 'list':
-                                    break
-                            return
-                        if lnt == 'CONST' and len(lval['value']) == 1:
-                            # [constant] + list  ->  constant + list
-                            lval['value'] = lval['value'][0]
-                            ltype = lval['t'] = lslcommon.PythonType2LSL[type(lval['value'])]
+                                lnt = lval['nt']
+                            if (lnt == 'LIST' and len(lval['ch']) == 1
+                               and lval['ch'][0]['t'] != 'list'):
+                                # Finally, remove [] wrapper if it's not
+                                # list within list
+                                lval = child[0] = lval['ch'][0]
+                                lnt = lval['nt']
+                            if lnt == 'CONST' and len(lval['value']) == 1:
+                                # [constant] + list  ->  constant + list
+                                lval['value'] = lval['value'][0]
+                                ltype = lval['t'] = lslcommon.PythonType2LSL[
+                                    type(lval['value'])]
                             return
 
                     return
