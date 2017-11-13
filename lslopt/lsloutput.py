@@ -384,7 +384,15 @@ class outscript(object):
         if nt == 'IF':
             ret = self.dent()
             while True:
-                ret += 'if (' + self.OutExpr(child[0]) + ')\n' + self.OutIndented(child[1])
+                ret += 'if (' + self.OutExpr(child[0]) + ')\n'
+                if (len(child) == 3
+                    and child[1]['nt'] == 'IF' and len(child[1]['ch']) < 3
+                   ):
+                    ret += self.dent() + '{\n'
+                    ret += self.OutIndented(child[1])
+                    ret += self.dent() + '}\n'
+                else:
+                    ret += self.OutIndented(child[1])
                 if len(child) < 3:
                     return ret
                 if child[2]['nt'] != 'IF':

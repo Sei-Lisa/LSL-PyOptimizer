@@ -1664,7 +1664,15 @@ class foldconst(object):
                 if len(child) > 2:
                     self.FoldTree(child, 2)
                     self.FoldStmt(child, 2)
-                    if self.DoesSomething(child[2]):
+                    # Check if it makes sense to swap if and else branches
+                    # (but don't if the else branch is an elseless 'if'
+                    # with a label, as it will be wrapped in {} making it
+                    # become out of scope)
+                    if (self.DoesSomething(child[2])
+                        and (child[2]['nt'] != 'IF'
+                             or len(child[2]['ch']) == 3
+                             or child[2]['ch'][1]['nt'] != '@')
+                       ):
                         # Check if we can gain something by negating the
                         # expression.
                         # Swap 'if' and 'else' branch when the condition has
@@ -1674,27 +1682,34 @@ class foldconst(object):
                             child[1], child[2] = child[2], child[1]
                         # Swap them if condition is '==' with integer operands
                         if (child[0]['nt'] == '=='
-                              and child[0]['ch'][0]['t']
-                                  == child[0]['ch'][1]['t'] == 'integer'
-                             ):
+                            and child[0]['ch'][0]['t']
+                                == child[0]['ch'][1]['t'] == 'integer'
+                           ):
                             child[0]['nt'] = '^'
                             child[1], child[2] = child[2], child[1]
                     # Re-test just in case we swapped in the previous check.
-                    if not self.DoesSomething(child[2]):
+                    if (not self.DoesSomething(child[2])
+                        and child[1]['nt'] != '@'):
                         # no point in "... else ;" - remove else branch
                         del child[2]
                 if not self.DoesSomething(child[1]):
                     # if (X) ;  ->  X;
                     if len(child) == 2:
-                        parent[index] = child[0]
-                        # It has been promoted to statement. Fold it.
+                        parent[index] = {'nt':'EXPR', 't':child[0]['t'],
+                            'ch':[child[0]]}
+                        # It has been promoted to statement. Fold it as such.
                         # (Will remove it if SEF)
-                        self.FoldStmt(child, 0)
+                        self.FoldStmt(parent, index)
                         return
 
                     # If type(X) != Key, then:
                     # if (X) ; else {stuff}  ->  if (!X) {stuff}
-                    if child[0]['t'] != 'key':
+                    # (being careful with labels again)
+                    if (child[0]['t'] != 'key'
+                        and (child[2]['nt'] != 'IF'
+                             or len(child[2]['ch']) == 3
+                             or child[2]['ch'][1]['nt'] != '@')
+                       ):
                         # We've already converted all other types to equivalent
                         # comparisons
                         assert child[0]['t'] == 'integer'
