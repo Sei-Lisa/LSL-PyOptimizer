@@ -217,6 +217,7 @@ Usage: {progname}
     [--avname=<name>]         * specify name of avatar saving the script
     [--assetid=<UUID>]        * specify the asset UUID of the script
     [--shortname=<name>]      * specify the script's short file name
+    [--prettify]                Prettify source file. Disables all -O options.
     filename                    input file
 
 Options marked with * are used to define the preprocessor macros __AGENTID__,
@@ -359,6 +360,7 @@ validoptions = frozenset(('extendedglobalexpr','breakcont','extendedtypecast',
     # undocumented
     'lso','expr','rsrclimit',
     # 'clear' is handled as a special case
+    # 'prettify' is internal, as it's a user flag
 ))
 
 def main(argv):
@@ -382,7 +384,7 @@ def main(argv):
     try:
         opts, args = getopt.gnu_getopt(argv[1:], 'hO:o:p:P:HTyb:L:',
             ('optimizer-options=', 'help', 'version', 'output=', 'header',
-            'timestamp','python-exceptions',
+            'timestamp', 'python-exceptions', 'prettify',
             'preproc=', 'precmd=', 'prearg=', 'prenodef', 'preshow',
             'avid=', 'avname=', 'assetid=', 'shortname=', 'builtins='
             'libdata='))
@@ -404,6 +406,7 @@ def main(argv):
     mcpp_mode = False
     preshow = False
     raise_exception = False
+    prettify = False
     builtins = None
     libdata = None
 
@@ -525,7 +528,14 @@ def main(argv):
 
         elif opt == '--shortname':
             shortname = arg
+
+        elif opt == '--prettify':
+            prettify = True
     del opts
+
+    if prettify:
+        options &= set(('rsrclimit',))
+        options.add('prettify')
 
     try:
 

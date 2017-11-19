@@ -2628,6 +2628,9 @@ list lazy_list_set(list L, integer i, list v)
         # # Allow referencing undefined functions inside function definitions.
         # self.allowundeffn = 'allowundeffn' in options
 
+        # Prettify a source file
+        self.prettify = 'prettify' in options
+
         # Symbol table:
         # This is a list of all local and global symbol tables.
         # The first element (0) is the global scope. Each symbol table is a
@@ -2649,6 +2652,16 @@ list lazy_list_set(list L, integer i, list v)
         self.symtab = [self.funclibrary.copy()]
         self.symtab[0][-1] = None
         self.scopeindex = 0
+
+        if self.prettify:
+            # Add the constants as symbol table variables...
+            for i in self.constants:
+                self.symtab[0][i] = {'Kind':'v', 'Scope':0,
+                    'Type':lslcommon.PythonType2LSL[type(self.constants[i])]}
+            # ... and remove them as constants.
+            self.constants = {}
+            # Remove TRUE and FALSE from keywords
+            self.keywords -= set(('TRUE', 'FALSE'))
 
         # Last preprocessor __FILE__. <stdin> means the current file.
         self.lastFILE = '<stdin>'
