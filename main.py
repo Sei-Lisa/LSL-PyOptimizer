@@ -106,27 +106,27 @@ def PreparePreproc(script):
     # instead of reproducing that C quirk. This also matches what FS is doing
     # currently, so it's good for compatibility.
     tok = re.compile(
-        r'(?:'
-            r'/(?:\?\?/\n|\\\n)*\*.*?\*(?:\?\?/\n|\\\n)*/'
-            r'|/(?:\?\?/\n|\\\n)*/(?:\?\?/\n|\\\n|[^\n])*\n'
-            r'|[^"]'
-        r')+'
-        r'|"'
+        ur'(?:'
+            ur'/(?:\?\?/\n|\\\n)*\*.*?\*(?:\?\?/\n|\\\n)*/'
+            ur'|/(?:\?\?/\n|\\\n)*/(?:\?\?/\n|\\\n|[^\n])*\n'
+            ur'|[^"]'
+        ur')+'
+        ur'|"'
         , re.S)
     # RE used inside strings.
     tok2 = re.compile(
-        r'(?:'
-            r"\?\?[='()!<>-]"   # valid trigraph except ??/ (backslash)
-            r"|(?:\?\?/|\\)(?:\?\?[/='()!<>-]|[^\n])"
+        ur'(?:'
+            ur"\?\?[='()!<>-]"  # valid trigraph except ??/ (backslash)
+            ur"|(?:\?\?/|\\)(?:\?\?[/='()!<>-]|[^\n])"
                                 # backslash trigraph or actual backslash,
                                 # followed by any trigraph or non-newline
-            r'|(?!\?\?/\n|\\\n|"|\n).'
+            ur'|(?!\?\?/\n|\\\n|"|\n).'
                                 # any character that doesn't start a trigraph/
                                 # backslash escape followed by a newline
                                 # or is a newline or double quote, as we're
                                 # interested in all those individually.
-        r')+'                   # as many of those as possible
-        r'|\?\?/\n|\\\n|\n|"'   # or any of those individually
+        ur')+'                  # as many of those as possible
+        ur'|\?\?/\n|\\\n|\n|"'  # or any of those individually
         )
 
     pos = 0
@@ -134,7 +134,7 @@ def PreparePreproc(script):
     while match:
         matched = match.group(0)
         pos += len(matched)
-        if matched == '"':
+        if matched == u'"':
             s += matched
             nlines = col = 0
             match2 = tok2.search(script, pos)
@@ -142,24 +142,24 @@ def PreparePreproc(script):
                 matched2 = match2.group(0)
                 pos += len(matched2)
 
-                if matched2 == '\\\n' or matched2 == '??/\n':
+                if matched2 == u'\\\n' or matched2 == u'??/\n':
                     nlines += 1
                     col = 0
                     match2 = tok2.search(script, pos)
                     continue
-                if matched2 == '"':
+                if matched2 == u'"':
                     if nlines:
-                        if script[pos:pos+1] == '\n':
+                        if script[pos:pos+1] == u'\n':
                             col = -1 # don't add spaces if not necessary
                         # col misses the quote added here, so add 1
-                        s += '"' + '\n'*nlines + ' '*(col+1)
+                        s += u'"' + u'\n'*nlines + u' '*(col+1)
                     else:
-                        s += '"'
+                        s += u'"'
                     break
-                if matched2 == '\n':
+                if matched2 == u'\n':
                     nlines += 1
                     col = 0
-                    s += '\\n'
+                    s += u'\\n'
                 else:
                     col += len(matched2)
                     s += matched2
@@ -628,7 +628,7 @@ def main(argv):
         if preproc != 'none':
             # At this point, for the external preprocessor to work we need the
             # script as a byte array, not as unicode, but it should be UTF-8.
-            script = PreparePreproc(script)
+            script = PreparePreproc(script.decode('utf8')).encode('utf8')
             if preproc == 'mcpp':
                 # As a special treatment for mcpp, we force it to output its
                 # macros so we can read if USE_xxx are defined. With GCC that
