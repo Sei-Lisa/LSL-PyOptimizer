@@ -403,7 +403,6 @@ def main(argv):
     predefines = True
     script_header = ''
     script_timestamp = ''
-    mcpp_mode = False
     preshow = False
     raise_exception = False
     prettify = False
@@ -471,7 +470,6 @@ def main(argv):
                     % (preproc, u"', '".join(supported)))
                 return 1
 
-            mcpp_mode = False
             del preproc_cmdline[1:]
 
             if preproc == 'gcpp':
@@ -481,7 +479,6 @@ def main(argv):
                     ]
 
             elif preproc == 'mcpp':
-                mcpp_mode = True
                 preproc_cmdline = [
                     'mcpp', '-e', 'UTF-8', '-I-', '-N', '-3', '-j',
                     '-V199901L',
@@ -627,7 +624,7 @@ def main(argv):
             # At this point, for the external preprocessor to work we need the
             # script as a byte array, not as unicode, but it should be UTF-8.
             script = PreparePreproc(script)
-            if mcpp_mode:
+            if preproc == 'mcpp':
                 # As a special treatment for mcpp, we force it to output its
                 # macros so we can read if USE_xxx are defined. With GCC that
                 # is achieved with -dN, but mcpp has no command line option.
