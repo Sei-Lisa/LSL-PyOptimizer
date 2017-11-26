@@ -398,7 +398,8 @@ def main(argv):
     avname = ''
     shortname = ''
     assetid = '00000000-0000-0000-0000-000000000000'
-    preproc_cmdline = ['cpp']
+    preproc_command = 'cpp'
+    preproc_user_args = []
     preproc = 'none'
     predefines = True
     script_header = ''
@@ -470,37 +471,17 @@ def main(argv):
                     % (preproc, u"', '".join(supported)))
                 return 1
 
-            del preproc_cmdline[1:]
-
             if preproc == 'gcpp':
-                preproc_cmdline = [
-                    'cpp', '-undef', '-x', 'c', '-std=c99', '-nostdinc',
-                    '-trigraphs', '-dN', '-fno-extended-identifiers',
-                    ]
+                preproc_command = 'cpp'
 
             elif preproc == 'mcpp':
-                preproc_cmdline = [
-                    'mcpp', '-e', 'UTF-8', '-I-', '-N', '-3', '-j',
-                    '-V199901L',
-                    ]
-
-            if predefines:
-                preproc_cmdline += [
-                    '-Dinteger(...)=((integer)(__VA_ARGS__))',
-                    '-Dfloat(...)=((float)(__VA_ARGS__))',
-                    '-Dstring(...)=((string)(__VA_ARGS__))',
-                    '-Dkey(...)=((key)(__VA_ARGS__))',
-                    '-Drotation(...)=((rotation)(__VA_ARGS__))',
-                    '-Dquaternion(...)=((quaternion)(__VA_ARGS__))',
-                    '-Dvector(...)=((vector)(__VA_ARGS__))',
-                    '-Dlist(...)=((list)(__VA_ARGS__))',
-                    ]
+                preproc_command = 'mcpp'
 
         elif opt == '--precmd':
-            preproc_cmdline[0] = arg
+            preproc_command = arg
 
         elif opt in ('-P', '--prearg'):
-            preproc_cmdline.append(arg)
+            preproc_user_args.append(arg)
 
         elif opt == '--prenodef':
             predefines = False
@@ -595,15 +576,40 @@ def main(argv):
         if shortname == '':
             shortname = os.path.basename(fname)
 
+        # Build preprocessor command line
+        preproc_cmdline = [preproc_command]
         if predefines:
-            preproc_cmdline.append('-D__AGENTKEY__="' + avid + '"')
-            preproc_cmdline.append('-D__AGENTID__="' + avid + '"')
+            if preproc == 'gcpp':
+                preproc_cmdline += [
+                    '-undef', '-x', 'c', '-std=c99', '-nostdinc',
+                    '-trigraphs', '-dN', '-fno-extended-identifiers',
+                    ]
+
+            elif preproc == 'mcpp':
+                preproc_cmdline += [
+                    '-e', 'UTF-8', '-I-', '-N', '-3', '-j',
+                    '-V199901L',
+                    ]
+
+            preproc_cmdline += [
+                '-Dinteger(...)=((integer)(__VA_ARGS__))',
+                '-Dfloat(...)=((float)(__VA_ARGS__))',
+                '-Dstring(...)=((string)(__VA_ARGS__))',
+                '-Dkey(...)=((key)(__VA_ARGS__))',
+                '-Drotation(...)=((rotation)(__VA_ARGS__))',
+                '-Dquaternion(...)=((quaternion)(__VA_ARGS__))',
+                '-Dvector(...)=((vector)(__VA_ARGS__))',
+                '-Dlist(...)=((list)(__VA_ARGS__))',
+                ]
+            preproc_cmdline.append('-D__AGENTKEY__="%s"' % avid)
+            preproc_cmdline.append('-D__AGENTID__="%s"' % avid)
             preproc_cmdline.append('-D__AGENTIDRAW__=' + avid)
-            preproc_cmdline.append('-D__AGENTNAME__="' + avname + '"')
+            preproc_cmdline.append('-D__AGENTNAME__="%s"' % avname)
             preproc_cmdline.append('-D__ASSETID__=' + assetid)
-            preproc_cmdline.append('-D__SHORTFILE__="' + shortname + '"')
+            preproc_cmdline.append('-D__SHORTFILE__="%s"' % shortname)
             preproc_cmdline.append('-D__OPTIMIZER__=LSL PyOptimizer')
             preproc_cmdline.append('-D__OPTIMIZER_VERSION__=' + VERSION)
+        preproc_cmdline +=  preproc_user_args
 
         if type(script) is unicode:
             script = script.encode('utf8')
