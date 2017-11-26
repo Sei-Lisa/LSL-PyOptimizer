@@ -577,7 +577,7 @@ def main(argv):
             shortname = os.path.basename(fname)
 
         # Build preprocessor command line
-        preproc_cmdline = [preproc_command]
+        preproc_cmdline = [preproc_command] + preproc_user_args
         if predefines:
             if preproc == 'gcpp':
                 preproc_cmdline += [
@@ -609,7 +609,6 @@ def main(argv):
             preproc_cmdline.append('-D__SHORTFILE__="%s"' % shortname)
             preproc_cmdline.append('-D__OPTIMIZER__=LSL PyOptimizer')
             preproc_cmdline.append('-D__OPTIMIZER_VERSION__=' + VERSION)
-        preproc_cmdline +=  preproc_user_args
 
         if type(script) is unicode:
             script = script.encode('utf8')
