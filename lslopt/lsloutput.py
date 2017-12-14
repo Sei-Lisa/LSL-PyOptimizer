@@ -385,9 +385,17 @@ class outscript(object):
             ret = self.dent()
             while True:
                 ret += 'if (' + self.OutExpr(child[0]) + ')\n'
-                if (len(child) == 3
-                    and child[1]['nt'] == 'IF' and len(child[1]['ch']) < 3
-                   ):
+                # Do we need to add braces around the THEN side?
+                needs_braces = False
+                if len(child) == 3:
+                    testnode = child[1]
+                    # Find last IF in an ELSE IF chain
+                    while testnode['nt'] == 'IF' and len(testnode['ch']) == 3:
+                        testnode = testnode['ch'][2]
+                    if testnode['nt'] == 'IF':
+                        # hit an IF without ELSE at the end of the chain
+                        needs_braces = True
+                if needs_braces:
                     ret += self.dent() + '{\n'
                     ret += self.OutIndented(child[1])
                     ret += self.dent() + '}\n'
