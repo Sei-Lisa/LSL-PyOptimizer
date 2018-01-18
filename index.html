@@ -208,9 +208,11 @@ h1 { background: #2080C0; color: white; padding:25px 5% 8px; margin: 4% 7% 0px; 
 
 <h3><a id="extensions-preproc-cmds"></a>#pragma and #line</h3>
 
-<p>The optimizer option <code>ProcessPre</code> enables processing of certain preprocessor directives that control compilation. Only <code>#pragma</code> and <code>#line</code> are supported for now. Typically these directives pass through the preprocessor unchanged (not always; see note below about <code>gcc</code> and <code>#line</code>), so they will reach the optimizer if a preprocessor is used. The rest of preprocessor directives will be ignored.</p>
+<p>The optimizer option <code>ProcessPre</code> enables processing of certain preprocessor directives that control compilation. Only <code>#pragma</code> and <code>#line</code> are supported for now. Typically these directives pass through the preprocessor unchanged (not always; see note below about <em>GNU cpp</em> and <code>#line</code>), so they will reach the optimizer when a preprocessor is used. The rest of preprocessor directives will be ignored.</p>
 
-<p><code>#pragma</code> is a special C preprocessor directive that allows compilers to extend the language with certain options. In the case of this optimizer, the <code>#pragma</code> directive is used to enable/disable on the fly the parsing options and extensions. Even <code>ProcessPre</code> itself can be disabled (it can't be enabled this way because when disabled, <code>#pragma</code> directives aren't processed).</p>
+<p>The <code>#line</code> directive is not supposed to be used by the programmer. C/C++ preprocessors, including <em>Boost::Wave</em>, <em>mcpp</em> and <em>GNU cpp</em>, automatically generate them whenever the lines in the original file lose synchronization with the preprocessor's output, in order to keep track of which original line produced a certain output line, for error reporting and debugging purposes. As of version 0.2.2beta, this directive does indeed track which input line generated a certain output line, generating errors with a line number that refers to the original file rather than the preprocessed/optimized file, and including the name of the file where the error was found when it differs from the initial source.</p>
+
+<p><code>#pragma</code> is a special C preprocessor directive that allows compilers to extend the language with certain options. In the case of this optimizer, the <code>#pragma</code> directive is used to enable/disable on the fly the parsing options and extensions, taking precedence over all others. Even <code>ProcessPre</code> itself can be disabled (it can't be enabled this way because when disabled, <code>#pragma</code> directives aren't processed).</p>
 
 <p>To use this feature, type the command like this:</p>
 
@@ -250,8 +252,6 @@ h1 { background: #2080C0; color: white; padding:25px 5% 8px; margin: 4% 7% 0px; 
 </code></pre>
 
 <p>For a description of each, you can invoke the program from the command line with: <code>python main.py -O help</code> (that's the upper case letter O, not the number zero). Note, however, that the only options that can be used in <code>#pragma</code> directives inlined in the code are the options listed above, which are the ones that affect the parsing, not the optimization.</p>
-
-<p>The <code>#line</code> directive is not supposed to be used by the programmer. Preprocessors including <em>Boost::Wave</em>, <em>mcpp</em> and <em>GNU cpp</em> automatically generate them whenever the lines in the original file lose synchronization with the preprocessor's output, in order to keep track of which original line produced a certain output line, for error reporting and debugging purposes. As of version 0.2.1beta, this directive doesn't do anything, but there are plans to use it for the same purpose: to track which input line generated a certain output line, in order to generate errors where the line numbers refer to the original file rather than the preprocessed/optimized file.</p>
 
 <p><b>Important:</b> Changing options in the middle of the program may not be well supported. In particular, activating and deactivating in the same program certain options like <code>BreakCont</code> may crash the optimizer. Changing the options at the beginning of the script should be safe.</p>
 
@@ -429,7 +429,7 @@ but this will cause an error:
 
 <h3><a id="optimizations-string-constant-folding"></a>String constant folding</h3>
 
-<p>This optimization is turned off by default, as it can be counter-productive. It enables concatenating constants together. However, consider this situation:</p>
+<p>This optimization is turned off by default, as it can be counter-productive. It enables concatenating string constants together. However, consider this situation:</p>
 
 <pre><code><span>string a = "A very long string that appears in this script once" + ", or not";</span>
 <span>string b = "A very long string that appears in this script once" + " or twice";</span>
@@ -443,7 +443,7 @@ but this will cause an error:
 
 <p>This program is designed to work as a filter. It can read from standard input if the file name argument is "-", and it can (and does by default) output the result to standard output. Any errors and warnings go to standard error always, to not interfere with the script being output.</p>
 
-<p>Running it by hand to optimize your scripts can be cumbersome. The intention is for it to act as a filter that is transparent to the user; however, as of this writing there's no support for any viewer or IDE, as it is still a young project. Run it without parameters to see the invocation help, for example with <code>python main.py</code>. Redirect the output to a file if you want to store the result, possibly to open it with an editor and copy it to the clipboard. Or under <em>X Window</em>, if you install the package <kbd><em>xclip</em></kbd>, you can pipe the output directly to <code>xclip -quiet -selection clipboard</code> to copy it to the clipboard, rather than using a file, so you can paste it directly into the viewer. Examples:</p>
+<p>Running it by hand to optimize your scripts can be cumbersome. The intention is for it to act as a filter that is transparent to the user; however, as of this writing there's no support for any viewer or IDE, as it is still a young project. Run it without parameters to see the invocation help, for example with <code>python main.py</code>. Redirect the output to a file if you want to store the result, possibly to open it with an editor and copy it to the clipboard. Or under <em>X Window</em>, if you install the package <kbd><em>xclip</em></kbd>, you can pipe the output directly to <code>xclip -quiet -selection clipboard</code> to copy it to the clipboard, rather than using a file, so you can paste it into the viewer. Examples:</p>
 
 <pre><code><span>python main.py myscript.lsl | xclip -quiet -selection clipboard</span>
 </code></pre>
@@ -474,8 +474,6 @@ but this will cause an error:
 <h2><a id="other-future-plans"></a>Other future plans</h2>
 
 <p>Making the optimizer smarter is one primary objective. Conversion to <a href="https://en.wikipedia.org/wiki/Static_single_assignment_form">SSA</a> form is currently not performed, and would be nice to have, for one, to enable more optimizations where values are not used. There are a number of TODO items in the code about optimizations pending to implement.</p>
-
-<p>Another goal is to add the possibility to link each output line with its source counterpart, so that in case of a server side compilation error, the source line corresponding to the actual line where the error happened can be displayed. Currently, server-side compilation errors should be rare (unless there are bugs in the optimizer) as there will be few situations in which they won't be caught by the optimizer's parser first. This would also allow warnings output by the optimizer (e.g. an expression in globals not resolving to a constant) to be related to a source line. Currently those warnings don't tell where the error occurred.</p>
 
 <p>Lastly, implementation of some kind of machine-readable way to inform the invoker about the available options, is also in the plans. That would allow the plugin or viewer or whatever to present a dialog with the options for invoking the optimizer.</p>
 
