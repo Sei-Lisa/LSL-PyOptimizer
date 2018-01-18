@@ -27,7 +27,7 @@ import lslopt.lslcommon
 import lslopt.lslloadlib
 
 
-VERSION = '0.2.1beta'
+VERSION = '0.2.2beta'
 
 
 def ReportError(script, e):
