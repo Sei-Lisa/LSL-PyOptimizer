@@ -228,8 +228,8 @@ class deadcode(object):
                                 self.tree[sym['Loc']]['X'] = True
                             elif subnode['nt'] in ('VECTOR', 'ROTATION'):
                                 for sub2node in subnode['ch']:
-                                    # can only happen in globals
                                     if sub2node['nt'] == 'IDENT':
+                                        # can only happen in globals
                                         assert sub2node['scope'] == 0
                                         sym = self.symtab[0][sub2node['name']]
                                         sym['W'] = False
