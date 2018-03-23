@@ -708,7 +708,15 @@ class foldconst(object):
                     subexpr['ch'] = [subexpr['ch'][b], subexpr['ch'][a]]
                     parent[index] = subexpr
                     return
-            if snt == '!=' or snt == '^':
+            if snt == '!=' or snt == '^' or snt == '-' or snt == '+':
+                if snt == '+':
+                    # Change !(x + y) -> -x == y, and make another pass
+                    # to get rid of the signs where possible
+                    subexpr['ch'][0] = {'nt':'NEG', 't':'integer',
+                        'ch':[subexpr['ch'][0]]}
+                    if 'SEF' in subexpr['ch'][0]['ch'][0]:
+                        subexpr['ch'][0]['SEF'] = True
+
                 subexpr['nt'] = '=='
                 parent[index] = subexpr
                 self.FoldTree(parent, index)
@@ -1171,6 +1179,9 @@ class foldconst(object):
                     if child[b]['nt'] != 'CONST':
                         a, b = 1, 0
 
+                    # a == -1 (in any order)  ->  !~a,
+                    # a == 0  ->  !a
+                    # a == 1  ->  !~-a
                     if child[b]['nt'] == 'CONST':
                         if child[b]['value'] in (-1, 0, 1):
                             node = child[a]
@@ -1189,6 +1200,22 @@ class foldconst(object):
                             del child
                             self.FoldTree(parent, index)
                             return
+
+                    # -a == -b  ->  a == b with const variations.
+                    # Note this changes the sign of two CONSTs but that case
+                    # should not reach here, as those are resolved earlier.
+                    if ((child[0]['nt'] == 'NEG' or child[0]['nt'] == 'CONST')
+                        and
+                        (child[1]['nt'] == 'NEG' or child[1]['nt'] == 'CONST')
+                       ):
+                        for a in (0, 1):
+                            if child[a]['nt'] == 'NEG':
+                                child[a] = child[a]['ch'][0]  # remove sign
+                            else:
+                                child[a]['value'] = lslfuncs.neg(
+                                    child[a]['value'])
+
+
                 if self.CompareTrees(child[0], child[1]):
                     # expr == expr  ->  1
                     parent[index] = {'nt':'CONST', 't':'integer', 'value':1,
