@@ -55,7 +55,7 @@ class outscript(object):
                     else:
                         pfx = '((key)'
                         sfx = ')'
-            if '\t' in value and self.warntabs:
+            if u'\t' in value and self.warntabs:
                 warning(u"A string contains a tab. Tabs are expanded to four"
                          " spaces by the viewer when copy-pasting the code"
                          " (disable this warning by disabling the 'warntabs'"
@@ -178,22 +178,23 @@ class outscript(object):
     def FindName(self, node, scope = None):
         if scope is None:
             # node is a node
-            if 'scope' in node and 'NewName' in self.symtab[node['scope']][node['name']]:
-                return self.symtab[node['scope']][node['name']]['NewName']
-            if node['nt'] == 'FNCALL' and 'NewName' in self.symtab[0][node['name']]:
-                return self.symtab[0][node['name']]['NewName']
+            if (hasattr(node, 'scope')
+                    and 'NewName' in self.symtab[node.scope][node.name]):
+                return self.symtab[node.scope][node.name]['NewName']
+            if node.nt == 'FNCALL' and 'NewName' in self.symtab[0][node.name]:
+                return self.symtab[0][node.name]['NewName']
 
-            return node['name']
+            return node.name
         # node is a name
         if 'NewName' in self.symtab[scope][node]:
             return self.symtab[scope][node]['NewName']
         return node
 
     def OutIndented(self, node):
-        if node['nt'] != '{}':
+        if node.nt != '{}':
             self.indentlevel += 1
         ret = self.OutCode(node)
-        if node['nt'] != '{}':
+        if node.nt != '{}':
             self.indentlevel -= 1
         return ret
 
@@ -210,14 +211,13 @@ class outscript(object):
 
     def OutExpr(self, expr):
         # Handles expression nodes (as opposed to statement nodes)
-        nt = expr['nt']
-        if 'ch' in expr:
-            child = expr['ch']
+        nt = expr.nt
+        child = expr.ch
 
         if nt in self.binary_operands:
-            lnt = child[0]['nt']
+            lnt = child[0].nt
             lparen = False
-            rnt = child[1]['nt']
+            rnt = child[1].nt
             rparen = False
             if nt in self.assignment_ops and nt in self.op_priority:
                 # Assignment is right-associative, so it needs to be dealt with
@@ -274,16 +274,17 @@ class outscript(object):
             return self.FindName(expr)
 
         if nt == 'CONST':
-            if self.foldconst and expr['t'] == 'list' and len(expr['value'])==1 and not self.globalmode:
-                return '(list)' + self.Value2LSL(expr['value'][0])
-            return self.Value2LSL(expr['value'])
+            if (self.foldconst and expr.t == 'list' and len(expr.value) == 1
+                    and not self.globalmode):
+                return '(list)' + self.Value2LSL(expr.value[0])
+            return self.Value2LSL(expr.value)
 
         if nt == 'CAST' or self.foldconst and nt in ('LIST', 'CONST') and len(child)==1 and not self.globalmode:
-            ret =  '(' + expr['t'] + ')'
+            ret =  '(' + expr.t + ')'
             expr = child[0]
-            if expr['nt'] in ('CONST', 'IDENT', 'V++', 'V--', 'VECTOR',
+            if expr.nt in ('CONST', 'IDENT', 'V++', 'V--', 'VECTOR',
                'ROTATION', 'LIST', 'FIELD', 'PRINT', 'FNCALL'):
-                if expr['nt'] != 'LIST' or len(expr['ch']) != 1:
+                if expr.nt != 'LIST' or len(expr.ch) != 1:
                     return ret + self.OutExpr(expr)
             return ret + '(' + self.OutExpr(expr) + ')'
 
@@ -309,7 +310,7 @@ class outscript(object):
                    + self.OutExpr(child[1]) + ',')
             if nt == 'ROTATION':
                 ret += self.OutExpr(child[2]) + ','
-            lnt = child[-1]['nt']
+            lnt = child[-1].nt
             if lnt in self.op_priority \
                and self.op_priority[lnt] <= self.op_priority['>']:
                 ret += '(' + self.OutExpr(child[-1]) + ')'
@@ -325,22 +326,22 @@ class outscript(object):
 
         if nt in self.unary_operands:
             ret = nt
-            lnt = child[0]['nt']
+            lnt = child[0].nt
             paren = False
             if nt == 'NEG':
                 ret = '-'
-                if (lnt == 'CONST' and child[0]['t'] == 'integer'
-                    and child[0]['value'] < 0
+                if (lnt == 'CONST' and child[0].t == 'integer'
+                    and child[0].value < 0
                    ):
                     # shortcut
-                    ret += str(child[0]['value'] + 4294967296)
+                    ret += str(child[0].value + 4294967296)
                     return ret
                 if lnt in self.op_priority:
                     paren = self.op_priority[lnt] <= self.op_priority['-']
                 elif (lnt == 'NEG' or lnt == '--V'
                       or lnt == 'CONST'
-                         and child[0]['t'] == 'float'
-                         and child[0]['value'] < 0
+                         and child[0].t == 'float'
+                         and child[0].value < 0
                      ):
                     ret += ' ' # don't output "--" as that's a different token
             else:
@@ -354,7 +355,7 @@ class outscript(object):
             return ret
 
         if nt == 'FLD':
-            return self.OutExpr(child[0]) + '.' + expr['fld']
+            return self.OutExpr(child[0]) + '.' + expr.fld
 
         if nt in ('V--', 'V++'):
             return self.OutExpr(child[0]) + ('++' if nt == 'V++' else '--')
@@ -375,11 +376,8 @@ class outscript(object):
         assert False, 'Internal error: expression type "' + nt + '" not handled' # pragma: no cover
 
     def OutCode(self, node):
-        nt = node['nt']
-        if 'ch' in node:
-            child = node['ch']
-        else:
-            child = None
+        nt = node.nt
+        child = node.ch
 
         if nt == 'IF':
             ret = self.dent()
@@ -390,9 +388,9 @@ class outscript(object):
                 if len(child) == 3:
                     testnode = child[1]
                     # Find last IF in an ELSE IF chain
-                    while testnode['nt'] == 'IF' and len(testnode['ch']) == 3:
-                        testnode = testnode['ch'][2]
-                    if testnode['nt'] == 'IF':
+                    while testnode.nt == 'IF' and len(testnode.ch) == 3:
+                        testnode = testnode.ch[2]
+                    if testnode.nt == 'IF':
                         # hit an IF without ELSE at the end of the chain
                         needs_braces = True
                 if needs_braces:
@@ -403,12 +401,12 @@ class outscript(object):
                     ret += self.OutIndented(child[1])
                 if len(child) < 3:
                     return ret
-                if child[2]['nt'] != 'IF':
+                if child[2].nt != 'IF':
                     ret += self.dent() + 'else\n' + self.OutIndented(child[2])
                     return ret
                 ret += self.dent() + 'else '
                 node = child[2]
-                child = node['ch']
+                child = node.ch
         if nt == 'WHILE':
             ret = self.dent() + 'while (' + self.OutExpr(child[0]) + ')\n'
             ret += self.OutIndented(child[1])
@@ -436,12 +434,12 @@ class outscript(object):
                 return self.dent() + 'return ' + self.OutExpr(child[0]) + ';\n'
             return self.dent() + 'return;\n'
         if nt == 'DECL':
-            ret = self.dent() + node['t'] + ' ' + self.FindName(node)
+            ret = self.dent() + node.t + ' ' + self.FindName(node)
             if child:
-                if 'orig' in child[0] and (child[0]['orig']['nt'] != 'IDENT'
-                        or child[0]['orig']['name']
-                           in self.symtab[child[0]['orig']['scope']]):
-                    ret += ' = ' + self.OutExpr(child[0]['orig'])
+                if hasattr(child[0], 'orig') and (child[0].orig.nt != 'IDENT'
+                        or child[0].orig.name
+                           in self.symtab[child[0].orig.scope]):
+                    ret += ' = ' + self.OutExpr(child[0].orig)
                 else:
                     ret += ' = ' + self.OutExpr(child[0])
             return ret + ';\n'
@@ -451,26 +449,26 @@ class outscript(object):
         if nt in ('STDEF', '{}'):
             ret = ''
             if nt == 'STDEF':
-                if node['name'] == 'default':
+                if node.name == 'default':
                     ret = self.dent() + 'default\n'
                 else:
                     ret = self.dent() + 'state ' + self.FindName(node) + '\n'
 
             ret += self.dent() + '{\n'
             self.indentlevel += 1
-            for stmt in node['ch']:
+            for stmt in node.ch:
                 ret += self.OutCode(stmt)
             self.indentlevel -= 1
             return ret + self.dent() + '}\n'
 
         if nt == 'FNDEF':
             ret = self.dent()
-            if node['t'] is not None:
-                ret += node['t'] + ' '
+            if node.t is not None:
+                ret += node.t + ' '
             ret += self.FindName(node) + '('
-            scope = node['pscope']
+            scope = node.pscope
             ret += ', '.join(typ + ' ' + self.FindName(name, scope)
-                             for typ, name in zip(node['ptypes'], node['pnames']))
+                             for typ, name in zip(node.ptypes, node.pnames))
             return ret + ')\n' + self.OutCode(child[0])
 
         if nt == 'EXPR':
@@ -502,7 +500,7 @@ class outscript(object):
         self.globalmode = False
         self.listmode = False
         for node in self.tree:
-            self.globalmode = node['nt'] == 'DECL'
+            self.globalmode = node.nt == 'DECL'
             ret += self.OutCode(node)
             self.globalmode = False
 

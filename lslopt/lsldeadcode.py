@@ -18,6 +18,7 @@
 # Dead Code Removal optimization
 
 import lslfuncs
+from lslcommon import nr
 
 class deadcode(object):
 
@@ -30,25 +31,25 @@ class deadcode(object):
         # The 'X' key, when present, indicates whether a node is executed.
         # Its value means whether this instruction will proceed to the next
         # (True: it will; False: it won't).
-        if 'X' in node:
-            return node['X'] # branch already analyzed
+        if hasattr(node, 'X'):
+            return node.X # branch already analyzed
 
-        nt = node['nt']
-        child = node['ch'] if 'ch' in node else None
+        nt = node.nt
+        child = node.ch
 
         # Control flow statements
 
         if nt == 'STSW':
-            node['X'] = False # Executed but path-breaking.
-            sym = self.symtab[0][node['name']]
-            if 'X' not in self.tree[sym['Loc']]:
+            node.X = False # Executed but path-breaking.
+            sym = self.symtab[0][node.name]
+            if not hasattr(self.tree[sym['Loc']], 'X'):
                 self.MarkReferences(self.tree[sym['Loc']])
 
             return False
 
         if nt == 'JUMP':
-            node['X'] = False # Executed but path-breaking.
-            sym = self.symtab[node['scope']][node['name']]
+            node.X = False # Executed but path-breaking.
+            sym = self.symtab[node.scope][node.name]
             if 'R' in sym:
                 sym['R'] += 1
             else:
@@ -56,87 +57,87 @@ class deadcode(object):
             return False
 
         if nt == 'RETURN':
-            node['X'] = False # Executed but path-breaking.
+            node.X = False # Executed but path-breaking.
             if child:
                 self.MarkReferences(child[0])
             return False
 
         if nt == 'IF':
             # "When you get to a fork in the road, take it."
-            node['X'] = None # provisional value, refined later
+            node.X = None # provisional value, refined later
             self.MarkReferences(child[0])
             condnode = child[0]
-            if condnode['nt'] == 'CONST':
-                if lslfuncs.cond(condnode['value']):
+            if condnode.nt == 'CONST':
+                if lslfuncs.cond(condnode.value):
                     # TRUE - 'then' branch always executed.
-                    node['X'] = self.MarkReferences(child[1])
-                    return node['X']
+                    node.X = self.MarkReferences(child[1])
+                    return node.X
                 elif len(child) == 3:
                     # FALSE - 'else' branch always executed.
-                    node['X'] = self.MarkReferences(child[2])
-                    return node['X']
+                    node.X = self.MarkReferences(child[2])
+                    return node.X
                 # else fall through
             else:
                 cont = self.MarkReferences(child[1])
                 if len(child) == 3:
                     if not cont:
                         cont = self.MarkReferences(child[2])
-                        node['X'] = cont
+                        node.X = cont
                         return cont
                     self.MarkReferences(child[2])
-            node['X'] = True
+            node.X = True
             return True
 
         if nt == 'WHILE':
-            node['X'] = None # provisional value, refined later
+            node.X = None # provisional value, refined later
             self.MarkReferences(child[0])
 
-            if child[0]['nt'] == 'CONST':
-                if lslfuncs.cond(child[0]['value']):
+            if child[0].nt == 'CONST':
+                if lslfuncs.cond(child[0].value):
                     # Infinite loop - unless it returns, it stops
                     # execution. But it is executed itself.
                     self.MarkReferences(child[1])
-                    node['X'] = False
-                    return node['X']
+                    node.X = False
+                    return node.X
                 # else the inside isn't executed at all, so don't mark it
             else:
                 self.MarkReferences(child[1])
-            node['X'] = True
+            node.X = True
             return True
 
         if nt == 'DO':
-            node['X'] = None # provisional value, refined later
+            node.X = None # provisional value, refined later
             if not self.MarkReferences(child[0]):
-                node['X'] = False
+                node.X = False
                 return False
             self.MarkReferences(child[1])
             # It proceeds to the next statement unless it's an infinite loop
-            node['X'] = not (child[1]['nt'] == 'CONST' and lslfuncs.cond(child[1]['value']))
-            return node['X']
+            node.X = not (child[1].nt == 'CONST' and lslfuncs.cond(child[1].value))
+            return node.X
 
         if nt == 'FOR':
-            node['X'] = None # provisional value, refined later
+            node.X = None # provisional value, refined later
             self.MarkReferences(child[0])
             self.MarkReferences(child[1])
-            if child[1]['nt'] == 'CONST':
-                if lslfuncs.cond(child[1]['value']):
+            if child[1].nt == 'CONST':
+                if lslfuncs.cond(child[1].value):
                     # Infinite loop - unless it returns, it stops
                     # execution. But it is executed itself.
-                    node['X'] = False
+                    node.X = False
                     self.MarkReferences(child[3])
                     self.MarkReferences(child[2]) # this can't stop execution
-                    return node['X']
+                    return node.X
                 # else the body and the iterator aren't executed at all, so
                 # don't mark them
-                node['X'] = True
+                node.X = True
             else:
-                node['X'] = True
+                node.X = True
                 self.MarkReferences(child[3])
                 self.MarkReferences(child[2])
             # Mark the EXPRLIST as always executed, but not the subexpressions.
             # That forces the EXPRLIST (which is a syntactic requirement) to be
             # kept, while still simplifying the contents properly.
-            child[2]['X'] = True
+            child[2].X = True
             return True
 
         if nt == '{}':
@@ -146,16 +147,16 @@ class deadcode(object):
             # True.
 
             continues = True
-            node['X'] = None # provisional
+            node.X = None # provisional
             for stmt in child:
-                if continues or stmt['nt'] == '@':
+                if continues or stmt.nt == '@':
                     continues = self.MarkReferences(stmt)
-            node['X'] = continues
+            node.X = continues
             return continues
 
         if nt == 'FNCALL':
-            node['X'] = None # provisional
-            sym = self.symtab[0][node['name']]
+            node.X = None # provisional
+            sym = self.symtab[0][node.name]
 
             fdef = self.tree[sym['Loc']] if 'Loc' in sym else None
             for idx in xrange(len(child)-1, -1, -1):
@@ -164,18 +165,18 @@ class deadcode(object):
                 # writes to a and b.
                 self.MarkReferences(child[idx])
                 if fdef is not None:
-                    psym = self.symtab[fdef['pscope']][fdef['pnames'][idx]]
+                    psym = self.symtab[fdef.pscope][fdef.pnames[idx]]
                     if 'W' in psym:
                         psym['W'] = False
                     else:
                         psym['W'] = child[idx]
 
             if 'Loc' in sym:
-                if 'X' not in self.tree[sym['Loc']]:
+                if not hasattr(self.tree[sym['Loc']], 'X'):
                     self.MarkReferences(self.tree[sym['Loc']])
-                node['X'] = self.tree[sym['Loc']]['X']
+                node.X = self.tree[sym['Loc']].X
             else:
-                node['X'] = 'stop' not in sym
+                node.X = 'stop' not in sym
             # Note that JUMP analysis is incomplete. To do it correctly, we
             # should follow the jump right to its destination, in order to know
             # if that branch leads to a RETURN or completely stops the event.
@@ -200,40 +201,40 @@ class deadcode(object):
             #     fn2() { fn(); x = 1; }
 
 
-            return node['X']
+            return node.X
 
         if nt == 'DECL':
-            sym = self.symtab[node['scope']][node['name']]
+            sym = self.symtab[node.scope][node.name]
             if child is not None:
                 sym['W'] = child[0]
             else:
-                sym['W'] = {'nt':'CONST', 't':node['t'],
-                    'value':self.DefaultValues[node['t']]}
+                sym['W'] = nr(nt='CONST', t=node.t,
+                    value=self.DefaultValues[node.t])
 
-            node['X'] = True
+            node.X = True
             if child is not None:
-                if 'orig' in child[0]:
-                    orig = child[0]['orig']
+                if hasattr(child[0], 'orig'):
+                    orig = child[0].orig
                     self.MarkReferences(orig)
-                    child[0]['X'] = orig['X']
-                    if orig['nt'] == 'LIST':
+                    child[0].X = orig.X
+                    if orig.nt == 'LIST':
                         # Add fake writes to variables used in list elements in
                         # 'orig', so they don't get deleted (Issue #3)
-                        for subnode in orig['ch']:
-                            if subnode['nt'] == 'IDENT':
+                        for subnode in orig.ch:
+                            if subnode.nt == 'IDENT':
                                 # can only happen in globals
-                                assert subnode['scope'] == 0
-                                sym = self.symtab[0][subnode['name']]
+                                assert subnode.scope == 0
+                                sym = self.symtab[0][subnode.name]
                                 sym['W'] = False
-                                self.tree[sym['Loc']]['X'] = True
-                            elif subnode['nt'] in ('VECTOR', 'ROTATION'):
-                                for sub2node in subnode['ch']:
-                                    if sub2node['nt'] == 'IDENT':
+                                self.tree[sym['Loc']].X = True
+                            elif subnode.nt in ('VECTOR', 'ROTATION'):
+                                for sub2node in subnode.ch:
+                                    if sub2node.nt == 'IDENT':
                                         # can only happen in globals
-                                        assert sub2node['scope'] == 0
-                                        sym = self.symtab[0][sub2node['name']]
+                                        assert sub2node.scope == 0
+                                        sym = self.symtab[0][sub2node.name]
                                         sym['W'] = False
-                                        self.tree[sym['Loc']]['X'] = True
+                                        self.tree[sym['Loc']].X = True
                 else:
                     self.MarkReferences(child[0])
             return True
@@ -241,14 +242,14 @@ class deadcode(object):
         # ---- Starting here, all node types return through the bottom
         #      (except '=').
 
-        node['X'] = None # provisional
+        node.X = None # provisional
         if nt in self.assign_ops or nt in ('--V', '++V', 'V++', 'V--'):
-            ident = node['ch'][0]
-            if ident['nt'] == 'FLD':
-                ident = ident['ch'][0]
-            assert ident['nt'] == 'IDENT'
-            sym = self.symtab[ident['scope']][ident['name']]
-            if ident['scope'] == 0:
+            ident = node.ch[0]
+            if ident.nt == 'FLD':
+                ident = ident.ch[0]
+            assert ident.nt == 'IDENT'
+            sym = self.symtab[ident.scope][ident.name]
+            if ident.scope == 0:
                 # Mark the global first.
                 self.MarkReferences(self.tree[sym['Loc']])
             # In any case, this is at least the second write, so mark it as such
@@ -259,18 +260,18 @@ class deadcode(object):
                 # Prevent the first node from being mistaken as a read, by
                 # recursing only on the RHS node.
                 self.MarkReferences(child[1])
-                node['X'] = True
+                node.X = True
                 return True
 
         elif nt == 'FLD':
             # Mark this variable as referenced by a Field (recursing will mark
             # the ident as read later)
-            self.symtab[child[0]['scope']][child[0]['name']]['Fld'] = True
+            self.symtab[child[0].scope][child[0].name]['Fld'] = True
 
         elif nt == 'IDENT':
-            sym = self.symtab[node['scope']][node['name']]
+            sym = self.symtab[node.scope][node.name]
             # Mark global if it's one.
-            if 'W' not in sym and node['scope'] == 0:
+            if 'W' not in sym and node.scope == 0:
                 self.MarkReferences(self.tree[sym['Loc']])
             # Increase read counter
             if 'R' in sym:
@@ -278,7 +279,7 @@ class deadcode(object):
             else:
                 sym['R'] = 1
 
-        node['X'] = True
+        node.X = True
         if child is not None:
             for subnode in child:
                 self.MarkReferences(subnode)
@@ -304,7 +305,7 @@ class deadcode(object):
         #   - Floats are removed if their value has no decimals or if
         #     used no more than N times (for some N).
         #   - Strings, keys and integers are just removed.
-        sym = self.symtab[curnode['scope']][curnode['name']]
+        sym = self.symtab[curnode.scope][curnode.name]
 
         if 'R' not in sym:
             return True # if not used, it can be removed
@@ -316,21 +317,21 @@ class deadcode(object):
         if sym['W'] is not False:
 
             node = sym['W']
-            nt = node['nt']
+            nt = node.nt
             if nt == 'CONST':
-                tcurnode = curnode['t']
+                tcurnode = curnode.t
                 if tcurnode in ('integer', 'string', 'key'):
                     return sym
 
                 if tcurnode == 'float':
-                    if sym['R'] <= 3 or type(node['value']) == int:
+                    if sym['R'] <= 3 or type(node.value) == int:
                         return sym
                 elif tcurnode == 'vector' \
-                     or tcurnode == 'list' and len(node['value']) <= 3:
+                     or tcurnode == 'list' and len(node.value) <= 3:
                     if sym['R'] <= 1:
                         return sym
                 elif tcurnode == 'rotation' \
-                     or tcurnode == 'list' and len(node['value']) <= 4:
+                     or tcurnode == 'list' and len(node.value) <= 4:
                     if sym['R'] <= 1:
                         return sym
                 return False
@@ -346,8 +347,8 @@ class deadcode(object):
             # the name i is redefined after j is assigned. shrinknames prevents
             # that.
             # FIXME: EMERGENCY FIX: shrinknames is not enough guarantee. See nposerlv.lsl.
-            #if not self.shrinknames or 'SEF' not in node:
-            if True or 'SEF' not in node:
+            #if not self.shrinknames or not node.SEF:
+            if True or not node.SEF:
                 return False
 
             if nt not in ('VECTOR', 'ROTATION'):
@@ -371,51 +372,50 @@ class deadcode(object):
         """Recursively checks if the children are used, deleting those that are
         not.
         """
-        if 'ch' not in curnode or (curnode['nt'] == 'DECL'
-                                   and curnode['scope'] == 0):
+        if curnode.ch is None or (curnode.nt == 'DECL'
+                                  and curnode.scope == 0):
             return
         # NOTE: Should not depend on 'Loc', since the nodes that are the
         # destination of 'Loc' are renumbered as we delete stuff from globals.
 
-        index = int(curnode['nt'] in self.assign_ops) # don't recurse into a lvalue
+        index = int(curnode.nt in self.assign_ops) # don't recurse into a lvalue
 
-        while index < len(curnode['ch']):
-            node = curnode['ch'][index]
+        while index < len(curnode.ch):
+            node = curnode.ch[index]
 
-            if 'X' not in node:
-                del curnode['ch'][index]
+            if not hasattr(node, 'X'):
+                del curnode.ch[index]
                 continue
 
-            nt = node['nt']
+            nt = node.nt
 
             if nt == 'DECL':
                 if self.SymbolReplacedOrDeleted(node):
-                    if 'ch' not in node or 'SEF' in node['ch'][0]:
-                        del curnode['ch'][index]
+                    if not node.ch or node.ch[0].SEF:
+                        del curnode.ch[index]
                         continue
-                    node = curnode['ch'][index] = {'nt':'EXPR', 't':node['t'],
-                        'ch':[self.Cast(node['ch'][0], node['t'])]}
+                    node = curnode.ch[index] = nr(nt='EXPR', t=node.t,
+                        ch=[self.Cast(node.ch[0], node.t)])
 
             elif nt == 'FLD':
-                sym = self.SymbolReplacedOrDeleted(node['ch'][0])
+                sym = self.SymbolReplacedOrDeleted(node.ch[0])
                 if sym:
                     value = sym['W']
                     # Mark as executed, so it isn't optimized out.
-                    value['X'] = True
-                    fieldidx = 'xyzs'.index(node['fld'])
-                    if value['nt'] == 'CONST':
-                        value = value['value'][fieldidx]
-                        value = {'nt':'CONST', 'X':True, 'SEF':True,
-                            't':self.PythonType2LSL[type(value)], 'value':value}
+                    value.X = True
+                    fieldidx = 'xyzs'.index(node.fld)
+                    if value.nt == 'CONST':
+                        value = value.value[fieldidx]
+                        value = nr(nt='CONST', X=True, SEF=True,
+                            t=self.PythonType2LSL[type(value)], value=value)
                         value = self.Cast(value, 'float')
                         SEF = True
                     else: # assumed VECTOR or ROTATION per SymbolReplacedOrDeleted
-                        SEF = 'SEF' in value
-                        value = self.Cast(value['ch'][fieldidx], 'float')
+                        SEF = value.SEF
+                        value = self.Cast(value.ch[fieldidx], 'float')
                     # Replace it
-                    node = curnode['ch'][index] = value
-                    if SEF:
-                        node['SEF'] = True
+                    node = curnode.ch[index] = value
+                    node.SEF = SEF
 
             elif nt == 'IDENT':
                 sym = self.SymbolReplacedOrDeleted(node)
@@ -425,42 +425,40 @@ class deadcode(object):
                     # TODO: Needs more analysis to see if it's correct or not.
                     #       (See constant_anomaly.lsl)
                     new = sym['W'].copy()
-                    if 'orig' in new:
-                        del new['orig']
+                    if hasattr(new, 'orig'):
+                        del new.orig
 
-                    new['X'] = True
+                    new.X = True
 
                     # this part makes no sense?
-                    #SEF = 'SEF' in sym['W']
-                    #if SEF:
-                    #    new['SEF'] = True
+                    #new.SEF = sym['W'].SEF
 
-                    if new['t'] != node['t']:
-                        new = self.Cast(new, node['t'])
-                    curnode['ch'][index] = node = new
+                    if new.t != node.t:
+                        new = self.Cast(new, node.t)
+                    curnode.ch[index] = node = new
                     # Delete orig if present, as we've eliminated the original
-                    #if 'orig' in sym['W']:
-                    #    del sym['W']['orig']
+                    #if hasattr(sym['W'], 'orig'):
+                    #    del sym['W'].orig
 
             elif nt in self.assign_ops:
-                ident = node['ch'][0]
-                if ident['nt'] == 'FLD':
-                    ident = ident['ch'][0]
+                ident = node.ch[0]
+                if ident.nt == 'FLD':
+                    ident = ident.ch[0]
                 sym = self.SymbolReplacedOrDeleted(ident)
                 if sym:
-                    node = curnode['ch'][index] = self.Cast(node['ch'][1], node['t'])
+                    node = curnode.ch[index] = self.Cast(node.ch[1], node.t)
 
             elif nt in ('IF', 'WHILE', 'DO', 'FOR'):
                 # If the mandatory statement is to be removed, replace it
                 # with a ; to prevent leaving the statement empty.
-                child = node['ch']
+                child = node.ch
                 idx = 3 if nt == 'FOR' else 0 if nt == 'DO' else 1
-                if 'X' not in child[idx]:
-                    child[idx] = {'nt':';', 't':None, 'X':True, 'SEF':True}
-                if nt == 'DO' and 'X' not in child[1]:
+                if not hasattr(child[idx], 'X'):
+                    child[idx] = nr(nt=';', t=None, X=True, SEF=True)
+                if nt == 'DO' and not hasattr(child[1],'X'):
                     # Mandatory condition but not executed - replace
-                    child[1] = {'nt':'CONST','X':True,'SEF':True,'t':'integer',
-                        'value':0}
+                    child[1] = nr(nt='CONST', X=True, SEF=True, t='integer',
+                        value=0)
 
             self.CleanNode(node)
             index += 1
@@ -495,7 +493,7 @@ class deadcode(object):
             return
 
         statedef = self.tree[self.symtab[0]['default']['Loc']]
-        assert statedef['nt'] == 'STDEF' and statedef['name'] == 'default'
+        assert statedef.nt == 'STDEF' and statedef.name == 'default'
         self.MarkReferences(statedef)
 
         # Track removal of global lines, to reasign locations later.
@@ -511,9 +509,9 @@ class deadcode(object):
             node = self.tree[idx]
 
             delete = False
-            if 'X' not in node:
+            if not hasattr(node, 'X'):
                 delete = True
-            elif node['nt'] == 'DECL':
+            elif node.nt == 'DECL':
                 delete = self.SymbolReplacedOrDeleted(node)
 
             if delete:
@@ -521,8 +519,8 @@ class deadcode(object):
                 # We can't remove it here because there may be more references
                 # that we will remove in CleanNode later, that hold the
                 # original value.
-                if node['nt'] == 'DECL' or node['nt'] == 'STDEF':
-                    GlobalDeletions.append(node['name'])
+                if node.nt == 'DECL' or node.nt == 'STDEF':
+                    GlobalDeletions.append(node.name)
                 del self.tree[idx]
                 del LocMap[idx]
             else:

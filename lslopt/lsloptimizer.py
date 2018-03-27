@@ -19,6 +19,7 @@
 
 import lslfuncs
 
+from lslcommon import nr
 from lslfoldconst import foldconst
 from lslrenamer import renamer
 from lsldeadcode import deadcode
@@ -41,13 +42,13 @@ class optimizer(foldconst, renamer, deadcode, lastpass):
         """Return a CAST node if the types are not equal, otherwise the
         value unchanged.
         """
-        if value['t'] == newtype:
+        if value.t == newtype:
             return value
-        ret = {'nt':'CAST', 't':newtype, 'ch':[value]}
-        if 'SEF' in value:
-            ret['SEF'] = True
-        if 'X' in value:
-            ret['X'] = value['X']
+        ret = nr(nt='CAST', t=newtype, ch=[value], SEF=value.SEF)
+        if value.SEF:
+            ret.SEF = True
+        if hasattr(value, 'X'):
+            ret.X = value.X
         return ret
 
     def optimize(self, treesymtab, options = ('optimize','constfold','dcr',

@@ -114,9 +114,9 @@ class renamer(object):
                 name = entry['NewName'] = self.GetNextShortest()
                 stateNames.append(name)
             # Find also the event names it uses, to add them for reuse.
-            for node in self.tree[entry['Loc']]['ch']:
-                assert node['nt'] == 'FNDEF'
-                event_name = node['name']
+            for node in self.tree[entry['Loc']].ch:
+                assert node.nt == 'FNDEF'
+                event_name = node.name
                 # These events have their names translated.
                 if event_name == 'on_rez':
                     event_name = 'rez'

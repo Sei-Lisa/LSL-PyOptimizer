@@ -18,6 +18,7 @@
 # Optimizations that have a negative effect on other stages.
 
 import lslcommon
+from lslcommon import nr
 #from lslcommon import Vector, Quaternion
 #import lslfuncs
 #from lslfuncs import ZERO_VECTOR, ZERO_ROTATION
@@ -28,14 +29,14 @@ import lslcommon
 class lastpass(object):
     def LastPassPreOrder(self, parent, index):
         node = parent[index]
-        nt = node['nt']
-        child = node['ch'] if 'ch' in node else None
+        nt = node.nt
+        child = node.ch
 
         if (self.optlistadd and not self.globalmode
-            and (nt == 'CONST' and node['t'] == 'list' or nt == 'LIST'
-                 or nt == '+' and child[0]['t'] == 'list' and
-                 (child[1]['nt'] == 'CONST' and child[1]['t'] == 'list'
-                  or child[1]['nt'] == 'LIST')
+            and (nt == 'CONST' and node.t == 'list' or nt == 'LIST'
+                 or nt == '+' and child[0].t == 'list' and
+                 (child[1].nt == 'CONST' and child[1].t == 'list'
+                  or child[1].nt == 'LIST')
                 )
            ):
                 # Perform these transformations if the list is SEF:
@@ -53,17 +54,16 @@ class lastpass(object):
                 # left = None means the first element of the list must be
                 # turned into a cast within the loop.
                 left = child[0] if nt == '+' else None
-                if 'SEF' in listnode:
-                    for elem in (listnode['value'] if listnode['nt'] == 'CONST'
-                                 else listnode['ch']):
-                        elemnode = {'nt':'CONST',
-                            't':lslcommon.PythonType2LSL[type(elem)],
-                            'SEF':True,
-                            'value':elem
-                            } if listnode['nt'] == 'CONST' else elem
+                if listnode.SEF:
+                    for elem in (listnode.value if listnode.nt == 'CONST'
+                                 else listnode.ch):
+                        elemnode = nr(nt='CONST',
+                            t=lslcommon.PythonType2LSL[type(elem)],
+                            value=elem, SEF=True
+                            ) if listnode.nt == 'CONST' else elem
                         left = (self.Cast(elemnode, 'list') if left is None
-                                else {'nt':'+', 't':'list', 'SEF':True,
-                                      'ch':[left, elemnode]})
+                                else nr(nt='+', t='list', SEF=True,
+                                    ch=[left, elemnode]))
                         del elemnode
                     if left is not None: # it's none for empty lists
                         parent[index] = left
@@ -78,7 +78,7 @@ class lastpass(object):
             # where state changes are considered bad.
             # BadStCh will be True if at least one state change statement
             # is found while monitoring state changes.
-            self.subinfo['StChAreBad'] = 'scope' in node
+            self.subinfo['StChAreBad'] = hasattr(node, 'scope')
             self.BadStCh = False
             return
 
@@ -109,38 +109,38 @@ class lastpass(object):
         if nt == 'FNCALL':
             # lslrenamer can benefit from a list of used library functions,
             # so provide it.
-            if 'Loc' not in self.symtab[0][node['name']]:
+            if 'Loc' not in self.symtab[0][node.name]:
                 # system library function
-                self.usedlibfuncs.add(node['name'])
+                self.usedlibfuncs.add(node.name)
 
     def LastPassPostOrder(self, parent, index):
         node = parent[index]
-        nt = node['nt']
-        child = node['ch'] if 'ch' in node else None
+        nt = node.nt
+        child = node.ch
 
         if nt == 'FNDEF':
-            if 'scope' in node and self.BadStCh:
+            if hasattr(node, 'scope') and self.BadStCh:
                 # There is at least one bad state change statement in the
                 # function (must be the result of optimization).
                 # Insert dummy IF(1){...} statement covering the whole function
                 # (if it returs a value, insert a return statement too).
-                child[0] = {'nt':'{}', 't':None, 'ch':[
-                    {'nt':'IF', 't':None, 'ch':[
-                        {'nt':'CONST', 't':'integer', 'value':1},
+                child[0] = nr(nt='{}', t=None, ch=[
+                    nr(nt='IF', t=None, ch=[
+                        nr(nt='CONST', t='integer', value=1, SEF=True),
                         child[0]
-                    ]}
-                ]}
-                child = node['ch']
-                if node['t'] is not None:
+                    ])
+                ])
+                child = node.ch
+                if node.t is not None:
                     # Inserting a state switch in a function that returns a
                     # value must count as one of the dumbest things to do.
                     # We do as best as we can: add a return statement with the
                     # default value for the type.
-                    child[0]['ch'].append({'nt':'RETURN', 't':None, 'ch':[
-                            {'nt':'CONST', 't':node['t'],
-                             'value':lslcommon.LSLTypeDefaults[node['t']]
-                            }]
-                        })
+                    child[0].ch.append(nr(nt='RETURN', t=None, ch=[
+                            nr(nt='CONST', t=node.t, SEF=True,
+                               value=lslcommon.LSLTypeDefaults[node.t]
+                            )]
+                        ))
             del self.BadStCh
             return
 
@@ -150,8 +150,8 @@ class lastpass(object):
         self.subinfo = subinfo.copy()
         self.LastPassPreOrder(parent, index)
 
-        if 'ch' in parent[index]:
-            child = parent[index]['ch']
+        if parent[index].ch is not None:
+            child = parent[index].ch
             idx = 0
             while idx < len(child):
                 self.RecursiveLastPass(child, idx)
@@ -172,7 +172,7 @@ class lastpass(object):
         # self.subinfo is subtree-local info.
         self.subinfo = {}
         for idx in xrange(len(tree)):
-            if tree[idx]['nt'] == 'DECL':
+            if tree[idx].nt == 'DECL':
                 self.globalmode = True
                 self.RecursiveLastPass(tree, idx)
                 self.globalmode = False

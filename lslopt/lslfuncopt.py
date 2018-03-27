@@ -19,20 +19,21 @@
 # This is dependent on the LSL function library.
 
 import lslcommon
-from lslcommon import Key, Vector, Quaternion
+from lslcommon import Key, Vector, Quaternion, nr
 import lslfuncs
 
 def OptimizeArgs(node, sym):
     """Transform function arguments to shorter equivalents where possible."""
-    assert node['nt'] == 'FNCALL'
-    params = node['ch']
-    name = node['name']
+    assert node.nt == 'FNCALL'
+    params = node.ch
+    name = node.name
 
     if name in ('llSensor', 'llSensorRepeat'):
         # The cutoff value is at a bit less than 3.1275 for some reason,
         # but we use 3.14159.
-        if params[4]['nt'] == 'CONST' and params[4]['t'] == 'float' and params[4]['value'] > 3.14159:
-            params[4]['value'] = 4.0
+        if (params[4].nt == 'CONST' and params[4].t == 'float'
+                and params[4].value > 3.14159):
+            params[4].value = 4.0
 
     types = sym['ParamTypes']
     if name != 'llMessageLinked':
@@ -40,10 +41,10 @@ def OptimizeArgs(node, sym):
         # llMessageLinked is the exception.
         for i in range(len(types)):
             if types[i] == 'key':
-                if params[i]['nt'] == 'CONST':
-                    if not lslfuncs.cond(Key(params[i]['value'])):
-                        params[i]['value'] = u""
-                        params[i]['type'] = 'string'
+                if params[i].nt == 'CONST':
+                    if not lslfuncs.cond(Key(params[i].value)):
+                        params[i].value = u""
+                        params[i].type = 'string'
 
 
 # Type of each entry in llGetObjectDetails. Last: 38 (OBJECT_SIT_COUNT).
@@ -118,57 +119,54 @@ def OptimizeFunc(self, parent, index):
     library function semantics.
     """
     node = parent[index]
-    assert node['nt'] == 'FNCALL'
-    name = node['name']
-    child = node['ch']
+    assert node.nt == 'FNCALL'
+    name = node.name
+    child = node.ch
     if self.optlistlength and name == 'llGetListLength':
         # Convert llGetListLength(expr) to (expr != [])
-        node = {'nt':'CONST', 't':'list', 'value':[]}
-        parent[index] = node = {'nt':'!=', 't':'integer',
-                                'ch':[child[0], node]}
-        # SEF if the list is
-        node['SEF'] = 'SEF' in child[0]
+        node = nr(nt='CONST', t='list', value=[], SEF=True)
+        parent[index] = node = nr(nt='!=', t='integer',
+            ch=[child[0], node], SEF=child[0].SEF)
     if name == 'llDumpList2String':
-        if (child[1]['nt'] == 'CONST'
-            and child[1]['t'] in ('string', 'key')
-            and child[1]['value'] == u""
+        if (child[1].nt == 'CONST'
+            and child[1].t in ('string', 'key')
+            and child[1].value == u""
            ):
             # Convert llDumpList2String(expr, "") to (string)(expr)
-            node['nt'] = 'CAST'
+            node.nt = 'CAST'
             del child[1]
-            del node['name']
+            del node.name
             return
 
     if (name in ('llList2String', 'llList2Key', 'llList2Integer',
                  'llList2Float', 'llList2Vector', 'llList2Rot')
-        and child[1]['nt'] == 'CONST'
+        and child[1].nt == 'CONST'
        ):
         # 2nd arg to llList2XXXX must be integer
-        assert child[1]['t'] == 'integer'
+        assert child[1].t == 'integer'
 
         listarg = child[0]
-        idx = child[1]['value']
+        idx = child[1].value
         value = self.GetListNodeElement(listarg, idx)
         tvalue = self.TypeFromNodeOrConst(value)
         const = self.ConstFromNodeOrConst(value)
-        if const is not False and 'SEF' in node:
+        if const is not False and node.SEF:
             # Managed to get a constant from a list, even if the
             # list wasn't constant. Handle the type conversion.
-            if (node['t'][0] + tvalue[0]) in listCompat:
+            if (node.t[0] + tvalue[0]) in listCompat:
                 const = lslfuncs.InternalTypecast(const,
-                    lslcommon.LSLType2Python[node['t']],
+                    lslcommon.LSLType2Python[node.t],
                     InList=True, f32=True)
             else:
                 const = defaultListVals[name]
 
-            parent[index] = {'nt':'CONST', 't':node['t'],
-                             'value':const, 'SEF':True}
+            parent[index] = nr(nt='CONST', t=node.t, value=const, SEF=True)
             return
 
-        if listarg['nt'] == 'FNCALL' \
-           and listarg['name'] == 'llGetObjectDetails':
+        if listarg.nt == 'FNCALL' \
+           and listarg.name == 'llGetObjectDetails':
 
-            listarg = listarg['ch'][1] # make it the list argument of llGetObjectDetails
+            listarg = listarg.ch[1] # make it the list argument of llGetObjectDetails
             value = self.GetListNodeElement(listarg, idx)
             tvalue = self.TypeFromNodeOrConst(value)
             const = self.ConstFromNodeOrConst(value)
@@ -176,9 +174,9 @@ def OptimizeFunc(self, parent, index):
                 # Some of these can be handled with a typecast to string.
                 if name == 'llList2String':
                     # turn the node into a cast of arg 0 to string
-                    node['nt'] = 'CAST'
+                    node.nt = 'CAST'
                     del child[1]
-                    del node['name']
+                    del node.name
                     return
                 # The other ones that support cast to string then to
                 # the final type in some cases (depending on the
@@ -189,12 +187,12 @@ def OptimizeFunc(self, parent, index):
                         and finaltype in ('s', 'i')) # won't work for floats
                     or (name == 'llList2Float'
                         and finaltype in ('s', 'i')) # won't work for floats
-                   ) and (node['t'][0] + finaltype) in listCompat:
+                   ) and (node.t[0] + finaltype) in listCompat:
                     # ->  (key)((string)llGetObjectDetails...)
                     # or (integer)((string)llGetObjectDetails...)
-                    node['nt'] = 'CAST'
+                    node.nt = 'CAST'
                     del child[1]
-                    del node['name']
+                    del node.name
                     child[0] = self.Cast(child[0], 'string')
                     return
 
@@ -202,18 +200,17 @@ def OptimizeFunc(self, parent, index):
             # and replace node with a constant if that's the case
             if (value is False
                 or type(const) == int
-                   and (node['t'][0] + objDetailsTypes[const])
+                   and (node.t[0] + objDetailsTypes[const])
                        not in listCompat
-               ) and 'SEF' in node:
-                parent[index] = {'nt':'CONST', 't':node['t'],
-                    'value':defaultListVals[name],
-                    'SEF':True}
+               ) and node.SEF:
+                parent[index] = nr(nt='CONST', t=node.t,
+                    value=defaultListVals[name], SEF=True)
 
-        elif listarg['nt'] == 'FNCALL' and listarg['name'] in (
+        elif listarg.nt == 'FNCALL' and listarg.name in (
              'llGetPrimitiveParams', 'llGetLinkPrimitiveParams'):
             # We're going to work with the primitive params list.
-            listarg = listarg['ch'][
-                0 if listarg['name'] == 'llGetPrimitiveParams'
+            listarg = listarg.ch[
+                0 if listarg.name == 'llGetPrimitiveParams'
                 else 1]
             length = self.GetListNodeLength(listarg)
             if length is not False:
@@ -249,9 +246,9 @@ def OptimizeFunc(self, parent, index):
                         and idx in (0, -1)
                        ):
                         if name == 'llList2String':
-                            node['nt'] = 'CAST'
+                            node.nt = 'CAST'
                             del child[1]
-                            del node['name']
+                            del node.name
                             return
                         if ((name == 'llList2Key'
                              or name == 'llList2Integer'
@@ -259,16 +256,14 @@ def OptimizeFunc(self, parent, index):
                              or name == 'llList2Float'
                                 and returntypes in ('s', 'i')
                             )
-                            and (node['t'][0] + returntypes)
+                            and (node.t[0] + returntypes)
                                 in listCompat
                            ):
-                            node['nt'] = 'CAST'
+                            node.nt = 'CAST'
                             del child[1]
-                            del node['name']
-                            child[0] = {'nt':'CAST', 't':'string',
-                                        'ch':[child[0]]}
-                            if 'SEF' in child[0]['ch'][0]:
-                                child[0]['SEF'] = True
+                            del node.name
+                            child[0] = nr(nt='CAST', t='string',
+                                ch=[child[0]], SEF=child[0].SEF)
                             return
 
                     if (returntypes.find('*') == -1
@@ -282,13 +277,11 @@ def OptimizeFunc(self, parent, index):
                             # s[-1:0] doesn't return the last char
                             # so we have to compensate
                             idx += len(returntypes)
-                        if (node['t'][0] + returntypes[idx:idx+1]) \
-                           not in listCompat \
-                           and 'SEF' in node:
-                            parent[index] = {'nt':'CONST',
-                                't':node['t'],
-                                'value':defaultListVals[name],
-                                'SEF':True}
+                        if ((node.t[0] + returntypes[idx:idx+1])
+                                not in listCompat
+                                and node.SEF):
+                            parent[index] = nr(nt='CONST', t=node.t,
+                                value=defaultListVals[name], SEF=True)
                             return
 
                 del returntypes
@@ -302,20 +295,20 @@ def OptimizeFunc(self, parent, index):
                                                                        0))
             if type(button) == unicode and button == u'OK':
                 # remove the element, as 'OK' is the default button in SL
-                child[2] = {'nt':'CONST','t':'list','value':[],'SEF':True}
+                child[2] = nr(nt='CONST', t='list', value=[], SEF=True)
         return
 
     if (name == 'llDeleteSubList'
-        or name == 'llListReplaceList' and child[1]['nt'] == 'CONST'
-           and not child[1]['value']
+        or name == 'llListReplaceList' and child[1].nt == 'CONST'
+           and not child[1].value
        ):
         # llDeleteSubList(x, 0, -1)  ->  [] if x is SEF
         # llListReplaceList(x, [], 0, -1)  ->  [] if x is SEF
-        if ('SEF' in child[0]
-            and child[-2]['nt'] == 'CONST' and child[-1]['nt'] == 'CONST'
-            and child[-2]['value'] == 0 and child[-1]['value'] == -1
+        if (child[0].SEF
+            and child[-2].nt == 'CONST' and child[-1].nt == 'CONST'
+            and child[-2].value == 0 and child[-1].value == -1
            ):
-            parent[index] = {'nt':'CONST','SEF':True,'t':'list','value':[]}
+            parent[index] = nr(nt='CONST', t='list', value=[], SEF=True)
             return
 
 def FuncOptSetup():

@@ -20,7 +20,7 @@
 
 # TODO: Add info to be able to propagate error position to the source.
 
-from lslcommon import Key, Vector, Quaternion, types
+from lslcommon import Key, Vector, Quaternion, types, nr
 import lslcommon, lslfuncs
 import re
 
@@ -308,13 +308,13 @@ class parser(object):
         """Check if automatic dynamic cast is possible, and insert it if
         requested explicitly.
         """
-        tval = value['t']
+        tval = value.t
         if tval == tgttype:
             return value
         if tval in ('string', 'key') and tgttype in ('string', 'key') \
            or tval == 'integer' and tgttype == 'float':
             if self.explicitcast:
-                return {'nt':'CAST', 't':tgttype, 'ch':[value]}
+                return nr(nt='CAST', t=tgttype, ch=[value])
             return value
         raise EParseTypeMismatch(self)
 
@@ -707,9 +707,9 @@ class parser(object):
         (a pure combination of ';' and '{}' and '@')
         """
         for node in blk:
-            if '@' != node['nt'] != ';':
-                if node['nt'] == '{}':
-                    if self.does_something(node['ch']):
+            if '@' != node.nt != ';':
+                if node.nt == '{}':
+                    if self.does_something(node.ch):
                         return True
                 else:
                     return True
@@ -773,11 +773,11 @@ class parser(object):
                     ret.append(inequality)
                     return ret
             # This is basically a copy/paste of the Parse_inequality handler
-            ltype = inequality['t']
+            ltype = inequality.t
             if ltype not in ('integer', 'float'):
                 raise EParseTypeMismatch(self)
             rexpr = self.Parse_shift()
-            rtype = rexpr['t']
+            rtype = rexpr.t
             if rtype not in ('integer', 'float'):
                 raise EParseTypeMismatch(self)
             if ltype != rtype:
@@ -785,7 +785,7 @@ class parser(object):
                     inequality = self.autocastcheck(inequality, rtype)
                 else:
                     rexpr = self.autocastcheck(rexpr, ltype)
-            inequality = {'nt':op, 't':'integer', 'ch':[inequality, rexpr]}
+            inequality = nr(nt=op, t='integer', ch=[inequality, rexpr])
 
         # Reaching this means an operator or lower precedence happened,
         # e.g. <1,1,1,2==2> (that's syntax error in ==)
@@ -824,35 +824,36 @@ class parser(object):
             if self.tok[0] in ('INTEGER_VALUE', 'FLOAT_VALUE'):
                 val = self.tok[1]
                 self.NextToken()
-                return {'nt':CONST, 't':'integer' if type(val) == int else 'float', 'value':-val}
+                return nr(nt=CONST, value=-val,
+                    t='integer' if type(val) == int else 'float')
         if tok0 == 'INTEGER_VALUE':
             self.NextToken()
-            return {'nt':CONST, 't':'integer', 'value':val}
+            return nr(nt=CONST, t='integer', value=val)
         if tok0 == 'FLOAT_VALUE':
             self.NextToken()
-            return {'nt':CONST, 't':'float', 'value':val}
+            return nr(nt=CONST, t='float', value=val)
         if tok0 == 'STRING_VALUE':
             self.NextToken()
             if self.allowmultistrings:
                 while self.tok[0] == 'STRING_VALUE':
                     val += self.tok[1]
                     self.NextToken()
-            return {'nt':CONST, 't':'string', 'value':val}
+            return nr(nt=CONST, t='string', value=val)
         # Key constants are not currently supported - use string
         #if tok0 == 'KEY_VALUE':
         #    return [CONST, 'key', val]
         if tok0 == 'VECTOR_VALUE':
             self.NextToken()
-            return {'nt':CONST, 't':'vector', 'value':val}
+            return nr(nt=CONST, t='vector', value=val)
         if tok0 == 'ROTATION_VALUE':
             self.NextToken()
-            return {'nt':CONST, 't':'rotation', 'value':val}
+            return nr(nt=CONST, t='rotation', value=val)
         if tok0 == 'LIST_VALUE':
             self.NextToken()
-            return {'nt':CONST, 't':'list', 'value':val}
+            return nr(nt=CONST, t='list', value=val)
         if tok0 in ('TRUE', 'FALSE'):
             self.NextToken()
-            return {'nt':CONST, 't':'integer', 'value':int(tok0 == 'TRUE')}
+            return nr(nt=CONST, t='integer', value=1 if tok0 == 'TRUE' else 0)
         if tok0 == '<':
             self.NextToken()
             val = [self.Parse_expression()]
@@ -889,29 +890,30 @@ class parser(object):
             val += self.Parse_vector_rotation_tail()
 
             if len(val) == 3:
-                return {'nt':'VECTOR', 't':'vector', 'ch':val}
-            return {'nt':'ROTATION', 't':'rotation', 'ch':val}
+                return nr(nt='VECTOR', t='vector', ch=val)
+            return nr(nt='ROTATION', t='rotation', ch=val)
 
         if tok0 == '[':
             self.NextToken()
             val = self.Parse_optional_expression_list(False)
             self.expect(']')
             self.NextToken()
-            return {'nt':'LIST', 't':'list', 'ch':val}
+            return nr(nt='LIST', t='list', ch=val)
         if tok0 == 'PRINT':
             self.NextToken()
             self.expect('(')
             self.NextToken()
             expr = self.Parse_expression()
-            if expr['t'] not in types:
-                raise EParseTypeMismatch(self) if expr['t'] is None else EParseUndefined(self)
+            if expr.t not in types:
+                raise (EParseTypeMismatch(self) if expr.t is None
+                       else EParseUndefined(self))
             self.expect(')')
             self.NextToken()
             # Syntactically, print returns the same type as the expression.
             # However, compilation in Mono throws an exception, and even in
             # LSO, it throws a bounds check error when the result is a string
             # or key or list and the returned value is used.
-            return {'nt':'PRINT', 't':expr['t'], 'ch':[expr]}
+            return nr(nt='PRINT', t=expr.t, ch=[expr])
 
         if tok0 != 'IDENT':
             if tok0 == 'EOF':
@@ -939,7 +941,7 @@ class parser(object):
             args = self.Parse_optional_expression_list(sym['ParamTypes'])
             self.expect(')')
             self.NextToken()
-            return {'nt':'FNCALL', 't':sym['Type'], 'name':name, 'ch':args}
+            return nr(nt='FNCALL', t=sym['Type'], name=name, ch=args)
 
         sym = self.FindSymbolFull(val)
         if sym is None or sym['Kind'] != 'v':
@@ -947,7 +949,7 @@ class parser(object):
             raise EParseUndefined(self)
 
         typ = sym['Type']
-        lvalue = {'nt':'IDENT', 't':typ, 'name':name, 'scope':sym['Scope']}
+        lvalue = nr(nt='IDENT', t=typ, name=name, scope=sym['Scope'])
 
         # Lazy lists
         if self.lazylists and tok0 == '[':
@@ -958,17 +960,17 @@ class parser(object):
             self.expect(']')
             self.NextToken()
             if self.tok[0] != '=' or not AllowAssignment:
-                return {'nt':'SUBIDX', 't':None, 'ch':[lvalue] + idxexpr}
+                return nr(nt='SUBIDX', t=None, ch=[lvalue] + idxexpr)
 
             # Lazy list assignment
             if len(idxexpr) != 1:
                 raise EParseFunctionMismatch(self)
-            if idxexpr[0]['t'] != 'integer':
+            if idxexpr[0].t != 'integer':
                 raise EParseTypeMismatch(self)
             idxexpr = idxexpr[0]
             self.NextToken()
             expr = self.Parse_expression()
-            rtyp = expr['t']
+            rtyp = expr.t
             # Define aux function if it doesn't exist
             # (leaves users room for writing their own replacement, e.g.
             # one that fills with something other than zeros)
@@ -994,42 +996,145 @@ list lazy_list_set(list L, integer i, list v)
     return llListReplaceList(L, v, i, i);
 }
                 '''
-                self.tree[self.usedspots] = {'ch': [{'ch': [{'ch': [{'ch': [{'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}], 'nt': 'FNCALL', 't': 'integer', 'name': 'llGetListLength'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'integer', 'name': 'i'}], 'nt': '<', 't': 'integer'}, {'ch': [{'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'nt': 'CONST', 't': 'integer', 'value': 0}], 'nt': '+', 't': 'list'}], 'nt': '=', 't': 'list'}], 'nt': 'EXPR', 't': 'list'}], 'nt': 'WHILE', 't': None}, {'ch': [{'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'v'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'integer', 'name': 'i'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'integer', 'name': 'i'}], 'nt': 'FNCALL', 't': 'list', 'name': 'llListReplaceList'}], 'nt': 'RETURN', 't': None, 'LIR': True}], 'nt': '{}', 't': None, 'LIR': True}], 't': 'list', 'pnames': params[1], 'scope': 0, 'pscope': paramscope, 'nt': 'FNDEF', 'ptypes': params[0], 'name': 'lazy_list_set'}
+                self.tree[self.usedspots] = nr(
+                 nt='FNDEF'
+                 , t='list'
+                 , name='lazy_list_set'
+                 , ptypes=params[0]
+                 , pnames=params[1]
+                 , scope=0
+                 , pscope=paramscope
+                 , ch=[
+                    nr(nt='{}'
+                     , t=None
+                     , LIR=True
+                     , ch=[
+                        nr(nt='WHILE'
+                         , t=None
+                         , ch=[
+                            nr(nt='<'
+                             , t='integer'
+                             , ch=[
+                                nr(nt='FNCALL'
+                                 , t='integer'
+                                 , name='llGetListLength'
+                                 , ch=[
+                                    nr(nt='IDENT'
+                                     , t='list'
+                                     , name='L'
+                                     , scope=paramscope
+                                    )
+                                 ]
+                                ),
+                                nr(nt='IDENT'
+                                 , t='integer'
+                                 , name='i'
+                                 , scope=paramscope
+                                )
+                             ]
+                            ),
+                            nr(nt='EXPR'
+                             , t='list'
+                             , ch=[
+                                nr(nt='='
+                                 , t='list'
+                                 , ch=[
+                                    nr(nt='IDENT'
+                                     , t='list'
+                                     , name='L'
+                                     , scope=paramscope
+                                    ),
+                                    nr(nt='+'
+                                     , t='list'
+                                     , ch=[
+                                        nr(nt='IDENT'
+                                         , t='list'
+                                         , name='L'
+                                         , scope=paramscope
+                                        ),
+                                        nr(nt='CONST'
+                                         , t='integer'
+                                         , value=0
+                                        )
+                                     ]
+                                    )
+                                 ]
+                                )
+                             ]
+                            )
+                         ]
+                        ),
+                        nr(nt='RETURN'
+                         , t=None
+                         , LIR=True
+                         , ch=[
+                            nr(nt='FNCALL'
+                             , t='list'
+                             , name='llListReplaceList'
+                             , ch=[
+                                nr(nt='IDENT'
+                                 , t='list'
+                                 , name='L'
+                                 , scope=paramscope
+                                ),
+                                nr(nt='IDENT'
+                                 , t='list'
+                                 , name='v'
+                                 , scope=paramscope
+                                ),
+                                nr(nt='IDENT'
+                                 , t='integer'
+                                 , name='i'
+                                 , scope=paramscope
+                                ),
+                                nr(nt='IDENT'
+                                 , t='integer'
+                                 , name='i'
+                                 , scope=paramscope
+                                )
+                             ]
+                            )
+                         ]
+                        )
+                     ]
+                    )
+                 ]
+                )
                 self.usedspots += 1
                 #self.PopScope()  # no locals
                 self.PopScope()
 
-            if expr['t'] is None:
+            if expr.t is None:
                 raise EParseTypeMismatch(self)
-            if expr['t'] != 'list':
-                expr = {'nt':'CAST', 't':'list', 'ch':[expr]}
+            if expr.t != 'list':
+                expr = nr(nt='CAST', t='list', ch=[expr])
 
-            return {'nt':'=', 't':'list', 'ch':[lvalue, {
-                    'nt':'FNCALL', 't':'list', 'name':'lazy_list_set',
-                    'scope':0,
-                    'ch':[lvalue.copy(), idxexpr, expr]
-                }]}
+            return nr(nt='=', t='list', ch=[lvalue, nr(
+                    nt='FNCALL', t='list', name='lazy_list_set', scope=0,
+                    ch=[lvalue.copy(), idxexpr, expr]
+                )])
 
         if tok0 == '.':
             self.NextToken()
             self.expect('IDENT')
             self.ValidateField(typ, self.tok[1])
-            lvalue = {'nt':'FLD', 't':'float', 'ch':[lvalue], 'fld':self.tok[1]}
+            lvalue = nr(nt='FLD', t='float', ch=[lvalue], fld=self.tok[1])
             self.NextToken()
             tok0 = self.tok[0]
             typ = 'float'
 
         if tok0 in ('++', '--'):
             self.NextToken()
-            if lvalue['t'] not in ('integer', 'float'):
+            if lvalue.t not in ('integer', 'float'):
                 raise EParseTypeMismatch(self)
-            return {'nt':'V++' if tok0 == '++' else 'V--', 't':lvalue['t'], 'ch':[lvalue]}
+            return nr(nt='V++' if tok0 == '++' else 'V--', t=lvalue.t,
+                      ch=[lvalue])
         if AllowAssignment and (tok0 in self.assignment_toks
                                 or self.extendedassignment
                                    and tok0 in self.extassignment_toks):
             self.NextToken()
             expr = self.Parse_expression()
-            rtyp = expr['t']
+            rtyp = expr.t
             if rtyp not in types:
                 raise EParseTypeMismatch(self)
             if typ in ('integer', 'float'):
@@ -1045,7 +1150,7 @@ list lazy_list_set(list L, integer i, list v)
             if tok0 == '=':
                 expr = self.autocastcheck(expr, typ)
 
-                return {'nt':'=', 't':typ, 'ch':[lvalue, expr]}
+                return nr(nt='=', t=typ, ch=[lvalue, expr])
 
             if tok0 == '+=':
                 if typ == 'float':
@@ -1055,34 +1160,34 @@ list lazy_list_set(list L, integer i, list v)
                     raise EParseTypeMismatch(self)
                 if self.explicitcast:
                     if typ == 'list' != rtyp:
-                        expr = {'nt':'CAST', 't':typ, 'ch':[expr]}
-                return {'nt':tok0, 't':typ, 'ch':[lvalue, expr]}
+                        expr = nr(nt='CAST', t=typ, ch=[expr])
+                return nr(nt=tok0, t=typ, ch=[lvalue, expr])
 
             if tok0 == '-=':
                 if typ == rtyp in ('integer', 'float', 'vector', 'rotation'):
-                    return {'nt':tok0, 't':typ, 'ch':[lvalue, expr]}
+                    return nr(nt=tok0, t=typ, ch=[lvalue, expr])
                 raise EParseTypeMismatch(self)
 
             if tok0 in ('*=', '/='):
                 # There is a special case that was dealt with before.
                 if tok0 == '*=' and typ == 'integer' and rtyp == 'float':
-                    return {'nt':tok0, 't':typ, 'ch':[lvalue, expr]}
+                    return nr(nt=tok0, t=typ, ch=[lvalue, expr])
 
                 if (typ == rtyp or typ == 'vector') and rtyp in ('integer', 'float', 'rotation'):
                     if typ == 'vector' and rtyp == 'integer':
                         expr = self.autocastcheck(expr, 'float')
-                    return {'nt':tok0, 't':typ, 'ch':[lvalue, expr]}
+                    return nr(nt=tok0, t=typ, ch=[lvalue, expr])
                 raise EParseTypeMismatch(self)
 
             if tok0 == '%=':
                 if typ == rtyp in ('integer', 'vector'):
-                    return {'nt':tok0, 't':typ, 'ch':[lvalue, expr]}
+                    return nr(nt=tok0, t=typ, ch=[lvalue, expr])
                 raise EParseTypeMismatch(self)
 
             # Rest take integer operands only
 
             if typ == rtyp == 'integer':
-                return {'nt':tok0, 't':typ, 'ch':[lvalue, expr]}
+                return nr(nt=tok0, t=typ, ch=[lvalue, expr])
             raise EParseTypeMismatch(self)
 
         return lvalue
@@ -1106,16 +1211,16 @@ list lazy_list_set(list L, integer i, list v)
             # Unary minus
             self.NextToken()
             value = self.Parse_factor()
-            if value['t'] not in ('integer', 'float', 'vector', 'rotation'):
+            if value.t not in ('integer', 'float', 'vector', 'rotation'):
                 raise EParseTypeMismatch(self)
-            return {'nt':'NEG', 't':value['t'], 'ch':[value]}
+            return nr(nt='NEG', t=value.t, ch=[value])
         if tok0 in ('!', '~'):
             # Unary logic and bitwise NOT - applies to integers only
             self.NextToken()
             value = self.Parse_unary_expression()
-            if value['t'] != 'integer':
+            if value.t != 'integer':
                 raise EParseTypeMismatch(self)
-            return {'nt':tok0, 't':'integer', 'ch':[value]}
+            return nr(nt=tok0, t='integer', ch=[value])
         if tok0 in ('++', '--'):
             # Pre-increment / pre-decrement
             self.NextToken()
@@ -1127,20 +1232,20 @@ list lazy_list_set(list L, integer i, list v)
                 raise EParseUndefined(self)
             typ = sym['Type']
 
-            ret = {'nt':'IDENT', 't':typ, 'name':name, 'scope':sym['Scope']}
+            ret = nr(nt='IDENT', t=typ, name=name, scope=sym['Scope'])
             self.NextToken()
             if self.tok[0] == '.':
                 self.NextToken()
                 self.expect('IDENT')
                 self.ValidateField(typ, self.tok[1])
-                ret = {'nt':'FLD', 't':'float', 'ch':[ret], 'fld':self.tok[1]}
+                ret = nr(nt='FLD', t='float', ch=[ret], fld=self.tok[1])
                 self.NextToken()
 
-            typ = ret['t']
+            typ = ret.t
             if typ not in ('integer', 'float'):
                 raise EParseTypeMismatch(self)
 
-            return {'nt':'++V' if tok0 == '++' else '--V', 't':typ, 'ch':[ret]}
+            return nr(nt='++V' if tok0 == '++' else '--V', t=typ, ch=[ret])
 
         if tok0 == '(':
             # Parenthesized expression or typecast
@@ -1174,14 +1279,14 @@ list lazy_list_set(list L, integer i, list v)
                 if self.tok[0] == '-':
                     self.NextToken()
                     if self.tok[0] == 'INTEGER_VALUE':
-                        expr = {'nt':'CONST','t':'integer','value':-self.tok[1]}
+                        expr = nr(nt='CONST', t='integer', value=-self.tok[1])
                         self.NextToken()
                     elif self.tok[0] == 'FLOAT_VALUE':
-                        expr = {'nt':'CONST','t':'float','value':-self.tok[1]}
+                        expr = nr(nt='CONST', t='float', value=-self.tok[1])
                         self.NextToken()
                     else:
                         expr = self.Parse_unary_expression(AllowAssignment = False)
-                        expr = {'nt':'NEG','t':expr['t'],'ch':[expr]}
+                        expr = nr(nt='NEG', t=expr.t, ch=[expr])
                 else:
                     expr = self.Parse_unary_expression(AllowAssignment = False)
             else:
@@ -1192,8 +1297,8 @@ list lazy_list_set(list L, integer i, list v)
                     self.NextToken()
                 else:
                     expr = self.Parse_unary_postfix_expression(AllowAssignment = False)
-            basetype = expr['t']
-            if self.lazylists and basetype is None and expr['nt'] == 'SUBIDX':
+            basetype = expr.t
+            if self.lazylists and basetype is None and expr.nt == 'SUBIDX':
                 fn = self.TypeToExtractionFunction[typ]
                 sym = self.FindSymbolFull(fn, 0)
                 if sym is None:
@@ -1203,11 +1308,11 @@ list lazy_list_set(list L, integer i, list v)
                     # an unknown identifier error would be confusing)
                     raise EParseSyntax(self)
                 fnparamtypes = sym['ParamTypes']
-                subparamtypes = [x['t'] for x in expr['ch']]
+                subparamtypes = [x.t for x in expr.ch]
                 if fnparamtypes != subparamtypes:
                     raise EParseFunctionMismatch(self)
-                return {'nt':'FNCALL', 't':sym['Type'], 'name':fn, 'scope':0,
-                    'ch':expr['ch']}
+                return nr(nt='FNCALL', t=sym['Type'], name=fn, scope=0,
+                    ch=expr.ch)
 
             if typ == 'list' and basetype in types \
                or basetype in ('integer', 'float') and typ in ('integer', 'float', 'string') \
@@ -1216,7 +1321,7 @@ list lazy_list_set(list L, integer i, list v)
                or basetype == 'vector' and typ in ('string', 'vector') \
                or basetype == 'rotation' and typ in ('string', 'rotation') \
                or basetype == 'list' and typ == 'string':
-                return {'nt':'CAST', 't':typ, 'ch':[expr]}
+                return nr(nt='CAST', t=typ, ch=[expr])
             raise EParseTypeMismatch(self)
 
         # Must be a postfix expression.
@@ -1231,7 +1336,7 @@ list lazy_list_set(list L, integer i, list v)
         factor = self.Parse_unary_expression()
         while self.tok[0] in ('*', '/', '%'):
             op = self.tok[0]
-            ltype = factor['t']
+            ltype = factor.t
             # Acceptable types for LHS
             if op in ('*', '/') and ltype not in ('integer', 'float',
                                                   'vector', 'rotation') \
@@ -1239,13 +1344,13 @@ list lazy_list_set(list L, integer i, list v)
                 raise EParseTypeMismatch(self)
             self.NextToken()
             rexpr = self.Parse_unary_expression()
-            rtype = rexpr['t']
+            rtype = rexpr.t
             # Mod is easier to check for
             if op == '%' and ltype != rtype:
                 raise EParseTypeMismatch(self)
             if op == '%' or ltype == rtype == 'integer':
                 # Deal with the special cases first (it's easy)
-                factor = {'nt':op, 't':ltype, 'ch':[factor, rexpr]}
+                factor = nr(nt=op, t=ltype, ch=[factor, rexpr])
             else:
                 # Any integer must be promoted to float now
                 if ltype == 'integer':
@@ -1267,7 +1372,7 @@ list lazy_list_set(list L, integer i, list v)
                         resulttype = 'float'
                     else:
                         resulttype = ltype
-                    factor = {'nt':op, 't':resulttype, 'ch':[factor, rexpr]}
+                    factor = nr(nt=op, t=resulttype, ch=[factor, rexpr])
                 else:
                     raise EParseTypeMismatch(self)
 
@@ -1281,14 +1386,14 @@ list lazy_list_set(list L, integer i, list v)
         term = self.Parse_factor()
         while self.tok[0] in ('+', '-'):
             op = self.tok[0]
-            ltype = term['t']
+            ltype = term.t
             if op == '+' and ltype not in types \
                or op == '-' and ltype not in ('integer', 'float',
                                               'vector', 'rotation'):
                 raise EParseTypeMismatch(self)
             self.NextToken()
             rexpr = self.Parse_factor()
-            rtype = rexpr['t']
+            rtype = rexpr.t
             # This is necessary, but the reason is subtle.
             # The types must match in principle (except integer/float), so it
             # doesn't seem necessary to check rtype. But there's the case
@@ -1309,16 +1414,16 @@ list lazy_list_set(list L, integer i, list v)
                 # so we don't act on self.explicitcast in this case.
                 if rtype == 'list':
                     ltype = rtype
-                term = {'nt':op, 't':ltype, 'ch':[term, rexpr]}
+                term = nr(nt=op, t=ltype, ch=[term, rexpr])
             elif self.allowkeyconcat and op == '+' \
                  and ltype in ('key', 'string') and rtype in ('key', 'string'):
                 # Allow string+key addition (but add explicit cast)
                 if ltype == 'key':
-                    term = {'nt':op, 't':rtype,
-                        'ch':[{'nt':'CAST', 't':rtype, 'ch':[term]}, rexpr]}
+                    term = nr(nt=op, t=rtype,
+                        ch=[nr(nt='CAST', t=rtype, ch=[term]), rexpr])
                 else:
-                    term = {'nt':op, 't':ltype,
-                        'ch':[term, {'nt':'CAST', 't':ltype, 'ch':[rexpr]}]}
+                    term = nr(nt=op, t=ltype,
+                        ch=[term, nr(nt='CAST', t=ltype, ch=[rexpr])])
             elif ltype == 'key' or rtype == 'key':
                 # Only list + key or key + list is allowed, otherwise keys can't
                 # be added or subtracted with anything.
@@ -1326,10 +1431,12 @@ list lazy_list_set(list L, integer i, list v)
             else:
                 if ltype == 'float':
                     # Promote rexpr to float
-                    term = {'nt':op, 't':ltype, 'ch':[term, self.autocastcheck(rexpr, ltype)]}
+                    term = nr(nt=op, t=ltype,
+                        ch=[term, self.autocastcheck(rexpr, ltype)])
                 else:
-                    # Convert LHS to rtype if possible (note no keys arrive here)
-                    term = {'nt':op, 't':rtype, 'ch':[self.autocastcheck(term, rtype), rexpr]}
+                    # Convert LHS to rtype if possible (note no keys get here)
+                    term = nr(nt=op, t=rtype,
+                        ch=[self.autocastcheck(term, rtype), rexpr])
 
         return term
 
@@ -1340,14 +1447,14 @@ list lazy_list_set(list L, integer i, list v)
         """
         shift = self.Parse_term()
         while self.tok[0] in ('<<', '>>'):
-            if shift['t'] != 'integer':
+            if shift.t != 'integer':
                 raise EParseTypeMismatch(self)
             op = self.tok[0]
             self.NextToken()
             rexpr = self.Parse_term()
-            if rexpr['t'] != 'integer':
+            if rexpr.t != 'integer':
                 raise EParseTypeMismatch(self)
-            shift = {'nt':op, 't':'integer', 'ch':[shift , rexpr]}
+            shift = nr(nt=op, t='integer', ch=[shift , rexpr])
 
         return shift
 
@@ -1360,12 +1467,12 @@ list lazy_list_set(list L, integer i, list v)
         inequality = self.Parse_shift()
         while self.tok[0] in ('<', '<=', '>', '>='):
             op = self.tok[0]
-            ltype = inequality['t']
+            ltype = inequality.t
             if ltype not in ('integer', 'float'):
                 raise EParseTypeMismatch(self)
             self.NextToken()
             rexpr = self.Parse_shift()
-            rtype = rexpr['t']
+            rtype = rexpr.t
             if rtype not in ('integer', 'float'):
                 raise EParseTypeMismatch(self)
             if ltype != rtype:
@@ -1373,7 +1480,7 @@ list lazy_list_set(list L, integer i, list v)
                     inequality = self.autocastcheck(inequality, rtype)
                 else:
                     rexpr = self.autocastcheck(rexpr, ltype)
-            inequality = {'nt':op, 't':'integer', 'ch':[inequality, rexpr]}
+            inequality = nr(nt=op, t='integer', ch=[inequality, rexpr])
 
         return inequality
 
@@ -1386,19 +1493,19 @@ list lazy_list_set(list L, integer i, list v)
         comparison = self.Parse_inequality()
         while self.tok[0] in ('==', '!='):
             op = self.tok[0]
-            ltype = comparison['t']
+            ltype = comparison.t
             if ltype not in types:
                 raise EParseTypeMismatch(self)
             self.NextToken()
             rexpr = self.Parse_inequality()
-            rtype = rexpr['t']
+            rtype = rexpr.t
             if ltype == 'float':
                 rexpr = self.autocastcheck(rexpr, ltype)
             else:
                 # For string & key, RHS (rtype) mandates the conversion
                 # (that's room for optimization: always compare strings)
                 comparison = self.autocastcheck(comparison, rtype)
-            comparison = {'nt':op, 't':'integer', 'ch':[comparison, rexpr]}
+            comparison = nr(nt=op, t='integer', ch=[comparison, rexpr])
 
         return comparison
 
@@ -1409,14 +1516,14 @@ list lazy_list_set(list L, integer i, list v)
         """
         bitbool_factor = self.Parse_comparison()
         while self.tok[0] == '&':
-            if bitbool_factor['t'] != 'integer':
+            if bitbool_factor.t != 'integer':
                 raise EParseTypeMismatch(self)
             op = self.tok[0]
             self.NextToken()
             rexpr = self.Parse_comparison()
-            if rexpr['t'] != 'integer':
+            if rexpr.t != 'integer':
                 raise EParseTypeMismatch(self)
-            bitbool_factor = {'nt':op, 't':'integer', 'ch':[bitbool_factor, rexpr]}
+            bitbool_factor = nr(nt=op, t='integer', ch=[bitbool_factor, rexpr])
 
         return bitbool_factor
 
@@ -1427,14 +1534,14 @@ list lazy_list_set(list L, integer i, list v)
         """
         bitxor_term = self.Parse_bitbool_factor()
         while self.tok[0] == '^':
-            if bitxor_term['t'] != 'integer':
+            if bitxor_term.t != 'integer':
                 raise EParseTypeMismatch(self)
             op = self.tok[0]
             self.NextToken()
             rexpr = self.Parse_bitbool_factor()
-            if rexpr['t'] != 'integer':
+            if rexpr.t != 'integer':
                 raise EParseTypeMismatch(self)
-            bitxor_term = {'nt':op, 't':'integer', 'ch':[bitxor_term, rexpr]}
+            bitxor_term = nr(nt=op, t='integer', ch=[bitxor_term, rexpr])
 
         return bitxor_term
 
@@ -1445,14 +1552,14 @@ list lazy_list_set(list L, integer i, list v)
         """
         bitbool_term = self.Parse_bitxor_term()
         while self.tok[0] == '|':
-            if bitbool_term['t'] != 'integer':
+            if bitbool_term.t != 'integer':
                 raise EParseTypeMismatch(self)
             op = self.tok[0]
             self.NextToken()
             rexpr = self.Parse_bitxor_term()
-            if rexpr['t'] != 'integer':
+            if rexpr.t != 'integer':
                 raise EParseTypeMismatch(self)
-            bitbool_term = {'nt':op, 't':'integer', 'ch':[bitbool_term, rexpr]}
+            bitbool_term = nr(nt=op, t='integer', ch=[bitbool_term, rexpr])
 
         return bitbool_term
 
@@ -1475,14 +1582,14 @@ list lazy_list_set(list L, integer i, list v)
         """
         expression = self.Parse_bitbool_term()
         while self.tok[0] in ('&&', '||'):
-            if expression['t'] != 'integer':
+            if expression.t != 'integer':
                 raise EParseTypeMismatch(self)
             op = self.tok[0]
             self.NextToken()
             rexpr = self.Parse_bitbool_term()
-            if rexpr['t'] != 'integer':
+            if rexpr.t != 'integer':
                 raise EParseTypeMismatch(self)
-            expression = {'nt':op, 't':'integer', 'ch':[expression, rexpr]}
+            expression = nr(nt=op, t='integer', ch=[expression, rexpr])
 
         return expression
 
@@ -1514,7 +1621,7 @@ list lazy_list_set(list L, integer i, list v)
                     except EParseTypeMismatch:
                         raise EParseFunctionMismatch(self)
                 elif expected_types is False:  # don't accept void expressions
-                    if expr['t'] not in types:
+                    if expr.t not in types:
                         raise EParseTypeMismatch(self)
                 idx += 1
                 ret.append(expr)
@@ -1570,7 +1677,7 @@ list lazy_list_set(list L, integer i, list v)
 
         if tok0 == ';':
             self.NextToken()
-            return {'nt':';', 't':None}
+            return nr(nt=';', t=None)
 
         if tok0 == '@':
             self.NextToken()
@@ -1602,20 +1709,21 @@ list lazy_list_set(list L, integer i, list v)
             self.NextToken()
             self.expect(';')
             self.NextToken()
-            return {'nt':'@', 't':None, 'name':name, 'scope':self.scopeindex}
+            return nr(nt='@', t=None, name=name, scope=self.scopeindex)
 
         if tok0 == 'JUMP':
             self.NextToken()
             self.expect('IDENT')
             name = self.tok[1]
             sym = self.FindSymbolPartial(name, MustBeLabel=True)
-            jumpnode = {'nt':'JUMP', 't':None, 'name':name}
+            jumpnode = nr(nt='JUMP', t=None, name=name, scope=None)
             if not sym or sym['Kind'] != 'l':
                 # It might still be a forward reference, so we add it to the
                 # list of things to look up when done
-                self.jump_lookups.append((name, self.scopeindex, self.errorpos, jumpnode))
+                self.jump_lookups.append((name, self.scopeindex, self.errorpos,
+                    jumpnode))
             else:
-                jumpnode['scope'] = sym['Scope']
+                jumpnode.scope = sym['Scope']
             self.NextToken()
             self.expect(';')
             self.NextToken()
@@ -1632,12 +1740,13 @@ list lazy_list_set(list L, integer i, list v)
                 raise EParseSyntax(self)
             # State Switch only searches for states in the global scope
             name = self.tok[1] if self.tok[0] == 'IDENT' else 'default'
-            if name not in self.symtab[0] and (name not in self.globals or self.globals[name]['Kind'] != 's'):
+            if name not in self.symtab[0] and (name not in self.globals
+                    or self.globals[name]['Kind'] != 's'):
                 raise EParseUndefined(self)
             self.NextToken()
             self.expect(';')
             self.NextToken()
-            return {'nt':'STSW', 't':None, 'name':name, 'scope':0}
+            return nr(nt='STSW', t=None, name=name, scope=0)
 
         if tok0 == 'RETURN':
             savepos = self.errorpos
@@ -1656,33 +1765,34 @@ list lazy_list_set(list L, integer i, list v)
                 self.errorpos = savepos
                 raise EParseReturnIsEmpty(self)
             if value is None:
-                return {'nt':'RETURN', 't':None}
+                return nr(nt='RETURN', t=None)
             # Sets LastIsReturn flag too
-            return {'nt':'RETURN', 't':None, 'LIR':True,
-                'ch':[self.autocastcheck(value, ReturnType)]}
+            return nr(nt='RETURN', t=None, LIR=True,
+                ch=[self.autocastcheck(value, ReturnType)])
 
         if tok0 == 'IF':
-            ret = {'nt':'IF', 't':None, 'ch':[]}
+            ret = nr(nt='IF', t=None, ch=[])
             self.NextToken()
             self.expect('(')
             self.NextToken()
-            ret['ch'].append(self.Parse_expression())
+            ret.ch.append(self.Parse_expression())
             self.expect(')')
             self.NextToken()
             saveSuspiciousStSw = self.SuspiciousStSw
             self.SuspiciousStSw = []
-            ret['ch'].append(self.Parse_statement(ReturnType, AllowStSw = None, InsideLoop = InsideLoop))
+            ret.ch.append(self.Parse_statement(ReturnType, AllowStSw = None, InsideLoop = InsideLoop))
             if self.tok[0] == 'ELSE':
                 if AllowStSw is False and self.SuspiciousStSw:
                     self.errorpos = self.SuspiciousStSw[0]
                     raise EParseCantChangeState(self)
-                LastIsReturn = 'LIR' in ret['ch'][1]
+                LastIsReturn = getattr(ret.ch[1], 'LIR', False)
                 self.NextToken()
-                ret['ch'].append(self.Parse_statement(ReturnType, AllowStSw = AllowStSw, InsideLoop = InsideLoop))
+                ret.ch.append(self.Parse_statement(ReturnType,
+                    AllowStSw = AllowStSw, InsideLoop = InsideLoop))
                 if AllowStSw is None:
                     saveSuspiciousStSw += self.SuspiciousStSw
-                if LastIsReturn and 'LIR' in ret['ch'][2]:
-                    ret['LIR'] = True
+                if LastIsReturn and getattr(ret.ch[2], 'LIR', False):
+                    ret.LIR = True
             self.SuspiciousStSw = saveSuspiciousStSw
             return ret
 
@@ -1723,18 +1833,20 @@ list lazy_list_set(list L, integer i, list v)
             else:
                 stmt = self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)
 
-            ret = {'nt':'WHILE', 't':None, 'ch':[condition, stmt]}
+            ret = nr(nt='WHILE', t=None, ch=[condition, stmt])
 
             if self.breakcont:
                 last = self.continuestack.pop()
                 if last[2]:
-                    assert ret['ch'][1]['nt'] == '{}'
-                    ret['ch'][1]['ch'].append({'nt':'@', 't':None, 'name':last[0], 'scope':last[1]})
+                    assert ret.ch[1].nt == '{}'
+                    ret.ch[1].ch.append(nr(nt='@', t=None, name=last[0],
+                        scope=last[1]))
                     self.AddSymbol('l', last[1], last[0])
 
                 last = self.breakstack.pop()
                 if last[2]:
-                    ret = {'nt':'{}', 't':None, 'ch':[ret, {'nt':'@', 't':None, 'name':last[0], 'scope':last[1]}]}
+                    ret = nr(nt='{}', t=None, ch=[ret, nr(nt='@', t=None,
+                        name=last[0], scope=last[1])])
                     self.AddSymbol('l', last[1], last[0])
                 self.PopScope()
             return ret
@@ -1761,17 +1873,19 @@ list lazy_list_set(list L, integer i, list v)
             self.NextToken()
             self.expect(';')
             self.NextToken()
-            ret = {'nt':'DO', 't':None, 'ch':[stmt, condition]}
+            ret = nr(nt='DO', t=None, ch=[stmt, condition])
             if self.breakcont:
                 last = self.continuestack.pop()
                 if last[2]:
-                    assert ret['ch'][0]['nt'] == '{}'
-                    ret['ch'][0]['ch'].append({'nt':'@', 't':None, 'name':last[0], 'scope':last[1]})
+                    assert ret.ch[0].nt == '{}'
+                    ret.ch[0].ch.append(nr(nt='@', t=None, name=last[0],
+                        scope=last[1]))
                     self.AddSymbol('l', last[1], last[0])
 
                 last = self.breakstack.pop()
                 if last[2]:
-                    ret = {'nt':'{}', 't':None, 'ch':[ret, {'nt':'@', 't':None, 'name':last[0], 'scope':last[1]}]}
+                    ret = nr(nt='{}', t=None, ch=[ret, nr(nt='@', t=None,
+                        name=last[0], scope=last[1])])
                     self.AddSymbol('l', last[1], last[0])
                 self.PopScope()
             return ret
@@ -1800,21 +1914,24 @@ list lazy_list_set(list L, integer i, list v)
                 self.PushScope()
             else:
                 stmt = self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)
-            ret = {'nt':'FOR', 't':None,
-                'ch':[{'nt':'EXPRLIST','t':None, 'ch':initializer},
+            ret = nr(nt='FOR', t=None,
+                ch=[nr(nt='EXPRLIST', t=None, ch=initializer),
                       condition,
-                      {'nt':'EXPRLIST','t':None, 'ch':iterator},
-                      stmt]}
+                    nr(nt='EXPRLIST', t=None, ch=iterator),
+                    stmt
+                ])
             if self.breakcont:
                 last = self.continuestack.pop()
                 if last[2]:
-                    assert ret['ch'][3]['nt'] == '{}'
-                    ret['ch'][3]['ch'].append({'nt':'@', 't':None, 'name':last[0], 'scope':last[1]})
+                    assert ret.ch[3].nt == '{}'
+                    ret.ch[3].ch.append(nr(nt='@', t=None, name=last[0],
+                        scope=last[1]))
                     self.AddSymbol('l', last[1], last[0])
 
                 last = self.breakstack.pop()
                 if last[2]:
-                    ret = {'nt':'{}', 't':None, 'ch':[ret, {'nt':'@', 't':None, 'name':last[0], 'scope':last[1]}]}
+                    ret = nr(nt='{}', t=None, ch=[ret, nr(nt='@', t=None,
+                        name=last[0], scope=last[1])])
                     self.AddSymbol('l', last[1], last[0])
                 self.PopScope()
             return ret
@@ -1854,24 +1971,24 @@ list lazy_list_set(list L, integer i, list v)
             switchcasedefault = None
             # Since label scope rules prevent us from being able to jump inside
             # a nested block, only one nesting level is considered.
-            assert blk['nt'] == '{}'
-            blk = blk['ch']  # Disregard the '{}' - we'll add it back later
+            assert blk.nt == '{}'
+            blk = blk.ch  # Disregard the '{}' - we'll add it back later
             for idx in xrange(len(blk)):
-                if blk[idx]['nt'] == 'CASE':
+                if blk[idx].nt == 'CASE':
                     lbl = self.GenerateLabel()
-                    switchcaselist.append((lbl, blk[idx]['ch'][0]))
+                    switchcaselist.append((lbl, blk[idx].ch[0]))
                     self.AddSymbol('l', blkscope, lbl)
-                    blk[idx] = {'nt':'@', 'name':lbl, 'scope':blkscope}
-                elif blk[idx]['nt'] == 'DEFAULTCASE':
+                    blk[idx] = nr(nt='@', t=None, name=lbl, scope=blkscope)
+                elif blk[idx].nt == 'DEFAULTCASE':
                     if switchcasedefault is not None:
                         raise EParseManyDefaults(self)
                     lbl = self.GenerateLabel()
                     switchcasedefault = lbl
                     self.AddSymbol('l', blkscope, lbl)
-                    blk[idx] = {'nt':'@', 'name':lbl, 'scope':blkscope}
+                    blk[idx] = nr(nt='@', name=lbl, scope=blkscope)
 
             prelude = []
-            ltype = expr['t']
+            ltype = expr.t
             for case in switchcaselist:
                 rexpr = case[1]
                 lexpr = expr
@@ -1880,11 +1997,11 @@ list lazy_list_set(list L, integer i, list v)
                 else:
                     # For string & key, RHS (rtype) mandates the conversion
                     # (that's room for optimization: always compare strings)
-                    lexpr = self.autocastcheck(lexpr, rexpr['t'])
-                prelude.append({'nt':'IF', 't':None, 'ch':[
-                    {'nt':'==', 't':'integer', 'ch':[lexpr, rexpr]},
-                    {'nt':'JUMP', 't':None, 'name':case[0], 'scope':blkscope}
-                    ]})
+                    lexpr = self.autocastcheck(lexpr, rexpr.t)
+                prelude.append(nr(nt='IF', t=None, ch=[
+                    nr(nt='==', t='integer', ch=[lexpr, rexpr]),
+                    nr(nt='JUMP', t=None, name=case[0], scope=blkscope)
+                    ]))
 
             if switchcasedefault is None:
                 if self.errmissingdefault:
@@ -1902,8 +2019,8 @@ list lazy_list_set(list L, integer i, list v)
                 # If so, remove the label and don't generate the jump.
                 for i in xrange(len(blk)):
                     node = blk[i]
-                    if (node['nt'] == '@' and node['name'] == switchcasedefault
-                       and node['scope'] == blkscope):
+                    if (node.nt == '@' and node.name == switchcasedefault
+                       and node.scope == blkscope):
                         switchcasedefault = None
                         del blk[i]
                         break
@@ -1912,13 +2029,13 @@ list lazy_list_set(list L, integer i, list v)
                 del i, node
 
             if switchcasedefault is not None:
-                prelude.append({'nt':'JUMP', 't':None, 'name':switchcasedefault,
-                    'scope':blkscope})
+                prelude.append(nr(nt='JUMP', t=None, name=switchcasedefault,
+                    scope=blkscope))
             last = self.breakstack.pop()
             if last[2]:
-                blk.append({'nt':'@', 'name':brk, 'scope':blkscope})
+                blk.append(nr(nt='@', name=brk, scope=blkscope))
                 self.AddSymbol('l', blkscope, brk)
-            return {'nt':'{}', 't':None, 'ch':prelude + blk}
+            return nr(nt='{}', t=None, ch=prelude + blk)
 
         if tok0 == 'CASE':
             if not InsideSwitch:
@@ -1934,7 +2051,7 @@ list lazy_list_set(list L, integer i, list v)
                 self.NextToken()
             elif self.tok[0] != '{':
                 raise EParseSyntax(self)
-            return {'nt':'CASE', 't':None, 'ch':[expr]}
+            return nr(nt='CASE', t=None, ch=[expr])
 
         if tok0 == 'DEFAULT':
             if self.enableswitch:
@@ -1950,7 +2067,7 @@ list lazy_list_set(list L, integer i, list v)
                     self.NextToken()
                 elif self.tok[0] != '{':
                     raise EParseSyntax(self)
-                return {'nt':'DEFAULTCASE', 't':None}
+                return nr(nt='DEFAULTCASE', t=None)
             # else fall through to eventually fail
 
         if tok0 == 'BREAK':
@@ -1969,8 +2086,8 @@ list lazy_list_set(list L, integer i, list v)
                 self.breakstack[n][2] = True
             except IndexError:
                 raise EParseInvalidBrkContArg(self)
-            return {'nt':'JUMP', 't':None, 'name':self.breakstack[n][0],
-                'scope':self.breakstack[n][1]}
+            return nr(nt='JUMP', t=None, name=self.breakstack[n][0],
+                scope=self.breakstack[n][1])
 
         if tok0 == 'CONTINUE':
             if not self.continuestack:
@@ -1987,7 +2104,7 @@ list lazy_list_set(list L, integer i, list v)
             if n == -1 and self.continuestack[-1][1] is None:
                 # We're not inside a block - 'continue' is essentially a nop
                 # e.g. while (cond) continue; is the same as while (cond) ;
-                return {'nt':';', 't':'None'}
+                return nr(nt=';', t='None')
             try:
                 if self.continuestack[n][1] is None:
                     # this can happen with e.g.:
@@ -1996,13 +2113,13 @@ list lazy_list_set(list L, integer i, list v)
                     # which is equivalent since there are no {}.
                     n += 1  # e.g. -3 -> -2
                     self.breakstack[n][2] = True  # mark the break as used
-                    return {'nt':'JUMP', 't':None, 'name':self.breakstack[n][0],
-                        'scope':self.breakstack[n][1]}
+                    return nr(nt='JUMP', t=None, name=self.breakstack[n][0],
+                        scope=self.breakstack[n][1])
             except IndexError:
                 raise EParseInvalidBrkContArg(self)
             self.continuestack[n][2] = True
-            return {'nt':'JUMP', 't':None, 'name':self.continuestack[n][0],
-                'scope':self.continuestack[n][1]}
+            return nr(nt='JUMP', t=None, name=self.continuestack[n][0],
+                scope=self.continuestack[n][1])
 
         if tok0 == 'TYPE':
             if not AllowDecl:
@@ -2015,10 +2132,10 @@ list lazy_list_set(list L, integer i, list v)
                 raise EParseAlreadyDefined(self)
             self.NextToken()
             value = None
-            decl = {'nt':'DECL','t':typ, 'name':name, 'scope':self.scopeindex}
+            decl = nr(nt='DECL', t=typ, name=name, scope=self.scopeindex)
             if self.tok[0] == '=':
                 self.NextToken()
-                decl['ch'] = [self.autocastcheck(self.Parse_expression(), typ)]
+                decl.ch = [self.autocastcheck(self.Parse_expression(), typ)]
             self.expect(';')
             self.NextToken()
             self.AddSymbol('v', self.scopeindex, name, Type=typ)
@@ -2028,7 +2145,7 @@ list lazy_list_set(list L, integer i, list v)
         value = self.Parse_expression()
         self.expect(';')
         self.NextToken()
-        return {'nt':'EXPR', 't':value['t'], 'ch':[value]}
+        return nr(nt='EXPR', t=value.t, ch=[value])
 
     def Parse_code_block(self, ReturnType, AllowStSw = False, InsideSwitch = False,
         InsideLoop = False):
@@ -2060,7 +2177,7 @@ list lazy_list_set(list L, integer i, list v)
             stmt = self.Parse_statement(ReturnType, AllowDecl = True,
                 AllowStSw = AllowStSw, InsideSwitch = InsideSwitch,
                 InsideLoop = InsideLoop)
-            LastIsReturn = 'LIR' in stmt
+            LastIsReturn = getattr(stmt, 'LIR', False)
             body.append(stmt)
 
         self.PopScope()
@@ -2068,9 +2185,9 @@ list lazy_list_set(list L, integer i, list v)
         self.expect('}')
         self.NextToken()
 
-        node = {'nt':'{}', 't':None, 'ch':body}
+        node = nr(nt='{}', t=None, ch=body)
         if LastIsReturn:
-            node['LIR'] = True
+            node.LIR = True
         return node
 
     def Parse_simple_expr(self, ForbidList=False):
@@ -2089,15 +2206,15 @@ list lazy_list_set(list L, integer i, list v)
         tok = self.tok
         self.NextToken()
         if tok[0] in ('TRUE', 'FALSE'):  # TRUE and FALSE don't admit sign in globals
-            return {'nt':'CONST', 't':'integer', 'value':int(tok[0]=='TRUE')}
+            return nr(nt='CONST', t='integer', value=int(tok[0]=='TRUE'))
         if tok[0] in ('STRING_VALUE', 'KEY_VALUE', 'VECTOR_VALUE', 'ROTATION_VALUE', 'LIST_VALUE'):
             val = tok[1]
             if tok[0] == 'STRING_VALUE' and self.allowmultistrings:
                 while self.tok[0] == 'STRING_VALUE':
                     val += self.tok[1]
                     self.NextToken()
-            return {'nt':'CONST', 't':lslcommon.PythonType2LSL[type(val)],
-                    'value':val}
+            return nr(nt='CONST', t=lslcommon.PythonType2LSL[type(val)],
+                value=val)
         if tok[0] == 'IDENT':
             sym = self.FindSymbolPartial(tok[1])
             if sym is None or sym['Kind'] != 'v':
@@ -2108,7 +2225,7 @@ list lazy_list_set(list L, integer i, list v)
                 # var inside a list global definition takes a string value
                 # (SCR-295).
                 typ = 'string'
-            return {'nt':'IDENT', 't':typ, 'name':tok[1], 'scope':sym['Scope']}
+            return nr(nt='IDENT', t=typ, name=tok[1], scope=sym['Scope'])
         if tok[0] == '<':
             value = [self.Parse_simple_expr()]
             self.autocastcheck(value[0], 'float')
@@ -2122,25 +2239,25 @@ list lazy_list_set(list L, integer i, list v)
             self.autocastcheck(value[2], 'float')
             if self.tok[0] == '>':
                 self.NextToken()
-                return {'nt':'VECTOR', 't':'vector', 'ch':value}
+                return nr(nt='VECTOR', t='vector', ch=value)
             self.expect(',')
             self.NextToken()
             value.append(self.Parse_simple_expr())
             self.autocastcheck(value[3], 'float')
             self.expect('>')
             self.NextToken()
-            return {'nt':'ROTATION', 't':'rotation', 'ch':value}
+            return nr(nt='ROTATION', t='rotation', ch=value)
 
         if tok[0] == '[' and not ForbidList:
             value = []
             if self.tok[0] == ']':
                 self.NextToken()
-                return {'nt':'LIST','t':'list','ch':value}
+                return nr(nt='LIST', t='list', ch=value)
             while True:
                 value.append(self.Parse_simple_expr(ForbidList=True))
                 if self.tok[0] == ']':
                     self.NextToken()
-                    return {'nt':'LIST','t':'list','ch':value}
+                    return nr(nt='LIST', t='list', ch=value)
                 self.expect(',')
                 self.NextToken()
         # Integer or Float constant expected
@@ -2154,7 +2271,8 @@ list lazy_list_set(list L, integer i, list v)
         value = tok[1]
         if neg and (tok[0] != 'INTEGER_VALUE' or value != -2147483648):
             value = -value
-        return {'nt':'CONST', 't':'float' if tok[0] == 'FLOAT_VALUE' else 'integer', 'value':value}
+        return nr(nt='CONST',
+            t='float' if tok[0] == 'FLOAT_VALUE' else 'integer', value=value)
 
     def Parse_optional_param_list(self):
         """Grammar parsed here:
@@ -2217,9 +2335,9 @@ list lazy_list_set(list L, integer i, list v)
             self.locallabels = set()
             body = self.Parse_code_block(None)
             del self.locallabels
-            ret.append({'nt':'FNDEF', 't':None, 'name':name,  # no scope as these are reserved words
-                'pscope':self.scopeindex, 'ptypes':params[0], 'pnames':params[1],
-                'ch':[body]})
+            ret.append(nr(nt='FNDEF', t=None, name=name,  # no scope as these are reserved words
+                pscope=self.scopeindex, ptypes=params[0], pnames=params[1],
+                ch=[body]))
             self.PopScope()
 
         return ret
@@ -2257,7 +2375,7 @@ list lazy_list_set(list L, integer i, list v)
                         report = False
                         # Delete the previous definition.
                         self.tree[self.symtab[0][name]['Loc']] = \
-                            {'nt':'LAMBDA', 't':None}
+                            nr(nt='LAMBDA', t=None)
                         del self.symtab[0][name]
                 if report:
                     raise EParseAlreadyDefined(self)
@@ -2278,7 +2396,7 @@ list lazy_list_set(list L, integer i, list v)
                         try:
                             value = self.Parse_simple_expr()
                             self.expect(';')
-                            value['Simple'] = True  # Success - mark it as simple
+                            value.Simple = True  # Success - mark it as simple
                         except EParse:
                             # Backtrack
                             self.pos = pos
@@ -2296,10 +2414,10 @@ list lazy_list_set(list L, integer i, list v)
                     value = None
 
                 assert self.scopeindex == 0
-                decl = {'nt':'DECL', 't':typ, 'name':name, 'scope':0}
+                decl = nr(nt='DECL', t=typ, name=name, scope=0)
                 if value is not None:
                     value = self.autocastcheck(value, typ)
-                    decl['ch'] = [value]
+                    decl.ch = [value]
                 self.NextToken()
                 self.AddSymbol('v', 0, name, Loc=len(self.tree), Type=typ)
                 self.tree.append(decl)
@@ -2315,14 +2433,14 @@ list lazy_list_set(list L, integer i, list v)
                 self.locallabels = set()
                 body = self.Parse_code_block(typ)
                 del self.locallabels
-                if typ and 'LIR' not in body:  # is LastIsReturn flag set?
+                if typ and not getattr(body, 'LIR', False):  # is LastIsReturn flag set?
                     raise EParseCodePathWithoutRet(self)
                 paramscope = self.scopeindex
                 self.AddSymbol('f', 0, name, Loc=len(self.tree), Type=typ,
                     ParamTypes=params[0], ParamNames=params[1])
-                self.tree.append({'nt':'FNDEF', 't':typ, 'name':name, 'scope':0,
-                    'pscope':paramscope,
-                    'ptypes':params[0], 'pnames':params[1], 'ch':[body]})
+                self.tree.append(nr(nt='FNDEF', t=typ, name=name, scope=0,
+                    pscope=paramscope,
+                    ptypes=params[0], pnames=params[1], ch=[body]))
                 self.PopScope()
                 assert self.scopeindex == 0
             else:
@@ -2369,7 +2487,8 @@ list lazy_list_set(list L, integer i, list v)
             del self.localevents
 
             self.expect('}')
-            self.tree.append({'nt':'STDEF', 't':None, 'name':name, 'scope':0, 'ch':events})
+            self.tree.append(nr(nt='STDEF', t=None, name=name, scope=0,
+                ch=events))
             self.NextToken()
 
     def Parse_script(self):
@@ -2392,14 +2511,14 @@ list lazy_list_set(list L, integer i, list v)
         self.Parse_states()
         self.expect('EOF')
 
-        # Check the pending jump targets
+        # Check the pending jump targets to assign them the scope of the label.
         for tgt in self.jump_lookups:
             self.scopeindex = tgt[1]
             sym = self.FindSymbolPartial(tgt[0], MustBeLabel = True)
             if sym is None:
                 self.errorpos = tgt[2]
                 raise EParseUndefined(self)
-            tgt[3]['scope'] = sym['Scope']
+            tgt[3].scope = sym['Scope']
 
         del self.jump_lookups  # Finished with it.
 
@@ -2411,7 +2530,7 @@ list lazy_list_set(list L, integer i, list v)
         script: expression EOF
         """
         value = self.Parse_expression()
-        self.tree.append({'nt':'EXPR', 't':value['t'], 'ch':[value]})
+        self.tree.append(nr(nt='EXPR', t=value.t, ch=[value]))
         self.expect('EOF')
         return
 
@@ -2713,7 +2832,7 @@ list lazy_list_set(list L, integer i, list v)
         self.tok = self.GetToken()
 
         # Reserve spots at the beginning for functions we add
-        self.tree = [{'nt':'LAMBDA','t':None}]
+        self.tree = [nr(nt='LAMBDA', t=None)]
         self.usedspots = 0
 
         # Start the parsing proper

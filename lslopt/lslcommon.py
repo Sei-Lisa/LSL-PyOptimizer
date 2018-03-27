@@ -19,6 +19,52 @@
 
 import sys
 
+_exclusions = frozenset(('nt','t','name','value','ch', 'X','SEF'))
+
+# Node Record type. Used for AST nodes.
+class nr(object):
+    nt  = None   # node type
+    t   = None   # LSL type
+    ch  = None   # children
+    SEF = False  # Side Effect-Free flag
+    def __init__(self, **kwargs):
+        for k in kwargs:
+            setattr(self, k, kwargs[k])
+
+    def copy(self):
+        new = nr()
+        for k, v in self.__dict__.items():
+            setattr(new, k, v)
+        return new
+
+    # Debug output
+
+    def __str__(self, indent = 0):
+        spaces = ' ' * (4 * indent)
+        s = '\n{sp}{{ nt:{nr.nt}\n{sp}  ,t:{nr.t}'.format(sp=spaces, nr=self)
+        if hasattr(self, 'name'):
+            s += '\n{sp}  ,name:{nr.name}'.format(sp=spaces, nr=self)
+        if hasattr(self, 'value'):
+            s += '\n{sp}  ,value:{v}'.format(sp=spaces, v=repr(self.value))
+        for k in sorted(self.__dict__):
+            if k not in _exclusions:
+                v = self.__dict__[k]
+                s += '\n{sp}  ,{k}:{v}'.format(sp=spaces, k=k, v=repr(v))
+        if self.ch is not None:
+            if self.ch:
+                s += '\n{sp}  ,ch:['.format(sp=spaces)
+                isFirst = True
+                for v in self.ch:
+                    if not isFirst:
+                        s += ','
+                    isFirst = False
+                    s += v.__str__(indent + 1)
+                s += '\n{sp}  ]'.format(sp=spaces)
+            else:
+                s += '\n{sp}  ,ch:[]'.format(sp=spaces)
+        s += '\n{sp}}}'.format(sp=spaces)
+        return s if indent > 0 else s[1:]  # remove leading \n at level 0
+
 # These types just wrap the Python types to make type() work on them.
 # There are no ops defined on them or anything.
 
@@ -76,24 +122,24 @@ def warning(txt):
     sys.stderr.write(u"WARNING: " + txt + u"\n")
 
 # Debug function
-def print_node(node, indent = 0):
-    nt = node['nt']
-    write = sys.stdout.write
-    spaces = ' ' * (indent*4+2)
-    write('%s{ nt:%s\n' % (' '*(indent*4), nt))
-    if 't' in node:
-        write('%s,t:%s\n' % (spaces, node['t']))
-    if 'name' in node:
-        write('%s,name:%s\n' % (spaces, node['name']))
-    if 'value' in node:
-        write('%s,value:%s\n' % (spaces, repr(node['value'])))
-
-    for prop in node:
-        if prop not in ('ch', 'nt', 't', 'name', 'value','X','SEF'):
-            write('%s,%s:%s\n' % (spaces, prop, repr(node[prop])))
-    if 'ch' in node:
-        write(spaces + ',ch:[\n')
-        for subnode in node['ch']:
-            print_node(subnode, indent+1)
-        write(spaces + ']\n')
-    write(' '*(indent*4) + '}\n\n')
+#def print_node(node, indent = 0):
+#    nt = node['nt']
+#    write = sys.stdout.write
+#    spaces = ' ' * (indent*4+2)
+#    write('%s{ nt:%s\n' % (' '*(indent*4), nt))
+#    if 't' in node:
+#        write('%s,t:%s\n' % (spaces, node['t']))
+#    if 'name' in node:
+#        write('%s,name:%s\n' % (spaces, node['name']))
+#    if 'value' in node:
+#        write('%s,value:%s\n' % (spaces, repr(node['value'])))
+#
+#    for prop in node:
+#        if prop not in ('ch', 'nt', 't', 'name', 'value','X','SEF'):
+#            write('%s,%s:%s\n' % (spaces, prop, repr(node[prop])))
+#    if 'ch' in node:
+#        write(spaces + ',ch:[\n')
+#        for subnode in node['ch']:
+#            print_node(subnode, indent+1)
+#        write(spaces + ']\n')
+#    write(' '*(indent*4) + '}\n\n')
