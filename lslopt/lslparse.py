@@ -234,12 +234,12 @@ class parser(object):
 
     def PushScope(self):
         """Create a new symbol table / scope level"""
-        self.symtab.append({-1:self.scopeindex}) # Add parent pointer
+        self.symtab.append({-1:self.scopeindex})  # Add parent pointer
         self.scopeindex = len(self.symtab)-1
 
     def PopScope(self):
         """Return to the previous scope level"""
-        self.scopeindex = self.symtab[self.scopeindex][-1] # -1 is a dict key, not an index
+        self.scopeindex = self.symtab[self.scopeindex][-1]  # -1 is a dict key, not an index
         assert self.scopeindex is not None, 'Unexpected internal error'
 
     def AddSymbol(self, kind, scope, name, **values):
@@ -273,7 +273,7 @@ class parser(object):
             symtab = self.symtab[scopelevel]
             if symbol in symtab and (not MustBeLabel or symtab[symbol]['Kind'] == 'l'):
                 return symtab[symbol]
-            scopelevel = symtab[-1] # -1 is a dict key, not an index
+            scopelevel = symtab[-1]  # -1 is a dict key, not an index
         return None
 
     # No labels or states allowed here (but functions are)
@@ -282,7 +282,7 @@ class parser(object):
         if scopelevel is None:
             # unspecified scope level means to look in the current scope
             scopelevel = self.scopeindex
-        while scopelevel: # Loop over all local scopes
+        while scopelevel:  # Loop over all local scopes
             symtab = self.symtab[scopelevel]
             if symbol in symtab:
                 # This can't happen, as functions can't be local
@@ -291,11 +291,11 @@ class parser(object):
                 return symtab[symbol]
             scopelevel = symtab[-1]
         try:
-            return self.symtab[0][symbol] # Quick guess
+            return self.symtab[0][symbol]  # Quick guess
         except KeyError:
             if self.disallowglobalvars and symbol not in self.symtab[0] \
                or symbol not in self.globals:
-                return None # Disallow forwards in global var mode
+                return None  # Disallow forwards in global var mode
             return self.globals[symbol]
 
     def ValidateField(self, typ, field):
@@ -326,7 +326,7 @@ class parser(object):
     def ceof(self):
         """Check for normal EOF"""
         if self.pos >= self.length:
-            raise EInternal() # force GetToken to return EOF
+            raise EInternal()  # force GetToken to return EOF
 
     def SetOpt(self, option, value):
         # See parse() for meaning of options.
@@ -477,7 +477,7 @@ class parser(object):
                     self.ceof()
                     while self.script[self.pos] != '\n':
                         self.pos += 1
-                        self.ceof() # A preprocessor command at EOF is not unexpected EOF.
+                        self.ceof()  # A preprocessor command at EOF is not unexpected EOF.
 
                     self.ProcessDirective(self.script[self.errorpos:self.pos])
 
@@ -492,7 +492,7 @@ class parser(object):
                         self.ceof()
                         while self.script[self.pos] != '\n':
                             self.pos += 1
-                            self.ceof() # A single-line comment at EOF is not unexpected EOF.
+                            self.ceof()  # A single-line comment at EOF is not unexpected EOF.
 
                         self.linestart = True
                         self.pos += 1
@@ -503,7 +503,7 @@ class parser(object):
                         self.pos += 2
                         while self.script[self.pos-1:self.pos+1] != '*/':
                             self.pos += 1
-                            self.ueof() # An unterminated multiline comment *is* unexpected EOF.
+                            self.ueof()  # An unterminated multiline comment *is* unexpected EOF.
 
                         self.pos += 1
                         self.ceof()
@@ -521,8 +521,8 @@ class parser(object):
                         self.pos += 1
                         strliteral = '"'
 
-                    savepos = self.pos # we may need to backtrack
-                    is_string = True # by default
+                    savepos = self.pos  # we may need to backtrack
+                    is_string = True  # by default
 
                     while self.script[self.pos:self.pos+1] != '"':
                         # per the grammar, on EOF, it's not considered a string
@@ -568,7 +568,7 @@ class parser(object):
                         return (ident.upper(),)
                     if ident in types:
                         if ident == 'quaternion':
-                            ident = 'rotation' # Normalize types
+                            ident = 'rotation'  # Normalize types
                         return ('TYPE',ident)
                     if ident in self.events:
                         return ('EVENT_NAME',ident)
@@ -603,7 +603,7 @@ class parser(object):
                             number = ''
 
                             while ishex(self.script[self.pos:self.pos+1]):
-                                if len(number) < 9: # don't let it grow more than necessary
+                                if len(number) < 9:  # don't let it grow more than necessary
                                     number += self.script[self.pos]
                                 self.pos += 1
                             if number == '':
@@ -629,10 +629,10 @@ class parser(object):
 
                     # At this point, number contains as many digits as there are before the dot,
                     # the dot if present, and as many digits as there are after the dot.
-                    if number != '.': # A dot alone can't be a number so we rule it out here.
+                    if number != '.':  # A dot alone can't be a number so we rule it out here.
                         exp = ''
                         if self.script[self.pos:self.pos+1] in ('e','E'):
-                            epos = self.pos # Temporary position tracker, made permanent only if the match succeeds
+                            epos = self.pos  # Temporary position tracker, made permanent only if the match succeeds
                             exp = self.script[epos]
                             epos += 1
                             if self.script[epos:epos+1] in ('+','-'):
@@ -645,11 +645,11 @@ class parser(object):
                                 while isdigit(self.script[epos:epos+1]):
                                     exp += self.script[epos]
                                     epos += 1
-                                self.pos = epos # "Commit" the new position
+                                self.pos = epos  # "Commit" the new position
                             else:
-                                exp = '' # No cigar. Rollback and backtrack. Invalidate exp.
+                                exp = ''  # No cigar. Rollback and backtrack. Invalidate exp.
 
-                        if exp != '' or '.' in number: # Float
+                        if exp != '' or '.' in number:  # Float
                             if '.' in number:
                                 # Eat the 'F' if present
                                 if self.script[self.pos:self.pos+1] in ('f','F'):
@@ -685,7 +685,7 @@ class parser(object):
                 #    continue
 
         except EInternal:
-            pass # clear the exception and fall through
+            pass  # clear the exception and fall through
 
         return ('EOF',)
 
@@ -745,14 +745,14 @@ class parser(object):
 
             self.expect(',')
             self.NextToken()
-        except EParse: # The errors can be varied, e.g. <0,0,0>-v; raises EParseTypeMismatch
+        except EParse:  # The errors can be varied, e.g. <0,0,0>-v; raises EParseTypeMismatch
             # Backtrack
             self.pos = pos
             self.errorpos = errorpos
             self.tok = tok
 
         # OK, here we are.
-        inequality = self.Parse_shift() # shift is the descendant of inequality
+        inequality = self.Parse_shift()  # shift is the descendant of inequality
         while self.tok[0] in ('<', '<=', '>=', '>'):
             op = self.tok[0]
             self.NextToken()
@@ -982,7 +982,7 @@ class parser(object):
                 self.AddSymbol('v', paramscope, 'L', Type='list')
                 self.AddSymbol('v', paramscope, 'i', Type='integer')
                 self.AddSymbol('v', paramscope, 'v', Type='list')
-                #self.PushScope() # no locals
+                #self.PushScope()  # no locals
 
                 # Add body (apologies for the wall of text)
                 # Generated from this source:
@@ -996,7 +996,7 @@ list lazy_list_set(list L, integer i, list v)
                 '''
                 self.tree[self.usedspots] = {'ch': [{'ch': [{'ch': [{'ch': [{'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}], 'nt': 'FNCALL', 't': 'integer', 'name': 'llGetListLength'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'integer', 'name': 'i'}], 'nt': '<', 't': 'integer'}, {'ch': [{'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'nt': 'CONST', 't': 'integer', 'value': 0}], 'nt': '+', 't': 'list'}], 'nt': '=', 't': 'list'}], 'nt': 'EXPR', 't': 'list'}], 'nt': 'WHILE', 't': None}, {'ch': [{'ch': [{'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'L'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'list', 'name': 'v'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'integer', 'name': 'i'}, {'scope': paramscope, 'nt': 'IDENT', 't': 'integer', 'name': 'i'}], 'nt': 'FNCALL', 't': 'list', 'name': 'llListReplaceList'}], 'nt': 'RETURN', 't': None, 'LIR': True}], 'nt': '{}', 't': None, 'LIR': True}], 't': 'list', 'pnames': params[1], 'scope': 0, 'pscope': paramscope, 'nt': 'FNDEF', 'ptypes': params[0], 'name': 'lazy_list_set'}
                 self.usedspots += 1
-                #self.PopScope() # no locals
+                #self.PopScope()  # no locals
                 self.PopScope()
 
             if expr['t'] is None:
@@ -1513,7 +1513,7 @@ list lazy_list_set(list L, integer i, list v)
                         expr = self.autocastcheck(expr, expected_types[idx]);
                     except EParseTypeMismatch:
                         raise EParseFunctionMismatch(self)
-                elif expected_types is False: # don't accept void expressions
+                elif expected_types is False:  # don't accept void expressions
                     if expr['t'] not in types:
                         raise EParseTypeMismatch(self)
                 idx += 1
@@ -1855,7 +1855,7 @@ list lazy_list_set(list L, integer i, list v)
             # Since label scope rules prevent us from being able to jump inside
             # a nested block, only one nesting level is considered.
             assert blk['nt'] == '{}'
-            blk = blk['ch'] # Disregard the '{}' - we'll add it back later
+            blk = blk['ch']  # Disregard the '{}' - we'll add it back later
             for idx in xrange(len(blk)):
                 if blk[idx]['nt'] == 'CASE':
                     lbl = self.GenerateLabel()
@@ -1994,8 +1994,8 @@ list lazy_list_set(list L, integer i, list v)
                     # while (cond) while (cond) while (cond) continue 3;
                     # Transform to while(cond) while(cond) while(cond) break 2;
                     # which is equivalent since there are no {}.
-                    n += 1 # e.g. -3 -> -2
-                    self.breakstack[n][2] = True # mark the break as used
+                    n += 1  # e.g. -3 -> -2
+                    self.breakstack[n][2] = True  # mark the break as used
                     return {'nt':'JUMP', 't':None, 'name':self.breakstack[n][0],
                         'scope':self.breakstack[n][1]}
             except IndexError:
@@ -2046,7 +2046,7 @@ list lazy_list_set(list L, integer i, list v)
 
         # Kludge to find the scope of the break (for switch) /
         # continue (for loops) labels.
-        if self.breakstack: # non-empty iff inside loop or switch
+        if self.breakstack:  # non-empty iff inside loop or switch
             if InsideSwitch and self.breakstack[-1][1] is None:
                 self.breakstack[-1][1] = self.scopeindex
             if InsideLoop and self.continuestack[-1][1] is None:
@@ -2088,7 +2088,7 @@ list lazy_list_set(list L, integer i, list v)
         """
         tok = self.tok
         self.NextToken()
-        if tok[0] in ('TRUE', 'FALSE'): # TRUE and FALSE don't admit sign in globals
+        if tok[0] in ('TRUE', 'FALSE'):  # TRUE and FALSE don't admit sign in globals
             return {'nt':'CONST', 't':'integer', 'value':int(tok[0]=='TRUE')}
         if tok[0] in ('STRING_VALUE', 'KEY_VALUE', 'VECTOR_VALUE', 'ROTATION_VALUE', 'LIST_VALUE'):
             val = tok[1]
@@ -2193,7 +2193,7 @@ list lazy_list_set(list L, integer i, list v)
         events: event | events event
         event: EVENT_NAME '(' optional_parameter_list ')' code_block
         """
-        self.expect('EVENT_NAME') # mandatory
+        self.expect('EVENT_NAME')  # mandatory
 
         ret = []
 
@@ -2217,7 +2217,7 @@ list lazy_list_set(list L, integer i, list v)
             self.locallabels = set()
             body = self.Parse_code_block(None)
             del self.locallabels
-            ret.append({'nt':'FNDEF', 't':None, 'name':name, # no scope as these are reserved words
+            ret.append({'nt':'FNDEF', 't':None, 'name':name,  # no scope as these are reserved words
                 'pscope':self.scopeindex, 'ptypes':params[0], 'pnames':params[1],
                 'ch':[body]})
             self.PopScope()
@@ -2264,13 +2264,13 @@ list lazy_list_set(list L, integer i, list v)
 
             if self.tok[0] in ('=', ';'):
                 # This is a variable definition
-                if typ is None: # Typeless variables are not allowed
+                if typ is None:  # Typeless variables are not allowed
                     raise EParseSyntax(self)
 
                 if self.tok[0] == '=':
                     self.NextToken()
                     if self.extendedglobalexpr:
-                        self.disallowglobalvars = True # Disallow forward globals.
+                        self.disallowglobalvars = True  # Disallow forward globals.
                         # Mark backtracking position
                         pos = self.pos
                         errorpos = self.errorpos
@@ -2278,7 +2278,7 @@ list lazy_list_set(list L, integer i, list v)
                         try:
                             value = self.Parse_simple_expr()
                             self.expect(';')
-                            value['Simple'] = True # Success - mark it as simple
+                            value['Simple'] = True  # Success - mark it as simple
                         except EParse:
                             # Backtrack
                             self.pos = pos
@@ -2287,12 +2287,12 @@ list lazy_list_set(list L, integer i, list v)
                             # Use advanced expression evaluation.
                             value = self.Parse_expression()
                             self.expect(';')
-                        self.disallowglobalvars = False # Allow forward globals again.
+                        self.disallowglobalvars = False  # Allow forward globals again.
                     else:
                         # Use LSL's dull global expression.
                         value = self.Parse_simple_expr()
                         self.expect(';')
-                else: # must be semicolon
+                else:  # must be semicolon
                     value = None
 
                 assert self.scopeindex == 0
@@ -2315,7 +2315,7 @@ list lazy_list_set(list L, integer i, list v)
                 self.locallabels = set()
                 body = self.Parse_code_block(typ)
                 del self.locallabels
-                if typ and 'LIR' not in body: # is LastIsReturn flag set?
+                if typ and 'LIR' not in body:  # is LastIsReturn flag set?
                     raise EParseCodePathWithoutRet(self)
                 paramscope = self.scopeindex
                 self.AddSymbol('f', 0, name, Loc=len(self.tree), Type=typ,
@@ -2401,7 +2401,7 @@ list lazy_list_set(list L, integer i, list v)
                 raise EParseUndefined(self)
             tgt[3]['scope'] = sym['Scope']
 
-        del self.jump_lookups # Finished with it.
+        del self.jump_lookups  # Finished with it.
 
     def Parse_single_expression(self):
         """Parse the script as an expression, Used by lslcalc.
@@ -2432,7 +2432,7 @@ list lazy_list_set(list L, integer i, list v)
         states: state [state [...]]
         state: (DEFAULT | STATE IDENT) balanced_braces_or_anything_else
         """
-        ret = self.funclibrary.copy() # The library functions go here too.
+        ret = self.funclibrary.copy()  # The library functions go here too.
 
         # If there's a syntax error, that's not our business. We just return
         # what we have so far. Doing a proper parse will determine the exact
@@ -2462,14 +2462,14 @@ list lazy_list_set(list L, integer i, list v)
                                 return ret
                             params.append(self.tok[1])
                             self.NextToken()
-                            self.NextToken() # not interested in parameter names
+                            self.NextToken()  # not interested in parameter names
                             if self.tok[0] != ',':
                                 break
                             self.NextToken()
                     self.NextToken()
                     if self.tok[0] != '{':
                         return ret
-                    self.NextToken() # Enter the first brace
+                    self.NextToken()  # Enter the first brace
 
                     bracelevel = 1
                     while bracelevel and self.tok[0] != 'EOF':
@@ -2482,12 +2482,12 @@ list lazy_list_set(list L, integer i, list v)
                                  'uns':True}
 
                 elif typ is None:
-                    return ret # A variable needs a type
+                    return ret  # A variable needs a type
                 else:
                     # No location info but none is necessary for forward
                     # declarations.
                     ret[name] = {'Kind':'v','Type':typ,'Scope':0}
-                    while self.tok[0] != ';': # Don't stop to analyze what's before the ending ';'
+                    while self.tok[0] != ';':  # Don't stop to analyze what's before the ending ';'
                         if self.tok[0] == 'EOF':
                             return ret
                         self.NextToken()
@@ -2498,7 +2498,7 @@ list lazy_list_set(list L, integer i, list v)
         # Scan states
         while True:
             if self.tok[0] not in ('DEFAULT', 'STATE'):
-                return ret # includes EOF i.e. this is the normal return
+                return ret  # includes EOF i.e. this is the normal return
 
             if self.tok[0] == 'STATE':
                 self.NextToken()
@@ -2514,7 +2514,7 @@ list lazy_list_set(list L, integer i, list v)
 
             if self.tok[0] != '{':
                 return ret
-            self.NextToken() # Enter the first brace
+            self.NextToken()  # Enter the first brace
 
             bracelevel = 1
             while bracelevel and self.tok[0] != 'EOF':
