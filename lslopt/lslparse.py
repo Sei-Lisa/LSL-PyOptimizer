@@ -832,6 +832,7 @@ class parser(object):
                 self.NextToken()
                 return nr(nt=CONST, value=-val,
                     t='integer' if type(val) == int else 'float')
+            raise EParseSyntax(self)
         if tok0 == 'INTEGER_VALUE':
             self.NextToken()
             return nr(nt=CONST, t='integer', value=val)
