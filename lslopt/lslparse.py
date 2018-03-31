@@ -800,9 +800,10 @@ class parser(object):
     def Parse_unary_postfix_expression(self, AllowAssignment = True):
         """Grammar parsed here:
 
-        unary_postfix_expression: INTEGER_VALUE | FLOAT_VALUE
+        unary_postfix_expression: TRUE | FALSE | LIST_VALUE
+            | INTEGER_VALUE | FLOAT_VALUE | '-' INTEGER_VALUE | '-' FLOAT_VALUE
             | STRING_VALUE | KEY_VALUE | VECTOR_VALUE | ROTATION_VALUE
-            | LIST_VALUE | TRUE | FALSE | vector_literal | rotation_literal | list_literal
+            | vector_literal | rotation_literal | list_literal
             | PRINT '(' expression ')' | IDENT '(' expression_list ')'
             | lvalue '++' | lvalue '--' | assignment %if allowed
             | IDENT '[' expression ']' '=' expression %if lazylists
@@ -1207,7 +1208,8 @@ list lazy_list_set(list L, integer i, list v)
             | '(' TYPE ')' typecast_expression | '(' expression ')'
             | unary_postfix_expression
         %NORMAL RULES ONLY:
-        typecast_expression: '(' expression ')' | unary_postfix_expression %except assignment
+        typecast_expression: '(' expression ')'
+            | unary_postfix_expression %except assignment
         %EXTENDED RULES ONLY:
         typecast_expression: unary_expression %except assignment
         """
