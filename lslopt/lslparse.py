@@ -2222,7 +2222,10 @@ list lazy_list_set(list L, integer i, list v)
                 value=val)
         if tok[0] == 'IDENT':
             sym = self.FindSymbolPartial(tok[1])
-            if sym is None or sym['Kind'] != 'v':
+            # The parser accepts library function names here as valid variables
+            # (it chokes at RAIL in Mono, and at runtime in LSO for some types)
+            if sym is None or sym['Kind'] != 'v' and (sym['Kind'] != 'f'
+                    or 'ParamNames' in sym):  # only UDFs have ParamNames
                 raise EParseUndefined(self)
             typ = sym['Type']
             if ForbidList and lslcommon.LSO and typ == 'key':
@@ -2230,7 +2233,8 @@ list lazy_list_set(list L, integer i, list v)
                 # var inside a list global definition takes a string value
                 # (SCR-295).
                 typ = 'string'
-            return nr(nt='IDENT', t=typ, name=tok[1], scope=sym['Scope'])
+            return nr(nt='IDENT', t=typ, name=tok[1],
+                scope=sym['Scope'] if sym['Kind'] == 'v' else 0)
         if tok[0] == '<':
             value = [self.Parse_simple_expr()]
             self.autocastcheck(value[0], 'float')
