@@ -305,8 +305,8 @@ class parser(object):
         raise EParseInvalidField(self)
 
     def autocastcheck(self, value, tgttype):
-        """Check if automatic dynamic cast is possible, and insert it if
-        requested explicitly.
+        """Check if automatic dynamic cast is possible. If explicit casts are
+        requested, insert one.
         """
         tval = value.t
         if tval == tgttype:
@@ -733,8 +733,9 @@ class parser(object):
         pos = self.pos
         errorpos = self.errorpos
         tok = self.tok
+        component3 = False
         try:
-            ret.append(self.Parse_expression())
+            component3 = self.Parse_expression()
 
             # Checking here for '>' might parse a different grammar, because
             # it might allow e.g. <1,2,3==3>; as a vector, which is not valid.
@@ -750,6 +751,10 @@ class parser(object):
             self.pos = pos
             self.errorpos = errorpos
             self.tok = tok
+
+        # We do this here to prevent a type mismatch above
+        if component3 is not False:
+            ret.append(self.autocastcheck(component3, 'float'))
 
         # OK, here we are.
         inequality = self.Parse_shift()  # shift is the descendant of inequality
@@ -770,7 +775,7 @@ class parser(object):
                    'KEY_VALUE', 'VECTOR_VALUE', 'ROTATION_VALUE', 'LIST_VALUE',
                    'TRUE', 'FALSE', '++', '--', 'PRINT', '!', '~', '(', '['
                    ):
-                    ret.append(inequality)
+                    ret.append(self.autocastcheck(inequality, 'float'))
                     return ret
             # This is basically a copy/paste of the Parse_inequality handler
             ltype = inequality.t
@@ -856,10 +861,10 @@ class parser(object):
             return nr(nt=CONST, t='integer', value=1 if tok0 == 'TRUE' else 0)
         if tok0 == '<':
             self.NextToken()
-            val = [self.Parse_expression()]
+            val = [self.autocastcheck(self.Parse_expression(), 'float')]
             self.expect(',')
             self.NextToken()
-            val.append(self.Parse_expression())
+            val.append(self.autocastcheck(self.Parse_expression(), 'float'))
             self.expect(',')
             self.NextToken()
 
