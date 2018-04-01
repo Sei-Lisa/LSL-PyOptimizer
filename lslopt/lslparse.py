@@ -193,6 +193,13 @@ class EParseInvalidBackslash(EParse):
             u"Preprocessor directive can't end in backslash."
             u" Activate the preprocessor or put everything in the same line.")
 
+class EParseInvalidLabelOpt(EParse):
+    def __init__(self, parser):
+        super(EParseInvalidLabelOpt, self).__init__(parser,
+            u"When optimization is active, a label can't be the immediate"
+            u" child of a 'for', 'if', 'while' or 'do'. Disable optimization"
+            u" or rewrite the code in some other way.")
+
 class EInternal(Exception):
     """This exception is a construct to allow a different function to cause an
     immediate return of EOF from parser.GetToken().
@@ -1688,6 +1695,8 @@ list lazy_list_set(list L, integer i, list v)
             return nr(nt=';', t=None)
 
         if tok0 == '@':
+            if not AllowDecl and self.forbidlabels:
+                raise EParseInvalidLabelOpt(self)
             self.NextToken()
             self.expect('IDENT')
             name = self.tok[1]
@@ -2761,6 +2770,12 @@ list lazy_list_set(list L, integer i, list v)
 
         # Prettify a source file
         self.prettify = 'prettify' in options
+
+        # We've decided to ditch support for optimization when the code
+        # includes a label as the immediate child of FOR, IF, DO or WHILE.
+        # If optimization is on, such a label will raise an error. That
+        # coding pattern is normally easy to work around anyway.
+        self.forbidlabels = 'optimize' in options
 
         # Symbol table:
         # This is a list of all local and global symbol tables.

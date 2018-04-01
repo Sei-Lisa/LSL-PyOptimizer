@@ -24,6 +24,7 @@ from lslfuncs import ZERO_VECTOR, ZERO_ROTATION
 import math
 from lslfuncopt import OptimizeFunc, OptimizeArgs, FuncOptSetup
 
+# TODO: Remove special handling of @ within IF,WHILE,FOR,DO
 
 class foldconst(object):
 
