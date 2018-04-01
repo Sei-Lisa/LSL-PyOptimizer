@@ -971,7 +971,7 @@ void llMakeSmoke( integer particles, float scale, float vel, float lifetime, flo
 - delay 0.1
 
 integer llManageEstateAccess( integer action, key id )
-# TODO: Find what happens on invalid action codes, to see if they are SEF.
+# not SEF (generates errors on invalid action or key)
 - min 0
 - max 1
 
