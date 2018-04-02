@@ -378,7 +378,7 @@ class deadcode(object):
         # NOTE: Should not depend on 'Loc', since the nodes that are the
         # destination of 'Loc' are renumbered as we delete stuff from globals.
 
-        index = int(curnode.nt in self.assign_ops) # don't recurse into a lvalue
+        index = int(curnode.nt in self.assign_ops) # don't recurse into lvalues
 
         while index < len(curnode.ch):
             node = curnode.ch[index]
@@ -483,9 +483,6 @@ class deadcode(object):
         # sophisticated (yet).
 
         # TODO: Inlining of functions that are a single 'return' line.
-        # TODO: Remove empty events if they are side effect-free.
-        # Note that e.g. touch/* events are not SEF, because their presence
-        # causes the hand to be shown, so we need a list of SEF events.
 
         if lslfuncs.lslcommon.IsCalc:
             # Do nothing if in calculator mode (there's no default event
@@ -494,6 +491,7 @@ class deadcode(object):
 
         statedef = self.tree[self.symtab[0]['default']['Loc']]
         assert statedef.nt == 'STDEF' and statedef.name == 'default'
+
         self.MarkReferences(statedef)
 
         # Track removal of global lines, to reasign locations later.
