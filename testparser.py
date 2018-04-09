@@ -128,7 +128,7 @@ class Test02_Parser(UnitTestCase):
         self.assertRaises(EParseFunctionMismatch, self.parser.parse, '''f(integer i){f(f(1));}''')
         self.assertRaises(EParseFunctionMismatch, self.parser.parse, '''f(integer i){f();}''')
         self.assertRaises(EParseDeclarationScope, self.parser.parse, '''f(){if (1) integer i;}''')
-        self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){[f()];}''')
+        self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){[f()];}''', ('optimize',))
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){3.||2;}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){3||2.;}''')
         self.assertRaises(EParseTypeMismatch, self.parser.parse, '''f(){3.|2;}''')
@@ -185,6 +185,9 @@ class Test02_Parser(UnitTestCase):
 
         self.assertRaises(EParseUndefined, self.parser.parse, '''key a=b;key b;default{timer(){}}''',
             ['extendedglobalexpr'])
+
+        self.parser.parse('''f(){[f()];}default{timer(){}}''')
+
         # Force a list constant down its throat, to test coverage of LIST_VALUE
         self.parser.constants['LISTCONST']=[1,2,3]
         print self.outscript.output(self.parser.parse('default{timer(){LISTCONST;}}'))

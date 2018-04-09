@@ -1628,6 +1628,9 @@ list lazy_list_set(list L, integer i, list v)
         if self.tok[0] not in (']', ')', ';'):
             while True:
                 expr = self.Parse_expression()
+                if expr.nt == 'SUBIDX' and expr.t is None:
+                    # Don't accept an untyped lazy list in expression lists
+                    raise EParseTypeMismatch(self)
                 if False is not expected_types is not None:
                     if idx >= len(expected_types):
                         raise EParseFunctionMismatch(self)
@@ -1635,7 +1638,8 @@ list lazy_list_set(list L, integer i, list v)
                         expr = self.autocastcheck(expr, expected_types[idx]);
                     except EParseTypeMismatch:
                         raise EParseFunctionMismatch(self)
-                elif expected_types is False:  # don't accept void expressions
+                elif expected_types is False and self.optenabled:
+                    # don't accept void expressions if optimization is on
                     if expr.t not in types:
                         raise EParseTypeMismatch(self)
                 idx += 1
@@ -1695,7 +1699,7 @@ list lazy_list_set(list L, integer i, list v)
             return nr(nt=';', t=None)
 
         if tok0 == '@':
-            if not AllowDecl and self.forbidlabels:
+            if not AllowDecl and self.optenabled:
                 raise EParseInvalidLabelOpt(self)
             self.NextToken()
             self.expect('IDENT')
@@ -2775,7 +2779,7 @@ list lazy_list_set(list L, integer i, list v)
         # includes a label as the immediate child of FOR, IF, DO or WHILE.
         # If optimization is on, such a label will raise an error. That
         # coding pattern is normally easy to work around anyway.
-        self.forbidlabels = 'optimize' in options
+        self.optenabled = 'optimize' in options
 
         # Symbol table:
         # This is a list of all local and global symbol tables.
