@@ -456,18 +456,18 @@ def InternalTypecast(val, out, InList, f32):
             if match is None:
                 return 0.0
             if match.group(1):
-                ret =  F32(float.fromhex(match.group(0)), f32)
+                ret =  float.fromhex(match.group(0))
             elif match.group(2):
                 # (float)"-nan" produces NaN instead of Indet, even though
                 # (vector)"<-nan,0,0>" produces <Indet, 0., 0.>. Go figure.
                 ret = NaN
             else:
-                ret = F32(float(match.group(0)), f32)
+                ret = float(match.group(0))
             if not lslcommon.LSO and abs(ret) < 1.1754943508222875e-38:
                 # Mono doesn't return denormals when using (float)"val"
                 # (but it returns them when using (vector)"<val,...>")
                 ret = 0.0
-            return ret
+            return F32(ret, f32)
         if out == int:
             match = int_re.search(val)
             if match is None:
