@@ -990,6 +990,10 @@ void llModifyLand( integer action, integer brush )
 
 void llMoveToTarget( vector target, float tau )
 
+key llName2Key( string name )
+- SEF
+- return "00000000-0000-0000-0000-000000000000" if name == ""
+
 void llNavigateTo( vector point, list options )
 
 void llOffsetTexture( float u, float v, integer face )
@@ -1115,6 +1119,9 @@ key llRequestURL(  )
 - unstable
 
 key llRequestUsername( key id )
+- unstable
+
+key llRequestUserKey( string name )
 - unstable
 
 void llResetAnimationOverride( string anim_state )
