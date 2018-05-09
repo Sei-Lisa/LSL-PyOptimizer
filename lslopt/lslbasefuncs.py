@@ -463,7 +463,7 @@ def InternalTypecast(val, out, InList, f32):
                 ret = NaN
             else:
                 ret = float(match.group(0))
-            if not lslcommon.LSO and abs(ret) < 1.1754943508222875e-38:
+            if not lslcommon.LSO and abs(ret) < 1.1754943157898259e-38:
                 # Mono doesn't return denormals when using (float)"val"
                 # (but it returns them when using (vector)"<val,...>")
                 ret = 0.0
