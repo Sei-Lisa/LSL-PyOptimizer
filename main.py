@@ -218,6 +218,7 @@ Usage: {progname}
     [--assetid=<UUID>]        * specify the asset UUID of the script
     [--shortname=<name>]      * specify the script's short file name
     [--prettify]                Prettify source file. Disables all -O options.
+    [--bom]                     Prefix script with a UTF-8 byte-order mark
     filename                    input file
 
 Options marked with * are used to define the preprocessor macros __AGENTID__,
@@ -384,7 +385,7 @@ def main(argv):
     try:
         opts, args = getopt.gnu_getopt(argv[1:], 'hO:o:p:P:HTyb:L:',
             ('optimizer-options=', 'help', 'version', 'output=', 'header',
-            'timestamp', 'python-exceptions', 'prettify',
+            'timestamp', 'python-exceptions', 'prettify', 'bom',
             'preproc=', 'precmd=', 'prearg=', 'prenodef', 'preshow',
             'avid=', 'avname=', 'assetid=', 'shortname=', 'builtins='
             'libdata='))
@@ -407,6 +408,7 @@ def main(argv):
     preshow = False
     raise_exception = False
     prettify = False
+    bom = False
     builtins = None
     libdata = None
 
@@ -509,6 +511,9 @@ def main(argv):
 
         elif opt == '--prettify':
             prettify = True
+
+        elif opt == '--bom':
+            bom = True
     del opts
 
     if prettify:
@@ -683,6 +688,9 @@ def main(argv):
             del outs, ts
 
         del script_header, script_timestamp
+
+        if bom:
+            script = b'\xEF\xBB\xBF' + script
 
         if outfile == '-':
             sys.stdout.write(script)
