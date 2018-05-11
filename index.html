@@ -461,7 +461,9 @@ but this will cause an error:
 <pre><code><span>python main.py --bom myscript.lsl | clip</span>
 </code></pre>
 
-<p>to copy the optimized output to the clipboard. Under OS X, <code>pbcopy</code> does the same as <code>xclip</code> and <code>clip</code>.</p>
+<p>to copy the optimized output to the clipboard. Under <em>OS X</em>, <code>pbcopy</code> does the same as <code>xclip</code> and <code>clip</code>.</p>
+
+<p>The <code>clip</code> application does not recognize the byte order mark, therefore <em>Windows</em> users may need to execute <code>chcp 65001</code> before using the optimizer, to switch their console to UTF-8 and make the <code>clip</code> program work.</p>
 
 <p>An external preprocessor is supported. If your system has a GNU C Compiler suite already installed, then the <code>cpp</code> that comes with it (or <code>gcc</code> adding the <code>-E</code> option) should be enough. If you don't have it, the recommended preprocessor is <em>mcpp</em>, because it's a standalone executable, easy to install. Download it from <a href="http://mcpp.sourceforge.net/download.html">http://mcpp.sourceforge.net/download.html</a>, unpack the executable somewhere in the system path (or specify the path to the executable every time with the <code>--precmd</code> option of the program) and you're ready to go.</p>
 
