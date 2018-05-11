@@ -443,20 +443,22 @@ but this will cause an error:
 
 <p>This program is designed to work as a filter. It can read from standard input if the file name argument is "-", and it can (and does by default) output the result to standard output. Any errors and warnings go to standard error always, to not interfere with the script being output.</p>
 
-<p>Running it by hand to optimize your scripts can be cumbersome. The intention is for it to act as a filter that is transparent to the user; however, as of this writing there's no support for any viewer or IDE, as it is still a young project. Run it without parameters to see the invocation help, for example with <code>python main.py</code>. Redirect the output to a file if you want to store the result, possibly to open it with an editor and copy it to the clipboard. Or under <em>X Window</em>, if you install the package <kbd><em>xclip</em></kbd>, you can pipe the output directly to <code>xclip -quiet -selection clipboard</code> to copy it to the clipboard, rather than using a file, so you can paste it into the viewer. Examples:</p>
+<p>The input script should be encoded in UTF-8. If you're using an editor, make sure it saves with that encoding.</p>
 
-<pre><code><span>python main.py myscript.lsl | xclip -quiet -selection clipboard</span>
+<p>Running it by hand to optimize your scripts can be cumbersome. The intention is for it to act as a filter that is transparent to the user; however, as of this writing there's no support for any viewer or IDE, as it is still a young project. Run it without parameters to see the invocation help, for example with <code>python main.py</code>. Redirect the output to a file if you want to store the result, possibly to open it with an editor and copy it to the clipboard. Or under <em>X Window</em>, if you install the package <kbd><em>xclip</em></kbd>, you can pipe the output directly to <code>xclip -quiet -selection clipboard</code> to copy it to the clipboard, rather than using a file, so you can paste it into the viewer. It's a good idea to use the option <code>--bom</code> to include a UTF-8 byte order mark that other applications can use to recognize the encoding. Examples:</p>
+
+<pre><code><span>python main.py --bom myscript.lsl | xclip -quiet -selection clipboard</span>
 </code></pre>
 
 <p>will, under <em>X Window</em>, read <code>myscript.lsl</code>, optimize it, and copy the optimized result to the clipboard, ready to be pasted into the viewer.</p>
 
-<pre><code><span>python main.py myscript.lsl -o temp.opt</span>
+<pre><code><span>python main.py --bom myscript.lsl -o temp.opt</span>
 <span>notepad temp.opt</span>
 </code></pre>
 
 <p>will, under any system which has an editor called <code>notepad</code>, read <code>myscript.lsl</code>, optimize it, and write the optimized result to <code>temp.opt</code>, then open it in the editor, enabling you to copy it and paste it into the viewer. Under <em>Windows</em> version <em>Vista</em> and above, there's a command line application called <code>clip</code> that does the same as <code>xclip</code> does for <em>X Window</em>, enabling you to use this:</p>
 
-<pre><code><span>python main.py myscript.lsl | clip</span>
+<pre><code><span>python main.py --bom myscript.lsl | clip</span>
 </code></pre>
 
 <p>to copy the optimized output to the clipboard. Under OS X, <code>pbcopy</code> does the same as <code>xclip</code> and <code>clip</code>.</p>
