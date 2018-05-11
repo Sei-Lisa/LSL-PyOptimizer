@@ -471,7 +471,7 @@ but this will cause an error:
 
 <p>Support for other IDEs like Eclipse is not planned, but the author encourages others to write it. Please notify Sei Lisa if you write one, so that it can be listed in this page.</p>
 
-<p>The program uses two external files. One is <code>builtins.txt</code>, which is in the same format as needed by <a href="https://github.com/pclewis/lslint"><em>lslint</em></a>, and an up-to-date copy can be obtained from the <a href="https://bitbucket.org/Sei_Lisa/kwdb/"><em>kwdb</em></a> project: <a href="https://bitbucket.org/Sei_Lisa/kwdb/raw/tip/outputs/builtins.txt">https://bitbucket.org/Sei_Lisa/kwdb/raw/tip/outputs/builtins.txt</a>. The other is <code>seftable.txt</code>, which is a list of functions that have no side effects (SEF stands for Side-Effect Free), allowing them to be removed (optimized out) if nothing else has side effects in an expression and the result of the expression is not used.</p>
+<p>The program uses two external files. One is <code>builtins.txt</code>, which is in the same format as needed by <a href="https://github.com/makopo/lslint"><em>lslint</em></a>, and an up-to-date copy can be obtained from the <a href="https://bitbucket.org/Sei_Lisa/kwdb/"><em>kwdb</em></a> project: <a href="https://bitbucket.org/Sei_Lisa/kwdb/raw/tip/outputs/builtins.txt">https://bitbucket.org/Sei_Lisa/kwdb/raw/tip/outputs/builtins.txt</a>. The other is <code>fndata.txt</code>, which is a list of LSL functions and events, with some data related to the semantics of each of them, so the optimizer has the possibility of applying more optimizations particular to them.</p>
 
 <hr>
 
