@@ -2457,6 +2457,7 @@ list lazy_list_set(list L, integer i, list v)
                         # Use LSL's dull global expression.
                         value = self.Parse_simple_expr()
                         self.expect(';')
+                        value.Simple = True
                 else:  # must be semicolon
                     value = None
 
