@@ -116,7 +116,7 @@ class foldconst(object):
         labels, and applies to a block's statement list, not to a node.
         """
         maybe_label = ';' if labels else '@'
-        if maybe_label != node.nt != ';':
+        if maybe_label != node.nt != ';' and not node.SEF:
             if node.nt == '{}':
                 for subnode in node.ch:
                     # Labels embedded in {} are not reachable. They do nothing.
@@ -1675,18 +1675,26 @@ class foldconst(object):
             # out anyway. Otherwise we just don't know if it may be infinite,
             # even if every component is SEF.
 
-            self.ExpandCondition(child, 0)
-            self.FoldTree(child, 0)
-            self.FoldCond(child, 0)
-            if child[0].nt == 'CONST':
-                # See if the whole WHILE can be eliminated.
-                if not lslfuncs.cond(child[0].value):
-                    # Whole statement can be removed.
-                    parent[index] = nr(nt=';', t=None, SEF=True)
-                    return
-            self.FoldTree(child, 1)
-            self.FoldStmt(child, 1)
-            return
+            if self.DoesSomething(child[1]):
+
+                self.ExpandCondition(child, 0)
+                self.FoldTree(child, 0)
+                self.FoldCond(child, 0)
+                if child[0].nt == 'CONST':
+                    # See if the whole WHILE can be eliminated.
+                    if not lslfuncs.cond(child[0].value):
+                        # Whole statement can be removed.
+                        parent[index] = nr(nt=';', t=None, SEF=True)
+                        return
+                self.FoldTree(child, 1)
+                self.FoldStmt(child, 1)
+                return
+
+            # It does nothing - Turn it into a do..while
+            nt = node.nt = 'DO'
+            child[0], child[1] = child[1], child[0]
+
+            # Fall through to optimize as DO..WHILE
 
         if nt == 'DO':
             self.FoldTree(child, 0) # This one is always executed.
