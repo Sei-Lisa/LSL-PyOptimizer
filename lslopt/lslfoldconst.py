@@ -107,7 +107,7 @@ class foldconst(object):
             else:
                 idx += 1
 
-    def DoesSomething(self, node, labels = True):
+    def DoesSomething(self, node, labels = False):
         """Tell if a subtree does something or is just empty statements
         (a pure combination of ';' and '{}'). Labels are the top level are
         considered to do something if labels is True, and vice versa.
@@ -120,7 +120,7 @@ class foldconst(object):
             if node.nt == '{}':
                 for subnode in node.ch:
                     # Labels embedded in {} are not reachable. They do nothing.
-                    if self.DoesSomething(subnode, labels = False):
+                    if self.DoesSomething(subnode):
                         return True
             else:
                 return True
@@ -1526,8 +1526,8 @@ class foldconst(object):
             self.FoldTree(child, 0)
 
             # Test if the event is empty and SEF, and remove it if so.
-            if (not hasattr(node, 'scope') and not self.DoesSomething(child[0],
-                labels = False) and 'SEF' in self.events[node.name]
+            if (not hasattr(node, 'scope') and not self.DoesSomething(child[0])
+                and 'SEF' in self.events[node.name]
                ):
                 # Delete ourselves.
                 del parent[index]
@@ -1602,33 +1602,15 @@ class foldconst(object):
                 if lslfuncs.cond(child[0].value):
                     self.FoldTree(child, 1)
                     self.FoldStmt(child, 1)
-                    if len(child) == 3 and child[2].nt == '@':
-                        # Corner case. The label is in the same scope as
-                        # this statement, so it must be preserved just in
-                        # case it's jumped to.
-                        return
                     parent[index] = child[1]
                     return
                 elif len(child) == 3:
                     self.FoldTree(child, 2)
                     self.FoldStmt(child, 2)
-                    if child[1].nt == '@':
-                        # Corner case. The label is in the same scope as this
-                        # statement, so it must be preserved just in case it's
-                        # jumped to.
-                        if not self.DoesSomething(child[2]):
-                            del child[2]
-                        return
                     parent[index] = child[2]
                     return
                 else:
                     # No ELSE branch, replace the statement with an empty one.
-                    if child[1].nt == '@':
-                        # Corner case. The label is in the same scope as this
-                        # statement, so it must be preserved just in case it's
-                        # jumped to.
-                        parent[index] = child[1]
-                        return
                     parent[index] = nr(nt=';', t=None, SEF=True)
                     return
             else:
@@ -1638,14 +1620,7 @@ class foldconst(object):
                     self.FoldTree(child, 2)
                     self.FoldStmt(child, 2)
                     # Check if it makes sense to swap if and else branches
-                    # (but don't if the else branch is an elseless 'if'
-                    # with a label, as it will be wrapped in {} making it
-                    # become out of scope)
-                    if (self.DoesSomething(child[2])
-                        and (child[2].nt != 'IF'
-                             or len(child[2].ch) == 3
-                             or child[2].ch[1].nt != '@')
-                       ):
+                    if (self.DoesSomething(child[2])):
                         # Check if we can gain something by negating the
                         # expression.
                         # Swap 'if' and 'else' branch when the condition has
@@ -1661,8 +1636,7 @@ class foldconst(object):
                             child[0].nt = '^'
                             child[1], child[2] = child[2], child[1]
                     # Re-test just in case we swapped in the previous check.
-                    if (not self.DoesSomething(child[2])
-                        and child[1].nt != '@'):
+                    if not self.DoesSomething(child[2]):
                         # no point in "... else ;" - remove else branch
                         del child[2]
                 if not self.DoesSomething(child[1]):
@@ -1706,24 +1680,12 @@ class foldconst(object):
             self.FoldCond(child, 0)
             if child[0].nt == 'CONST':
                 # See if the whole WHILE can be eliminated.
-                if lslfuncs.cond(child[0].value):
-                    # Endless loop which must be kept.
-                    # Recurse on the statement.
-                    self.FoldTree(child, 1)
-                    self.FoldStmt(child, 1)
-                else:
-                    if child[1].nt == '@':
-                        # Corner case. The label is in the same scope as this
-                        # statement, so it must be preserved just in case it's
-                        # jumped to.
-                        parent[index] = child[1]
-                    else:
-                        # Whole statement can be removed.
-                        parent[index] = nr(nt=';', t=None, SEF=True)
+                if not lslfuncs.cond(child[0].value):
+                    # Whole statement can be removed.
+                    parent[index] = nr(nt=';', t=None, SEF=True)
                     return
-            else:
-                self.FoldTree(child, 1)
-                self.FoldStmt(child, 1)
+            self.FoldTree(child, 1)
+            self.FoldStmt(child, 1)
             return
 
         if nt == 'DO':
