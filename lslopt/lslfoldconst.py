@@ -1562,18 +1562,54 @@ class foldconst(object):
         if nt == '{}':
             # Remove SEF statements, and mark as SEF if it ends up empty
             idx = 0
-            issef = True
-            while idx < len(child):
+            nchild = len(child)
+            while idx < nchild:
                 self.FoldTree(child, idx)
                 self.FoldStmt(child, idx)
                 if child[idx].SEF:
                     # SEF statements can be removed
                     del child[idx]
+                    nchild -= 1
                 else:
                     idx += 1
-                    issef = False
-            if issef:
-                node.SEF = True
+            # Make another pass to remove JUMPs to the next statement
+            changed = True  # Allow entering the loop
+            while changed:
+                changed = False
+                idx = 0
+                while idx < nchild:
+                    advance = 1
+                    if child[idx].nt == 'JUMP':
+                        idx2 = idx + 1
+                        while idx2 < nchild:
+                            # Search for a label that is the destination of this
+                            # JUMP, skipping other labels
+                            if child[idx2].nt != '@':
+                                break
+                            if (child[idx].scope == child[idx2].scope
+                                and child[idx].name == child[idx2].name
+                               ):
+                                sym = self.symtab[child[idx].scope][child[idx].name]
+                                # remove the JUMP
+                                del child[idx]
+                                advance = 0
+                                changed = True
+                                idx2 -= 1  # it has scrolled
+                                nchild -= 1
+                                # remove reference to label
+                                assert(sym['ref'])
+                                sym['ref'] -= 1
+                                if sym['ref'] == 0:
+                                    # No longer referenced - delete label too
+                                    del child[idx2]
+                                    nchild -= 1
+                                    break
+                            idx2 += 1
+                        del idx2
+                    idx += advance
+
+            # We're SEF if we're empty, as we've removed all SEF statements
+            node.SEF = nchild == 0
             return
 
         if nt == 'IF':
