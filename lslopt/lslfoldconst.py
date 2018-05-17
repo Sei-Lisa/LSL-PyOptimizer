@@ -1578,17 +1578,18 @@ class foldconst(object):
             return
 
         if nt == '{}':
+            # Remove SEF statements, and mark as SEF if it ends up empty
             idx = 0
             issef = True
             while idx < len(child):
                 self.FoldTree(child, idx)
                 self.FoldStmt(child, idx)
-                issef = issef and child[idx].SEF
-                if child[idx].nt == ';' \
-                     or child[idx].nt == '{}' and not child[idx].ch:
+                if child[idx].SEF:
+                    # SEF statements can be removed
                     del child[idx]
                 else:
                     idx += 1
+                    issef = False
             if issef:
                 node.SEF = True
             return
