@@ -1712,12 +1712,13 @@ list lazy_list_set(list L, integer i, list v)
                 if name in self.locallabels or self.shrinknames:
                     # Generate a new unique name and attach it to the symbol.
                     unique = self.GenerateLabel()
-                    self.AddSymbol('l', self.scopeindex, name, NewName=unique)
+                    self.AddSymbol('l', self.scopeindex, name, NewName=unique,
+                        ref=0)
                 else:
                     # Use the existing name. Faster and more readable.
                     unique = name
                     self.locallabels.add(name)
-                    self.AddSymbol('l', self.scopeindex, name)
+                    self.AddSymbol('l', self.scopeindex, name, ref=0)
 
             else:
                 # Duplicate labels disallowed.
@@ -1726,7 +1727,7 @@ list lazy_list_set(list L, integer i, list v)
                 if name in self.locallabels:
                     raise EParseDuplicateLabel(self)
                 self.locallabels.add(name)
-                self.AddSymbol('l', self.scopeindex, name)
+                self.AddSymbol('l', self.scopeindex, name, ref=0)
             self.NextToken()
             self.expect(';')
             self.NextToken()
@@ -1745,6 +1746,7 @@ list lazy_list_set(list L, integer i, list v)
                     jumpnode))
             else:
                 jumpnode.scope = sym['Scope']
+                sym['ref'] += 1
             self.NextToken()
             self.expect(';')
             self.NextToken()
@@ -1833,8 +1835,11 @@ list lazy_list_set(list L, integer i, list v)
                 # if (a) { while (b) { ... jump label; } @label; }
                 self.PushScope()
 
-                self.breakstack.append([self.GenerateLabel(), self.scopeindex, False])
-                self.continuestack.append([self.GenerateLabel(), None, False])
+                self.breakstack.append([self.GenerateLabel(), self.scopeindex,
+                    0])
+                # Scope still unknown; if a block is opened, Parse_code_block()
+                # will fill it in.
+                self.continuestack.append([self.GenerateLabel(), None, 0])
             self.expect('(')
             self.NextToken()
             condition = self.Parse_expression()
@@ -1862,13 +1867,13 @@ list lazy_list_set(list L, integer i, list v)
                     assert ret.ch[1].nt == '{}'
                     ret.ch[1].ch.append(nr(nt='@', t=None, name=last[0],
                         scope=last[1]))
-                    self.AddSymbol('l', last[1], last[0])
+                    self.AddSymbol('l', last[1], last[0], ref=last[2])
 
                 last = self.breakstack.pop()
                 if last[2]:
                     ret = nr(nt='{}', t=None, ch=[ret, nr(nt='@', t=None,
                         name=last[0], scope=last[1])])
-                    self.AddSymbol('l', last[1], last[0])
+                    self.AddSymbol('l', last[1], last[0], ref=last[2])
                 self.PopScope()
             return ret
 
@@ -1877,14 +1882,19 @@ list lazy_list_set(list L, integer i, list v)
             if self.breakcont:
                 self.PushScope()
 
-                self.breakstack.append([self.GenerateLabel(), self.scopeindex, False])
-                self.continuestack.append([self.GenerateLabel(), None, False])
+                self.breakstack.append([self.GenerateLabel(), self.scopeindex,
+                    0])
+                # Scope still unknown; if a block is opened, Parse_code_block()
+                # will fill it in.
+                self.continuestack.append([self.GenerateLabel(), None, 0])
             if self.breakcont and self.tok[0] == '@':
                 self.PopScope()
-                stmt = self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)
+                stmt = self.Parse_statement(ReturnType, AllowStSw = True,
+                    InsideLoop = True)
                 self.PushScope()
             else:
-                stmt = self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)
+                stmt = self.Parse_statement(ReturnType, AllowStSw = True,
+                    InsideLoop = True)
             self.expect('WHILE')
             self.NextToken()
             self.expect('(')
@@ -1901,13 +1911,13 @@ list lazy_list_set(list L, integer i, list v)
                     assert ret.ch[0].nt == '{}'
                     ret.ch[0].ch.append(nr(nt='@', t=None, name=last[0],
                         scope=last[1]))
-                    self.AddSymbol('l', last[1], last[0])
+                    self.AddSymbol('l', last[1], last[0], ref=last[2])
 
                 last = self.breakstack.pop()
                 if last[2]:
                     ret = nr(nt='{}', t=None, ch=[ret, nr(nt='@', t=None,
                         name=last[0], scope=last[1])])
-                    self.AddSymbol('l', last[1], last[0])
+                    self.AddSymbol('l', last[1], last[0], ref=last[2])
                 self.PopScope()
             return ret
 
@@ -1916,8 +1926,11 @@ list lazy_list_set(list L, integer i, list v)
             if self.breakcont:
                 self.PushScope()
 
-                self.breakstack.append([self.GenerateLabel(), self.scopeindex, False])
-                self.continuestack.append([self.GenerateLabel(), None, False])
+                self.breakstack.append([self.GenerateLabel(), self.scopeindex,
+                    0])
+                # Scope still unknown; if a block is opened, Parse_code_block()
+                # will fill it in.
+                self.continuestack.append([self.GenerateLabel(), None, 0])
             self.expect('(')
             self.NextToken()
             initializer = self.Parse_optional_expression_list()
@@ -1931,10 +1944,12 @@ list lazy_list_set(list L, integer i, list v)
             self.NextToken()
             if self.breakcont and self.tok[0] == '@':
                 self.PopScope()
-                stmt = self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)
+                stmt = self.Parse_statement(ReturnType, AllowStSw = True,
+                    InsideLoop = True)
                 self.PushScope()
             else:
-                stmt = self.Parse_statement(ReturnType, AllowStSw = True, InsideLoop = True)
+                stmt = self.Parse_statement(ReturnType, AllowStSw = True,
+                    InsideLoop = True)
             ret = nr(nt='FOR', t=None,
                 ch=[nr(nt='EXPRLIST', t=None, ch=initializer),
                       condition,
@@ -1947,13 +1962,13 @@ list lazy_list_set(list L, integer i, list v)
                     assert ret.ch[3].nt == '{}'
                     ret.ch[3].ch.append(nr(nt='@', t=None, name=last[0],
                         scope=last[1]))
-                    self.AddSymbol('l', last[1], last[0])
+                    self.AddSymbol('l', last[1], last[0], ref=last[2])
 
                 last = self.breakstack.pop()
                 if last[2]:
                     ret = nr(nt='{}', t=None, ch=[ret, nr(nt='@', t=None,
                         name=last[0], scope=last[1])])
-                    self.AddSymbol('l', last[1], last[0])
+                    self.AddSymbol('l', last[1], last[0], ref=last[2])
                 self.PopScope()
             return ret
 
@@ -1965,7 +1980,8 @@ list lazy_list_set(list L, integer i, list v)
             self.expect(')')
             self.NextToken()
             brk = self.GenerateLabel()
-            self.breakstack.append([brk, None, False])
+            # Scope is determined in Parse_code_block()
+            self.breakstack.append([brk, None, 0])
             blk = self.Parse_code_block(ReturnType, AllowStSw = AllowStSw,
                 InsideSwitch = True, InsideLoop = InsideLoop)
             blkscope  = self.breakstack[-1][1]
@@ -1998,14 +2014,14 @@ list lazy_list_set(list L, integer i, list v)
                 if blk[idx].nt == 'CASE':
                     lbl = self.GenerateLabel()
                     switchcaselist.append((lbl, blk[idx].ch[0]))
-                    self.AddSymbol('l', blkscope, lbl)
+                    self.AddSymbol('l', blkscope, lbl, ref=0)
                     blk[idx] = nr(nt='@', t=None, name=lbl, scope=blkscope)
                 elif blk[idx].nt == 'DEFAULTCASE':
                     if switchcasedefault is not None:
                         raise EParseManyDefaults(self)
                     lbl = self.GenerateLabel()
                     switchcasedefault = lbl
-                    self.AddSymbol('l', blkscope, lbl)
+                    self.AddSymbol('l', blkscope, lbl, ref=0)
                     blk[idx] = nr(nt='@', name=lbl, scope=blkscope)
 
             prelude = []
@@ -2023,6 +2039,7 @@ list lazy_list_set(list L, integer i, list v)
                     nr(nt='==', t='integer', ch=[lexpr, rexpr]),
                     nr(nt='JUMP', t=None, name=case[0], scope=blkscope)
                     ]))
+                self.symtab[blkscope][case[0]]['ref'] += 1
 
             if switchcasedefault is None:
                 if self.errmissingdefault:
@@ -2034,7 +2051,6 @@ list lazy_list_set(list L, integer i, list v)
                 # SEF. But we do a preliminary elimination here.
                 if self.does_something(blk):
                     switchcasedefault = brk
-                    self.breakstack[-1][2] = True
             else:
                 # Check if no code up to the default label does anything.
                 # If so, remove the label and don't generate the jump.
@@ -2052,10 +2068,16 @@ list lazy_list_set(list L, integer i, list v)
             if switchcasedefault is not None:
                 prelude.append(nr(nt='JUMP', t=None, name=switchcasedefault,
                     scope=blkscope))
+                if switchcasedefault == brk:
+                    # add a reference to it in the break stack
+                    self.breakstack[-1][2] += 1
+                else:
+                    self.symtab[blkscope][switchcasedefault]['ref'] += 1
+
             last = self.breakstack.pop()
             if last[2]:
                 blk.append(nr(nt='@', name=brk, scope=blkscope))
-                self.AddSymbol('l', blkscope, brk)
+                self.AddSymbol('l', blkscope, brk, ref=last[2])
             return nr(nt='{}', t=None, ch=prelude + blk)
 
         if tok0 == 'CASE':
@@ -2104,7 +2126,7 @@ list lazy_list_set(list L, integer i, list v)
             self.expect(';')
             self.NextToken()
             try:
-                self.breakstack[n][2] = True
+                self.breakstack[n][2] += 1
             except IndexError:
                 raise EParseInvalidBrkContArg(self)
             return nr(nt='JUMP', t=None, name=self.breakstack[n][0],
@@ -2133,12 +2155,12 @@ list lazy_list_set(list L, integer i, list v)
                     # Transform to while(cond) while(cond) while(cond) break 2;
                     # which is equivalent since there are no {}.
                     n += 1  # e.g. -3 -> -2
-                    self.breakstack[n][2] = True  # mark the break as used
+                    self.breakstack[n][2] += 1  # add a reference to the break
                     return nr(nt='JUMP', t=None, name=self.breakstack[n][0],
                         scope=self.breakstack[n][1])
             except IndexError:
                 raise EParseInvalidBrkContArg(self)
-            self.continuestack[n][2] = True
+            self.continuestack[n][2] += 1
             return nr(nt='JUMP', t=None, name=self.continuestack[n][0],
                 scope=self.continuestack[n][1])
 
@@ -2544,6 +2566,7 @@ list lazy_list_set(list L, integer i, list v)
                 self.errorpos = tgt[2]
                 raise EParseUndefined(self)
             tgt[3].scope = sym['Scope']
+            sym['ref'] += 1
 
         del self.jump_lookups  # Finished with it.
 

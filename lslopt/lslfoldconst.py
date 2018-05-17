@@ -107,25 +107,6 @@ class foldconst(object):
             else:
                 idx += 1
 
-    def DoesSomething(self, node, labels = False):
-        """Tell if a subtree does something or is just empty statements
-        (a pure combination of ';' and '{}'). Labels are the top level are
-        considered to do something if labels is True, and vice versa.
-
-        Not to be confused with lslparse.does_something which always includes
-        labels, and applies to a block's statement list, not to a node.
-        """
-        maybe_label = ';' if labels else '@'
-        if maybe_label != node.nt != ';' and not node.SEF:
-            if node.nt == '{}':
-                for subnode in node.ch:
-                    # Labels embedded in {} are not reachable. They do nothing.
-                    if self.DoesSomething(subnode):
-                        return True
-            else:
-                return True
-        return False
-
     def CompareTrees(self, node1, node2):
         """Try to compare two subtrees to see if they are equivalent."""
         # They MUST be SEF and stable.
@@ -186,8 +167,6 @@ class foldconst(object):
     def FoldStmt(self, parent, index):
         """Simplify a statement."""
         node = parent[index]
-        if node.nt == 'EXPR':
-            node = node.ch[0]
         # If the statement is side-effect-free, remove it as it does nothing.
         if node.SEF:
             # When a statement is side-effect free, it does nothing except
@@ -205,6 +184,8 @@ class foldconst(object):
             # Other unary and binary operators are side effect-free.
             parent[index] = nr(nt=';', t=None, SEF=True)
             return
+        if node.nt == 'EXPR':
+            node = node.ch[0]
         # Post-increments take more space than pre-increments.
         if node.nt in ('V++', 'V--'):
             node.nt = '++V' if node.nt == 'V++' else '--V';
@@ -1525,14 +1506,15 @@ class foldconst(object):
                 self.CurEvent = node.name
             self.FoldTree(child, 0)
 
-            # Test if the event is empty and SEF, and remove it if so.
-            if (not hasattr(node, 'scope') and not self.DoesSomething(child[0])
+            # Test if the event is SEF and does nothing, and remove it if so.
+            if (not hasattr(node, 'scope') and child[0].SEF
                 and 'SEF' in self.events[node.name]
                ):
                 # Delete ourselves.
                 del parent[index]
                 return
 
+            # Delete trailing bare RETURNs.
             # TODO: This works, but analysis of code paths is DCR's thing
             # and this is incomplete, e.g. x(){{return;}} is not detected.
             while child[0].ch:
@@ -1621,7 +1603,7 @@ class foldconst(object):
                     self.FoldTree(child, 2)
                     self.FoldStmt(child, 2)
                     # Check if it makes sense to swap if and else branches
-                    if (self.DoesSomething(child[2])):
+                    if not child[2].SEF:
                         # Check if we can gain something by negating the
                         # expression.
                         # Swap 'if' and 'else' branch when the condition has
@@ -1637,10 +1619,10 @@ class foldconst(object):
                             child[0].nt = '^'
                             child[1], child[2] = child[2], child[1]
                     # Re-test just in case we swapped in the previous check.
-                    if not self.DoesSomething(child[2]):
+                    if child[2].SEF:
                         # no point in "... else ;" - remove else branch
                         del child[2]
-                if not self.DoesSomething(child[1]):
+                if child[1].SEF:
                     # if (X) ;  ->  X;
                     if len(child) == 2:
                         parent[index] = nr(nt='EXPR', t=child[0].t,
@@ -1676,7 +1658,7 @@ class foldconst(object):
             # out anyway. Otherwise we just don't know if it may be infinite,
             # even if every component is SEF.
 
-            if self.DoesSomething(child[1]):
+            if not child[1].SEF:
 
                 self.ExpandCondition(child, 0)
                 self.FoldTree(child, 0)
@@ -1822,7 +1804,12 @@ class foldconst(object):
             node.SEF = True
             return
 
-        if nt in ('JUMP', '@', 'V++', 'V--', '--V', '++V', 'LAMBDA'):
+        if nt == '@':
+            # SEF if there are no JUMPs jumping to it
+            node.SEF = not self.symtab[node.scope][node.name]['ref']
+            return
+
+        if nt in ('JUMP', 'V++', 'V--', '--V', '++V', 'LAMBDA'):
             # Except LAMBDA, these all have side effects, as in, can't be
             # eliminated as statements.
             # LAMBDA can't be eliminated without scrolling Loc's.

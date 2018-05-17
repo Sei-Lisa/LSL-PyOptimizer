@@ -384,6 +384,12 @@ class deadcode(object):
             node = curnode.ch[index]
 
             if not hasattr(node, 'X'):
+                if curnode.ch[index].nt == 'JUMP':
+                    # Decrease label reference count
+                    scope = curnode.ch[index].scope
+                    name = curnode.ch[index].name
+                    assert self.symtab[scope][name]['ref'] > 0
+                    self.symtab[scope][name]['ref'] -= 1
                 del curnode.ch[index]
                 continue
 
