@@ -688,7 +688,20 @@ class foldconst(object):
             subexpr = child[0]
             node.SEF = subexpr.SEF
 
-            # TODO: ~-~-~-expr  ->  expr + -3  (see NEG for similar exp + 3)
+            if child[0].nt == 'NEG':
+                track = child[0].ch[0]
+                const = -1
+                while track.nt == '~' and track.ch[0].nt == 'NEG':
+                    const -= 1
+                    track = track.ch[0].ch[0]
+                if const < -2:
+                    # ~-~-~-expr  ->  expr + (-3)
+                    node = nr(nt='CONST', t='integer', SEF=True, value=const)
+                    node = nr(nt='+', t='integer', ch=[node, track],
+                        SEF=track.SEF)
+                    parent[index] = node
+                    self.FoldTree(parent, index)
+                    return
 
             if subexpr.nt == '~':
                 # Double negation: ~~expr
