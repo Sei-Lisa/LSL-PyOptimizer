@@ -857,9 +857,11 @@ class foldconst(object):
                     return
 
                 # Can't be key, as no combo of addition operands returns key
-                # All these types evaluate to boolean False when they are
-                # the neutral addition element.
+                assert optype != 'key'
+
                 if optype in ('string', 'float', 'list'):
+                    # All these types evaluate to boolean False when they are
+                    # the neutral addition element.
                     if lnt == 'CONST' and not lval.value:
                         # 0. + expr  ->  expr
                         # "" + expr  ->  expr
@@ -928,12 +930,15 @@ class foldconst(object):
                                     type(lval.value)]
                             return
 
+                    # Nothing else to do with addition of float, string or list
                     return
 
                 # Must be two integers. This allows for a number of
                 # optimizations. First the most obvious ones.
+                assert optype == 'integer'  # just to make sure
 
                 if lnt == 'CONST' and lval.value == 0:
+                    # 0 + x = x
                     parent[index] = rval
                     return
 
