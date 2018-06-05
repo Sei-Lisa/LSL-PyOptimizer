@@ -108,7 +108,9 @@ class foldconst(object):
                 idx += 1
 
     def CompareTrees(self, node1, node2):
-        """Try to compare two subtrees to see if they are equivalent."""
+        """Try to compare two subtrees to see if they are equivalent.
+
+        Returns True if they are."""
         # They MUST be SEF and stable.
         if not node1.SEF or not node2.SEF:
             return False
@@ -930,6 +932,13 @@ class foldconst(object):
                                     type(lval.value)]
                             return
 
+                    if optype == 'float' and rnt == 'CONST':
+                        # Addition of floats is commutative.
+                        # Put the constant first. May reduce stack.
+                        lval, rval = child[0], child[1] = child[1], child[0]
+                        lnt, rnt = rnt, lnt
+                        ltype, rtype = rtype, ltype
+
                     # Nothing else to do with addition of float, string or list
                     return
 
@@ -937,25 +946,54 @@ class foldconst(object):
                 # optimizations. First the most obvious ones.
                 assert optype == 'integer'  # just to make sure
 
+                # Commutativity: place the constant first; may save stack and
+                # it helps simplifying
+                if rnt == 'CONST':
+                    lval, rval = child[0], child[1] = child[1], child[0]
+                    lnt, rnt = rnt, lnt
+                    ltype, rtype = rtype, ltype
+
                 if lnt == 'CONST' and lval.value == 0:
                     # 0 + x = x
                     parent[index] = rval
                     return
 
-                if rnt == 'CONST' and rval.value == 0:
-                    parent[index] = lval
-                    return
+                if lnt == 'CONST' and rnt == '+' and rval.ch[0].nt == 'CONST':
+                    # We have CONST + (CONST + expr)
+                    # Apply associativity to merge both constants.
 
-                if lnt != 'CONST' != rnt:
-                    # Neither is const. Two chances to optimize.
-                    # 1. -expr + -expr  ->  -(expr + expr) (saves 1 byte)
-                    # 2. lvalue + -lvalue  ->  0
-                    # There may be other possibilities for optimization,
-                    # e.g. (type)ident + -(type)ident but we only do lvalues
-                    # here. Note these are integers, no NaN involved.
-                    # TODO: Compare the subtrees if they are SEF. If they are
-                    # the same subtree, they can cancel out.
-                    #FIXME: ^ That long-standing to-do item should be easy now
+                    # Add the constants
+                    child[0].value = lslfuncs.S32(child[0].value
+                        + rval.ch[0].value)
+                    # Prune the expr and graft it as RHS
+                    child[1] = rval.ch[1]
+
+                    # Re-optimize the result, to possibly apply -~ or ~- if
+                    # appropriate.
+                    return self.FoldTree(parent, index)
+
+                while lnt == 'CONST' and rnt == 'NEG' and rval.ch[0].nt == '~':
+                    child[0].value += 1
+                    rval = child[1] = rval.ch[0].ch[0]
+                    rnt = rval.nt
+                    # rtype doesn't change
+                    assert rval.t == 'integer'
+                    self.FoldTree(parent, index)
+
+                while lnt == 'CONST' and rnt == '~' and rval.ch[0].nt == 'NEG':
+                    lval.value -= 1
+                    rval = child[1] = rval.ch[0].ch[0]
+                    rnt = rval.nt
+                    # rtype doesn't change
+                    assert rval.t == 'integer'
+                    self.FoldTree(parent, index)
+
+                if lnt != 'CONST':
+                    # Neither is const.
+                    # The case expr - expr  ->  0 has been handled earlier
+                    # because it's more general and applies to floats as well.
+
+                    # -expr + -expr  ->  -(expr + expr) (saves 1 byte)
                     if lnt == rnt == 'NEG':
                         node = nr(nt='+', t=optype, ch=[lval.ch[0], rval.ch[0]],
                             SEF=lval.ch[0].SEF and rval.ch[0].SEF)
@@ -963,41 +1001,8 @@ class foldconst(object):
                         parent[index] = node
                         return
 
-                    if lnt == 'NEG':
-                        # Swap to treat always as expr + -expr for simplicity.
-                        lnt, lval, rnt, rval = rnt, rval, lnt, lval
-                    if lnt == 'IDENT' and rnt == 'NEG' and rval.ch[0].nt == 'IDENT' \
-                       and lval.name == rval.ch[0].name:
-                        # Replace with 0
-                        parent[index] = nr(nt='CONST', t=optype, value=0,
-                            SEF=True)
-
                     return
 
-                if lnt == '+' and (lval.ch[0].nt == 'CONST'
-                                   or lval.ch[1].nt == 'CONST'):
-                    # We have expr + const + const or const + expr + const.
-                    # Addition of integers mod 2^32 is associative and
-                    # commutative, so constants can be merged.
-                    if lval.ch[0].nt == 'CONST':
-                        rval.value = lslfuncs.S32(rval.value + lval.ch[0].value)
-                        lval = child[0] = lval.ch[1]
-                    else:
-                        rval.value = lslfuncs.S32(rval.value + lval.ch[1].value)
-                        lval = child[0] = lval.ch[0]
-                    lnt = lval.nt
-
-                if rnt == '+' and (rval.ch[0].nt == 'CONST'
-                                   or rval.ch[1].nt == 'CONST'):
-                    # const + (expr + const) or const + (const + expr)
-                    # same as above, join them
-                    # FIXME: Isn't this covered by the associative sum above?
-
-                    pass # TODO: implement const + (expr + const) or const + (const + expr)
-
-                if rnt == 'CONST':
-                    # Swap the vars to deal with const in lval always
-                    lval, lnt, rval, rnt = rval, rnt, lval, lnt
                 RSEF = rval.SEF
 
                 if lval.value == -1 or lval.value == -2:
