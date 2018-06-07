@@ -1347,27 +1347,27 @@ class foldconst(object):
                         node.ch = [child[a]]
                 return
 
-            #FIXME: Could remove one comparison
-            if nt == '&&' or nt == '||':
-                if nt == '||':
-                    # Expand to its equivalent a || b  ->  !!(a | b)
-                    node = nr(nt='|', t='integer', ch=[child[0], child[1]],
-                        SEF=child[0].SEF and child[1].SEF)
-                    node = nr(nt='!', t='integer', ch=[node], SEF=node.SEF)
-                    node = nr(nt='!', t='integer', ch=[node], SEF=node.SEF)
-                    parent[index] = node
-                else:
-                    orchildren = [
-                        nr(nt='!',t='integer',ch=[child[0]],SEF=child[0].SEF),
-                        nr(nt='!',t='integer',ch=[child[1]],SEF=child[1].SEF)
-                    ]
-                    node = nr(nt='|', t='integer', ch=orchildren,
-                        SEF=child[0].SEF and child[1].SEF)
-                    node = nr(nt='!', t='integer', ch=[node], SEF=node.SEF)
-                    parent[index] = node
+            if nt == '||':
+                # Expand to its equivalent a || b  ->  !!(a | b)
+                node = nr(nt='|', t='integer', ch=[child[0], child[1]],
+                    SEF=child[0].SEF and child[1].SEF)
+                node = nr(nt='!', t='integer', ch=[node], SEF=node.SEF)
+                node = nr(nt='!', t='integer', ch=[node], SEF=node.SEF)
+                parent[index] = node
                 # Make another pass with the substitution
                 self.FoldTree(parent, index)
-                return
+            elif nt == '&&':
+                # Expand to its equivalent a && b  ->  !(!a | !b)
+                orchildren = [
+                    nr(nt='!', t='integer', ch=[child[0]], SEF=child[0].SEF),
+                    nr(nt='!', t='integer', ch=[child[1]], SEF=child[1].SEF)
+                ]
+                node = nr(nt='|', t='integer', ch=orchildren,
+                    SEF=child[0].SEF and child[1].SEF)
+                node = nr(nt='!', t='integer', ch=[node], SEF=node.SEF)
+                parent[index] = node
+                # Make another pass with the substitution
+                self.FoldTree(parent, index)
 
             return
 
