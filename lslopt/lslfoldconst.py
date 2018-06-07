@@ -1199,8 +1199,6 @@ class foldconst(object):
                 child[1], child[0] = child[0], child[1]
                 # fall through to check for '<'
 
-                # TODO: Check what we can do when comparing non-SEF and non-const
-
             if nt == '<':
                 # expr < expr  ->  0
                 if self.CompareTrees(child[0], child[1]):
