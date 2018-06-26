@@ -619,6 +619,9 @@ integer llGetNumberOfPrims(  )
 integer llGetNumberOfSides(  )
 - SEF
 
+list llGetObjectAnimationNames(  )
+- SEF
+
 string llGetObjectDesc(  )
 - SEF
 
@@ -1391,7 +1394,11 @@ float llSqrt( float val )
 
 void llStartAnimation( string anim )
 
+void llStartObjectAnimation( string anim )
+
 void llStopAnimation( string anim )
+
+void llStopObjectAnimation( string anim )
 
 void llStopHover(  )
 
