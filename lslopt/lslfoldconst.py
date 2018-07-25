@@ -1041,7 +1041,7 @@ class foldconst(object):
                     # we have {<<, something, {CONST n}}
                     # we transform it into {*, something, {CONST n}}
                     nt = node.nt = '*'
-                    child[1].value = 1 << (child[1].value & 31)
+                    child[1].value = lslfuncs.S32(1 << (child[1].value & 31))
 
                     # Fall through to optimize product
 
