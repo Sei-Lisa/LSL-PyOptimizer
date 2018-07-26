@@ -837,7 +837,7 @@ class parser(object):
             if self.tok[0] in ('INTEGER_VALUE', 'FLOAT_VALUE'):
                 val = self.tok[1]
                 self.NextToken()
-                return nr(nt=CONST, value=-val,
+                return nr(nt=CONST, value=lslfuncs.neg(val),
                     t='integer' if type(val) == int else 'float')
             raise EParseSyntax(self)
         if tok0 == 'INTEGER_VALUE':
@@ -1294,10 +1294,12 @@ list lazy_list_set(list L, integer i, list v)
                 if self.tok[0] == '-':
                     self.NextToken()
                     if self.tok[0] == 'INTEGER_VALUE':
-                        expr = nr(nt='CONST', t='integer', value=-self.tok[1])
+                        expr = nr(nt='CONST', t='integer',
+                                  value=lslfuncs.neg(self.tok[1]))
                         self.NextToken()
                     elif self.tok[0] == 'FLOAT_VALUE':
-                        expr = nr(nt='CONST', t='float', value=-self.tok[1])
+                        expr = nr(nt='CONST', t='float',
+                                  value=lslfuncs.neg(self.tok[1]))
                         self.NextToken()
                     else:
                         expr = self.Parse_unary_expression(AllowAssignment = False)
