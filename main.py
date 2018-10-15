@@ -225,14 +225,11 @@ Options marked with * are used to define the preprocessor macros __AGENTID__,
 __AGENTKEY__, __AGENTIDRAW__, __AGENTNAME__, __ASSETID__ and __SHORTFILE__,
 and have no effect if --prenodef is specified.
 
-Using --prenodef before -p causes no macros whatsoever to be defined. If used
-after -p, the type casting macros string(...), key(...), etc. will be defined.
-
 If filename is a dash (-) then standard input is used.
 Use: {progname} -O help for help on the optimizer control options.
 
 Preprocessor modes:
-    ext       Invoke preprocessor
+    ext       Invoke a preprocessor with no default parameters
     mcpp      Invoke mcpp as preprocessor, setting default parameters pertinent
               to it. Implies --precmd=mcpp
     gcpp      Invoke GNU cpp as preprocessor, setting default parameters
@@ -583,19 +580,19 @@ def main(argv):
 
         # Build preprocessor command line
         preproc_cmdline = [preproc_command] + preproc_user_args
+        if preproc == 'gcpp':
+            preproc_cmdline += [
+                '-undef', '-x', 'c', '-std=c99', '-nostdinc',
+                '-trigraphs', '-dN', '-fno-extended-identifiers',
+                ]
+
+        elif preproc == 'mcpp':
+            preproc_cmdline += [
+                '-e', 'UTF-8', '-I-', '-N', '-3', '-j',
+                '-V199901L',
+                ]
+
         if predefines:
-            if preproc == 'gcpp':
-                preproc_cmdline += [
-                    '-undef', '-x', 'c', '-std=c99', '-nostdinc',
-                    '-trigraphs', '-dN', '-fno-extended-identifiers',
-                    ]
-
-            elif preproc == 'mcpp':
-                preproc_cmdline += [
-                    '-e', 'UTF-8', '-I-', '-N', '-3', '-j',
-                    '-V199901L',
-                    ]
-
             preproc_cmdline += [
                 '-Dinteger(...)=((integer)(__VA_ARGS__))',
                 '-Dfloat(...)=((float)(__VA_ARGS__))',
