@@ -466,6 +466,12 @@ string llGetEnv( string name )
 - SEF
 - return "" if name == ""
 
+list llGetEnvironment( vector pos, list params )
+# presumed:
+- SEF
+# TODO: not used yet, check if it has more properties.
+#       Possibly a candidate for lslfuncopt.py (check).
+
 list llGetExperienceDetails( key experience_id )
 - SEF
 
