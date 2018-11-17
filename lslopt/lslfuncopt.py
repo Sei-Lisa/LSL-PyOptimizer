@@ -113,6 +113,20 @@ defaultListVals = {'llList2Integer':0, 'llList2Float':0.0,
     'llList2Vector':Vector((0.,0.,0.)),
     'llList2Rot':Quaternion((0.,0.,0.,1.))}
 
+# Auxiliary function for llDumpList2String optimization
+def CastDL2S(self, node, index):
+    """Cast a list element to string, wrapping it in a list if it's a vector or
+    rotation.
+    """
+    elem = self.GetListNodeElement(node, index)
+    assert elem is not False
+    if type(elem) != nr:
+        elem = nr(nt='CONST', t=lslcommon.PythonType2LSL[type(elem)], SEF=True,
+                  value=elem)
+    if elem.t in ('vector', 'rotation'):
+        return self.Cast(self.Cast(elem, 'list'), 'string')
+    return self.Cast(elem, 'string')
+
 # The 'self' parameter here is the constant folding object.
 def OptimizeFunc(self, parent, index):
     """Look for possible optimizations taking advantage of the specific LSL
@@ -127,7 +141,9 @@ def OptimizeFunc(self, parent, index):
         node = nr(nt='CONST', t='list', value=[], SEF=True)
         parent[index] = node = nr(nt='!=', t='integer',
             ch=[child[0], node], SEF=child[0].SEF)
+
     if name == 'llDumpList2String':
+        assert child[0].t == 'list'
         if (child[1].nt == 'CONST'
             and child[1].t in ('string', 'key')
             and child[1].value == u""
@@ -136,6 +152,64 @@ def OptimizeFunc(self, parent, index):
             node.nt = 'CAST'
             del child[1]
             del node.name
+            return
+
+        if node.SEF:
+            # Attempt to convert the function call into a sum of strings when
+            # possible and productive.
+
+            list_len = self.GetListNodeLength(child[0])
+            if list_len is False:
+                # Can't identify the length, which means we can't optimize.
+                return
+
+            if list_len == 0:
+                # Empty list -> empty string, no matter the separator
+                # (remember we're SEF).
+                parent[index] = nr(nt='CONST', t='string', value=u'', SEF=True)
+                return
+
+            # Only optimize if the second param is a very simple expression,
+            # otherwise the sums can get large.
+            if child[1].nt in ('CONST', 'IDENT'):
+                threshold = 10
+            else:
+                return
+
+            # Apply a threshold for optimizing as a sum.
+            if list_len > threshold:
+                return
+
+            for i in range(list_len):
+                # TODO: If there's a function call, don't optimize.
+                # Since we don't yet have a flag, for now, optimize variables
+                # and constants only (kinda like simple_expression_no_list).
+                # Also, if an element is a list, we can't optimize it, as that
+                # will produce a side effect (error). Neither can we if the
+                # single elements can't be extracted.
+                val = self.GetListNodeElement(child[0], i)
+                if (val is False or type(val) == nr and (val.t == 'list'
+                    or val.nt not in ('CONST', 'IDENT', 'FLD'))
+                   ):
+                    # With our simple analysis, we can't guarantee that
+                    # whatever the content is, there are no functions.
+                    break
+
+            else:
+                # Optimize to a sum of strings, right-to-left
+                i = list_len - 1
+                newnode = CastDL2S(self,child[0], i)
+                while i > 0:
+                    i -= 1
+                    newnode = nr(nt='+', t='string', SEF=True,
+                        ch=[CastDL2S(self, child[0], i),
+                            nr(nt='+', t='string', SEF=True,
+                               ch=[child[1], newnode]
+                            )
+                        ])
+                parent[index] = newnode
+                # Re-fold
+                self.FoldTree(parent, index)
             return
 
     if (name in ('llList2String', 'llList2Key', 'llList2Integer',
