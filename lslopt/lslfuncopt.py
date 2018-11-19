@@ -169,6 +169,12 @@ def OptimizeFunc(self, parent, index):
                 parent[index] = nr(nt='CONST', t='string', value=u'', SEF=True)
                 return
 
+            if list_len == 1:
+                # A single-element list can always be transformed regardless of
+                # the presence of function calls
+                parent[index] = CastDL2S(self, child[0], 0)
+                return
+
             # Only optimize if the second param is a very simple expression,
             # otherwise the sums can get large.
             if child[1].nt in ('CONST', 'IDENT'):
@@ -198,7 +204,7 @@ def OptimizeFunc(self, parent, index):
             else:
                 # Optimize to a sum of strings, right-to-left
                 i = list_len - 1
-                newnode = CastDL2S(self,child[0], i)
+                newnode = CastDL2S(self, child[0], i)
                 while i > 0:
                     i -= 1
                     newnode = nr(nt='+', t='string', SEF=True,
