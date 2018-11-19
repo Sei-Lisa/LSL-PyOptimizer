@@ -939,6 +939,20 @@ class foldconst(object):
                         lnt, rnt = rnt, lnt
                         ltype, rtype = rtype, ltype
 
+                    if (self.addstrings and optype == 'string' and rnt == '+'
+                        and rval.ch[0].nt == 'CONST' and lnt == 'CONST'
+                       ):
+                        # We have CONST + (CONST + expr) of strings.
+                        # Apply associativity to merge both constants.
+
+                        # Add the constants
+                        child[0].value = lslfuncs.add(child[0].value,
+                            rval.ch[0].value)
+                        # Prune the expr and graft it as RHS
+                        child[1] = rval.ch[1]
+                        # Re-optimize this node to apply it recursively
+                        return self.FoldTree(parent, index)
+
                     # Nothing else to do with addition of float, string or list
                     return
 
@@ -963,8 +977,7 @@ class foldconst(object):
                     # Apply associativity to merge both constants.
 
                     # Add the constants
-                    child[0].value = lslfuncs.S32(child[0].value
-                        + rval.ch[0].value)
+                    lval.value = lslfuncs.add(lval.value, rval.ch[0].value)
                     # Prune the expr and graft it as RHS
                     child[1] = rval.ch[1]
 
