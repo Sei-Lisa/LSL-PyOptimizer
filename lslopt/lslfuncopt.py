@@ -127,6 +127,14 @@ def CastDL2S(self, node, index):
         return self.Cast(self.Cast(elem, 'list'), 'string')
     return self.Cast(elem, 'string')
 
+# Quick hack to work around lack of cached per-node ContainsFunctions info
+def FnFree(self, node):
+    if node.nt == 'FNCALL':
+        return False
+    if node.nt in ('CONST', 'IDENT', 'FLD'):
+        return True
+    return all(FnFree(self, node.ch[i]) for i in range(len(node.ch)))
+
 # The 'self' parameter here is the constant folding object.
 def OptimizeFunc(self, parent, index):
     """Look for possible optimizations taking advantage of the specific LSL
@@ -187,15 +195,13 @@ def OptimizeFunc(self, parent, index):
                 return
 
             for i in range(list_len):
-                # TODO: If there's a function call, don't optimize.
-                # Since we don't yet have a flag, for now, optimize variables
-                # and constants only (kinda like simple_expression_no_list).
-                # Also, if an element is a list, we can't optimize it, as that
-                # will produce a side effect (error). Neither can we if the
-                # single elements can't be extracted.
+                # Can't be optimized if the list has any function calls in any
+                # of the elements, or if they can't be extracted.
+                # If an element is a list, we can't optimize it either, as that
+                # will produce a side effect (namely an error).
                 val = self.GetListNodeElement(child[0], i)
                 if (val is False or type(val) == nr and (val.t == 'list'
-                    or val.nt not in ('CONST', 'IDENT', 'FLD'))
+                    or not FnFree(self, val))
                    ):
                     # With our simple analysis, we can't guarantee that
                     # whatever the content is, there are no functions.
