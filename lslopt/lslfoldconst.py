@@ -973,20 +973,32 @@ class foldconst(object):
                     return self.FoldTree(parent, index)
 
                 while lnt == 'CONST' and rnt == 'NEG' and rval.ch[0].nt == '~':
-                    child[0].value += 1
-                    rval = child[1] = rval.ch[0].ch[0]
-                    rnt = rval.nt
+                    lval.value += 1
+                    child[1] = rval.ch[0].ch[0]
                     # rtype doesn't change
-                    assert rval.t == 'integer'
+                    assert child[1].t == 'integer'
                     self.FoldTree(parent, index)
+                    node = parent[index]
+                    nt, child = node.nt, node.ch
+                    if nt != '+':
+                        return
+                    lval, rval = child[0], child[1]
+                    lnt, rnt = lval.nt, rval.nt
+                    ltype, rtype = lval.t, rval.t
 
                 while lnt == 'CONST' and rnt == '~' and rval.ch[0].nt == 'NEG':
                     lval.value -= 1
-                    rval = child[1] = rval.ch[0].ch[0]
-                    rnt = rval.nt
+                    child[1] = rval.ch[0].ch[0]
                     # rtype doesn't change
-                    assert rval.t == 'integer'
+                    assert child[1].t == 'integer'
                     self.FoldTree(parent, index)
+                    node = parent[index]
+                    nt, child = node.nt, node.ch
+                    if nt != '+':
+                        return
+                    lval, rval = child[0], child[1]
+                    lnt, rnt = lval.nt, rval.nt
+                    ltype, rtype = lval.t, rval.t
 
                 if lnt != 'CONST':
                     # Neither is const.
