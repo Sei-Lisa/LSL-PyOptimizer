@@ -210,7 +210,7 @@ def OptimizeFunc(self, parent, index):
                     newnode = nr(nt='+', t='string', SEF=True,
                         ch=[CastDL2S(self, child[0], i),
                             nr(nt='+', t='string', SEF=True,
-                               ch=[child[1], newnode]
+                               ch=[self.Cast(child[1], 'string'), newnode]
                             )
                         ])
                 parent[index] = newnode
