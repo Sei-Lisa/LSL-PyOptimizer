@@ -162,11 +162,17 @@ def OptimizeFunc(self, parent, index):
             del node.name
             return
 
+        list_len = self.GetListNodeLength(child[0])
+        if list_len is not False and list_len == 1 and child[1].SEF:
+            # A single-element list can always be transformed regardless of
+            # the presence of function calls with side effects
+            parent[index] = CastDL2S(self, child[0], 0)
+            return
+
         if node.SEF:
             # Attempt to convert the function call into a sum of strings when
             # possible and productive.
 
-            list_len = self.GetListNodeLength(child[0])
             if list_len is False:
                 # Can't identify the length, which means we can't optimize.
                 return
@@ -175,12 +181,6 @@ def OptimizeFunc(self, parent, index):
                 # Empty list -> empty string, no matter the separator
                 # (remember we're SEF).
                 parent[index] = nr(nt='CONST', t='string', value=u'', SEF=True)
-                return
-
-            if list_len == 1:
-                # A single-element list can always be transformed regardless of
-                # the presence of function calls
-                parent[index] = CastDL2S(self, child[0], 0)
                 return
 
             # Only optimize if the second param is a very simple expression,
