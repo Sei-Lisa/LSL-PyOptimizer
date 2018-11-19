@@ -1530,6 +1530,13 @@ class foldconst(object):
             return
 
         if nt == 'FNDEF':
+            # FIXME: Fix SEFness of UDFs
+            # A return statement does have side effects for the current
+            # function, as removing it would change its behaviour drastically.
+            # However, when seen from the outside, that does not make the
+            # function as a whole have side effects: if all nodes except
+            # return statements are SEF, the function is SEF.
+
             # CurEvent is needed when folding llDetected* function calls
             if hasattr(node, 'scope'):
                 # function definition
