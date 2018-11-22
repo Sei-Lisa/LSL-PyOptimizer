@@ -194,34 +194,51 @@ def OptimizeFunc(self, parent, index):
             if list_len > threshold:
                 return
 
-            for i in range(list_len):
-                # Can't be optimized if the list has any function calls in any
-                # of the elements, or if they can't be extracted.
-                # If an element is a list, we can't optimize it either, as that
-                # will produce a side effect (namely an error).
-                val = self.GetListNodeElement(child[0], i)
-                if (val is False or type(val) == nr and (val.t == 'list'
-                    or not FnFree(self, val))
-                   ):
-                    # With our simple analysis, we can't guarantee that
-                    # whatever the content is, there are no functions.
-                    break
+            elems = [self.GetListNodeElement(child[0], i)
+                     for i in range(list_len)]
 
-            else:
-                # Optimize to a sum of strings, right-to-left
-                i = list_len - 1
-                newnode = CastDL2S(self, child[0], i)
-                while i > 0:
-                    i -= 1
-                    newnode = nr(nt='+', t='string', SEF=True,
-                        ch=[CastDL2S(self, child[0], i),
-                            nr(nt='+', t='string', SEF=True,
-                               ch=[self.Cast(child[1], 'string'), newnode]
-                            )
-                        ])
-                parent[index] = newnode
-                # Re-fold
-                self.FoldTree(parent, index)
+            # Don't optimize if an element can't be extracted or is a list
+            if any(i is False or type(i) == nr and i.t == 'list'
+                   for i in elems):
+                return
+
+            # We reorder list constructors as right-to-left sums. When an
+            # element contains function calls, it will generate a savepoint,
+            # but with that strategy, the maximum extra stack size at the time
+            # of each savepoint is 1.
+            # If the first element has a function call, we may end up causing
+            # more memory usage, because in a list constructor, the first
+            # element has no stack to save; however, if any elements past the
+            # third have function calls at the same time, the memory we add
+            # will be compensated by the memory we save, because the 3rd
+            # element has 2 elements in the stack, therefore reducing it to 1
+            # is a save; similarly, any elements past the 3rd containing
+            # function calls cause bigger and bigger saves.
+
+            # Since we're also eliminating the llDumpList2String function call,
+            # that may count for the extra stack element added. Therefore, we
+            # disable this condition and optimize unconditionally.
+
+            #if (child[0].nt in ('LIST', 'CONST') and list_len >= 3
+            #    and type(elems[0]) == nr and not FnFree(self, elems[0])
+            #    and all(type(i) != nr or FnFree(self, i) for i in elems[2:])
+            #   ):
+            #    return
+
+            # Optimize to a sum of strings, right-to-left to save stack.
+            i = list_len - 1
+            newnode = CastDL2S(self, child[0], i)
+            while i > 0:
+                i -= 1
+                newnode = nr(nt='+', t='string', SEF=True,
+                    ch=[CastDL2S(self, child[0], i),
+                        nr(nt='+', t='string', SEF=True,
+                           ch=[self.Cast(child[1], 'string'), newnode]
+                        )
+                    ])
+            parent[index] = newnode
+            # Re-fold
+            self.FoldTree(parent, index)
             return
 
     if (name in ('llList2String', 'llList2Key', 'llList2Integer',
