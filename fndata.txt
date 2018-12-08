@@ -451,6 +451,12 @@ key llGetCreator(  )
 string llGetDate(  )
 - SEF
 
+integer llGetDayLength(  )
+- SEF
+
+integer llGetDayOffset(  )
+- SEF
+
 string llGetDisplayName( key id )
 - SEF
 - return "" if nulluuid(id)
@@ -609,6 +615,12 @@ integer llGetMemoryLimit(  )
 float llGetMinScaleFactor(  )
 - SEF
 
+vector llGetMoonDirection(  )
+- SEF
+
+rotation llGetMoonRotation(  )
+- SEF
+
 void llGetNextEmail( string address, string subject )
 
 key llGetNotecardLine( string name, integer line )
@@ -704,13 +716,31 @@ integer llGetRegionAgentCount(  )
 vector llGetRegionCorner(  )
 - SEF
 
+integer llGetRegionDayLength(  )
+- SEF
+
+integer llGetRegionDayOffset(  )
+- SEF
+
 float llGetRegionFPS(  )
 - SEF
 
 integer llGetRegionFlags(  )
 - SEF
 
+vector llGetRegionMoonDirection(  )
+- SEF
+
+rotation llGetRegionMoonRotation(  )
+- SEF
+
 string llGetRegionName(  )
+- SEF
+
+vector llGetRegionSunDirection(  )
+- SEF
+
+rotation llGetRegionSunRotation(  )
 - SEF
 
 float llGetRegionTimeDilation(  )
@@ -765,6 +795,9 @@ string llGetSubString( string src, integer start, integer end )
 - SEF
 
 vector llGetSunDirection(  )
+- SEF
+
+rotation llGetSunRotation(  )
 - SEF
 
 string llGetTexture( integer face )
