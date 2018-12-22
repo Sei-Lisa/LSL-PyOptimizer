@@ -75,6 +75,10 @@
 #  max:
 #    Like min, but for the maximum value.
 #
+#  listto:
+#    Identifies the function as a list-extracting function, for use with
+#    lazy lists. It needs an LSL type as a parameter.
+#
 #  return <value> [if <condition>]:
 #    Self-explanatory. There can be several; they are evaluated in order.
 #    <value> can be a parameter or a LSL constant. <condition> is explaned
@@ -927,30 +931,37 @@ string llList2CSV(list src)
 
 float llList2Float(list src, integer index)
 - SEF
+- listto float
 
 integer llList2Integer(list src, integer index)
 - SEF
+- listto integer
 
 string llList2Json(string type, list values)
 - SEF
 
 key llList2Key(list src, integer index)
 - SEF
+- listto key
 
 list llList2List(list src, integer start, integer end)
 - SEF
+- listto list
 
 list llList2ListStrided(list src, integer start, integer end, integer stride)
 - SEF
 
 rotation llList2Rot(list src, integer index)
 - SEF
+- listto rotation
 
 string llList2String(list src, integer index)
 - SEF
+- listto string
 
 vector llList2Vector(list src, integer index)
 - SEF
+- listto vector
 
 integer llListFindList(list src, list test)
 - SEF

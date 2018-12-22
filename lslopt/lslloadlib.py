@@ -235,7 +235,9 @@ def LoadLibrary(builtins = None, fndata = None):
         r'|\[(?:[^]"]|"(?:\\.|[^"])*")*\]))'      # lists
         r'(?:\s+if\s+(.*\S))?'
         r'|(unstable|stop|strlen|detect|touch|grab)'
-        r'|(min|max|delay)\s+([-0-9.]+))\s*$', re.I)
+        r'|(min|max|delay)\s+([-0-9.]+)'
+        r'|listto\s+(integer|float|string|key|vector|rotation|list)'
+        r')\s*$', re.I)
 
     # TODO: "quaternion" doesn't compare equal to "rotation" even if they are
     #       equivalent. Canonicalize it before comparison, to avoid false
@@ -382,44 +384,50 @@ def LoadLibrary(builtins = None, fndata = None):
                                 functions[curr_fn]['uns'] = True
                             else:
                                 functions[curr_fn][flag] = True
-                        elif match_flag.group(5).lower() in ('min', 'max'):
-                            minmax = match_flag.group(5).lower()
-                            value = match_flag.group(6)
-                            typ = functions[curr_fn]['Type']
-                            if typ == 'integer':
-                                good = parse_int_re.search(value)
+                        elif match_flag.group(5):
+                            if match_flag.group(5).lower() in ('min', 'max'):
+                                minmax = match_flag.group(5).lower()
+                                value = match_flag.group(6)
+                                typ = functions[curr_fn]['Type']
+                                if typ == 'integer':
+                                    good = parse_int_re.search(value)
+                                    if good:
+                                        value = lslfuncs.S32(int(good.group(1), 0))
+                                elif typ == 'float':
+                                    good = parse_fp_re.search(value)
+                                    if good:
+                                        value = lslfuncs.F32(float(good.group(1)))
+                                else:
+                                    good = False
                                 if good:
-                                    value = lslfuncs.S32(int(good.group(1), 0))
-                            elif typ == 'float':
-                                good = parse_fp_re.search(value)
-                                if good:
-                                    value = lslfuncs.F32(float(good.group(1)))
-                            else:
-                                good = False
-                            if good:
-                                functions[curr_fn][minmax] = value
-                            else:
-                                warning(u"Type mismatch or value error in %s"
-                                        u" line %d: %s"
-                                        % (ufndata, linenum, uline))
-                                continue
-                        else:  # delay
-                            value = parse_fp_re.search(match_flag.group(6))
-                            if not value:
-                                warning(u"Invalid delay value in %s"
-                                        u" line %d: %s"
-                                        % (ufndata, linenum, uline))
-                                continue
+                                    functions[curr_fn][minmax] = value
+                                else:
+                                    warning(u"Type mismatch or value error in %s"
+                                            u" line %d: %s"
+                                            % (ufndata, linenum, uline))
+                                    continue
+                            else:  # delay
+                                value = parse_fp_re.search(match_flag.group(6))
+                                if not value:
+                                    warning(u"Invalid delay value in %s"
+                                            u" line %d: %s"
+                                            % (ufndata, linenum, uline))
+                                    continue
 
-                            value = float(value.group(1))  # no need to F32
-                            if value != 0 and 'SEF' in functions[curr_fn]:
-                                warning(u"Side-effect-free function"
-                                        u" %s contradicts delay, in %s"
-                                        u" line %d"
-                                        % (ucurr_fn, ufndata, linenum))
-                                continue
+                                value = float(value.group(1))  # no need to F32
+                                if value != 0 and 'SEF' in functions[curr_fn]:
+                                    warning(u"Side-effect-free function"
+                                            u" %s contradicts delay, in %s"
+                                            u" line %d"
+                                            % (ucurr_fn, ufndata, linenum))
+                                    continue
 
-                            functions[curr_fn]['delay'] = value
+                                functions[curr_fn]['delay'] = value
+                        elif match_flag.group(7):
+                            functions[curr_fn]['ListTo'] = match_flag.group(7)
+                            continue
+                        else:
+                            pass
                 else:
                     warning(u"Syntax error in %s line %d, skipping: %s"
                             % (ufndata, linenum, uline))

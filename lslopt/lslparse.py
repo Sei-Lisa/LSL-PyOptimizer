@@ -200,6 +200,11 @@ class EParseInvalidLabelOpt(EParse):
             u" child of a 'for', 'if', 'while' or 'do'. Disable optimization"
             u" or rewrite the code in some other way.")
 
+class EParseNoConversion(EParse):
+    def __init__(self, parser):
+        super(EParseNoConversion, self).__init__(parser,
+            u"There's no conversion function in the library for this type")
+
 class EInternal(Exception):
     """This exception is a construct to allow a different function to cause an
     immediate return of EOF from parser.GetToken().
@@ -225,9 +230,7 @@ class parser(object):
         unicode:'STRING_VALUE', Key:'KEY_VALUE', Vector:'VECTOR_VALUE',
         Quaternion:'ROTATION_VALUE', list:'LIST_VALUE'}
 
-    TypeToExtractionFunction = {'integer':'llList2Integer',
-        'float':'llList2Float', 'string':'llList2String', 'key':'llList2Key',
-        'vector':'llList2Vector', 'rotation':'llList2Rot', 'list':'llList2List'}
+    TypeToExtractionFunction = {}
 
     # Utility function
     def GenerateLabel(self):
@@ -1316,14 +1319,11 @@ list lazy_list_set(list L, integer i, list v)
                     expr = self.Parse_unary_postfix_expression(AllowAssignment = False)
             basetype = expr.t
             if self.lazylists and basetype is None and expr.nt == 'SUBIDX':
+                if typ not in self.TypeToExtractionFunction:
+                    raise EParseNoConversion(self)
                 fn = self.TypeToExtractionFunction[typ]
                 sym = self.FindSymbolFull(fn, 0)
-                if sym is None:
-                    # in the unlikely event that the underlying function is not
-                    # defined in builtins.txt, throw a syntax error (making a
-                    # new exception just for this seems overkill, and throwing
-                    # an unknown identifier error would be confusing)
-                    raise EParseSyntax(self)
+                assert sym is not None
                 fnparamtypes = sym['ParamTypes']
                 subparamtypes = [x.t for x in expr.ch]
                 if fnparamtypes != subparamtypes:
@@ -2712,6 +2712,12 @@ list lazy_list_set(list L, integer i, list v)
         self.events = lib[0]
         self.constants = lib[1]
         self.funclibrary = lib[2]
+
+        self.TypeToExtractionFunction.clear()
+        for name in self.funclibrary:
+            fn = self.funclibrary[name]
+            if 'ListTo' in fn:
+                self.TypeToExtractionFunction[fn['ListTo']] = name
 
         self.filename = filename
 
