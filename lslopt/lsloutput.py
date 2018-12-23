@@ -456,8 +456,14 @@ class outscript(object):
 
             ret += self.dent() + '{\n'
             self.indentlevel += 1
+            firstnode = True
             for stmt in node.ch:
+                if stmt.nt == 'LAMBDA':
+                    continue
+                if nt == 'STDEF' and not firstnode:
+                    ret += '\n'
                 ret += self.OutCode(stmt)
+                firstnode = False
             self.indentlevel -= 1
             return ret + self.dent() + '}\n'
 
@@ -499,9 +505,18 @@ class outscript(object):
         self.indentlevel = 0
         self.globalmode = False
         self.listmode = False
+        firstnode = True
+        prevnt = None
         for node in self.tree:
+            if node.nt == 'LAMBDA':
+                # these don't produce output, skip
+                continue
+            if not firstnode and (node.nt != 'DECL' or prevnt != 'DECL'):
+                ret += '\n'
             self.globalmode = node.nt == 'DECL'
             ret += self.OutCode(node)
             self.globalmode = False
+            firstnode = False
+            prevnt = node.nt
 
         return ret

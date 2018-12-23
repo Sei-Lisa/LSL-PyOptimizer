@@ -442,8 +442,8 @@ class Test03_Optimizer(UnitTestCase):
             ''', ['extendedassignment'])
         self.opt.optimize(p)
         out = self.outscript.output(p)
-        self.assertEqual(out, 'integer a;\nx()\n{\n    {\n        '
-            'string s = "x";\n        s = s + (string)a;\n    }\n}\n'
+        self.assertEqual(out, 'integer a;\n\nx()\n{\n    {\n        '
+            'string s = "x";\n        s = s + (string)a;\n    }\n}\n\n'
             'default\n{\n    timer()\n    {\n        x();\n        a = 3;\n'
             '        llOwnerSay((string)a);\n'
             '    }\n}\n'
@@ -462,7 +462,7 @@ class Test03_Optimizer(UnitTestCase):
         self.opt.optimize(p)
         out = self.outscript.output(p)
         self.assertEqual(out, 'key k = "blah";\nlist L = [k, "xxxx", 1.];\n'
-            'float f = 0;\ninteger i;\nvector v = <f,3,4>;\n'
+            'float f = 0;\ninteger i;\nvector v = <f,3,4>;\n\n'
             'default\n{\n    timer()\n    {\n'
             '        f = 4;\n        k = "";\n        i = 0;\n'
             '        v = <((float)0), ((float)0), ((float)0)>;\n        L = [];\n'
@@ -476,7 +476,7 @@ class Test03_Optimizer(UnitTestCase):
             ['extendedglobalexpr'])
         self.opt.optimize(p)
         out = self.outscript.output(p)
-        self.assertEqual(out, 'list L;\nfloat f = 0;\n'
+        self.assertEqual(out, 'list L;\nfloat f = 0;\n\n'
             'default\n{\n    timer()\n    {\n'
             '        L = [];\n        f = 3;\n'
             '        llOwnerSay((string)(L + f));\n'
