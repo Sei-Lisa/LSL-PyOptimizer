@@ -31,8 +31,8 @@ class foldconst(object):
     def isLocalVar(self, node):
         name = node.name
         scope = node.scope
-        return self.symtab[scope][name]['Kind'] == 'v' \
-            and 'Loc' not in self.symtab[scope][name]
+        return (self.symtab[scope][name]['Kind'] == 'v'
+                and 'Loc' not in self.symtab[scope][name])
 
     def GetListNodeLength(self, node):
         """Get the length of a list that is expressed as a CONST, LIST or CAST
@@ -230,17 +230,20 @@ class foldconst(object):
         that the result is boolean.
         """
         nt = node.nt
-        if nt in ('<', '!', '>', '<=', '>=', '==', '||', '&&') \
-           or nt == '!=' and node.ch[0].t != 'list' \
-           or nt == '&' and (self.IsBool(node.ch[0]) or self.IsBool(node.ch[1])) \
-           or nt in ('|', '^', '*') and self.IsBool(node.ch[0]) and self.IsBool(node.ch[1]) \
-           or nt == 'CONST' and node.t == 'integer' and node.value in (0, 1):
+        if (nt in ('<', '!', '>', '<=', '>=', '==', '||', '&&')
+            or nt == '!=' and node.ch[0].t != 'list'
+            or nt == '&' and any(self.IsBool(node.ch[i]) for i in (0, 1))
+            or nt in ('|', '^', '*')
+               and all(self.IsBool(node.ch[i]) for i in (0, 1))
+            or nt == 'CONST' and node.t == 'integer' and node.value in (0, 1)
+           ):
             return True
 
         if nt == 'FNCALL':
             sym = self.symtab[0][node.name]
-            if sym['Type'] == 'integer' and 'min' in sym and 'max' in sym \
-               and sym['min'] >= 0 and sym['max'] <= 1:
+            if (sym['Type'] == 'integer' and 'min' in sym and 'max' in sym
+                and sym['min'] >= 0 and sym['max'] <= 1
+               ):
                 return True
 
         return False
@@ -248,7 +251,7 @@ class foldconst(object):
     def IsAndBool(self, node):
         """For bitwise AND, in some cases we can relax the condition to this:
         when bit 0 is 0, all other bits are guaranteed to be 0 as well. That's
-        the case of -bool which is the only case we deal with here, but an
+        the case of -bool, which is the only case we deal with here, but an
         important one because we generate it as an intermediate result in some
         operations.
         """
@@ -296,8 +299,9 @@ class foldconst(object):
                 # We have !(int == int). Replace with int ^ int or with int - 1
                 node = parent[index] = child[0]  # remove the negation
                 child = child[0].ch
-                if child[0].nt == 'CONST' and child[0].value == 1 \
-                   or child[1].nt == 'CONST' and child[1].value == 1:
+                if (child[0].nt == 'CONST' and child[0].value == 1
+                    or child[1].nt == 'CONST' and child[1].value == 1
+                   ):
                     # a != 1  ->  a - 1  (which FoldTree will transform to ~-a)
                     node.nt = '-'
                 else:
@@ -329,9 +333,10 @@ class foldconst(object):
 
         if nt in self.binary_ops and child[0].t == child[1].t == 'integer':
             if nt == '==':
-                if child[0].nt == 'CONST' and -1 <= child[0].value <= 1 \
-                   or child[1].nt == 'CONST' and -1 <= child[1].value <= 1:
-                    # Transform a==b into !(a-b) if either a or b are in [-1, 1]
+                if (child[0].nt == 'CONST' and -1 <= child[0].value <= 1
+                    or child[1].nt == 'CONST' and -1 <= child[1].value <= 1
+                   ):
+                    # Transform a==b into !(a-b) if either a or b are in [-1,1]
                     parent[index] = nr(nt='!', t='integer', ch=[node])
                     node.nt = '-'
                     self.FoldTree(parent, index)
@@ -392,7 +397,7 @@ class foldconst(object):
                 #   (!~(x|~r) && x&s)  ->  !~(x|(~r&~s))
                 # This is implemented as:
                 #   ~(x|~r) | !(x&s)  ->  ~(x|~(r|s))
-                # because that's the intermediate result after conversion of &&.
+                # since that's the intermediate result after conversion of &&.
                 # a and b are going to be the children of the main |
                 # a is going to be child that has the ~
                 # b is the other child (with the !)
@@ -437,18 +442,23 @@ class foldconst(object):
                 Invertible = [False, False]
                 for a in (0, 1):
                     Invertible[a] = child[a].nt == '!'
-                    if child[a].nt == '<' \
-                       and child[a].ch[0].t == child[a].ch[1].t == 'integer':
-                        if child[a].ch[0].nt == 'CONST' \
-                           and child[a].ch[0].value != 2147483647 \
-                           or child[a].ch[1].nt == 'CONST' \
-                           and child[a].ch[1].value != int(-2147483648):
+                    if (child[a].nt == '<'
+                        and child[a].ch[0].t == child[a].ch[1].t == 'integer'
+                       ):
+                        if (child[a].ch[0].nt == 'CONST'
+                              and child[a].ch[0].value != 2147483647
+                           or child[a].ch[1].nt == 'CONST'
+                              and child[a].ch[1].value != int(-2147483648)
+                           ):
                             Invertible[a] = True
 
-                    # Deal with our optimization of a<0 -> a&0x80000000 (see below)
+                    # Deal with our optimization of a<0 -> a&0x80000000
+                    # (see below)
                     if child[a].nt == '&' and (
-                       child[a].ch[0].nt == 'CONST' and child[a].ch[0].value == int(-2147483648)
-                       or child[a].ch[1].nt == 'CONST' and child[a].ch[1].value == int(-2147483648)
+                          child[a].ch[0].nt == 'CONST'
+                          and child[a].ch[0].value == int(-2147483648)
+                       or child[a].ch[1].nt == 'CONST'
+                          and child[a].ch[1].value == int(-2147483648)
                        ):
                         Invertible[a] |= ParentIsNegation
 
@@ -560,8 +570,10 @@ class foldconst(object):
                 # Put constant in child[b], if present
                 if child[b].nt != 'CONST':
                     a, b = 1, 0
-                if child[b].nt == 'CONST' and child[b].value == int(-2147483648) \
-                   and child[a].nt == 'FNCALL':
+                if (child[b].nt == 'CONST'
+                    and child[b].value == int(-2147483648)
+                    and child[a].nt == 'FNCALL'
+                   ):
                     sym = self.symtab[0][child[a].name]
                     if 'min' in sym and sym['min'] == -1:
                         node = parent[index] = nr(nt='~', t='integer',
@@ -618,8 +630,8 @@ class foldconst(object):
             self.FoldTree(child, 0)
             node.SEF = child[0].SEF
 
-            if child[0].nt == '+' and (child[0].ch[0].nt == 'NEG'
-                                          or child[0].ch[1].nt == 'NEG'):
+            if child[0].nt == '+' and any(child[0].ch[i].nt == 'NEG'
+                                          for i in (0, 1)):
                 node = parent[index] = child[0]
                 child = node.ch
                 for a in (0, 1):
@@ -670,14 +682,16 @@ class foldconst(object):
             if snt == '<':
                 lop = subexpr.ch[0]
                 rop = subexpr.ch[1]
-                if lop.nt == 'CONST' and lop.t == rop.t == 'integer' \
-                   and lop.value < 2147483647:
+                if (lop.nt == 'CONST' and lop.t == rop.t == 'integer'
+                    and lop.value < 2147483647
+                   ):
                     lop.value += 1
                     subexpr.ch[0], subexpr.ch[1] = subexpr.ch[1], subexpr.ch[0]
                     parent[index] = subexpr # remove the !
                     return
-                if rop.nt == 'CONST' and lop.t == rop.t == 'integer' \
-                   and rop.value > int(-2147483648):
+                if (rop.nt == 'CONST' and lop.t == rop.t == 'integer'
+                    and rop.value > int(-2147483648)
+                   ):
                     rop.value -= 1
                     subexpr.ch[0], subexpr.ch[1] = subexpr.ch[1], subexpr.ch[0]
                     parent[index] = subexpr # remove the !
@@ -686,7 +700,9 @@ class foldconst(object):
                 a, b = 0, 1
                 if subexpr.ch[b].nt != 'CONST':
                     a, b = 1, 0
-                if subexpr.ch[b].nt == 'CONST' and subexpr.ch[b].value == int(-2147483648):
+                if (subexpr.ch[b].nt == 'CONST'
+                    and subexpr.ch[b].value == int(-2147483648)
+                   ):
                     # !(i & 0x80000000)  ->  -1 < i (because one of our
                     # optimizations can be counter-productive, see FoldCond)
                     subexpr.nt = '<'
@@ -1134,10 +1150,10 @@ class foldconst(object):
                     # -intvar could equal intvar if intvar = -2147483648,
                     # so the sign is a no-op and pushing it to floatconst would
                     # make the result be different.
-                    if child[a].nt == 'NEG' \
-                       and (self.cornermath
+                    if (child[a].nt == 'NEG'
+                        and (self.cornermath
                             or child[a].t != 'integer'
-                            or child[b].t != 'float'
+                            or child[b].t != 'float')
                        ):
                         # Expression is of the form (-float)*const or (-float)/const or const/(-float)
                         if val != int(-2147483648) or child[a].t == 'integer': # can't be optimized otherwise
@@ -1153,9 +1169,11 @@ class foldconst(object):
                     # ident * -2  ->  -(ident + ident) (only if ident is local)
                     # expr/1  ->  expr
                     # expr/-1  ->  -expr
-                    if nt == '*' and child[b].t in ('float', 'integer') \
-                       and val in (-2, -1, 0, 1, 2) \
-                       or nt == '/' and b == 1 and val in (-1, 1):
+                    if (nt == '*' and child[b].t in ('float', 'integer')
+                           and val in (-2, -1, 0, 1, 2)
+                        or nt == '/'
+                           and b == 1 and val in (-1, 1)
+                       ):
                         if val == 1:
                             parent[index] = child[a]
                             return
@@ -1201,7 +1219,9 @@ class foldconst(object):
                                     SEF=node.SEF)
                             node = parent[index] = nr(nt='!', t='integer',
                                 ch=[node], SEF=node.SEF)
-                            del child
+                            # Can't delete
+                # See https://docs.python.org/2/reference/simple_stmts.html#del
+                            child = None
                             self.FoldTree(parent, index)
                             return
 
@@ -1265,15 +1285,15 @@ class foldconst(object):
                             and not lslfuncs.less(child[0].value,
                                 self.symtab[0][child[1].name]['max'])
                            ):
-                            parent[index] = nr(nt='CONST', t='integer', value=0,
-                                SEF=True)
+                            parent[index] = nr(nt='CONST', t='integer',
+                                value=0, SEF=True)
                             return
                         if ('min' in self.symtab[0][child[1].name]
                             and lslfuncs.less(child[0].value,
                                 self.symtab[0][child[1].name]['min'])
                            ):
-                            parent[index] = nr(nt='CONST', t='integer', value=1,
-                                SEF=True)
+                            parent[index] = nr(nt='CONST', t='integer',
+                                value=1, SEF=True)
                             return
                     if (child[1].nt == 'CONST'
                         and child[0].nt == 'FNCALL'
@@ -1287,22 +1307,25 @@ class foldconst(object):
                                 self.symtab[0][child[0].name]['max']
                                 , child[1].value)
                            ):
-                            parent[index] = nr(nt='CONST', t='integer', value=1,
-                                SEF=True)
+                            parent[index] = nr(nt='CONST', t='integer',
+                                value=1, SEF=True)
                             return
                         if ('min' in self.symtab[0][child[0].name]
                             and not lslfuncs.less(
                                 self.symtab[0][child[0].name]['min'],
                                 child[1].value)
                            ):
-                            parent[index] = nr(nt='CONST', t='integer', value=0,
-                                SEF=True)
+                            parent[index] = nr(nt='CONST', t='integer',
+                                value=0, SEF=True)
                             return
 
                 # Convert 2147483647<i and i<-2147483648 to i&0
-                if child[0].t == child[1].t == 'integer' \
-                   and (child[0].nt == 'CONST' and child[0].value == 2147483647
-                        or child[1].nt == 'CONST' and child[1].value == int(-2147483648)):
+                if (child[0].t == child[1].t == 'integer'
+                    and (child[0].nt == 'CONST'
+                           and child[0].value == 2147483647
+                        or child[1].nt == 'CONST'
+                           and child[1].value == int(-2147483648))
+                   ):
                     a, b = 0, 1
                     # Put the constant in child[b]
                     if child[a].nt == 'CONST':
@@ -1328,13 +1351,21 @@ class foldconst(object):
 
                 if child[b].nt == 'CONST':
                     val = child[b].value
-                    if nt == '|' and val == 0 or nt == '&' and (val == -1 or val == 1 and self.IsBool(child[a])):
+                    if (nt == '|' and val == 0
+                        or nt == '&'
+                           and (val == -1
+                                or val == 1 and self.IsBool(child[a]))
+                       ):
                         # a|0  ->  a
                         # a&-1  ->  a
                         # a&1  ->  a if a is boolean
                         parent[index] = child[a]
                         return
-                    if nt == '|' and (val == -1 or val == 1 and self.IsBool(child[a])) or nt == '&' and val == 0:
+                    if (nt == '|'
+                        and (val == -1
+                             or val == 1 and self.IsBool(child[a]))
+                        or nt == '&' and val == 0
+                       ):
                         # a|-1  ->  -1 if a is SEF
                         # a|1  ->  1 if a is bool and SEF
                         # a&0  ->  0 if a is SEF
@@ -1347,6 +1378,7 @@ class foldconst(object):
                 if child[0].nt == child[1].nt == opposite:
                     left = child[0].ch
                     right = child[1].ch
+                    # Can't loop individually because we must break out of both
                     for c, d in ((0, 0), (0, 1), (1, 0), (1, 1)):
                         if self.CompareTrees(left[c], right[d]):
                             child[1].nt = nt
@@ -1445,13 +1477,14 @@ class foldconst(object):
             # We have a regular assignment either way now. Simplify the RHS.
             self.FoldTree(node.ch, 1)
             chkequal = child[1].ch[0] if child[1].nt == '=' else child[1]
-            if child[0].nt == chkequal.nt == 'IDENT' \
-               and chkequal.name == child[0].name \
-               and chkequal.scope == child[0].scope \
-               or child[0].nt == chkequal.nt == 'FLD' \
-               and chkequal.ch[0].name == child[0].ch[0].name \
-               and chkequal.ch[0].scope == child[0].ch[0].scope \
-               and chkequal.fld == child[0].fld:
+            if (child[0].nt == chkequal.nt == 'IDENT'
+                  and chkequal.name == child[0].name
+                  and chkequal.scope == child[0].scope
+               or child[0].nt == chkequal.nt == 'FLD'
+                  and chkequal.ch[0].name == child[0].ch[0].name
+                  and chkequal.ch[0].scope == child[0].ch[0].scope
+                  and chkequal.fld == child[0].fld
+               ):
                 parent[index] = child[1]
             return
 
@@ -1658,14 +1691,15 @@ class foldconst(object):
                     if child[idx].nt == 'JUMP':
                         idx2 = idx + 1
                         while idx2 < nchild:
-                            # Search for a label that is the destination of this
-                            # JUMP, skipping other labels
+                            # Search for a label that is the destination of
+                            # this JUMP, skipping other labels
                             if child[idx2].nt != '@':
                                 break
                             if (child[idx].scope == child[idx2].scope
                                 and child[idx].name == child[idx2].name
                                ):
-                                sym = self.symtab[child[idx].scope][child[idx].name]
+                                sym = self.symtab[child[idx].scope]
+                                sym = sym[child[idx].name]
                                 # remove the JUMP
                                 del child[idx]
                                 advance = 0
@@ -1882,8 +1916,9 @@ class foldconst(object):
                 else:
                     self.FoldTree(child, 0)
                 # Remove assignment if integer zero.
-                if node.t == 'integer' and child[0].nt == 'CONST' \
-                   and not child[0].value:
+                if (node.t == 'integer' and child[0].nt == 'CONST'
+                    and not child[0].value
+                   ):
                     node.ch = None
                     return
             else:
