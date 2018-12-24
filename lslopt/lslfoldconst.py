@@ -245,6 +245,16 @@ class foldconst(object):
 
         return False
 
+    def IsAndBool(self, node):
+        """For bitwise AND, in some cases we can relax the condition to this:
+        when bit 0 is 0, all other bits are guaranteed to be 0 as well. That's
+        the case of -bool which is the only case we deal with here, but an
+        important one because we generate it as an intermediate result in some
+        operations.
+        """
+        return (node.nt == 'NEG' and self.IsBool(node.ch[0])
+                or self.IsBool(node))
+
     def FoldCond(self, parent, index, ParentIsNegation = False):
         """When we know that the parent is interested only in the truth value
         of the node, we can perform further optimizations. This function deals
@@ -297,6 +307,19 @@ class foldconst(object):
                 self.FoldTree(parent, index)
                 return
 
+            if (child[0].nt == '&'
+                and any(child[0].ch[i].nt == '!'
+                        and self.IsAndBool(child[0].ch[1-i]) for i in (0, 1))
+               ):
+                # We can remove at least one !
+                child[0].nt = '|'
+                for i in (0, 1):
+                    child[0].ch[i] = nr(nt='!', t='integer',
+                        ch=[child[0].ch[i]], SEF=child[0].ch[i].SEF)
+                parent[index] = child[0]
+                self.FoldTree(parent, index)
+                self.FoldCond(parent, index)
+                return
 
         if nt == 'NEG':
             # bool(-a) equals bool(a)
