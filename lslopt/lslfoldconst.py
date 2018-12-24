@@ -1363,11 +1363,11 @@ class foldconst(object):
                         return
                     if (nt == '|'
                         and (val == -1
-                             or val == 1 and self.IsBool(child[a]))
+                             or (val & 1) == 1 and self.IsBool(child[a]))
                         or nt == '&' and val == 0
                        ):
                         # a|-1  ->  -1 if a is SEF
-                        # a|1  ->  1 if a is bool and SEF
+                        # a|C  ->  C if bit 0 of C is 1 and a is bool and SEF
                         # a&0  ->  0 if a is SEF
                         if child[a].SEF:
                             parent[index] = child[b]
