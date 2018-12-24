@@ -504,7 +504,7 @@ class foldconst(object):
                     if not self.IsBool(child[b].ch[0]):
                        a, b = 1, 0
                     if self.IsBool(child[b].ch[0]):
-                        if not self.IsBool(child[a].ch[0]):
+                        if not self.IsAndBool(child[a].ch[0]):
                             child[b].ch[0] = nr(nt='NEG', t='integer',
                                 ch=[child[b].ch[0]])
 
