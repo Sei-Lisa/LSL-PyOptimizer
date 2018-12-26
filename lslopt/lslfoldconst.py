@@ -1781,11 +1781,7 @@ class foldconst(object):
                     # If type(X) != Key, then:
                     # if (X) ; else {stuff}  ->  if (!X) {stuff}
                     # (being careful with labels again)
-                    if (child[0].t != 'key'
-                        and (child[2].nt != 'IF'
-                             or len(child[2].ch) == 3
-                             or child[2].ch[1].nt != '@')
-                       ):
+                    if child[0].t != 'key':
                         # We've already converted all other types to equivalent
                         # comparisons
                         assert child[0].t == 'integer'
@@ -1859,18 +1855,12 @@ class foldconst(object):
                     self.FoldStmt(child, 3)
                     self.FoldAndRemoveEmptyStmts(child[2].ch)
                 else:
+                    # Loop never executes.
                     # Convert expression list to code block.
                     exprlist = []
                     for expr in child[0].ch:
                         # Fold into expression statements.
                         exprlist.append(nr(nt='EXPR', t=expr.t, ch=[expr]))
-                    if (exprlist or child[2].ch) and child[3].nt == '@':
-                        # Corner case. We can't optimize this to one single
-                        # statement, so we leave it as-is.
-                        self.FoldTree(child, 3)
-                        self.FoldStmt(child, 3)
-                        self.FoldAndRemoveEmptyStmts(child[2].ch)
-                        return
 
                     # returns type None, as FOR does
                     if exprlist:
@@ -1879,19 +1869,7 @@ class foldconst(object):
                         # removed earlier) so don't mark this node as SEF.
                         parent[index] = nr(nt='{}', t=None, ch=exprlist)
                     else:
-                        if child[3].nt == '@':
-                            # Corner case. The label is in the same scope as
-                            # this statement, so it must be preserved. Also,
-                            # jumping inside the loop would execute the
-                            # iterator, so we fold it.
-                            self.FoldAndRemoveEmptyStmts(child[2].ch)
-                            if not child[2].ch:
-                                # if there's something in the 2nd list,
-                                # preserve the whole statement, otherwise
-                                # replace it with the label
-                                parent[index] = child[3]
-                        else:
-                            parent[index] = nr(nt=';', t=None, SEF=True)
+                        parent[index] = nr(nt=';', t=None, SEF=True)
                     return
             else:
                 self.FoldTree(child, 3)
