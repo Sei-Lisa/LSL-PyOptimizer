@@ -994,6 +994,8 @@ class parser(object):
             if 'lazy_list_set' not in self.symtab[0]:
                 self.PushScope()
                 paramscope = self.scopeindex
+                self.PushScope()
+                blockscope = self.scopeindex
                 params = (['list', 'integer', 'list'],
                           ['L', 'i', 'v'])
                 self.AddSymbol('f', 0, 'lazy_list_set', Loc=self.usedspots,
@@ -1025,6 +1027,7 @@ list lazy_list_set(list L, integer i, list v)
                     nr(nt='{}'
                      , t=None
                      , LIR=True
+                     , scope=blockscope
                      , ch=[
                         nr(nt='WHILE'
                          , t=None
@@ -1118,7 +1121,7 @@ list lazy_list_set(list L, integer i, list v)
                  ]
                 )
                 self.usedspots += 1
-                #self.PopScope()  # no locals
+                self.PopScope()
                 self.PopScope()
 
             if expr.t is None:
@@ -1873,8 +1876,9 @@ list lazy_list_set(list L, integer i, list v)
 
                 last = self.breakstack.pop()
                 if last[2]:
-                    ret = nr(nt='{}', t=None, ch=[ret, nr(nt='@', t=None,
-                        name=last[0], scope=last[1])])
+                    assert last[1] is not None
+                    ret = nr(nt='{}', t=None, scope=last[1], ch=[ret,
+                        nr(nt='@', t=None, name=last[0], scope=last[1])])
                     self.AddSymbol('l', last[1], last[0], ref=last[2])
                 self.PopScope()
             return ret
@@ -1917,8 +1921,9 @@ list lazy_list_set(list L, integer i, list v)
 
                 last = self.breakstack.pop()
                 if last[2]:
-                    ret = nr(nt='{}', t=None, ch=[ret, nr(nt='@', t=None,
-                        name=last[0], scope=last[1])])
+                    assert last[1] is not None
+                    ret = nr(nt='{}', t=None, scope=last[1], ch=[ret,
+                        nr(nt='@', t=None, name=last[0], scope=last[1])])
                     self.AddSymbol('l', last[1], last[0], ref=last[2])
                 self.PopScope()
             return ret
@@ -1968,8 +1973,9 @@ list lazy_list_set(list L, integer i, list v)
 
                 last = self.breakstack.pop()
                 if last[2]:
-                    ret = nr(nt='{}', t=None, ch=[ret, nr(nt='@', t=None,
-                        name=last[0], scope=last[1])])
+                    assert last[1] is not None
+                    ret = nr(nt='{}', t=None, scope=last[1], ch=[ret,
+                        nr(nt='@', t=None, name=last[0], scope=last[1])])
                     self.AddSymbol('l', last[1], last[0], ref=last[2])
                 self.PopScope()
             return ret
@@ -2080,7 +2086,7 @@ list lazy_list_set(list L, integer i, list v)
             if last[2]:
                 blk.append(nr(nt='@', name=brk, scope=blkscope))
                 self.AddSymbol('l', blkscope, brk, ref=last[2])
-            return nr(nt='{}', t=None, ch=prelude + blk)
+            return nr(nt='{}', t=None, scope=blkscope, ch=prelude + blk)
 
         if tok0 == 'CASE':
             if not InsideSwitch:
@@ -2225,12 +2231,13 @@ list lazy_list_set(list L, integer i, list v)
             LastIsReturn = getattr(stmt, 'LIR', False)
             body.append(stmt)
 
+        scope_braces = self.scopeindex
         self.PopScope()
 
         self.expect('}')
         self.NextToken()
 
-        node = nr(nt='{}', t=None, ch=body)
+        node = nr(nt='{}', t=None, scope=scope_braces, ch=body)
         if LastIsReturn:
             node.LIR = True
         return node
@@ -2784,6 +2791,8 @@ list lazy_list_set(list L, integer i, list v)
 
         # Stack to track the labels for break targets, their scope table index,
         # and whether they are used.
+        # Elements are sublist with 0 = destination label name, 1 = scope for
+        # that label, and 2 = reference count of the label.
         self.breakstack = []
         # Stack to track the labels for continue targets, their scope index,
         # and whether they are used.

@@ -124,7 +124,9 @@ class lastpass(object):
                 # function (must be the result of optimization).
                 # Insert dummy IF(1){...} statement covering the whole function
                 # (if it returs a value, insert a return statement too).
-                child[0] = nr(nt='{}', t=None, ch=[
+                scope = len(self.symtab)
+                self.symtab.append({})
+                child[0] = nr(nt='{}', t=None, scope=scope, ch=[
                     nr(nt='IF', t=None, ch=[
                         nr(nt='CONST', t='integer', value=1, SEF=True),
                         child[0]

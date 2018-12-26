@@ -199,7 +199,9 @@ class foldconst(object):
         if (node.nt == 'FNCALL' and 'Loc' in self.symtab[0][node.name]
             and self.FnSEF(node)
            ):
-            parent[index] = nr(nt='{}', t=None, ch=[
+            scope = len(self.symtab)
+            self.symtab.append({})
+            parent[index] = nr(nt='{}', t=None, scope=scope, ch=[
                 nr(nt='EXPR', t=x.t, ch=[x]) for x in node.ch])
             self.FoldTree(parent, index)
             return
@@ -1662,9 +1664,11 @@ class foldconst(object):
                 self.FoldTree(child, idx)
             if not child:
                 # All events removed - add a dummy timer()
+                scope = len(self.symtab)
+                self.symtab.append({})
                 child.append(nr(nt='FNDEF', t=None, name='timer',
-                              pscope=0, ptypes=[], pnames=[],
-                              ch=[nr(nt='{}', t=None, ch=[])]
+                              pscope=scope, ptypes=[], pnames=[],
+                              ch=[nr(nt='{}', t=None, scope=scope, ch=[])]
                              ))
             return
 
@@ -1867,7 +1871,10 @@ class foldconst(object):
                         # We're in the case where there are expressions. If any
                         # remain, they are not SEF (or they would have been
                         # removed earlier) so don't mark this node as SEF.
-                        parent[index] = nr(nt='{}', t=None, ch=exprlist)
+                        scope = len(self.symtab)
+                        self.symtab.append({})
+                        parent[index] = nr(nt='{}', t=None, scope=scope,
+                        ch=exprlist)
                     else:
                         parent[index] = nr(nt=';', t=None, SEF=True)
                     return
