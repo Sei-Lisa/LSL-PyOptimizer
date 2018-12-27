@@ -306,10 +306,10 @@ class outscript(object):
             return ret
 
         if nt in ('VECTOR', 'ROTATION'):
-            ret = ('<' + self.OutExpr(child[0]) + ','
-                   + self.OutExpr(child[1]) + ',')
+            ret = ('<' + self.OutExpr(child[0]) + ', '
+                   + self.OutExpr(child[1]) + ', ')
             if nt == 'ROTATION':
-                ret += self.OutExpr(child[2]) + ','
+                ret += self.OutExpr(child[2]) + ', '
             lnt = child[-1].nt
             if lnt in self.op_priority \
                and self.op_priority[lnt] <= self.op_priority['>']:
