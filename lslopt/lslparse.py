@@ -244,17 +244,20 @@ class parser(object):
 
     def PushScope(self):
         """Create a new symbol table / scope level"""
-        self.symtab.append({-1:self.scopeindex})  # Add parent pointer
-        self.scopeindex = len(self.symtab)-1
+        self.scopeindex = len(self.symtab)
+        self.symtab.append({})  # Add new symbol table
+        self.scopestack.append(self.scopeindex)
 
     def PopScope(self):
         """Return to the previous scope level"""
-        self.scopeindex = self.symtab[self.scopeindex][-1]  # -1 is a dict key, not an index
-        assert self.scopeindex is not None, 'Unexpected internal error'
+        assert self.scopeindex == self.scopestack[-1]
+        self.scopestack.pop()
+        self.scopeindex = self.scopestack[-1]
+        assert len(self.scopestack) > 0
 
     def AddSymbol(self, kind, scope, name, **values):
         values['Kind'] = kind
-        if kind in 'vl':
+        if kind in ('v', 'l'):
             values['Scope'] = scope
         self.symtab[scope][name] = values
 
@@ -278,33 +281,33 @@ class parser(object):
 
         gives an Name Not Defined error.
         """
-        scopelevel = self.scopeindex
-        while scopelevel is not None:
-            symtab = self.symtab[scopelevel]
-            if symbol in symtab and (not MustBeLabel or symtab[symbol]['Kind'] == 'l'):
+        scopelevel = len(self.scopestack)
+        while scopelevel:
+            scopelevel -= 1
+            symtab = self.symtab[self.scopestack[scopelevel]]
+            if symbol in symtab and (not MustBeLabel
+                                     or symtab[symbol]['Kind'] == 'l'):
                 return symtab[symbol]
-            scopelevel = symtab[-1]  # -1 is a dict key, not an index
         return None
 
     # No labels or states allowed here (but functions are)
-    def FindSymbolFull(self, symbol, scopelevel = None):
+    def FindSymbolFull(self, symbol, globalonly=False):
         """Returns the symbol table entry for the given symbol."""
-        if scopelevel is None:
-            # unspecified scope level means to look in the current scope
-            scopelevel = self.scopeindex
-        while scopelevel:  # Loop over all local scopes
-            symtab = self.symtab[scopelevel]
+        scopelevel = 1 if globalonly else len(self.scopestack)
+        while scopelevel:  # Loop over all scopes in the stack
+            scopelevel -= 1
+            symtab = self.symtab[self.scopestack[scopelevel]]
             if symbol in symtab:
                 # This can't happen, as functions can't be local
                 #if len(symtab[symbol]) > 3:
                 #    return (symtab[symbol][1], symtab[symbol][3])
                 return symtab[symbol]
-            scopelevel = symtab[-1]
         try:
             return self.symtab[0][symbol]  # Quick guess
         except KeyError:
-            if self.disallowglobalvars and symbol not in self.symtab[0] \
-               or symbol not in self.globals:
+            if (self.disallowglobalvars and symbol not in self.symtab[0]
+                or symbol not in self.globals
+               ):
                 return None  # Disallow forwards in global var mode
             return self.globals[symbol]
 
@@ -947,7 +950,7 @@ class parser(object):
             self.NextToken()
 
             # Functions are looked up in the global scope only.
-            sym = self.FindSymbolFull(val, 0)
+            sym = self.FindSymbolFull(val, globalonly=True)
             if sym is None:
                 self.errorpos = savepos
                 raise EParseUndefined(self)
@@ -1325,7 +1328,7 @@ list lazy_list_set(list L, integer i, list v)
                 if typ not in self.TypeToExtractionFunction:
                     raise EParseNoConversion(self)
                 fn = self.TypeToExtractionFunction[typ]
-                sym = self.FindSymbolFull(fn, 0)
+                sym = self.FindSymbolFull(fn, globalonly=True)
                 assert sym is not None
                 fnparamtypes = sym['ParamTypes']
                 subparamtypes = [x.t for x in expr.ch]
@@ -1747,8 +1750,8 @@ list lazy_list_set(list L, integer i, list v)
             if not sym or sym['Kind'] != 'l':
                 # It might still be a forward reference, so we add it to the
                 # list of things to look up when done
-                self.jump_lookups.append((name, self.scopeindex, self.errorpos,
-                    jumpnode))
+                self.jump_lookups.append((name, self.scopestack[:],
+                    self.errorpos, jumpnode))
             else:
                 jumpnode.scope = sym['Scope']
                 sym['ref'] += 1
@@ -2568,9 +2571,12 @@ list lazy_list_set(list L, integer i, list v)
         self.Parse_states()
         self.expect('EOF')
 
+        assert len(self.scopestack) == 1 and self.scopestack[0] == 0
+
         # Check the pending jump targets to assign them the scope of the label.
         for tgt in self.jump_lookups:
-            self.scopeindex = tgt[1]
+            self.scopestack = tgt[1]
+            self.scopeindex = self.scopestack[-1]
             sym = self.FindSymbolPartial(tgt[0], MustBeLabel = True)
             if sym is None:
                 self.errorpos = tgt[2]
@@ -2579,6 +2585,7 @@ list lazy_list_set(list L, integer i, list v)
             sym['ref'] += 1
 
         del self.jump_lookups  # Finished with it.
+        self.scopestack = [0]
 
     def Parse_single_expression(self):
         """Parse the script as an expression, Used by lslcalc.
@@ -2825,13 +2832,14 @@ list lazy_list_set(list L, integer i, list v)
         # Symbol table:
         # This is a list of all local and global symbol tables.
         # The first element (0) is the global scope. Each symbol table is a
-        # dictionary. Element -1 of the dictionary is the parent index. The
-        # rest of entries are dictionaries. Each has a 'Kind', which can be
+        # dictionary of symbols, whose elements are in turn dictionaries of
+        # attributes. Each has a 'Kind', which can be:
         # 'v' for variable, 'f' for function, 'l' for label, 's' for state,
         # or 'e' for event. Some have a 'Loc' indicating the location (index)
         # of the definition in the tree root.
         #   Variables have 'Scope' and 'Type' (a string).
         #     Global variables also have 'Loc'.
+        #     Variables that are parameters also have 'Param'.
         #   Functions have 'Type' (return type, a string) and 'ParamTypes' (a list of strings).
         #     User-defined functions also have 'Loc' and 'ParamNames' (a list of strings).
         #   Labels only have 'Scope'.
@@ -2841,8 +2849,12 @@ list lazy_list_set(list L, integer i, list v)
 
         # Incorporate the library into the initial symbol table.
         self.symtab = [self.funclibrary.copy()]
-        self.symtab[0][-1] = None
+
+        # Current scope index
         self.scopeindex = 0
+
+        # Stack of scopes in which to look for a symbol as we parse
+        self.scopestack = [0]
 
         if self.prettify:
             # Add the constants as symbol table variables...
@@ -2915,6 +2927,7 @@ list lazy_list_set(list L, integer i, list v)
 
         # No longer needed. The data is already in self.symtab[0].
         del self.globals
+        del self.scopestack
 
         treesymtab = self.tree, self.symtab
         del self.tree
