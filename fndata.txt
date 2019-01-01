@@ -1,6 +1,6 @@
 # Function properties table
 #
-# Copyright © 2015-2018 Sei Lisa. All rights reserved.
+# Copyright © 2015-2019 Sei Lisa. All rights reserved.
 #
 #    This file is part of LSL PyOptimizer.
 #

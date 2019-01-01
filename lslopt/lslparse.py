@@ -1,4 +1,4 @@
-#    (C) Copyright 2015-2018 Sei Lisa. All rights reserved.
+#    (C) Copyright 2015-2019 Sei Lisa. All rights reserved.
 #
 #    This file is part of LSL PyOptimizer.
 #
@@ -2908,7 +2908,7 @@ list lazy_list_set(list L, integer i, list v)
         # globals are allowed; if true, only already seen globals are permitted.
         self.disallowglobalvars = False
 
-        # Another hack to determine where to allow void expressions.
+        # Hack to determine where to allow void expressions.
         self.allowVoid = False
 
         # Globals and labels can be referenced before they are defined. That
