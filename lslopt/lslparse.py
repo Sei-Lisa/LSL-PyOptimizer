@@ -1011,7 +1011,8 @@ class parser(object):
                 params = (['list', 'integer', 'list'],
                           ['L', 'i', 'v'])
                 self.AddSymbol('f', 0, 'lazy_list_set', Loc=self.usedspots,
-                    Type='list', ParamTypes=params[0], ParamNames=params[1])
+                    Type='list', ParamTypes=params[0], ParamNames=params[1],
+                    Inline=False)
                 self.AddSymbol('v', paramscope, 'L', Type='list')
                 self.AddSymbol('v', paramscope, 'i', Type='integer')
                 self.AddSymbol('v', paramscope, 'v', Type='list')
@@ -2507,16 +2508,22 @@ list lazy_list_set(list L, integer i, list v)
                 self.NextToken()
                 self.localevents = None
                 self.locallabels = set()
+                force_inline = False
+                if (self.enable_inline and self.tok[0] == 'IDENT'
+                   and self.tok[1] == 'inline'):
+                    self.NextToken()
+                    force_inline = True
                 body = self.Parse_code_block(typ)
                 del self.locallabels
                 if typ and not getattr(body, 'LIR', False):  # is LastIsReturn flag set?
                     raise EParseCodePathWithoutRet(self)
                 paramscope = self.scopeindex
                 self.AddSymbol('f', 0, name, Loc=len(self.tree), Type=typ,
+                    Inline=force_inline,
                     ParamTypes=params[0], ParamNames=params[1])
                 self.tree.append(nr(nt='FNDEF', t=typ, name=name, scope=0,
-                    pscope=paramscope,
-                    ptypes=params[0], pnames=params[1], ch=[body]))
+                    pscope=paramscope, ptypes=params[0], pnames=params[1],
+                    ch=[body]))
                 self.PopScope()
                 assert self.scopeindex == 0
             else:
@@ -2667,6 +2674,8 @@ list lazy_list_set(list L, integer i, list v)
                                 break
                             self.NextToken()
                     self.NextToken()
+                    if self.tok[0] == 'IDENT' and self.tok[1] == 'inline':
+                        self.NextToken()
                     if self.tok[0] != '{':
                         return ret
                     self.NextToken()  # Enter the first brace
@@ -2845,6 +2854,9 @@ list lazy_list_set(list L, integer i, list v)
         # coding pattern is normally easy to work around anyway.
         self.optenabled = 'optimize' in options
 
+        # Inline keyword
+        self.enable_inline = 'inline' in options
+
         # Symbol table:
         # This is a list of all local and global symbol tables.
         # The first element (0) is the global scope. Each symbol table is a
@@ -2947,6 +2959,10 @@ list lazy_list_set(list L, integer i, list v)
         # No longer needed. The data is already in self.symtab[0].
         del self.globals
         del self.scopestack
+
+        if self.enable_inline:
+            import lslinliner
+            lslinliner.inliner().inline(self.tree, self.symtab)
 
         treesymtab = self.tree, self.symtab
         del self.tree

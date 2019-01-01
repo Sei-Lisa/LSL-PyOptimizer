@@ -27,7 +27,7 @@ import lslopt.lslcommon
 import lslopt.lslloadlib
 
 
-VERSION = '0.2.2beta'
+VERSION = '0.3.0beta'
 
 
 def ReportError(script, e):
@@ -274,6 +274,8 @@ Case insensitive.
                        with that name). This flag works around that limitation
                        by replacing the names of the labels in the output with
                        unique ones.
+  Inline             + Enable 'inline' keyword to force functions to be inlined
+                       (EXPERIMENTAL)
 
   Deprecated / compatibility syntax extensions options:
 
@@ -356,7 +358,7 @@ validoptions = frozenset(('extendedglobalexpr','breakcont','extendedtypecast',
     'lazylists','enableswitch','errmissingdefault','funcoverride','optimize',
     'optsigns','optfloats','constfold','dcr','shrinknames','addstrings',
     'foldtabs','warntabs','processpre','explicitcast','listlength','listadd',
-    'help',
+    'inline', 'help',
     # undocumented
     'lso','expr','rsrclimit',
     # 'clear' is handled as a special case
@@ -374,7 +376,7 @@ def main(argv):
     options = set(('extendedglobalexpr','extendedtypecast','extendedassignment',
         'allowkeyconcat','allowmultistrings','processpre','warntabs','optimize',
         'optsigns','optfloats','constfold','dcr','errmissingdefault',
-        'listlength','listadd',
+        'listlength','listadd','inline',
         ))
 
     assert not (options - validoptions), (u"Default options not present in"
