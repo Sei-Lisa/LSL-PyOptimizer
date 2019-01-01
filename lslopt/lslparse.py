@@ -876,6 +876,8 @@ class parser(object):
             return nr(nt=CONST, t='integer', value=1 if tok0 == 'TRUE' else 0)
         if tok0 == '<':
             self.NextToken()
+            saveAllowVoid = self.allowVoid
+            self.allowVoid = False
             val = [self.autocastcheck(self.Parse_expression(), 'float')]
             self.expect(',')
             self.NextToken()
@@ -908,6 +910,7 @@ class parser(object):
 
             # We defer it to a separate function.
             val += self.Parse_vector_rotation_tail()
+            self.allowVoid = saveAllowVoid
 
             if len(val) == 3:
                 return nr(nt='VECTOR', t='vector', ch=val)
@@ -923,7 +926,10 @@ class parser(object):
             self.NextToken()
             self.expect('(')
             self.NextToken()
+            saveAllowVoid = self.allowVoid
+            self.allowVoid = True
             expr = self.Parse_expression()
+            self.allowVoid = saveAllowVoid
             if expr.t not in types:
                 raise (EParseTypeMismatch(self) if expr.t is None
                        else EParseUndefined(self))
@@ -989,11 +995,14 @@ class parser(object):
                 raise EParseTypeMismatch(self)
             idxexpr = idxexpr[0]
             self.NextToken()
+            saveAllowVoid = self.allowVoid
+            self.allowVoid = True
             expr = self.Parse_expression()
+            self.allowVoid = saveAllowVoid
             rtyp = expr.t
             # Define aux function if it doesn't exist
             # (leaves users room for writing their own replacement, e.g.
-            # one that fills with something other than zeros)
+            # one that uses something other than integer zero as filler)
             if 'lazy_list_set' not in self.symtab[0]:
                 self.PushScope()
                 paramscope = self.scopeindex
@@ -1158,8 +1167,6 @@ list lazy_list_set(list L, integer i, list v)
             self.NextToken()
             expr = self.Parse_expression()
             rtyp = expr.t
-            if rtyp not in types:
-                raise EParseTypeMismatch(self)
             if typ in ('integer', 'float'):
                 # LSL admits integer *= float (go figger).
                 # It acts like: lhs = (integer)((float)lhs * rhs)
@@ -1614,6 +1621,9 @@ list lazy_list_set(list L, integer i, list v)
                 raise EParseTypeMismatch(self)
             expression = nr(nt=op, t='integer', ch=[expression, rexpr])
 
+        if not self.allowVoid and expression.t not in types:
+            raise EParseTypeMismatch(self)
+
         return expression
 
     def Parse_optional_expression_list(self, expected_types = None):
@@ -1635,7 +1645,10 @@ list lazy_list_set(list L, integer i, list v)
         idx = 0
         if self.tok[0] not in (']', ')', ';'):
             while True:
+                saveAllowVoid = self.allowVoid
+                self.allowVoid = True
                 expr = self.Parse_expression()
+                self.allowVoid = saveAllowVoid
                 if expr.nt == 'SUBIDX' and expr.t is None:
                     # Don't accept an untyped lazy list in expression lists
                     raise EParseTypeMismatch(self)
@@ -2196,7 +2209,10 @@ list lazy_list_set(list L, integer i, list v)
             return decl
 
         # If none of the above, it must be an expression.
+        saveAllowVoid = self.allowVoid
+        self.allowVoid = True
         value = self.Parse_expression()
+        self.allowVoid = saveAllowVoid
         self.expect(';')
         self.NextToken()
         return nr(nt='EXPR', t=value.t, ch=[value])
@@ -2879,6 +2895,9 @@ list lazy_list_set(list L, integer i, list v)
         # extended expressions are enabled. When false (default), forward
         # globals are allowed; if true, only already seen globals are permitted.
         self.disallowglobalvars = False
+
+        # Another hack to determine where to allow void expressions.
+        self.allowVoid = False
 
         # Globals and labels can be referenced before they are defined. That
         # includes states.
