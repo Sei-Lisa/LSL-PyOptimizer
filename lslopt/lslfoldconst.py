@@ -1784,7 +1784,6 @@ class foldconst(object):
 
                     # If type(X) != Key, then:
                     # if (X) ; else {stuff}  ->  if (!X) {stuff}
-                    # (being careful with labels again)
                     if child[0].t != 'key':
                         # We've already converted all other types to equivalent
                         # comparisons
@@ -1849,10 +1848,9 @@ class foldconst(object):
             if child[1].nt == 'CONST':
                 # FOR is delicate. It can have multiple expressions at start.
                 # And if there is more than one, these expressions will need a
-                # new block, which means new scope, which is dangerous.
-                # They are expressions, no declarations or labels allowed, thus
-                # no new identifiers may be created in the new scope, but it
-                # still feels dodgy.
+                # new block, which means new scope. They are expressions, no
+                # declarations or labels allowed, thus no new identifiers may
+                # be created in the new scope.
                 if lslfuncs.cond(child[1].value):
                     # Endless loop. Traverse the loop and the iterator.
                     self.FoldTree(child, 3)

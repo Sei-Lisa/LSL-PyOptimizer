@@ -540,9 +540,6 @@ class Test03_Optimizer(UnitTestCase):
         self.opt.optimize(p)
         out = self.outscript.output(p)
         print out
-        # FIXME: DCR produces invalid code, thinks the while can be eliminated
-        # due to the jump jumping past it. Extremely corner case, but maybe
-        # worth a fix.
 
     def tearDown(self):
         del self.parser
