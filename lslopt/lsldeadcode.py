@@ -286,7 +286,7 @@ class deadcode(object):
 
         return True
 
-    def SymbolReplacedOrDeleted(self, curnode):
+    def OKtoRemoveSymbol(self, curnode):
         """If the given node's name must be simplified, that is, replaced or
         deleted (deleted if declaration, replaced if identifier), it returns
         the symbol table entry. Otherwise it returns False.
@@ -396,7 +396,7 @@ class deadcode(object):
             nt = node.nt
 
             if nt == 'DECL':
-                if self.SymbolReplacedOrDeleted(node):
+                if self.OKtoRemoveSymbol(node):
                     if not node.ch or node.ch[0].SEF:
                         del curnode.ch[index]
                         continue
@@ -404,7 +404,7 @@ class deadcode(object):
                         ch=[self.Cast(node.ch[0], node.t)])
 
             elif nt == 'FLD':
-                sym = self.SymbolReplacedOrDeleted(node.ch[0])
+                sym = self.OKtoRemoveSymbol(node.ch[0])
                 if sym:
                     value = sym['W']
                     # Mark as executed, so it isn't optimized out.
@@ -416,7 +416,7 @@ class deadcode(object):
                             t=self.PythonType2LSL[type(value)], value=value)
                         value = self.Cast(value, 'float')
                         SEF = True
-                    else: # assumed VECTOR or ROTATION per SymbolReplacedOrDeleted
+                    else: # assumed VECTOR or ROTATION per OKtoRemoveSymbol
                         SEF = value.SEF
                         value = self.Cast(value.ch[fieldidx], 'float')
                     # Replace it
@@ -424,7 +424,7 @@ class deadcode(object):
                     node.SEF = SEF
 
             elif nt == 'IDENT':
-                sym = self.SymbolReplacedOrDeleted(node)
+                sym = self.OKtoRemoveSymbol(node)
                 if sym:
                     # Mark as executed, so it isn't optimized out.
                     # Make shallow copy.
@@ -450,7 +450,7 @@ class deadcode(object):
                 ident = node.ch[0]
                 if ident.nt == 'FLD':
                     ident = ident.ch[0]
-                sym = self.SymbolReplacedOrDeleted(ident)
+                sym = self.OKtoRemoveSymbol(ident)
                 if sym:
                     node = curnode.ch[index] = self.Cast(node.ch[1], node.t)
 
@@ -516,7 +516,7 @@ class deadcode(object):
             if not hasattr(node, 'X'):
                 delete = True
             elif node.nt == 'DECL':
-                delete = self.SymbolReplacedOrDeleted(node)
+                delete = self.OKtoRemoveSymbol(node)
 
             if delete:
                 # Mark the symbol for later deletion from symbol table.
