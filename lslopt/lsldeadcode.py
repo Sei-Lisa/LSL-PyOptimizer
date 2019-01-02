@@ -308,7 +308,7 @@ class deadcode(object):
         sym = self.symtab[curnode.scope][curnode.name]
 
         if 'R' not in sym:
-            return True # if not used, it can be removed
+            return sym  # if not used, it can be removed
 
         # Event parameters do not have 'W' in sym.
         if 'W' not in sym:
