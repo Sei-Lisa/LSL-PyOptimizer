@@ -428,8 +428,8 @@ class deadcode(object):
                 if sym:
                     # Mark as executed, so it isn't optimized out.
                     # Make shallow copy.
-                    # TODO: Needs more analysis to see if it's correct or not.
-                    #       (See constant_anomaly.lsl)
+                    # TODO: Should the copy be a deep copy?
+                    assert sym.get('W', False) is not False
                     new = sym['W'].copy()
                     if hasattr(new, 'orig'):
                         del new.orig
