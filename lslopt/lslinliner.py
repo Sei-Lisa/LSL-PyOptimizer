@@ -24,6 +24,8 @@ from lslcommon import nr
 SINGLE_OPT_EXPR_CHILD_NODES = frozenset({'DECL', 'EXPR', 'RETURN',
     '@', 'STSW', 'JUMP', ';', 'LAMBDA'})
 
+# TODO: We can do a bit better with evaluation order.
+
 class ENameAlreadyExists(Exception): pass
 
 class EExpansionLoop(Exception):
@@ -71,7 +73,8 @@ class inliner(object):
         """Get a copy of the function's body
 
         Replaces 'return expr' with assignment+jump, 'return' with jump, and
-        existing labels with fresh labels. Also creates new symtabs for locals.
+        existing labels with fresh labels. Also creates new symtabs for locals
+        and adjusts scopes of symbols.
         """
         nt = node.nt
         if nt == 'FNDEF':
@@ -93,6 +96,8 @@ class inliner(object):
                 if i.nt == 'DECL':
                     self.symtab[copy.scope][i.name] = \
                         self.symtab[i.scope][i.name].copy()
+                    self.symtab[node.scope][i.name]['NewSymbolScope'] = \
+                        copy.scope
                     copy.ch[-1].scope = copy.scope
             return copy
 
@@ -130,6 +135,13 @@ class inliner(object):
                 self.retused = True
             return newnode
 
+        if nt == 'IDENT':
+            copy = node.copy()
+            if 'NewSymbolScope' in self.symtab[node.scope][node.name]:
+                copy.scope = \
+                    self.symtab[node.scope][node.name]['NewSymbolScope']
+            return copy
+
         if not node.ch:
             return node.copy()
 
@@ -166,6 +178,25 @@ class inliner(object):
         if node.name in self.expanding:
             raise EExpansionLoop()
 
+        outer = None
+        if fnsym['ParamNames']:
+            # Add a new block + symbols + assignments for parameter values
+            pscope = len(self.symtab)
+            self.symtab.append({})
+            outer = nr(nt='{}', t=None, scope=pscope, ch=[])
+            origpscope = self.tree[fnsym['Loc']].pscope
+            for i in range(len(fnsym['ParamNames'])):
+                # Add parameter assignments and symbol table entries
+                pname = fnsym['ParamNames'][i]
+                ptype = fnsym['ParamTypes'][i]
+                value = node.ch[i]
+                self.symtab[pscope][pname] = {'Kind':'v','Type':ptype,
+                                              'Scope':pscope}
+                self.symtab[origpscope][pname]['NewSymbolScope'] = pscope
+                # BUG: We don't honour ExplicitCast here.
+                outer.ch.append(nr(nt='DECL', t=ptype, name=pname, scope=pscope,
+                                   ch=[value]))
+
         self.expanding.append(node.name)
         self.retvar = retvar
         self.retscope = scope
@@ -179,6 +210,10 @@ class inliner(object):
         self.retused = False
         blk = [self.GetFuncCopy(self.tree[fnsym['Loc']])]
         retused = self.retused
+        if outer:
+            outer.ch.extend(blk)
+            blk = [outer]
+
         self.RecurseStatement(blk, 0, scope)  # recursively expand functions
 
         # Add return label if used, otherwise remove it from the symbol table
@@ -188,24 +223,6 @@ class inliner(object):
             del self.symtab[scope][retlabel]
         self.expanding.pop()
         # End expansion
-
-        if fnsym['ParamNames']:
-            # Add a new block + symbols + assignments for parameter values
-            pscope = len(self.symtab)
-            self.symtab.append({})
-            outer = nr(nt='{}', t=None, scope=pscope, ch=[])
-            for i in range(len(fnsym['ParamNames'])):
-                # Add parameter assignments and symbol table entries
-                pname = fnsym['ParamNames'][i]
-                ptype = fnsym['ParamTypes'][i]
-                value = node.ch[i]
-                self.symtab[pscope][pname] = {'Kind':'v','Type':ptype,
-                                              'Scope':pscope}
-                # BUG: We don't honour ExplicitCast here.
-                outer.ch.append(nr(nt='DECL', t=ptype, name=pname, scope=pscope,
-                                   ch=[value]))
-            outer.ch.extend(blk)
-            blk = [outer]
 
         fns.extend(blk)
 
