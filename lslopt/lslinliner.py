@@ -43,6 +43,7 @@ class inliner(object):
             if 'NewSymbolName' in orig:
                 node.name = orig['NewSymbolName']
                 node.scope = orig['NewSymbolScope']
+                self.symtab[node.scope][node.name]['ref'] += 1
             return
 
         if nt in SINGLE_OPT_EXPR_CHILD_NODES:
@@ -111,7 +112,7 @@ class inliner(object):
             if copy.name in self.symtab[scope]:
                 raise ENameAlreadyExists(
                     u"Label already exists: %s" % copy.name.decode('utf8'))
-            self.symtab[scope][copy.name] = {'Type':'l', 'Scope':scope}
+            self.symtab[scope][copy.name] = {'Type':'l','Scope':scope,'ref':0}
             self.symtab[oldscope][oldname]['NewSymbolName'] = copy.name
             self.symtab[oldscope][oldname]['NewSymbolScope'] = scope
             return copy
@@ -119,6 +120,7 @@ class inliner(object):
         if nt == 'RETURN':
             newnode = nr(nt='JUMP', t=None, name=self.retlabel,
                 scope=self.retlscope)
+            self.symtab[self.retlscope][self.retlabel]['ref'] += 1
             if node.ch:
                 # Returns a value. Wrap in {} and add an assignment.
                 # BUG: We don't honour ExplicitCast here.
@@ -132,7 +134,6 @@ class inliner(object):
                     ]), newnode
                 ])
                 self.symtab.append({})
-                self.retused = True
             return newnode
 
         if nt == 'IDENT':
@@ -204,15 +205,14 @@ class inliner(object):
         self.lblCount += 1
         retlabel = '___rtl__%05d' % self.lblCount
         self.retlabel = retlabel
-        self.symtab[scope][retlabel] = {'Type':'l', 'Scope':scope}
+        self.symtab[scope][retlabel] = {'Type':'l', 'Scope':scope, 'ref':0}
 
         # Get a copy of the function
-        self.retused = False
         blk = [self.GetFuncCopy(self.tree[fnsym['Loc']])]
-        retused = self.retused
         if outer:
             outer.ch.extend(blk)
             blk = [outer]
+        retused = self.symtab[scope][retlabel]['ref'] != 0
 
         self.RecurseStatement(blk, 0, scope)  # recursively expand functions
 
