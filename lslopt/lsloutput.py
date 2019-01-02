@@ -22,6 +22,8 @@ import lslcommon
 from lslcommon import Key, Vector, Quaternion, warning
 from math import copysign
 
+debugScopes = False
+
 class outscript(object):
 
     binary_operands = frozenset(('||','&&','^','|','&','==','!=','<','<=','>',
@@ -271,6 +273,8 @@ class outscript(object):
             return ret
 
         if nt == 'IDENT':
+            if debugScopes:
+                return self.FindName(expr) + '\\' + str(expr.scope) + '/'
             return self.FindName(expr)
 
         if nt == 'CONST':
@@ -424,8 +428,14 @@ class outscript(object):
             ret += self.OutIndented(child[3])
             return ret
         if nt == '@':
+            if debugScopes:
+                return self.dent() + '@' + self.FindName(node) \
+                       + '\\' + str(node.scope) + '/;\n'
             return self.dent() + '@' + self.FindName(node) + ';\n'
         if nt == 'JUMP':
+            if debugScopes:
+                return self.dent() + 'jump ' + self.FindName(node) \
+                       + '\\' + str(node.scope) + '/;\n'
             return self.dent() + 'jump ' + self.FindName(node) + ';\n'
         if nt == 'STSW':
             return self.dent() + 'state ' + self.FindName(node) + ';\n'
@@ -435,6 +445,8 @@ class outscript(object):
             return self.dent() + 'return;\n'
         if nt == 'DECL':
             ret = self.dent() + node.t + ' ' + self.FindName(node)
+            if debugScopes:
+                ret += '\\' + str(node.scope) + '/'
             if child:
                 if hasattr(child[0], 'orig') and (child[0].orig.nt != 'IDENT'
                         or child[0].orig.name
