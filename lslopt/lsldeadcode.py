@@ -163,13 +163,16 @@ class deadcode(object):
                 # Each element is a "write" on the callee's parameter.
                 # E.g. f(integer a, integer b) { f(2,3); } means 2, 3 are
                 # writes to a and b.
+                # This has been eliminated, as it causes more trouble than
+                # it fixes.
                 self.MarkReferences(child[idx])
                 if fdef is not None:
                     psym = self.symtab[fdef.pscope][fdef.pnames[idx]]
-                    if 'W' in psym:
-                        psym['W'] = False
-                    else:
-                        psym['W'] = child[idx]
+                    #if 'W' in psym:
+                    #    psym['W'] = False
+                    #else:
+                    #    psym['W'] = child[idx]
+                    psym['W'] = False
 
             if 'Loc' in sym:
                 if not hasattr(self.tree[sym['Loc']], 'X'):
@@ -355,9 +358,7 @@ class deadcode(object):
             # Replacing j with i+1 in llOwnerSay will produce wrong code because
             # the name i is redefined after j is assigned. shrinknames prevents
             # that.
-            # FIXME: EMERGENCY FIX: shrinknames is not enough guarantee. See nposerlv.lsl.
-            #if not self.shrinknames or not node.SEF:
-            if True or not node.SEF:
+            if not self.shrinknames or not node.SEF:
                 return False
 
             if nt not in ('VECTOR', 'ROTATION'):
