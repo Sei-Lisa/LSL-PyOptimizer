@@ -1,0 +1,8 @@
+default
+{
+    timer()
+    {
+        llOwnerSay("NTc0OGRlY2MtZjYyOS00NjFjLTlhMzYtYTM1YTIyMWZlMjFm");
+        llOwnerSay("NTc0OGRlY2MtZjYyOS00NjFjLTlhMzYtYTM1YTIyMWZlMjFm");
+    }
+}

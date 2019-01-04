@@ -1,0 +1,17 @@
+default
+{
+    timer()
+    {
+        string s = llGetObjectDesc();
+        key k = llGenerateKey();
+        integer i = llGetLinkNumber();
+        if (!((!(s == "A")) | k == llGenerateKey() | (~llSubStringIndex(s, "B"))))
+            llDie();
+        if (-!(i ^ 5 | i ^ 9) & llGetLinkNumber())
+            llDie();
+        if (-!(i == 5 | i == 9) & llGetLinkNumber())
+            llDie();
+        if (-!(i ^ 5 | i ^ 7 | i ^ 9) & llGetLinkNumber())
+            llDie();
+    }
+}

@@ -1,0 +1,3 @@
+ v = < <0,0,0>,0,0>;
+              ^
+(Line 4 char 15): ERROR: Type mismatch

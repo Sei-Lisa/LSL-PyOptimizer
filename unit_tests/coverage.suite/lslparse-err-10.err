@@ -1,0 +1,3 @@
+    default: ;
+    ^
+(Line 2 char 5): ERROR: 'default' used outside a 'switch' statement

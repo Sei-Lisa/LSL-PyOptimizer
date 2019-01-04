@@ -1,0 +1,3 @@
+  v *= v;
+        ^
+(Line 4 char 9): ERROR: Type mismatch

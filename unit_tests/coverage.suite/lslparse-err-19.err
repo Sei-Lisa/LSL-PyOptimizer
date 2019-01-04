@@ -1,0 +1,3 @@
+#define a \
+^
+(Line 1 char 1): ERROR: Preprocessor directive can't end in backslash. Activate the preprocessor or put everything in the same line.

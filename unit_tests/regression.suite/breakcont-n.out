@@ -1,0 +1,34 @@
+default
+{
+    state_entry()
+    {
+        integer i = 0;
+        {
+            while (i < 10)
+            {
+                integer j = 0;
+                {
+                    while (j < 10)
+                    {
+                        if (j == 5)
+                            jump J_autoGen00001;
+                        if (j == 6)
+                            jump J_autoGen00002;
+                        if (j == 7)
+                            jump J_autoGen00003;
+                        if (j == 8)
+                            jump J_autoGen00004;
+                        ++j;
+                        @J_autoGen00004;
+                    }
+                    @J_autoGen00003;
+                }
+                ++i;
+                if (llFrand(5) < 3)
+                    jump J_autoGen00001;
+                @J_autoGen00002;
+            }
+            @J_autoGen00001;
+        }
+    }
+}

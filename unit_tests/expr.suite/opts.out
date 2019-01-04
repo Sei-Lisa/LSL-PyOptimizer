@@ -1,0 +1,31 @@
+[ -~llGetLinkNumber()
+, -~-~llGetLinkNumber()
+, 3 + llGetLinkNumber()
+, 4 + llGetLinkNumber()
+, ~-llGetLinkNumber()
+, ~-~-llGetLinkNumber()
+, ((integer)-3) + llGetLinkNumber()
+, ((integer)-4) + llGetLinkNumber()
+, 3 + llGetLinkNumber()
+, ((integer)-3) + llGetLinkNumber()
+, 5 + llGetLinkNumber()
+, ~-llGetLinkNumber()
+, ~-~-llGetLinkNumber()
+, llGetLinkNumber() == 2
+, llGetLinkNumber() + llGetLinkNumber() + llGetLinkNumber()
+, 2 < llGetLinkNumber()
+, llGetLinkNumber() < 2
+, 2 + (1 + llGetTime())
+, 11 + llGetLinkNumber()
+, 5 == llGetLinkNumber()
+, ((integer)-5) + llGetLinkNumber() == 12
+, !(((integer)-5) + llGetLinkNumber() == 12)
+, 3 + llGetLinkNumber()
+, ~llGetLinkNumber()
+, llGetLinkNumber()
+, -((~-~llGetLinkNumber()) + (~-~llGetLinkNumber()))
+, -~-~llGetLinkNumber() + (~-~-llGetLinkNumber())
+, (~-~-llGetLinkNumber()) + (~-~-llGetLinkNumber())
+, 5 + llGetLinkNumber() + (5 + llGetLinkNumber())
+, 0
+]

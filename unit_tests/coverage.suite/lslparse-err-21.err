@@ -1,0 +1,3 @@
+    llOwnerSay(3);
+                ^
+(Line 3 char 17): ERROR: Function call mismatches type or number of arguments

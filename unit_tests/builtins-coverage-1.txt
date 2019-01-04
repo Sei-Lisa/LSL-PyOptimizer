@@ -1,0 +1,2 @@
+event ev()
+const list LIST_CONSTANT = []

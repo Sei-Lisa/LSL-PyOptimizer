@@ -1,0 +1,45 @@
+default
+{
+    timer()
+    {
+        llSetPrimitiveParams(
+            [ 1e40
+            , ((float)-1e40)
+            , 1e40
+            , ((float)0)
+            , ((float)0)
+            , 1e40
+            , 1e40
+            , ((float)-1e40)
+            , (-1e40*0)
+            , (1e40*0)
+            , "nan"
+            , "-nan"
+            , "nan"
+            , "nan"
+            , "0.000000"
+            , (-(float)0)
+            , ((float)0)
+            , 0
+            , 0
+            , ((float)-19)
+            , ((float)19)
+            , ((float)-38)
+            , ((float)38)
+            , <((float)0), (-(float)0), ((float)0)>
+            , <(-1e40*0), (-(float)0), (-(float)0)>
+            , <(1e40*0), ((float)1), ((float)1)>
+            , <((float)0), ((float)0), ((float)0)>
+            , <(-1e40*0), (-1e40*0), (-1e40*0)>
+            , <((float)0), ((float)0), ((float)0)>
+            , ((float)0)
+            , <1e-38, ((float)0), ((float)0)>
+            , 1e40
+            , (1e40*0)
+            , <((float)3), ((float)0), (-(float)0)> / ((float)0)
+            , <((float)3), ((float)0), (-(float)0)> / (-(float)0)
+            , <1e40, (1e40*0), (-1e40*0)> / ((float)0)
+            , <1e40, (1e40*0), (-1e40*0)> / (-(float)0)
+            ]);
+    }
+}

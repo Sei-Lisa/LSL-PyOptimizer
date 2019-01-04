@@ -1,0 +1,8 @@
+default
+{
+    state_entry()
+    {
+        llOwnerSay("[\"\",\"\"]");
+        llOwnerSay("-1");
+    }
+}

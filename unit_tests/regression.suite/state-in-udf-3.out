@@ -1,0 +1,15 @@
+x()
+{
+    if (1)
+    {
+        state default;
+    }
+}
+
+default
+{
+    timer()
+    {
+        x();
+    }
+}

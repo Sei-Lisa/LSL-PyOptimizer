@@ -1,0 +1,3 @@
+}
+^
+(Line 7 char 1): ERROR: Missing 'default:' label inside 'switch' statement; disable option 'errmissingdefault' to disable this error.

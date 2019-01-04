@@ -1,0 +1,1 @@
+default{no_sensor(){}}

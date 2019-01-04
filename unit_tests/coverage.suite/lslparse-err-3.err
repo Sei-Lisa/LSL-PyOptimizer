@@ -1,0 +1,3 @@
+return;
+^
+(Line 2 char 1): ERROR: Function returns a value but return statement doesn't

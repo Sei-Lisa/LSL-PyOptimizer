@@ -1,0 +1,71 @@
+default
+{
+    state_entry()
+    {
+        {
+            llOwnerSay("f1");
+        }
+        if (1)
+        {
+            llOwnerSay("f1");
+        }
+        {
+            integer f2param = 3;
+            {
+                llOwnerSay("f2:" + (string)f2param);
+            }
+        }
+        vector ___ret__00001;
+        {
+            integer f3p1 = 4;
+            string f3p2 = "x";
+            {
+                {
+                    integer f2param = f3p1;
+                    {
+                        llOwnerSay("f2:" + (string)f2param);
+                    }
+                }
+                integer f3p1;
+                {
+                    jump ___lbl__00005;
+                    llOwnerSay("f3:" + (string)f3p1 + f3p2);
+                }
+                @___lbl__00005;
+                if (f3p2 != "")
+                {
+                    ___ret__00001 = <1, 1, 1>;
+                    jump ___rtl__00004;
+                }
+                integer ___ret__00002;
+                {
+                    {
+                        ___ret__00002 = llGetLinkNumber();
+                        jump ___rtl__00007;
+                    }
+                }
+                @___rtl__00007;
+                do
+                    ;
+                while (___ret__00002);
+                {
+                    ___ret__00001 = <0, 0, 0>;
+                    jump ___rtl__00004;
+                }
+            }
+        }
+        @___rtl__00004;
+        if (___ret__00001 == <0., 0., 0.>)
+            llOwnerSay("ok");
+    }
+
+    timer()
+    {
+        {
+            string s = "hi";
+            {
+                llOwnerSay(s);
+            }
+        }
+    }
+}

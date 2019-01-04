@@ -1,0 +1,111 @@
+[ llRot2Fwd(<1,0,0,0>)
+, llRot2Fwd(<0,1,0,0>)
+, llRot2Fwd(<0,0,1,0>)
+, llRot2Fwd(<0,0,0,1>)
+, llRot2Fwd(<0,0,0,0>)
+, llRot2Fwd(<.5,.5,.5,.5>)
+, llRot2Fwd(<-.5,.5,.5,.5>)
+, llRot2Fwd(<.5,-.5,.5,.5>)
+, llRot2Fwd(<.5,.5,-.5,.5>)
+, llRot2Fwd(<.5,-.5,-.5,.5>)
+, llRot2Fwd(<-.5,.5,-.5,.5>)
+, llRot2Fwd(<-.5,-.5,.5,.5>)
+, llRot2Fwd(<-.5,-.5,-.5,.5>)
+, llRot2Fwd(<-.5,-.5,-.5,-.5>)
+, llRot2Fwd(<-0.16, 0.2, -0.88, 0.4>)
+, llRot2Fwd(<-16, 20, -88, 40>)
+, llRot2Left(<1,0,0,0>)
+, llRot2Left(<0,1,0,0>)
+, llRot2Left(<0,0,1,0>)
+, llRot2Left(<0,0,0,1>)
+, llRot2Left(<0,0,0,0>)
+, llRot2Left(<.5,.5,.5,.5>)
+, llRot2Left(<-.5,.5,.5,.5>)
+, llRot2Left(<.5,-.5,.5,.5>)
+, llRot2Left(<.5,.5,-.5,.5>)
+, llRot2Left(<.5,-.5,-.5,.5>)
+, llRot2Left(<-.5,.5,-.5,.5>)
+, llRot2Left(<-.5,-.5,.5,.5>)
+, llRot2Left(<-.5,-.5,-.5,.5>)
+, llRot2Left(<-.5,-.5,-.5,-.5>)
+, llRot2Left(<-0.16, 0.2, -0.88, 0.4>)
+, llRot2Left(<-16, 20, -88, 40>)
+, llRot2Up(<1,0,0,0>)
+, llRot2Up(<0,1,0,0>)
+, llRot2Up(<0,0,1,0>)
+, llRot2Up(<0,0,0,1>)
+, llRot2Up(<0,0,0,0>)
+, llRot2Up(<.5,.5,.5,.5>)
+, llRot2Up(<-.5,.5,.5,.5>)
+, llRot2Up(<.5,-.5,.5,.5>)
+, llRot2Up(<.5,.5,-.5,.5>)
+, llRot2Up(<.5,-.5,-.5,.5>)
+, llRot2Up(<-.5,.5,-.5,.5>)
+, llRot2Up(<-.5,-.5,.5,.5>)
+, llRot2Up(<-.5,-.5,-.5,.5>)
+, llRot2Up(<-.5,-.5,-.5,-.5>)
+, llRot2Up(<-0.16, 0.2, -0.88, 0.4>)
+, llRot2Up(<-16, 20, -88, 40>)
+, llAngleBetween(<0.58, 0.26, 0.22, -0.74>, <-0.62, -0.34, 0.7, 0.1>)
+, llAngleBetween(<0.58, 0.26, 0.22, -0.74>, <0,0,0,0>)
+, llAngleBetween(<0, 0, 1, 0>, <0,0,0,0>)
+, llAngleBetween(<1, 1, 1, 1>, <0,1,1,1>)
+, llAxes2Rot(<0,0,0>,<0,0,0>,<0,0,0>)
+, llAxes2Rot(<0.00000001,0,0>,<0,0,0>,<0,0,0>)
+, llAxes2Rot(<-0.00000001,0,0>,<0,0,0>,<0,0,0>)
+, llAxes2Rot(<-0.00000001,0,0>,<0,-1,0>,<0,0,0>)
+, llAxes2Rot(<0,0,0>,<0,1,0>,<0,0,1>)
+, llAxes2Rot(<1,0,0>,<0,1,0>,<0,0,1>)
+, llAxes2Rot(<1,0,0>,<0,-1,0>,<0,0,-1>)
+, "********"
+, llAxisAngle2Rot(<0,0,0>,0) // invalid vector
+, llAxisAngle2Rot(<0,0,0>,PI)
+, llAxisAngle2Rot(<0,0,1>,0)
+, llAxisAngle2Rot(<0,0,1>,1)
+, llAxisAngle2Rot(<3,4,2>,1) // non-normalized
+, llRot2Euler(<0,1,0,1>) // Singularity
+, llRot2Euler(<0.5,0.5,0.5,0.5000005>) // Singularity, and special case
+, llRot2Euler(<0,0,0,0>)
+, llEuler2Rot(<1,2,3>)
+, llEuler2Rot(<1,2,-3>)
+, llEuler2Rot(<1,-2,3>)
+, llEuler2Rot(<1,-2,-3>)
+, llEuler2Rot(<-1,2,3>)
+, llEuler2Rot(<-1,2,-3>)
+, llEuler2Rot(<-1,-2,3>)
+, llEuler2Rot(<-1,-2,-3>)
+, llEuler2Rot(<1,3,2>)
+, llEuler2Rot(<2,1,3>)
+, llEuler2Rot(<2,3,1>)
+, llEuler2Rot(<3,1,2>)
+, llEuler2Rot(<3,2,1>)
+, llEuler2Rot(<-2.395147, 0.006141, -1.193234>)
+, llEuler2Rot(<3.139854, 1.517441, 1.255878>)
+, llEuler2Rot(<0.04639, -2.645807, 0.33886>)
+, llEuler2Rot(<-1.422952, -2.752072, 2.961577>)
+, llEuler2Rot(<1.279703, 2.996797, -2.377522>)
+, llEuler2Rot(<-2.128544, -2.863647, -1.894819>)
+, llEuler2Rot(<1.857047, -1.549855, -2.276513>)
+, llEuler2Rot(<1.716022, 2.143527, -0.121504>)
+, llRot2Axis(<0,0,0,0>)
+, llRot2Axis(<0,0,0,1>)
+, llRot2Axis(<1,1,1,1>)
+, llRot2Axis(<-0.78, 0.54, 0.18, 0.26>)
+, llRot2Axis(<78, -54, -18, -26>)
+, llRot2Axis(<-.48, .6, .64, 1.>)
+
+, llRotBetween(<1,0,0>, <0,1,0>) // <0., 0., 0.707107, 0.707107>
+, llRotBetween(<1,0,0>, <0,0,1>) // <0., -0.707107, 0., 0.707107>
+, llRotBetween(<0,1,0>, <0,0,1>) // <0.707107, 0., 0., 0.707107>
+
+, llRotBetween(<1,1,0>, <-1,-1,0>) // <0.707107, -0.707107, 0., 0.>
+, llRotBetween(<1,0,1>, <-1,0,-1>) // <0.707107, 0., -0.707107, 0.>
+, llRotBetween(<0,1,1>, <0,-1,-1>) // <1., 0., 0., 0.>
+
+, llRotBetween(<1,0,0>, <-2,0,0>) //  <0., 0., 1., 0.>
+, llRotBetween(<0,1,0>, <0,-2,0>) // <1., 0., 0., 0.>
+, llRotBetween(<0,0,1>, <0,0,-2>) // <1., 0., 0., 0.>
+
+, llRotBetween(<1,0,0>, <2,0,0>) // <0., 0., 0., 1.>
+, llRotBetween(<1,2,3>, <-1,-2,-3>) // <0.963624, -0.14825, -0.222375, 0.>
+]

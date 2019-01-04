@@ -1,0 +1,25 @@
+WARNING: Key constants not supported in unit_tests/builtins-coverage-4.txt, line 1: const key a="\t"
+WARNING: Event at line 3 was already defined in unit_tests/builtins-coverage-4.txt, overwriting: ev
+WARNING: Function at line 5 was already defined in unit_tests/builtins-coverage-4.txt, overwriting: x
+WARNING: Invalid type in unit_tests/builtins-coverage-4.txt, line 6: blah
+WARNING: Invalid type in unit_tests/builtins-coverage-4.txt, line 7: unknown
+WARNING: Syntax error in unit_tests/builtins-coverage-4.txt, line 8
+WARNING: Invalid vector/rotation syntax in unit_tests/builtins-coverage-4.txt line 9: const vector a = <4,5,3,2>
+WARNING: Global at line 10 was already defined in unit_tests/builtins-coverage-4.txt, overwriting: a
+WARNING: Invalid vector/rotation syntax in unit_tests/builtins-coverage-4.txt line 10: const vector a = <4,5,3,2
+WARNING: Global at line 11 was already defined in unit_tests/builtins-coverage-4.txt, overwriting: a
+WARNING: Invalid vector/rotation syntax in unit_tests/builtins-coverage-4.txt line 11: const vector a = <x,4,3>
+WARNING: Global at line 12 was already defined in unit_tests/builtins-coverage-4.txt, overwriting: a
+WARNING: Invalid vector/rotation syntax in unit_tests/builtins-coverage-4.txt line 12: const vector a = <4,x,3>
+WARNING: Global at line 13 was already defined in unit_tests/builtins-coverage-4.txt, overwriting: a
+WARNING: Invalid vector/rotation syntax in unit_tests/builtins-coverage-4.txt line 13: const vector a = <3,4,x>
+WARNING: Global at line 14 was already defined in unit_tests/builtins-coverage-4.txt, overwriting: a
+WARNING: Invalid vector/rotation syntax in unit_tests/builtins-coverage-4.txt line 14: const rotation a = <3,4,4,x>
+WARNING: Invalid string in unit_tests/builtins-coverage-4.txt line 17: const string v="
+WARNING: Global at line 18 was already defined in unit_tests/builtins-coverage-4.txt, overwriting: q
+WARNING: Invalid type in unit_tests/builtins-coverage-4.txt, line 19: unknown
+WARNING: Non-empty list constants not supported in unit_tests/builtins-coverage-4.txt, line 20: const list L = [1]
+WARNING: Invalid list value in unit_tests/builtins-coverage-4.txt, line 21: const list L2 = [
+
+^
+(Line 1 char 1): ERROR: Unexpected EOF

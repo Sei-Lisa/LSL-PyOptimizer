@@ -1,0 +1,9 @@
+default
+{
+    timer()
+    {
+        llDialog(llGetOwner(), "x", [], 1);
+        llDialog(llGetOwner(), "x", (list)"NOK", 1);
+        llDialog(llGetOwner(), "x", (list)"OK" + "Cancel", 1);
+    }
+}

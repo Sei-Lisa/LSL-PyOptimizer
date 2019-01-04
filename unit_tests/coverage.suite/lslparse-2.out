@@ -1,0 +1,93 @@
+string S = "ab";
+
+integer f()
+{
+    return 1;
+}
+
+default
+{
+    timer()
+    {
+        "ab";
+        integer i;
+        float f;
+        list L;
+        f += (float)i;
+        L += (list)((integer)((float)i));
+        i = (~(integer)-2) * 3;
+        i = (~(integer)-2.) * 3;
+        i = (~(integer)(-i)) * 3;
+        "" + (string)((key)"");
+        (string)((key)"") + "";
+        @J;
+        {
+            jump J_autoGen00001;
+            {
+                1;
+            }
+            @J_autoGen00001;
+        }
+        {
+            while (1)
+            {
+                jump J_autoGen00002;
+                {
+                    for (; 2; )
+                    {
+                        jump J_autoGen00005;
+                        jump J_autoGen00004;
+                        @J_autoGen00005;
+                    }
+                    @J_autoGen00004;
+                }
+                jump J_autoGen00003;
+                @J_autoGen00003;
+            }
+            @J_autoGen00002;
+        }
+        {
+            do
+            {
+                jump J_autoGen00007;
+                jump J_autoGen00006;
+                @J_autoGen00007;
+            }
+            while (1);
+            @J_autoGen00006;
+        }
+        jump x;
+        while (1)
+            @x;
+        jump y;
+        for (; 1; )
+            @y;
+        jump z;
+        do
+            @z;
+        while (0);
+        {
+            if (1. == (float)1)
+                jump J_autoGen00015;
+            jump J_autoGen00014;
+            @J_autoGen00015;
+            {
+                1;
+            }
+            @J_autoGen00014;
+        }
+        {
+            {
+            }
+        }
+        while (1)
+            ;
+        while (1)
+        {
+            while (1)
+                while (1)
+                    jump J_autoGen00022;
+            @J_autoGen00022;
+        }
+    }
+}

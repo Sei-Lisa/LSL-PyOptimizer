@@ -1,0 +1,3 @@
+x()
+ ^
+(Line 2 char 2): ERROR: Name previously declared within scope

@@ -1,0 +1,13 @@
+default
+{
+    timer()
+    {
+        if (llGetPermissions() & 6)
+            llDie();
+        if (llGetUsedMemory() & 2 | llGetUsedMemory() & 4)
+            llDie();
+        llDie();
+        if ((integer)llFrand(2) == (integer)llFrand(2))
+            llDie();
+    }
+}

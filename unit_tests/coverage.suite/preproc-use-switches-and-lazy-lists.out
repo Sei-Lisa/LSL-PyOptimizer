@@ -1,0 +1,26 @@
+list lazy_list_set(list L, integer i, list v)
+{
+    while ((L != []) < i)
+        L = L + 0;
+    return llListReplaceList(L, v, i, i);
+}
+
+default
+{
+    state_entry()
+    {
+        list a;
+        a = lazy_list_set(a, 1, (list)0);
+        {
+            if (!~-(a != []))
+                jump J_autoGen00002;
+            jump J_autoGen00003;
+            @J_autoGen00002;
+            llOwnerSay("1");
+            jump J_autoGen00001;
+            @J_autoGen00003;
+            llOwnerSay("other");
+            @J_autoGen00001;
+        }
+    }
+}

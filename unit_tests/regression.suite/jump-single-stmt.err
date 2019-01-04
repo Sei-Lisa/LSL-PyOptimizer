@@ -1,0 +1,3 @@
+  while (0) @a1;
+            ^
+(Line 4 char 13): ERROR: When optimization is active, a label can't be the immediate child of a 'for', 'if', 'while' or 'do'. Disable optimization or rewrite the code in some other way.

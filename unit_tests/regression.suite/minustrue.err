@@ -1,0 +1,3 @@
+integer i = -TRUE;
+                 ^
+(Line 1 char 18): ERROR: Syntax error

@@ -1,0 +1,3 @@
+default{timer(){x;}}
+                ^
+(Line 10 char 17): ERROR in "somefile.lsl": Name not defined within scope

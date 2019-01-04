@@ -1,0 +1,14 @@
+REGEX
+^_\(integer (?!(?:do|if|PI|_|for|key|EOF),)(?:[a-zA-Z_](?:|[a-zA-Z0-9_]|[01]0)|(?:edefaultstate_entry|ResumeVoid|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|UThreadStackFrame|llDie))(?:, integer (?!(?:do|if|PI|_|for|key|EOF)[,\)])(?:[a-zA-Z_](?:|[a-zA-Z0-9_]|[01]0)|(?:edefaultstate_entry|ResumeVoid|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|UThreadStackFrame|llDie))){3459}\)
+\{
+    llDie\(\);
+\}
+
+default
+\{
+    state_entry\(\)
+    \{
+        _\(0(?:, [1-9][0-9]{0,3}){3459}\);
+    \}
+\}
+$

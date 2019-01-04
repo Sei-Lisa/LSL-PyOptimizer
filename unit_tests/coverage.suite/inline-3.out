@@ -1,0 +1,11 @@
+default
+{
+    timer()
+    {
+        {
+            {
+                llOwnerSay("hey");
+            }
+        }
+    }
+}

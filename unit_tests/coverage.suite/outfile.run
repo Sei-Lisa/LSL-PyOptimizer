@@ -1,0 +1,1 @@
+main.py -o unit_tests/coverage.suite/outfile.tmp -O clear,optimize,constfold,expr -

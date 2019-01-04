@@ -1,0 +1,3 @@
+integer llDie;
+             ^
+(Line 1 char 14): ERROR: Name previously declared within scope

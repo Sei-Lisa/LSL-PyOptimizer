@@ -1,0 +1,10 @@
+default
+{
+    timer()
+    {
+        integer a = llGetLinkNumber();
+        integer b = a;
+        a = b;
+        llOwnerSay((string)(++b));
+    }
+}

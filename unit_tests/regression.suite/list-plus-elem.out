@@ -1,0 +1,28 @@
+default
+{
+    timer()
+    {
+        list a;
+        integer b = llGetLinkNumber();
+        a = a + 1;
+        a = a + b;
+        a = a + 1;
+        a = a + b;
+        a = a + 1;
+        a = a + b;
+        a = a + 1;
+        a = a + b;
+        a = a + 1;
+        a = a + b;
+        a = b + a;
+        a = 1 + a;
+        a = b + a;
+        a = 1 + a;
+        a = b + a;
+        a = 1 + a;
+        a = 1 + a;
+        a = b + a;
+        a = 1 + a;
+        a = b + a;
+    }
+}

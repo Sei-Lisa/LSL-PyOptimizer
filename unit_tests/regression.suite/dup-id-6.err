@@ -1,0 +1,3 @@
+state x
+      ^
+(Line 3 char 7): ERROR: Name previously declared within scope

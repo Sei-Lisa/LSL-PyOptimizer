@@ -1,0 +1,3 @@
+integer y = x;
+            ^
+(Line 3 char 13): ERROR: Name not defined within scope

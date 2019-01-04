@@ -1,0 +1,10 @@
+key k = "5748decc-f629-461c-9a36-a35a221fe21f";
+list L = [k, ""];
+
+default
+{
+    timer()
+    {
+        llBreakLink(llListFindList(L, (list)k));
+    }
+}

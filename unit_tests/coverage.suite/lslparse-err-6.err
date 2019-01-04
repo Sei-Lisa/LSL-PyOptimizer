@@ -1,0 +1,3 @@
+while (1) integer x;
+          ^
+(Line 2 char 11): ERROR: Declaration requires a new scope -- use { and }

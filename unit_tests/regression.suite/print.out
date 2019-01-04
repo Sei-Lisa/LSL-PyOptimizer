@@ -1,0 +1,14 @@
+default
+{
+    timer()
+    {
+        print(1);
+        print(((float)2));
+        print("");
+        key d = ((key)"");
+        d = print(d);
+        print(<((float)0), ((float)0), ((float)0)>);
+        print(<((float)0), ((float)0), ((float)0), ((float)1)>);
+        print([]);
+    }
+}

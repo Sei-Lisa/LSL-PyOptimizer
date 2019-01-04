@@ -1,0 +1,18 @@
+[ llLog((float)"NaN")
+, llLog(1e40*0)
+, llLog(-1e40)
+, llLog(1e40)
+, llLog(-1.)
+, llLog(-0.)
+, llLog(1.)
+, llLog((float)"0x1.5bf0a8p1") // e
+, llLog10((float)"NaN")
+, llLog10(1e40*0)
+, llLog10(-1e40)
+, llLog10(1e40)
+, llLog10(-1.)
+, llLog10(-0.)
+, llLog10(1.)
+, llLog10(100.)
+, llLog(1e40)
+]

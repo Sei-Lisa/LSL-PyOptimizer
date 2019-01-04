@@ -1,0 +1,8 @@
+default
+{
+    timer()
+    {
+        list L = (list)((key)"5748decc-f629-461c-9a36-a35a221fe21f") + "";
+        llBreakLink(llListFindList(L, (list)((key)"5748decc-f629-461c-9a36-a35a221fe21f")));
+    }
+}

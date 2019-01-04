@@ -1,0 +1,3 @@
+v.w;
+  ^
+(Line 3 char 3): ERROR: Use of vector or quaternion method on incorrect type

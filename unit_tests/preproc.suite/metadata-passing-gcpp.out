@@ -1,0 +1,13 @@
+default
+{
+    state_entry()
+    {
+        "3c5aaad5-8c66-46a3-b574-cad02acf520d";
+        "3c5aaad5-8c66-46a3-b574-cad02acf520d";
+        "3c5aaad5-8c66-46a3-b574-cad02acf520d";
+        7;
+        "-";
+        "Sei Lisa";
+        "\"12345678-9abc-def0-fedc-ba9876543210\"";
+    }
+}

@@ -1,0 +1,51 @@
+f()
+{
+    f();
+}
+
+integer g()
+{
+    if (1)
+        return 1;
+    else
+        return 1;
+}
+
+integer T = 1;
+vector V = <1, -2, 1>;
+rotation Q = <3.1415927, 1., 0, 1>;
+list L = [];
+
+default
+{
+    timer()
+    {
+        integer i;
+        float f;
+        vector v;
+        <0, 0, (0.1 > 1)>;
+        <0., 0., 0.>;
+        i = 1;
+        i += i;
+        f += i;
+        i -= 1;
+        i *= f;
+        i /= 1;
+        i %= 1;
+        v *= i;
+        ++v.x;
+        2 ^ 2;
+        1 && 1;
+        @J;
+        1;
+        jump J;
+        rotation q;
+        1.3;
+        0;
+        -1;
+        -1;
+        -1;
+        "\"    \"";
+        1;
+    }
+}

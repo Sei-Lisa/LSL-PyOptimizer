@@ -1,0 +1,3 @@
+{@a;}
+  ^
+(Line 3 char 3): ERROR: Duplicate local label name. That won't allow the Mono script to be saved, and will not work as expected in LSO.

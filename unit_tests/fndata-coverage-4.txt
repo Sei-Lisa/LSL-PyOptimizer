@@ -1,0 +1,2 @@
+void x(integer i)
+event ev()

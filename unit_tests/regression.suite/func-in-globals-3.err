@@ -1,0 +1,3 @@
+integer a = llList2String;
+                         ^
+(Line 1 char 26): ERROR: Type mismatch

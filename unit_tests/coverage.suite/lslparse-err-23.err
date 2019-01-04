@@ -1,0 +1,3 @@
+#define y
+        ^
+(Line 6 char 9): ERROR: Syntax error

@@ -1,0 +1,19 @@
+default
+{
+    state_entry()
+    {
+        string a = llGetObjectName();
+        vector b = llGetPos();
+        float c = llGetMass();
+        llOwnerSay(a + ("/" + ((string)((list)b) + ("/" + (string)c))));
+        llOwnerSay("");
+        llOwnerSay("1" + (a + ("2" + (a + "3"))));
+        llOwnerSay(llGetObjectName());
+        llOwnerSay(llGetObjectName() + (a + (llGetObjectName() + (a + llGetObjectName()))));
+        llOwnerSay(a + (a + ((string)((list)b) + (a + ((string)c + (a + llGetObjectName()))))));
+        llOwnerSay(llDumpList2String(a + ((list)b + c + (a + a + a)), a));
+        llOwnerSay(a + (a + ((string)((list)b) + (a + ((string)c + (a + (a + a + a)))))));
+        llOwnerSay((string)llSetRegionPos(<((float)1), ((float)1), ((float)1)>));
+        llOwnerSay(llDumpList2String((list)llSetRegionPos(<((float)1), ((float)1), ((float)1)>), (string)llSetRegionPos(<((float)1), ((float)1), ((float)1)>)));
+    }
+}

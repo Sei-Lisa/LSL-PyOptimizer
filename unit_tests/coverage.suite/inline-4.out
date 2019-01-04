@@ -1,0 +1,62 @@
+default
+{
+    state_entry()
+    {
+        {
+            llOwnerSay("f1");
+        }
+        {
+            llOwnerSay("f1");
+        }
+        {
+            {
+                llOwnerSay("f2:" + "3");
+            }
+        }
+        vector ___ret__00001 = <((float)0), ((float)0), ((float)0)>;
+        {
+            {
+                {
+                    {
+                        llOwnerSay("f2:" + "4");
+                    }
+                }
+                {
+                    jump ___lbl__00005;
+                }
+                @___lbl__00005;
+                {
+                    ___ret__00001 = <((float)1), ((float)1), ((float)1)>;
+                    jump ___rtl__00004;
+                }
+                integer ___ret__00002;
+                {
+                    {
+                        ___ret__00002 = llGetLinkNumber();
+                        jump ___rtl__00007;
+                    }
+                }
+                @___rtl__00007;
+                do
+                    ;
+                while (___ret__00002);
+                {
+                    ___ret__00001 = <((float)0), ((float)0), ((float)0)>;
+                    jump ___rtl__00004;
+                }
+            }
+        }
+        @___rtl__00004;
+        if (___ret__00001 == <((float)0), ((float)0), ((float)0)>)
+            llOwnerSay("ok");
+    }
+
+    timer()
+    {
+        {
+            {
+                llOwnerSay("hi");
+            }
+        }
+    }
+}

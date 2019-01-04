@@ -1,0 +1,8 @@
+default
+{
+    timer()
+    {
+        for (llOwnerSay("x"), llDie(); 1; llOwnerSay("x"), llDie())
+            ;
+    }
+}

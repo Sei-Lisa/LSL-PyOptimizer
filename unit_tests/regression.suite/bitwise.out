@@ -1,0 +1,13 @@
+default
+{
+    timer()
+    {
+        integer a = llGetUnixTime();
+        llBreakLink(a & 7);
+        llBreakLink(a | 1);
+        llBreakLink(a);
+        llBreakLink(llGetAgentInfo(llGetOwner()));
+        llBreakLink(llGetAgentInfo(llGetOwner()) & 7);
+        llBreakLink(!~(llGetAgentInfo(llGetOwner()) | ((integer)-7)));
+    }
+}

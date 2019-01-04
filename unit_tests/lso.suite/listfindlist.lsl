@@ -1,0 +1,3 @@
+[ llListFindList([], [])
+, llListFindList([3], [])
+]

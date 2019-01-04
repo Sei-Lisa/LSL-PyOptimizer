@@ -1,0 +1,45 @@
+default
+{
+    timer()
+    {
+        llOwnerSay("\"a\"");
+        llOwnerSay("\"ab\"");
+        llOwnerSay("(key)TEXTURE_BLANK");
+        llOwnerSay("(key)\"ABCDEFAB-ABCD-ABCD-ABCD-ABCDEFABCDEF\"");
+        llOwnerSay("<1,0,0>");
+        llOwnerSay("<NaN,NaN,NaN>");
+        llOwnerSay("<0,0,0,-1>");
+        llOwnerSay("<0,0,0,0>");
+        llOwnerSay("<0,0,1,0>");
+        llOwnerSay("3");
+        llOwnerSay("3.");
+        llOwnerSay("inf");
+        llOwnerSay("NaN");
+        llOwnerSay("[\"\"]");
+        llOwnerSay("[\"\",\"\"]");
+        if (~(integer)llFrand(1))
+            llOwnerSay("(integer)llFrand(1)+1");
+        if (!(1 + llFrand(1) == ((float)0)))
+            llOwnerSay("llFrand(1)+1");
+        if (!((string)llFrand(1) == ""))
+            llOwnerSay("(string)llFrand(1)");
+        if ((key)((string)llFrand(1)))
+            llOwnerSay("(key)((string)llFrand(1))");
+        if (!(<1 + llFrand(1), 0, 0> == <((float)0), ((float)0), ((float)0)>))
+            llOwnerSay("<llFrand(1)+1,0,0>");
+        if (!(<1 + llFrand(1), 0, 0, 1> == <((float)0), ((float)0), ((float)0), ((float)1)>))
+            llOwnerSay("<llFrand(1)+1,0,0,1>");
+        if ((list)llFrand(1) != [])
+            llOwnerSay("[llFrand(1)]");
+        llDie();
+        llDie();
+        llDie();
+        llDie();
+        llDie();
+        llDie();
+        llDie();
+        do
+            llDie();
+        while (1);
+    }
+}

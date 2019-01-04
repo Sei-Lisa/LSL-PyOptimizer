@@ -1,0 +1,5 @@
+llDie()
+{
+}
+
+default{timer(){}}

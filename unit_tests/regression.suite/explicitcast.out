@@ -1,0 +1,9 @@
+default
+{
+    state_entry()
+    {
+        key k = (key)llList2String(llGetAgentList(4, []), 0);
+        float f = (float)llGetAgentInfo(llGetOwner());
+        llOwnerSay((string)[k, f]);
+    }
+}

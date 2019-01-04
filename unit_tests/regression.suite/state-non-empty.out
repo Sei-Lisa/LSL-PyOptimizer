@@ -1,0 +1,33 @@
+default
+{
+    state_entry()
+    {
+        if (0.5 < llFrand(1))
+            state s2;
+        if (0.5 < llFrand(1))
+            state s3;
+        if (0.5 < llFrand(1))
+            state s4;
+    }
+}
+
+state s2
+{
+    timer()
+    {
+    }
+}
+
+state s3
+{
+    timer()
+    {
+    }
+}
+
+state s4
+{
+    touch(integer n)
+    {
+    }
+}

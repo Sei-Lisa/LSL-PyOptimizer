@@ -1,0 +1,8 @@
+default
+{
+    timer()
+    {
+        list L = llGetAgentList(4, []);
+        llOwnerSay((string)(L != []));
+    }
+}

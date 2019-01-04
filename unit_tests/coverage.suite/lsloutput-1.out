@@ -1,0 +1,45 @@
+list lazy_list_set(list L, integer i, list v)
+{
+    while ((L != []) < i)
+        L = L + 0;
+    return llListReplaceList(L, v, i, i);
+}
+
+list L = [(key)"	"];
+float f1 = -0.;
+float f2 = -3;
+
+default
+{
+    state_entry()
+    {
+        float f0 = ((float)-15.5);
+        vector v = <f0, f1, f2>;
+        rotation r = <f0, f1, f2, f0>;
+        integer i;
+        while (1 < llFrand(2))
+        {
+            llOwnerSay((string)(f0 + f1 + f2 + i));
+            llSetPrimitiveParams(L);
+            llSetPrimitiveParams(L);
+            L = llGetPhysicsMaterial();
+            f0 = llList2Float(L, 0);
+            f1 = llList2Float(L, 1);
+            f2 = llList2Float(L, 2);
+            i = llList2Integer(L, i++);
+            i = llList2Integer(L, i--);
+            v = <f1, 0, 0>;
+            r = <f1, 0, 0, (f1 < 0)>;
+            llSetRegionPos(v);
+            llSetLocalRot(r);
+            print(r.s);
+            ++i;
+            --i;
+            if (i)
+                i = i >> 1;
+            else if (llFrand(3) < i)
+                return;
+            L = lazy_list_set(L, 2, (list)llList2Integer(L, 3));
+        }
+    }
+}

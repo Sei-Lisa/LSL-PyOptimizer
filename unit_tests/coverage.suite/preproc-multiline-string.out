@@ -1,0 +1,12 @@
+// Multi-line and trigraph string pre-preprocessing test
+default{timer(){
+    llOwnerSay("String \\\nString ??/??/\nCheck ??/\\nTest \??/\nYes\nblah"
+
+
+
+          );
+    ""
+
+;
+    llOwnerSay("ok");
+}}

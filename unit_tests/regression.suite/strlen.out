@@ -1,0 +1,10 @@
+default
+{
+    timer()
+    {
+        if (llGetObjectName() == "")
+            llDie();
+        if (llGetObjectName() == "")
+            llDie();
+    }
+}

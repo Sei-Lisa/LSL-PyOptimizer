@@ -1,0 +1,8 @@
+[ 2
+, 3 + llGetLinkNumber()
+, 3 + llGetLinkNumber()
+, 7 + llGetLinkNumber()
+, 3 * (4 * llGetLinkNumber())
+, "ab"
+, "ab" + llGetObjectName()
+]

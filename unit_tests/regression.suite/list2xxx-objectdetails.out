@@ -1,0 +1,28 @@
+default
+{
+    timer()
+    {
+        llParticleSystem(
+            [ (string)llGetObjectDetails(llGetKey(), (list)2)
+            , (integer)((string)llGetObjectDetails(llGetKey(), (list)2))
+            , (key)((string)llGetObjectDetails(llGetKey(), (list)2))
+            , (key)((string)llGetObjectDetails(llGetKey(), (list)6))
+            , (key)((string)llGetObjectDetails(llGetKey(), (list)6))
+            , ((key)"")
+            , (key)((string)llGetObjectDetails(llGetKey(), (list)6))
+            , llList2Integer(llGetObjectDetails(llGetKey(), (list)26), 0)
+            , llList2Float(llGetObjectDetails(llGetKey(), (list)26), 0)
+            , (integer)((string)llGetObjectDetails(llGetKey(), (list)21))
+            , (float)((string)llGetObjectDetails(llGetKey(), (list)21))
+            , (integer)((string)llGetObjectDetails(llGetKey(), (list)1))
+            , (float)((string)llGetObjectDetails(llGetKey(), (list)1))
+            , "****"
+            , ((key)"")
+            , llList2Key(llGetObjectDetails(llGetKey(), [21, 33]), 1)
+            , llList2Key(llGetObjectDetails(llGetKey(), [33, 21]), 0)
+            , ((key)"")
+            , ((key)"")
+            , 0
+            ]);
+    }
+}

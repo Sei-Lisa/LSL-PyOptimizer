@@ -1,0 +1,7 @@
+default
+{
+    timer()
+    {
+        [llDie()];
+    }
+}

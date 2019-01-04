@@ -1,0 +1,13 @@
+default
+{
+    timer()
+    {
+        list L = llDeleteSubList(llGetPhysicsMaterial(), 0, 99999) + 0.9999997 + 0.000111222 + 2 + 2147483647;
+        integer a = (integer)llList2String(L, 0);
+        float b = (float)llList2String(L, 1);
+        string c = llList2String(L, 0);
+        key d = (key)llList2String(L, 2);
+        key e = llList2String(L, 2);
+        llParticleSystem((list)a + b + c + d + e);
+    }
+}

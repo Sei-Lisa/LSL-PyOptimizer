@@ -1,0 +1,13 @@
+[ llDumpList2String([1e11], "/")
+, llFrand(0.0)
+, llFrand(-0.0)
+, llFrand(1e40)
+, llFrand(-1e40)
+, llFrand(1e40*0)
+, llFrand((float)"nan")
+, llDumpList2String(llCSV2List("a,<<1,2>,3,4,\">5,6, \"1,3\",7<<>,8,9"), "|")
+, llGetListEntryType([], 0)
+, llGetListEntryType([[]], 0)
+, llMD5String("", 0)
+, llSHA1String("")
+]

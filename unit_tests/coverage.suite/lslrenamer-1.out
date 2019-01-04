@@ -1,0 +1,75 @@
+REGEX
+^list (e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B);
+float (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = 5;
+float (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = 5;
+float (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = 5;
+float (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = 5;
+float (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = 5;
+float (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = 5;
+float (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = 5;
+float (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = 5;
+float (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = 5;
+float (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = 5;
+float (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = 5;
+float (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = 5;
+float (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = 5;
+float (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = 5;
+float (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = 5;
+
+A\(float (ll(?:ParticleSystem|Frand|OwnerSay|GetPhysicsMaterial|List2Float|Die)), float (ll(?:ParticleSystem|Frand|OwnerSay|GetPhysicsMaterial|List2Float|Die))\)
+\{
+    llParticleSystem\(\(list\)\2 \+ \3\);
+\}
+
+default
+\{
+    listen\(integer (?:ll(?:ParticleSystem|Frand|OwnerSay|GetPhysicsMaterial|List2Float|Die)), string (?:ll(?:ParticleSystem|Frand|OwnerSay|GetPhysicsMaterial|List2Float|Die)), key (?:ll(?:ParticleSystem|Frand|OwnerSay|GetPhysicsMaterial|List2Float|Die)), string (?:ll(?:ParticleSystem|Frand|OwnerSay|GetPhysicsMaterial|List2Float|Die))\)
+    \{
+        float loc_f0 = 2;
+        while \(\(integer\)llFrand\(2\)\)
+        \{
+            llOwnerSay\(\(string\)\(loc_f0(?: \+ (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B)){15}\)\);
+            \1 = llGetPhysicsMaterial\(\);
+            loc_f0 = llList2Float\(\1, 0\);
+            (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = llList2Float\(\1, 1\);
+            (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = llList2Float\(\1, 2\);
+            (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = llList2Float\(\1, 3\);
+            (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = llList2Float\(\1, 4\);
+            (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = llList2Float\(\1, 5\);
+            (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = llList2Float\(\1, 6\);
+            (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = llList2Float\(\1, 7\);
+            (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = llList2Float\(\1, 8\);
+            (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = llList2Float\(\1, 9\);
+            (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = llList2Float\(\1, 10\);
+            (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = llList2Float\(\1, 11\);
+            (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = llList2Float\(\1, 12\);
+            (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = llList2Float\(\1, 13\);
+            (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = llList2Float\(\1, 14\);
+            (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B) = llList2Float\(\1, 15\);
+            A\(loc_f0, (?:e_remote_event|ResumeVoid|edefaultchat|IsSaveDue|System|LslUserScript|Library|UThread|IsRestoring|LslLibrary|Pop|e_run_time_perms|e_rez|UThreadStackFrame|gA|B)\);
+            if \(llFrand\(1\) < 0\.5\)
+                jump J_autoGen00001;
+        \}
+        @J_autoGen00001;
+        state _;
+    \}
+\}
+
+state _
+\{
+    on_rez\(integer (?:ll(?:ParticleSystem|Frand|OwnerSay|GetPhysicsMaterial|List2Float|Die))\)
+    \{
+        llDie\(\);
+    \}
+
+    run_time_permissions\(integer (?:ll(?:ParticleSystem|Frand|OwnerSay|GetPhysicsMaterial|List2Float|Die))\)
+    \{
+        llDie\(\);
+    \}
+
+    remote_data\(integer (?:ll(?:ParticleSystem|Frand|OwnerSay|GetPhysicsMaterial|List2Float|Die)), key (?:ll(?:ParticleSystem|Frand|OwnerSay|GetPhysicsMaterial|List2Float|Die)), key (?:ll(?:ParticleSystem|Frand|OwnerSay|GetPhysicsMaterial|List2Float|Die)), string (?:ll(?:ParticleSystem|Frand|OwnerSay|GetPhysicsMaterial|List2Float|Die)), integer (?:ll(?:ParticleSystem|Frand|OwnerSay|GetPhysicsMaterial|List2Float|Die)), string (?:ll(?:ParticleSystem|Frand|OwnerSay|GetPhysicsMaterial|List2Float|Die))\)
+    \{
+        llDie\(\);
+    \}
+\}
+$

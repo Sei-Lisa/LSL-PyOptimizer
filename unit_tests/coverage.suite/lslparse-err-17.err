@@ -1,0 +1,3 @@
+    break;
+    ^
+(Line 3 char 5): ERROR: 'break' used outside a loop

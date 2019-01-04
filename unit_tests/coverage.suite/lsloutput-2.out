@@ -1,0 +1,9 @@
+default
+{
+    state_entry()
+    {
+        list L = llGetPhysicsMaterial();
+        for ((MISSING TYPE)L[1]; llFrand(2) < 1; )
+            ;
+    }
+}

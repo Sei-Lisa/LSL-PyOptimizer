@@ -1,0 +1,13 @@
+default
+{
+    timer()
+    {
+        integer x = 1;
+        integer y = x * ((integer)-2147483648);
+        integer z = ((integer)-2147483648);
+        llOwnerSay((string)y);
+        z = -~z;
+        y = -~y;
+        x = -~x;
+    }
+}

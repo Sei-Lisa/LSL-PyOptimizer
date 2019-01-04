@@ -1,0 +1,18 @@
+default
+{
+    timer()
+    {
+        do
+            ;
+        while (llGetLinkNumber());
+        for (; llGetLinkNumber(); )
+            ;
+        do
+            ;
+        while (llGetLinkNumber());
+        llOwnerSay("blah");
+        do
+            ;
+        while (1);
+    }
+}

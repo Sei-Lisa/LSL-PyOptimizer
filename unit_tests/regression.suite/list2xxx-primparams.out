@@ -1,0 +1,34 @@
+default
+{
+    timer()
+    {
+        llParticleSystem(
+            [ (string)llGetPrimitiveParams((list)28)
+            , (integer)((string)llGetLinkPrimitiveParams(llGetLinkNumber(), (list)28))
+            , 0
+            , (key)((string)llGetPrimitiveParams((list)28))
+            , (key)((string)llGetLinkPrimitiveParams(((integer)-4), (list)28))
+            , (key)((string)llGetLinkPrimitiveParams(((integer)-4), (list)28))
+            , ((key)"")
+            , (key)((string)llGetLinkPrimitiveParams(((integer)-4), (list)28))
+            , ((key)"")
+            , (float)((string)llGetLinkPrimitiveParams(((integer)-4), (list)3))
+            , (float)((string)llGetLinkPrimitiveParams(((integer)-4), (list)28))
+            , "*****"
+            , llList2Key(llGetPrimitiveParams((list)3 + 27), 0)
+            , llList2Key(llGetPrimitiveParams((list)3 + 27), 1)
+            , llList2Key(llGetPrimitiveParams((list)27 + 3), 0)
+            , llList2Key(llGetPrimitiveParams((list)27 + 3), 1)
+            , ((key)"")
+            , llList2Key(llGetLinkPrimitiveParams(((integer)-4), (list)3 + 27), 1)
+            , llList2Key(llGetLinkPrimitiveParams(((integer)-4), (list)27 + 3), 0)
+            , ((key)"")
+            , 0
+            , llList2Vector(llGetLinkPrimitiveParams(((integer)-4), (list)7 + 27 + 25 + 1), 1)
+            , <((float)0), ((float)0), ((float)0)>
+            , llList2Vector(llGetLinkPrimitiveParams(((integer)-4), (list)9 + 7 + 27), 2)
+            , llList2Vector(llGetLinkPrimitiveParams(((integer)-4), (list)7 + 27 + 9), ((integer)-2))
+            , <((float)0), ((float)0), ((float)0)>
+            ]);
+    }
+}

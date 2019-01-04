@@ -1,0 +1,7 @@
+default
+{
+    state_entry()
+    {
+        llOwnerSay("x" + "3");
+    }
+}

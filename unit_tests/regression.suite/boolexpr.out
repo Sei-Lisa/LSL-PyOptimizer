@@ -1,0 +1,10 @@
+default
+{
+    touch(integer n)
+    {
+        if (llSameGroup(llGetOwner()) & llDetectedGroup(0))
+            llDie();
+        if ((integer)llGetEnergy() & -llSameGroup(llGetOwner()))
+            llDie();
+    }
+}

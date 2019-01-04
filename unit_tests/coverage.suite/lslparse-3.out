@@ -1,0 +1,7 @@
+default
+{
+    ev()
+    {
+        list L = [];
+    }
+}

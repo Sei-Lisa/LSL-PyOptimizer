@@ -1,0 +1,3 @@
+default{timer(){ [ llDie() ]; }}
+                           ^
+(Line 1 char 28): ERROR: Type mismatch

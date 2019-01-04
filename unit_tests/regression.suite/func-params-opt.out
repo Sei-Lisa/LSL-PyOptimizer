@@ -1,0 +1,7 @@
+default
+{
+    state_entry()
+    {
+        llSensor("", "", 1, ((float)10), ((float)4));
+    }
+}

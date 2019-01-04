@@ -1,0 +1,24 @@
+REGEX
+//start_unprocessed_text
+/\*// Test inclusion of headers and invalidation of comments
+/\*
+
+blah
+/\|\|\*
+/\|\|\|\*
+
+\*\|/
+default\{timer\(\)\{\}\}
+\*/
+//end_unprocessed_text
+//nfo_preprocessor_version 0
+//program_version LSL PyOptimizer .* - Sei Lisa
+//mono
+
+// Generated on 20.*Z
+default
+\{
+    timer\(\)
+    \{
+    \}
+\}

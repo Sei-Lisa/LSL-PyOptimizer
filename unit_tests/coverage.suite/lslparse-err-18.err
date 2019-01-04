@@ -1,0 +1,3 @@
+    continue;
+    ^
+(Line 3 char 5): ERROR: 'continue' used outside a loop

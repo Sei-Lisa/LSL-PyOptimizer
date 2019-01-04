@@ -1,0 +1,3 @@
+   : // force syntax error
+   ^
+(Line 4 char 4): ERROR: Syntax error

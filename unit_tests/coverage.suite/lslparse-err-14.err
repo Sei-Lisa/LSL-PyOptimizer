@@ -1,0 +1,3 @@
+}
+^
+(Line 8 char 1): ERROR: multiple 'default' labels inside 'switch' statement

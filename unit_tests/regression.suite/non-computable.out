@@ -1,0 +1,29 @@
+default
+{
+    timer()
+    {
+        llSetPrimitiveParams(
+            [ llFrand(1)
+            , llFrand(1.1754943e-38)
+            , llGenerateKey()
+            , llAvatarOnLinkSitTarget(2)
+            , llEdgeOfWorld(<1., 1., 1.>, <1., 1., 1.>)
+            , llGetAgentInfo("5748decc-f629-461c-9a36-a35a221fe21f")
+            , llGetAgentLanguage("5748decc-f629-461c-9a36-a35a221fe21f")
+            , llGetAgentList(1, [])
+            , llGetAgentSize("89556747-24cb-43ed-920b-47caed15465f")
+            , llGetAlpha(0)
+            , llGetAnimation("5748decc-f629-461c-9a36-a35a221fe21f")
+            , llGetAnimationList("5748decc-f629-461c-9a36-a35a221fe21f")
+            , llGetBoundingBox("5748decc-f629-461c-9a36-a35a221fe21f")
+            , llGetColor(0)
+            , llGetDisplayName("5748decc-f629-461c-9a36-a35a221fe21f")
+            , llGetEnv("estate_name")
+            , llXorBase64Strings("++++", "?")
+            , llXorBase64StringsCorrect("++++", "?")
+            , llXorBase64("++++", "?")
+            , llBase64ToInteger("ABC")
+            , llAbs(((integer)-2147483648))
+            ]);
+    }
+}

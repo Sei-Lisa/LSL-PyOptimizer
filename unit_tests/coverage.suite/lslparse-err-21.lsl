@@ -1,0 +1,4 @@
+x()
+{
+    llOwnerSay(3);
+}

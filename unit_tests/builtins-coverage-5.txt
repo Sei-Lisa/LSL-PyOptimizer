@@ -1,0 +1,5 @@
+float llCos( float theta )
+integer llModPow( integer a, integer b, integer c )
+event timer(  )
+event no_sensor()
+event touch(integer x)

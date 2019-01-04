@@ -1,0 +1,10 @@
+default
+{
+    timer()
+    {
+        key k;
+        string s;
+        (key)s == k;
+        (string)k == s;
+    }
+}

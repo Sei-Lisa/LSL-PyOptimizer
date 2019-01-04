@@ -1,0 +1,3 @@
+return 0;
+       ^
+(Line 2 char 8): ERROR: Return statement type doesn't match function return type

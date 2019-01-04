@@ -1,0 +1,16 @@
+e(){}
+integer a;
+integer b;
+f(){}
+g(){}
+integer c;
+integer d;
+h(){}
+default
+{
+    timer() {}
+    touch(integer n) {}
+    touch_start(integer n) {}
+    touch_end(integer n) {}
+}
+state s2{timer(){}}

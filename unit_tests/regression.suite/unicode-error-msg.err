@@ -1,0 +1,3 @@
+default{timer(){"ħ"}}
+                   ^
+(Line 1 char 20): ERROR: Syntax error

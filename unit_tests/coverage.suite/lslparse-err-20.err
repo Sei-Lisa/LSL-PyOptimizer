@@ -1,0 +1,3 @@
+f(){k;}
+    ^
+(Line 1 char 5): ERROR: Name not defined within scope

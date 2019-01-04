@@ -1,0 +1,22 @@
+default
+{
+    timer()
+    {
+        integer a = (integer)llFrand(100);
+        integer b = (integer)llFrand(100);
+        llParticleSystem(
+            [ !~-a
+            , !~-a
+            , !~-a
+            , !(a == 2)
+            , 3 == a
+            , 3 == a
+            , ((integer)-3) == a
+            , a == b
+            , a == b
+            , -a == b
+            , a == b
+            , ""
+            ]);
+    }
+}

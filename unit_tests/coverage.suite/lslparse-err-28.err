@@ -1,0 +1,3 @@
+print(llDie());
+             ^
+(Line 2 char 14): ERROR: Type mismatch

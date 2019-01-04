@@ -1,0 +1,18 @@
+default
+{
+    changed(integer ch)
+    {
+        if (~llListFindList(llGetPrimitiveParams((list)9), (list)"a"))
+            llDie();
+        if (!llSameGroup(llGetOwner()))
+            llOwnerSay("e");
+        llOwnerSay("f");
+        llOwnerSay("g");
+        llOwnerSay("h");
+        llOwnerSay("A");
+        llOwnerSay("B");
+        llOwnerSay("C");
+        if (llSameGroup(llGetOwner()))
+            llOwnerSay("D");
+    }
+}

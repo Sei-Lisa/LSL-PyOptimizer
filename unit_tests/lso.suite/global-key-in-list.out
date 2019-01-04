@@ -1,0 +1,11 @@
+key k = "5748decc-f629-461c-9a36-a35a221fe21f";
+list L = [k, ""];
+
+default
+{
+    timer()
+    {
+        llOwnerSay((string)llGetListEntryType(L, 0));
+        llOwnerSay((string)llListFindList(L, (list)k));
+    }
+}

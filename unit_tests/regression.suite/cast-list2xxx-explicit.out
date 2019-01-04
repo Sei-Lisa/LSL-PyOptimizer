@@ -1,0 +1,10 @@
+default
+{
+    timer()
+    {
+        list L = (list)3;
+        key a = (key)llList2String(L, 0);
+        string b = (string)llList2Key(L, 0);
+        llParticleSystem((list)a + b);
+    }
+}

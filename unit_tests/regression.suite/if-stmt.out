@@ -1,0 +1,62 @@
+default
+{
+    timer()
+    {
+        integer a = (integer)llFrand(100);
+        if (a)
+            llDie();
+        if (!a)
+            llDie();
+        if ((float)a == ((float)0))
+            llDie();
+        if ((string)a == "")
+            llDie();
+        if ((key)((string)a))
+            ;
+        else
+            llDie();
+        if (<a, 0, 0> == <((float)0), ((float)0), ((float)0)>)
+            llDie();
+        if (<a, 0, 0, 1> == <((float)0), ((float)0), ((float)0), ((float)1)>)
+            llDie();
+        if ((list)a == [])
+            llDie();
+        if (a)
+            llOwnerSay("ok");
+        else
+            llDie();
+        if (a ^ 3)
+            llOwnerSay("ok");
+        else
+            llDie();
+        if (5 < a)
+        {
+            if (a ^ 12)
+                llDie();
+        }
+        else
+            llOwnerSay("ok");
+        if (a ^ 12)
+        {
+            if (5 < a)
+                llOwnerSay("2");
+        }
+        else
+            llOwnerSay("1");
+        if (a < 6)
+            llDie();
+        if (a == 12)
+            llDie();
+        if (a ^ 3)
+            llOwnerSay("fixed");
+        if (a ^ 2)
+        {
+            if (a)
+                llOwnerSay("b");
+            else if (a == 3)
+                llOwnerSay("c");
+        }
+        else
+            llOwnerSay("a");
+    }
+}

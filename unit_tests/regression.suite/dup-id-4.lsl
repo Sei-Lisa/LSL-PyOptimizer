@@ -1,0 +1,3 @@
+integer llDie;
+
+default{timer(){}}

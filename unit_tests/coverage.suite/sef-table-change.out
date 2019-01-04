@@ -1,0 +1,7 @@
+default
+{
+    timer()
+    {
+        llCos(5);
+    }
+}

@@ -1,0 +1,3 @@
+integer a;
+         ^
+(Line 2 char 10): ERROR: Name previously declared within scope

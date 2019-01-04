@@ -1,0 +1,3 @@
+state default;;
+^
+(Line 2 char 1): ERROR: Global functions can't change state

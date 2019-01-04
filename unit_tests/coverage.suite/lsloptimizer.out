@@ -1,0 +1,8 @@
+default
+{
+    timer()
+    {
+        float f = ((float)3) + llGetNumberOfSides();
+        llOwnerSay((string)((list)f));
+    }
+}

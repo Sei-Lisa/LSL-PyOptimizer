@@ -1,0 +1,2 @@
+REGEX
+  ProgName -O -DCR,\+BreakCont scriptname\.lsl

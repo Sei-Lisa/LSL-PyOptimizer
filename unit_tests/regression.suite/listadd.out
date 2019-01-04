@@ -1,0 +1,15 @@
+default
+{
+    timer()
+    {
+        list a = llGetPhysicsMaterial() + 1 + 2 + 3 + 4 + 5 + ((list)6 + 7 + 8 + llGetLinkNumber());
+        if (llGetLinkNumber())
+            a = a + "x" + "y";
+        llSetPrimitiveParams(a);
+        llSetPrimitiveParams((list)1 + 2 + 3);
+        llSetPrimitiveParams((list)1 + 2 + llGetLinkNumber());
+        llSetPrimitiveParams([1, 2, llSetRegionPos(<((float)0), ((float)0), ((float)0)>)]);
+        llSetPrimitiveParams([llSetRegionPos(<((float)0), ((float)0), ((float)0)>), 0] + 1 + 2 + 3);
+        llSetPrimitiveParams(llSetRegionPos(<((float)0), ((float)0), ((float)0)>) + ((list)0 + 1 + 2 + 3));
+    }
+}

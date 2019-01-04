@@ -1,0 +1,6 @@
+[ llGetListLength(llDeleteSubList((list)llSetRegionPos(<0., 0., 0.>), 0, -1))
+, llGetListLength(llListReplaceList((list)llSetRegionPos(<0., 0., 0.>), [], 0, -1))
+, 0
+, 0
+, llGetListLength(llDeleteSubList(llGetLinkPrimitiveParams(-4, [1, 2, 3]), 0, -2))
+]

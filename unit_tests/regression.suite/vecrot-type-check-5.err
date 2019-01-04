@@ -1,0 +1,3 @@
+ <0,0,0, <0,0,v> >;
+              ^
+(Line 3 char 15): ERROR: Name not defined within scope

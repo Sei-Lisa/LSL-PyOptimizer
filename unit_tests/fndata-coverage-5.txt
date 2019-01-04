@@ -1,0 +1,11 @@
+float llCos( float theta )
+
+integer llModPow( integer a, integer b, integer c )
+- SEF
+
+event timer()
+
+event no_sensor()
+
+event touch(integer n)
+- SEF
