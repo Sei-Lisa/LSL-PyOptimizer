@@ -39,7 +39,7 @@
 # .skp is for a file that if present, will skip this test. The contents are
 #    displayed as the reason for being skipped.
 # .fail is for a file that, when present, marks the test as expected to fail.
-#    Its contents are not read (an empty file is OK).
+#    Its contents go to the docstring if not empty, replacing the .lsl one.
 #
 # A test passes when the stdout output matches the .out file, and the stderr
 # output matches the .err file. Both default to empty strings.
@@ -763,7 +763,10 @@ def generateScriptTests():
 
             TestFunction.__name__ = ('test_' + testsuite + '__'
                 + os.path.basename(fbase).replace('-','_'))
-            if os.path.exists(fbase + '.fail'):
+            fail = tryRead(fbase + '.fail')
+            if fail is not None:
+                if fail:
+                    TestFunction.__doc__ = fail
                 TestFunction = unittest.expectedFailure(TestFunction)
             else:
                 skip = tryRead(fbase + '.skp')

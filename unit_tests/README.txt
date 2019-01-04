@@ -15,7 +15,7 @@ These are the extensions that the test suite recognizes in more detail:
   .out: Expected stdout resulting from the test. If the first line is REGEX then the rest of the file will be taken as a regular expression to match against, as opposed to matching the whole file contents.
   .err: Expected stderr resulting from the test. It also allows regular expression.
   .skp: If present, the test will be skipped (not run). The contents of this file are taken as the reason for the expected failure.
-  .fail: If present, the test will be run, and counted as an expected failure. If a .fail file is present and the test passes, that will be counted as an unexpected success, and the program will not report success at the end. The contents will be ignored; zero-length files are OK.
+  .fail: If present, the test will be run, and counted as an expected failure. If a .fail file is present and the test passes, that will be counted as an unexpected success, and the program will not report success at the end. The contents will go to the docstring for the test if not empty, replacing the one taken from the .lsl file.
 
 A test is considered such when either the .lsl or the .run file are present. The default stdin for the program is the .lsl file.
 
