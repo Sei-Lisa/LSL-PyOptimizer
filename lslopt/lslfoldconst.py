@@ -1872,7 +1872,7 @@ class foldconst(object):
                         scope = len(self.symtab)
                         self.symtab.append({})
                         parent[index] = nr(nt='{}', t=None, scope=scope,
-                        ch=exprlist)
+                                           ch=exprlist)
                     else:
                         parent[index] = nr(nt=';', t=None, SEF=True)
                     return
