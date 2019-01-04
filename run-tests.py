@@ -71,13 +71,20 @@ def parseArgs(s):
     args = []
 
     # States
-    Space = 0
-    SBackslash = 1
-    Normal = 2
-    NBackslash = 3
-    DQuote = 4
-    DQBackslash = 5
-    SQuote = 6
+    Space = 0           # Space between args.
+    SBackslash = 1      # Backslash after space. Returns to Space if followed
+                        # by LF, otherwise inserts the character verbatim and
+                        # goes to Normal.
+    Normal = 2          # Normal argument.
+    NBackslash = 3      # Backslash in Normal mode. Returns to Normal if
+                        # followed by LF, otherwise inserts the character
+                        # verbatim.
+    DQuote = 4          # Double quote mode.
+    DQBackslash = 5     # Backslash in double quote mode. Returns to DQuote if
+                        # followed by LF; inserts the character verbatim if
+                        # followed by '"', '`', '$' or '\' and inserts a '\'
+                        # plus the character verbatim in any other case.
+    SQuote = 6          # Single quote mode.
 
     State = Space
     p = 0
