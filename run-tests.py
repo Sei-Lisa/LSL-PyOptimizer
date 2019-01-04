@@ -99,7 +99,7 @@ def parseArgs(s):
                     State = Space
                     args.append(arg)
                     arg = ''
-                # else remain in state Space
+                # else remain in the 'Space' state
             elif c == '\n':
                 break
             else:
@@ -129,9 +129,9 @@ def parseArgs(s):
             else:
                 arg += c
 
-    if State in (SQuote, DQuote):
+    if State in (SQuote, DQuote, DQBackslash):
         raise EArgError(u"Unterminated string in .run file")
-    if State in (SBackslash, NBackslash, DQBackslash):
+    if State in (SBackslash, NBackslash):
         raise EArgError(u"Backslash before EOF in .run file")
 
     if State == Normal:
