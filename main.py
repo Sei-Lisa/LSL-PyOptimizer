@@ -16,6 +16,9 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with LSL PyOptimizer. If not, see <http://www.gnu.org/licenses/>.
+#
+#    If you choose to use a later version of the GPL, please modify the text
+#    in the Usage() function appropriately to indicate the correct version.
 
 # This is the main executable program that imports the libraries.
 
