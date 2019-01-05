@@ -1,1 +1,1 @@
-main.py -O foldtabs,lazylists -
+main.py -y -O foldtabs,lazylists -
