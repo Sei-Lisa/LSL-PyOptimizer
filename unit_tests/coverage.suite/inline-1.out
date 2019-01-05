@@ -28,10 +28,10 @@ default
                 }
                 integer f3p1;
                 {
-                    jump ___lbl__00005;
+                    jump ___lbl__00001;
                     llOwnerSay("f3:" + (string)f3p1 + f3p2);
                 }
-                @___lbl__00005;
+                @___lbl__00001;
                 if (f3p2 != "")
                 {
                     ___ret__00001 = <1, 1, 1>;
@@ -44,10 +44,10 @@ default
                     {
                         {
                             ___ret__00002 = llGetLinkNumber();
-                            jump ___rtl__00007;
+                            jump ___rtl__00006;
                         }
                     }
-                    @___rtl__00007;
+                    @___rtl__00006;
                 }
                 while (___ret__00002);
                 {

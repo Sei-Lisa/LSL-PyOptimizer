@@ -34,6 +34,15 @@ class EExpansionLoop(Exception):
             u" inline functions")
 
 class inliner(object):
+    def newId(self, namespace):
+        """Create a new identifier based on a namespace"""
+        self.symCtr[namespace] = self.symCtr.get(namespace, 0) + 1
+        return '___%s__%05d' % (namespace, self.symCtr[namespace])
+
+    def newSymtab(self):
+        self.symtab.append({})
+        return len(self.symtab) - 1
+
     def FixJumps(self, node):
         """Change name and scope of JUMPs to point to the correct symtab entry
         """
@@ -89,9 +98,8 @@ class inliner(object):
 
         if nt == '{}':
             copy = node.copy()
-            copy.scope = len(self.symtab)
+            copy.scope = self.newSymtab()
             copy.ch = []
-            self.symtab.append({})
             for i in node.ch:
                 copy.ch.append(self.GetFuncCopy(i, node.scope))
                 if i.nt == 'DECL':
@@ -106,8 +114,7 @@ class inliner(object):
             copy = node.copy()
             oldscope = node.scope
             oldname = node.name
-            self.lblCount += 1
-            copy.name = '___lbl__%05d' % self.lblCount
+            copy.name = self.newId('lbl')
             copy.scope = scope
             if copy.name in self.symtab[scope]:
                 raise ENameAlreadyExists(
@@ -124,7 +131,7 @@ class inliner(object):
             if node.ch:
                 # Returns a value. Wrap in {} and add an assignment.
                 # BUG: We don't honour ExplicitCast here.
-                newnode = nr(nt='{}', t=None, scope=len(self.symtab), ch=[
+                newnode = nr(nt='{}', t=None, scope=self.newSymtab(), ch=[
                     nr(nt='EXPR', t=self.rettype, ch=[
                         nr(nt='=', t=self.rettype, ch=[
                             nr(nt='IDENT', t=node.ch[0].t,
@@ -133,7 +140,6 @@ class inliner(object):
                         ])
                     ]), newnode
                 ])
-                self.symtab.append({})
             return newnode
 
         if nt == 'IDENT':
@@ -164,8 +170,7 @@ class inliner(object):
         retvar = None
         if rettype is not None:
             # Returns a value. Create a local variable at the starting level.
-            self.retCount += 1
-            retvar = '___ret__%05d' % self.retCount
+            retvar = self.newId('ret')
             if retvar in self.symtab[scope]:
                 raise ENameAlreadyExists(u"Symbol %s already exists"
                                          % retvar.decode('utf8'))
@@ -182,8 +187,7 @@ class inliner(object):
         outer = None
         if fnsym['ParamNames']:
             # Add a new block + symbols + assignments for parameter values
-            pscope = len(self.symtab)
-            self.symtab.append({})
+            pscope = self.newSymtab()
             outer = nr(nt='{}', t=None, scope=pscope, ch=[])
             origpscope = self.tree[fnsym['Loc']].pscope
             for i in range(len(fnsym['ParamNames'])):
@@ -202,8 +206,7 @@ class inliner(object):
         self.retvar = retvar
         self.retscope = scope
         self.retlscope = scope
-        self.lblCount += 1
-        retlabel = '___rtl__%05d' % self.lblCount
+        retlabel = self.newId('rtl')
         self.retlabel = retlabel
         self.symtab[scope][retlabel] = {'Type':'l', 'Scope':scope, 'ref':0}
 
@@ -247,8 +250,7 @@ class inliner(object):
 
     def RecurseSingleStatement(self, parent, index, scope):
         # Synthesize a block node whose child is the statement.
-        newscope = len(self.symtab)
-        self.symtab.append({})
+        newscope = self.newSymtab()
         node = nr(nt='{}', t=None, scope=newscope, ch=[parent[index]],
             SEF=parent[index].SEF)
 
@@ -352,7 +354,7 @@ class inliner(object):
         #       llOwnerSay("doing stuff");
         #   while (f());
         #
-        # should be converted to:
+        # is converted to:
         #
         #   integer ___ret__00001;
         #   do
@@ -379,8 +381,7 @@ class inliner(object):
                         if child[0].nt != '{}':
                             # Needs wrapping now
                             child[0] = nr(nt='{}', t=None, ch=[child[0]],
-                                          scope=len(self.symtab))
-                            self.symtab.append({})
+                                          scope=self.newSymtab())
                         child[0].ch.append(fns.pop(i))
                     else:
                         i += 1
@@ -409,8 +410,7 @@ class inliner(object):
     def inline(self, tree, symtab):
         self.tree = tree
         self.symtab = symtab
-        self.retCount = 0
-        self.lblCount = 0
+        self.symCtr = {}
         self.expanding = []
         for i in range(len(tree)):
             if tree[i].nt == 'STDEF':

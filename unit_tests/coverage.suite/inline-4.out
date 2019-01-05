@@ -22,9 +22,9 @@ default
                     }
                 }
                 {
-                    jump ___lbl__00005;
+                    jump ___lbl__00001;
                 }
-                @___lbl__00005;
+                @___lbl__00001;
                 {
                     ___ret__00001 = <((float)1), ((float)1), ((float)1)>;
                     jump ___rtl__00004;
@@ -35,10 +35,10 @@ default
                     {
                         {
                             ___ret__00002 = llGetLinkNumber();
-                            jump ___rtl__00007;
+                            jump ___rtl__00006;
                         }
                     }
-                    @___rtl__00007;
+                    @___rtl__00006;
                 }
                 while (___ret__00002);
                 {
