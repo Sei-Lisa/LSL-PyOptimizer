@@ -38,15 +38,17 @@ default
                     jump ___rtl__00004;
                 }
                 integer ___ret__00002;
-                {
-                    {
-                        ___ret__00002 = llGetLinkNumber();
-                        jump ___rtl__00007;
-                    }
-                }
-                @___rtl__00007;
                 do
+                {
                     ;
+                    {
+                        {
+                            ___ret__00002 = llGetLinkNumber();
+                            jump ___rtl__00007;
+                        }
+                    }
+                    @___rtl__00007;
+                }
                 while (___ret__00002);
                 {
                     ___ret__00001 = <0, 0, 0>;
