@@ -318,7 +318,33 @@ class inliner(object):
         #   }
         #
         # The for loop is similar, but the initializer and iterator must be
-        # expanded as well, to convert it to a while loop.
+        # expanded as well, to convert it to a while loop. When expanding the
+        # iterator, care must be taken to avoid name clashes. For example:
+        #
+        #   for (i = 0; f(i); i++)
+        #   {
+        #       integer i;
+        #   }
+        #
+        # should be expanded to:
+        #
+        #   i = 0;
+        #   @loop_label;
+        #   integer ___ret__00001;
+        #   {
+        #       llOwnerSay("body of f");
+        #       ___ret__00001 = 1,
+        #   }
+        #   if (___ret__00001)
+        #   {
+        #       {
+        #           integer i;
+        #       }
+        #       i++;
+        #   }
+        #
+        # The extra {} inside the 'if' are needed to protect the iterator from
+        # being affected by the variables defined in the inner block.
         #
         # Do loops are different:
         #
@@ -334,7 +360,7 @@ class inliner(object):
         #       llOwnerSay("doing stuff");
         #       {
         #           llOwnerSay("body_of_f");
-        #           __ret__00001 = 1;
+        #           ___ret__00001 = 1;
         #       }
         #   }
         #   while (___ret__00001);
@@ -343,6 +369,21 @@ class inliner(object):
         elif nt == 'DO':
             self.RecurseSingleStatement(child, 0, scope)
             fns = self.RecurseExpression(child, 1, scope)
+            if fns:
+                # Need to do some plumbing to move the bodies into the loop
+                i = 0;
+                while i < len(fns):
+                    if fns[i].nt != 'DECL':
+                        assert fns[i].nt in ('{}', '@')
+                        # All bodies must be moved inside the loop
+                        if child[0].nt != '{}':
+                            # Needs wrapping now
+                            child[0] = nr(nt='{}', t=None, ch=[child[0]],
+                                          scope=len(self.symtab))
+                            self.symtab.append({})
+                        child[0].ch.append(fns.pop(i))
+                    else:
+                        i += 1
 
         elif nt == 'WHILE':
             fns = self.RecurseExpression(child, 0, scope)
