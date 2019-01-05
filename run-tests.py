@@ -712,7 +712,7 @@ def generateScriptTests():
                                 )
                             )
                         else:
-                            self.assertEqual(expected_stderr, actual_stderr)
+                            self.assertTrue(expected_stderr == actual_stderr)
                     except AssertionError:
                         sys.stderr.write('Failed'
                                          '\n************ expected stderr:\n')
@@ -733,7 +733,7 @@ def generateScriptTests():
                             self.assertIsNotNone(re.search(expected_stdout[6:],
                                                            actual_stdout))
                         else:
-                            self.assertEqual(expected_stdout, actual_stdout)
+                            self.assertTrue(expected_stdout == actual_stdout)
                     except AssertionError:
                         sys.stderr.write('Failed'
                                          '\n************ expected stdout:\n')
