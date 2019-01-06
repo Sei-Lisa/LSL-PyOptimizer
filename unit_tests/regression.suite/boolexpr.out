@@ -6,5 +6,6 @@ default
             llDie();
         if ((integer)llGetEnergy() & -llSameGroup(llGetOwner()))
             llDie();
+        llDie();
     }
 }

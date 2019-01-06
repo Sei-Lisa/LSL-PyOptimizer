@@ -578,6 +578,7 @@ string llGetLinkName(integer linknumber)
 
 integer llGetLinkNumber()
 - SEF
+- min 0
 
 integer llGetLinkNumberOfSides(integer link)
 - SEF
@@ -637,9 +638,12 @@ key llGetNumberOfNotecardLines(string name)
 
 integer llGetNumberOfPrims()
 - SEF
+- min 1
 
 integer llGetNumberOfSides()
 - SEF
+- min 1
+- max 9
 
 list llGetObjectAnimationNames()
 - SEF
@@ -663,6 +667,9 @@ integer llGetObjectPermMask(integer mask)
 
 integer llGetObjectPrimCount(key object_id)
 - SEF
+- min 0
+- max 256
+- return 0 if nulluuid(object_id)
 
 vector llGetOmega()
 # physics caveat
@@ -684,12 +691,14 @@ integer llGetParcelFlags(vector pos)
 
 integer llGetParcelMaxPrims(vector pos, integer sim_wide)
 - SEF
+- min 0
 
 string llGetParcelMusicURL()
 - SEF
 
 integer llGetParcelPrimCount(vector pos, integer category, integer sim_wide)
 - SEF
+- min 0
 
 list llGetParcelPrimOwners(vector pos)
 - delay 2.0

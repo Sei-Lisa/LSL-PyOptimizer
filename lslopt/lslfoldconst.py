@@ -260,6 +260,27 @@ class foldconst(object):
         return (node.nt == 'NEG' and self.IsBool(node.ch[0])
                 or self.IsBool(node))
 
+    def GetTruth(self, node):
+        """Decode truth value of node when possible.
+        Returns True if it's always true, False if it's always false, and None
+        if it can't be determined.
+        """
+        if node.nt == 'CONST':
+            return lslfuncs.cond(node.value)
+        min = getattr(node, 'min', None)
+        max = getattr(node, 'max', None)
+        if min is None or max is None:
+            if node.nt == 'FNCALL':
+                min = self.symtab[0][node.name].get('min', min)
+                max = self.symtab[0][node.name].get('max', max)
+        if min is not None and min > 0:
+            return True
+        if max is not None and max < 0:
+            return True
+        if min == max == 0:
+            return False
+        return None
+
     def FoldCond(self, parent, index, ParentIsNegation = False):
         """When we know that the parent is interested only in the truth value
         of the node, we can perform further optimizations. This function deals
@@ -267,11 +288,13 @@ class foldconst(object):
         """
         node = parent[index]
         nt = node.nt
-        if nt in ('CONST', 'IDENT', 'FLD'):
-            if node.nt == 'CONST':
-                node.t = 'integer'
-                node.value = 1 if lslfuncs.cond(node.value) else 0
-            return # Nothing to do if it's already simplified.
+        truth = self.GetTruth(node)
+        if truth is not None and node.SEF:
+            parent[index] = nr(nt='CONST',t='integer',value=1 if truth else 0,
+                               SEF=True)
+            return
+        if nt in ('IDENT', 'FLD'):
+            return  # Nothing to do if it's already simplified.
         child = node.ch
 
         if nt == 'FNCALL' and 'strlen' in self.symtab[0][node.name]:
