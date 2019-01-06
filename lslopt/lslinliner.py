@@ -293,7 +293,8 @@ class inliner(object):
             if len(child) > 2:
                 self.RecurseSingleStatement(child, 2, scope)
 
-        # TODO: Handle loops properly
+        # Loop handling is tricky.
+        #
         # Consider this:
         #
         #   integer f()
@@ -388,19 +389,47 @@ class inliner(object):
                         i += 1
 
         elif nt == 'WHILE':
+            # Convert to if()
+            lbl = self.newId('whl', scope, {'Kind':'l','Scope':scope,'ref':1})
+            parent.insert(index, nr(nt='@', t=None, name=lbl, scope=scope))
+            index += 1
+            node.nt = 'IF'
+            if child[1].nt != '{}':
+                # Needs wrapping now
+                child[1] = nr(nt='{}', t=None, ch=[child[1]],
+                              scope=self.newSymtab())
+            child[1].ch.append(nr(nt='JUMP', t=None, name=lbl, scope=scope))
             fns = self.RecurseExpression(child, 0, scope)
             self.RecurseSingleStatement(child, 1, scope)
 
         elif nt == 'FOR':
             assert child[0].nt == 'EXPRLIST'
             assert child[2].nt == 'EXPRLIST'
-            fns = []
-            for i in range(len(child[0].ch)):
-                fns.extend(self.RecurseExpression(child[0].ch, i, scope))
-            fns.extend(self.RecurseExpression(child, 1, scope))
-            for i in range(len(child[2].ch)):
-                fns.extend(self.RecurseExpression(child[2].ch, i, scope))
-            self.RecurseSingleStatement(child, 3, scope)
+            for i in child[0].ch:
+                parent.insert(index, nr(nt='EXPR', t=i.t, ch=[i]))
+                fns = self.RecurseExpression(parent, index, scope)
+                parent[index:index] = fns
+                index += 1 + len(fns)
+            lbl = self.newId('for', scope, {'Kind':'l','Scope':scope,'ref':1})
+            parent.insert(index, nr(nt='@', t=None, name=lbl, scope=scope))
+            index += 1
+            node.nt = 'IF'
+            if child[3].nt != '{}':
+                # Needs wrapping now
+                child[3] = nr(nt='{}', t=None, ch=[child[3]],
+                              scope=self.newSymtab())
+            # Needs another wrapping if iterator is not empty
+            if child[2].ch:
+                child[3] = nr(nt='{}', t=None, ch=[child[3]],
+                              scope=self.newSymtab())
+            for i in child[2].ch:
+                child[3].ch.append(nr(nt='EXPR', t=i.t, ch=[i]))
+            del child[2]
+            del child[0]
+            child[1].ch.append(nr(nt='JUMP', t=None, name=lbl, scope=scope))
+            fns.extend(self.RecurseExpression(child, 0, scope))
+            self.RecurseSingleStatement(child, 1, scope)
+            #assert False, parent[index]
 
         else:
             assert False, u"Unexpected node type: %s" % nt.decode('utf8')

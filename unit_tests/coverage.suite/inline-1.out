@@ -50,6 +50,40 @@ default
                     @___rtl__00006;
                 }
                 while (___ret__00002);
+                @___whl__00001;
+                integer ___ret__00003;
+                {
+                    {
+                        ___ret__00003 = llGetLinkNumber();
+                        jump ___rtl__00007;
+                    }
+                }
+                @___rtl__00007;
+                if (___ret__00003)
+                {
+                    ;
+                    jump ___whl__00001;
+                }
+                f3p1 = 0;
+                @___for__00001;
+                integer ___ret__00004;
+                {
+                    {
+                        ___ret__00004 = llGetLinkNumber();
+                        jump ___rtl__00008;
+                    }
+                }
+                @___rtl__00008;
+                if (___ret__00004)
+                {
+                    {
+                        integer f3p1 = llGetNumberOfPrims();
+                        llOwnerSay((string)f3p1);
+                    }
+                    f3p1++;
+                    llDie();
+                    jump ___for__00001;
+                }
                 {
                     ___ret__00001 = <0, 0, 0>;
                     jump ___rtl__00004;

@@ -18,7 +18,17 @@ vector f3(integer f3p1, string f3p2) inline
     }
     @x;
     if (f3p2 != "") return <1,1,1>;
+
     do ; while (f4());
+
+    while (f4()) ;
+
+    for (f3p1=0; f4(); f3p1++, llDie())
+    {
+       integer f3p1 = llGetNumberOfPrims();
+       llOwnerSay((string)f3p1);
+    }
+
     return <0,0,0>;
 }
 
