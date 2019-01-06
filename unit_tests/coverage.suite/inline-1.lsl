@@ -1,3 +1,5 @@
+#pragma OPT inline
+
 f1() inline
 {
     llOwnerSay("f1");

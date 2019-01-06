@@ -405,6 +405,9 @@ class parser(object):
         if option == 'funcoverride':
             self.funcoverride = value
 
+        if option == 'inline':
+            self.enable_inline = value
+
     def ProcessDirective(self, directive):
         """Process a given preprocessor directive during parsing."""
 
