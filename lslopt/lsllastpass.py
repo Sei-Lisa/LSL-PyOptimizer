@@ -26,11 +26,33 @@ from lslcommon import nr
 #from lslparse import warning
 #from lslfuncopt import OptimizeFunc, OptimizeArgs, FuncOptSetup
 
+class rec:
+    def __init__(self, **init):
+        for i in init:
+            setattr(self, i, init[i])
+
 class lastpass(object):
+    def visible(self, scope):
+        return scope in self.scopeStack
     def LastPassPreOrder(self, parent, index):
         node = parent[index]
         nt = node.nt
         child = node.ch
+
+        if (nt != '{}' and nt != ';' and nt != 'LAMBDA' and nt != '@'
+            and not self.inExpr
+           ):
+            # Node that generates code.
+            # EXPR counts as a single statement for JUMP purposes.
+            self.prevStmt = self.lastStmt
+            self.lastStmt = rec(node=node, parent=parent, index=index)
+            # These are all the labels that label the current statement
+            self.lastLabels = self.curLabels
+            self.curLabels = set()
+
+        if nt == 'EXPR':
+            self.inExpr = True
+            return
 
         if (self.optlistadd and not self.globalmode
             and (nt == 'CONST' and node.t == 'list' or nt == 'LIST'
@@ -113,6 +135,30 @@ class lastpass(object):
                 # system library function
                 self.usedlibfuncs.add(node.name)
 
+        if nt == 'JUMP':
+            if self.lastLabels:
+                # This jump is labeled. The jumps that go to any of its labels
+                # might be changeable to the destination of this jump, if the
+                # scope of the destination is visible from those jumps, and the
+                # jump eliminated.
+                # TODO: We need the positions of these jumps for this to work.
+                # We could perhaps change 'ref' in the symbol to a list instead
+                # of a counter, pointing to the jumps.
+                pass
+
+        if nt == '@':
+            self.curLabels.add(node)
+            if self.lastStmt.node.nt == 'JUMP':
+                jump = self.lastStmt.node
+                if jump.scope == node.scope and jump.name == node.name:
+                    # Remove the jump
+                    self.lastStmt.parent[self.lastStmt.index] = nr(nt=';')
+                    assert self.symtab[node.scope][node.name]['ref'] > 0
+                    self.symtab[node.scope][node.name]['ref'] -= 1
+
+        if nt == '{}':
+            self.scopeStack.append(node.scope)
+
     def LastPassPostOrder(self, parent, index):
         node = parent[index]
         nt = node.nt
@@ -124,14 +170,13 @@ class lastpass(object):
                 # function (must be the result of optimization).
                 # Insert dummy IF(1){...} statement covering the whole function
                 # (if it returs a value, insert a return statement too).
-                scope = len(self.symtab)
-                self.symtab.append({})
-                child[0] = nr(nt='{}', t=None, scope=scope, ch=[
+                child[0] = nr(nt='{}', t=None, scope=len(self.symtab), ch=[
                     nr(nt='IF', t=None, ch=[
                         nr(nt='CONST', t='integer', value=1, SEF=True),
                         child[0]
                     ])
                 ])
+                self.symtab.append({})
                 child = node.ch
                 if node.t is not None:
                     # Inserting a state switch in a function that returns a
@@ -146,6 +191,15 @@ class lastpass(object):
             del self.BadStCh
             return
 
+        if nt == 'EXPR':
+            self.inExpr = False
+
+        if nt == '{}':
+            self.scopeStack.pop()
+
+        if nt == 'WHILE' or nt == 'DO' or nt == 'FOR':
+            self.prevStmt = self.lastStmt
+            self.lastStmt = rec(node=node, parent=parent, index=index)
 
     def RecursiveLastPass(self, parent, index):
         subinfo = self.subinfo
@@ -171,6 +225,13 @@ class lastpass(object):
 
         self.usedlibfuncs = set()
 
+        self.scopeStack = [0]
+        self.curLabels = set()
+        self.lastLabels = set()
+        self.prevStmt = None
+        self.lastStmt = None
+        self.inExpr = False
+
         # self.subinfo is subtree-local info.
         self.subinfo = {}
         for idx in xrange(len(tree)):
@@ -180,4 +241,6 @@ class lastpass(object):
                 self.globalmode = False
             else:
                 self.RecursiveLastPass(tree, idx)
+
+        assert len(self.scopeStack) == 1 and self.scopeStack[0] == 0
         return {'libfuncs':self.usedlibfuncs}

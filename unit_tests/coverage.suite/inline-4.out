@@ -22,7 +22,7 @@ default
                     }
                 }
                 {
-                    jump ___lbl__00001;
+                    ;
                 }
                 @___lbl__00001;
                 {
@@ -35,7 +35,7 @@ default
                     {
                         {
                             ___ret__00002 = llGetLinkNumber();
-                            jump ___rtl__00006;
+                            ;
                         }
                     }
                     @___rtl__00006;
@@ -43,7 +43,7 @@ default
                 while (___ret__00002);
                 {
                     ___ret__00001 = <((float)0), ((float)0), ((float)0)>;
-                    jump ___rtl__00004;
+                    ;
                 }
             }
         }
