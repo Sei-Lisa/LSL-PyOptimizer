@@ -26,7 +26,9 @@ SINGLE_OPT_EXPR_CHILD_NODES = frozenset({'DECL', 'EXPR', 'RETURN',
 
 # TODO: We can do a bit better with evaluation order.
 
-class ENameAlreadyExists(Exception): pass
+class ENameAlreadyExists(Exception):
+    def __init__(self, obj, text):
+        super(ENameAlreadyExists, self).__init__(text)
 
 class EExpansionLoop(Exception):
     def __init__(self):
@@ -34,10 +36,17 @@ class EExpansionLoop(Exception):
             u" inline functions")
 
 class inliner(object):
-    def newId(self, namespace):
-        """Create a new identifier based on a namespace"""
+    def newId(self, namespace, scope, symdata):
+        """Create a new identifier based on a namespace."""
         self.symCtr[namespace] = self.symCtr.get(namespace, 0) + 1
-        return '___%s__%05d' % (namespace, self.symCtr[namespace])
+        name = '___%s__%05d' % (namespace, self.symCtr[namespace])
+        if name in self.symtab[scope]:
+            kinds = {'l':u"Label", 'f':u"Function", 'v':u"Variable",
+                     's':u"State"}
+            raise ENameAlreadyExists(self, u"%s already exists: %s"
+              % (kinds[symdata['Kind']], name.decode('utf8')))
+        self.symtab[scope][name] = symdata
+        return name
 
     def newSymtab(self):
         self.symtab.append({})
@@ -114,12 +123,9 @@ class inliner(object):
             copy = node.copy()
             oldscope = node.scope
             oldname = node.name
-            copy.name = self.newId('lbl')
+            copy.name = self.newId('lbl', scope, {'Type':'l', 'Scope':scope,
+                                                  'ref':0})
             copy.scope = scope
-            if copy.name in self.symtab[scope]:
-                raise ENameAlreadyExists(
-                    u"Label already exists: %s" % copy.name.decode('utf8'))
-            self.symtab[scope][copy.name] = {'Type':'l','Scope':scope,'ref':0}
             self.symtab[oldscope][oldname]['NewSymbolName'] = copy.name
             self.symtab[oldscope][oldname]['NewSymbolScope'] = scope
             return copy
@@ -170,13 +176,8 @@ class inliner(object):
         retvar = None
         if rettype is not None:
             # Returns a value. Create a local variable at the starting level.
-            retvar = self.newId('ret')
-            if retvar in self.symtab[scope]:
-                raise ENameAlreadyExists(u"Symbol %s already exists"
-                                         % retvar.decode('utf8'))
-            # Add the symbol to the symbol table
-            self.symtab[scope][retvar] = {'Kind':'v', 'Scope':scope,
-                                           'Type':rettype}
+            retvar = self.newId('ret', scope, {'Kind':'v', 'Scope':scope,
+                                               'Type':rettype})
             # Add the declaration to the list of statements
             fns.append(nr(nt='DECL', t=rettype, name=retvar, scope=scope))
 
@@ -206,9 +207,9 @@ class inliner(object):
         self.retvar = retvar
         self.retscope = scope
         self.retlscope = scope
-        retlabel = self.newId('rtl')
+        retlabel = self.newId('rtl', scope, {'Type':'l', 'Scope':scope,
+                                             'ref':0})
         self.retlabel = retlabel
-        self.symtab[scope][retlabel] = {'Type':'l', 'Scope':scope, 'ref':0}
 
         # Get a copy of the function
         blk = [self.GetFuncCopy(self.tree[fnsym['Loc']])]
