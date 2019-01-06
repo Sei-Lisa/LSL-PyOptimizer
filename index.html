@@ -268,7 +268,7 @@ h1 { background: #2080C0; color: white; padding:25px 5% 8px; margin: 4% 7% 0px; 
 
 <p>The option <code>inline</code> in the command line options enables a syntax extension that allows you to use functions as if they were macros. This option is active by default.</p>
 
-<p><b>This feature is in an experimental stage. Use at your own risk. Currently, inlined functions in loop conditions don't work properly.</b></p>
+<p><b>This feature is in an experimental stage. Use at your own risk.</b></p>
 
 <p>To declare a function as inline, add the word <code>inline</code> after the close parenthesis of the parameter list. For example, this definition:</p>
 
@@ -283,10 +283,10 @@ h1 { background: #2080C0; color: white; padding:25px 5% 8px; margin: 4% 7% 0px; 
 <p><b>Caveats:</b></p>
 
 <ul>
-<li>Inlined functions in loop conditions do not yet work. The inlined function will be inserted before the loop.</li>
 <li>It's still possible that the resulting code ends up wasting more space than defining a function. Preprocessor macros may be preferable.</li>
 <li>The order of evaluation of functions may not be the same as without inlining. All inlined functions will be executed before the expression they are used in, in an unspecified order. This order may change in future, so don't depend on it.</li>
 <li>New labels and variables may be created. The names use the pattern <code>___letters__numbers</code>. If you use names like these, you risk causing a name collision.</li>
+<li>While and for loops will always be transformed in the output to labels and jumps.</li>
 </ul>
 
 <hr>
