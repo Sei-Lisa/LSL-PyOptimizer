@@ -250,6 +250,7 @@ h1 { background: #2080C0; color: white; padding:25px 5% 8px; margin: 4% 7% 0px; 
 <span>DupLabels</span>
 <span>ShrinkNames</span>
 <span>FuncOverride</span>
+<span>Inline</span>
 </code></pre>
 
 <p>For a description of each, you can invoke the program from the command line with: <code>python main.py -O help</code> (that's the upper case letter O, not the number zero). Note, however, that the only options that can be used in <code>#pragma</code> directives inlined in the code are the options listed above, which are the ones that affect the parsing, not the optimization.</p>
@@ -266,7 +267,7 @@ h1 { background: #2080C0; color: white; padding:25px 5% 8px; margin: 4% 7% 0px; 
 
 <h3><a id="extensions-inlining"></a>Manual inlining of functions</h3>
 
-<p>The option <code>inline</code> in the command line options enables a syntax extension that allows you to use functions as if they were macros. This option is active by default.</p>
+<p>The option <code>inline</code> in the command line options enables a syntax extension that allows you to use functions as if they were macros. This option is disabled by default, due to its effect on While and For loops.</p>
 
 <p><b>This feature is in an experimental stage. Use at your own risk.</b></p>
 
