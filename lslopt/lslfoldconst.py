@@ -1150,6 +1150,10 @@ class foldconst(object):
                 return
 
             if nt in ('*', '/'):
+                # TODO: <0,0,0,1>*rot, rot*<0,0,0,1>, rot/<0,0,0,1>  ->  rot
+                #       <0,0,0,1>/<x,y,z,s>  ->  <-x,-y,-z, s>
+                #       <0,0,0>*vec  ->  0 if SEF
+                #       <0,0,0>*rot  ->  <0,0,0> if SEF
                 # Extract signs outside
                 if child[0].nt == 'NEG' or child[1].nt == 'NEG':
                     a, b = 0, 1

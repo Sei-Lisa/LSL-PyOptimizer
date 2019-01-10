@@ -19,6 +19,9 @@
 #
 #    If you choose to use a later version of the GPL, please modify the text
 #    in the Usage() function appropriately to indicate the correct version.
+#
+#    Sei Lisa is the author's username in the Second Life(R) virtual world.
+#    Second Life is a registered trademark of Linden Research, Inc.
 
 # This is the main executable program that imports the libraries.
 
