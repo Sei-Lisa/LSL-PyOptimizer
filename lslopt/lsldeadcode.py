@@ -358,7 +358,10 @@ class deadcode(object):
             # Replacing j with i+1 in llOwnerSay will produce wrong code because
             # the name i is redefined after j is assigned. shrinknames prevents
             # that.
-            if not self.shrinknames or not node.SEF:
+            # FIXME: shrinknames and SEF are not enough guarantee. This needs
+            # analyzing a control flow graph.
+            #if not self.shrinknames or not node.SEF:
+            if True or not self.shrinknames or not node.SEF:
                 return False
 
             if nt not in ('VECTOR', 'ROTATION'):
