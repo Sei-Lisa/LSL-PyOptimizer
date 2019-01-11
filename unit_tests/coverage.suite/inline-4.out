@@ -17,8 +17,9 @@ default
         {
             {
                 {
+                    integer f2param = 4;
                     {
-                        llOwnerSay("f2:" + "4");
+                        llOwnerSay("f2:" + (string)f2param);
                     }
                 }
                 {

@@ -322,13 +322,18 @@ class deadcode(object):
             node = sym['W']
             nt = node.nt
 
-            while nt == 'IDENT':
-                # Follow the chain of identifiers all the way to the original
-                if self.symtab[node.scope][node.name].get('W', False) is False:
-                    return sym
-                sym = self.symtab[node.scope][node.name]
-                node = sym['W']
-                nt = node.nt
+            # This screws up swaps. See
+            # unit_tests/regression.suite/aggressive-local-removal.lsl
+            # It can't be done without a reliable CFG-based method (SSA or
+            # the like).
+
+#            while nt == 'IDENT':
+#                # Follow the chain of identifiers all the way to the original
+#                if self.symtab[node.scope][node.name].get('W', False) is False:
+#                    return sym
+#                sym = self.symtab[node.scope][node.name]
+#                node = sym['W']
+#                nt = node.nt
 
             if nt == 'CONST':
                 tcurnode = curnode.t

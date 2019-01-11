@@ -2,6 +2,9 @@ default
 {
     state_entry()
     {
-        llOwnerSay("x" + "3");
+        integer b = 3;
+        integer c = b;
+        integer d = c;
+        llOwnerSay("x" + (string)d);
     }
 }
