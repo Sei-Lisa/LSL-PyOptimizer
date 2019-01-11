@@ -280,7 +280,7 @@ class Evaluator(object):
                         result = int(c[2:], 16)
                         if result > 0xFF:
                             raise EvalError("Hex literal out of range")
-                    elif c[1] in 'abfnrtv"?\'\\':
+                    elif c[1] in ESCAPES:
                         result = ESCAPES[c[1]]
                     else:
                         result = int(c[1:], 8)
