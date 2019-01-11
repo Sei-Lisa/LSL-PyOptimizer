@@ -1,0 +1,23 @@
+default
+{
+    state_entry()
+    {
+        list loc_L1 = (list)1 + 2 + 3 + 4 + 5;
+        integer loc_N = loc_L1 != [];
+        integer loc_i;
+        for (loc_i = 0; loc_i < loc_N; ++loc_i)
+        {
+            llOwnerSay(llList2String(loc_L1, loc_i));
+            loc_L1 = llDeleteSubList(loc_L1, ((integer)-1), ((integer)-1));
+        }
+        integer loc_u = llGetLinkNumber();
+        integer loc_v = llGetNumberOfPrims();
+        if (llFrand(1) < 0.5)
+        {
+            integer loc_temp = loc_u;
+            loc_u = loc_v;
+            loc_v = loc_temp;
+        }
+        llOwnerSay((string)loc_u + (string)loc_v);
+    }
+}
