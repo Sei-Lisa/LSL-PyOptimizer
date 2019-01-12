@@ -44,7 +44,7 @@ def ReportError(script, e):
     # When the encoding of stderr is unknown (e.g. when redirected to a file),
     # output will be encoded in UTF-8; otherwise the terminal's encoding will
     # be used.
-    enc = sys.stderr.encoding if sys.stderr.encoding is not None else 'utf8'
+    enc = sys.stderr.encoding or 'utf8'
 
     # Synchronize the UTF-8 encoded line with the output line in the
     # terminal's encoding. We need to compensate for the fact that the
@@ -405,7 +405,7 @@ def main(argv):
             'libdata='))
     except getopt.GetoptError as e:
         Usage(argv[0])
-        sys.stderr.write(u"\nError: " + str(e).decode('utf8') + u"\n")
+        sys.stderr.write(u"\nError: %s\n" % str(e).decode('utf8', 'replace'))
         return 1
 
     outfile = '-'
