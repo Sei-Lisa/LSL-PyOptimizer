@@ -87,6 +87,13 @@ class UniConvScript(object):
         return self.script
 
 def PreparePreproc(script):
+    """LSL accepts multiline strings, but the preprocessor doesn't.
+    Fix that by converting newlines to "\n". But in order to report accurate
+    line and column numbers for text past that point, insert blank lines to
+    fill the space previously occupied by the string, and spaces in the last
+    line up to the point where the string was closed. That will place the next
+    token in the same line and column it previously was.
+    """
     s = ''
     nlines = 0
     col = 0
@@ -589,7 +596,7 @@ def main(argv):
             shortname = os.path.basename(fname)
 
         # Build preprocessor command line
-        preproc_cmdline = [preproc_command] + preproc_user_args
+        preproc_cmdline = [preproc_command]
         if preproc == 'gcpp':
             preproc_cmdline += [
                 '-undef', '-x', 'c', '-std=c99', '-nostdinc',
@@ -621,6 +628,9 @@ def main(argv):
             preproc_cmdline.append('-D__SHORTFILE__="%s"' % shortname)
             preproc_cmdline.append('-D__OPTIMIZER__=LSL PyOptimizer')
             preproc_cmdline.append('-D__OPTIMIZER_VERSION__=' + VERSION)
+
+        # Append user arguments at the end to allow them to override defaults
+        preproc_cmdline += preproc_user_args
 
         if type(script) is unicode:
             script = script.encode('utf8')
