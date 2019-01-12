@@ -16,9 +16,8 @@
 #    along with LSL PyOptimizer. If not, see <http://www.gnu.org/licenses/>.
 #
 #    This file includes an excerpt from PCPP, by Niall Douglas and David
-#    Beazley, available here:
-# https://github.com/ned14/pcpp/blob/e1219ce157b4dfcfee3181faa6ec5129c3a41e78/pcpp/preprocessor.py#L873-L935
-#    which is distributed under the following conditions:
+#    Beazley. PCPP is available here: https://github.com/ned14/pcpp and
+#    distributed under the following conditions:
 #
 #    (C) Copyright 2018-2019 Niall Douglas http://www.nedproductions.biz/
 #    (C) Copyright 2007-2019 David Beazley http://www.dabeaz.com/
@@ -29,14 +28,14 @@
 #    modification, are permitted provided that the following conditions are
 #    met:
 #
-#    * Redistributions of source code must retain the above copyright notice,
-#      this list of conditions and the following disclaimer.
-#    * Redistributions in binary form must reproduce the above copyright notice,
-#      this list of conditions and the following disclaimer in the documentation
-#      and/or other materials provided with the distribution.
-#    * Neither the name of the David Beazley or Dabeaz LLC may be used to
-#      endorse or promote products derived from this software without
-#      specific prior written permission.
+#  * Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+#  * Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#  * Neither the name of the David Beazley or Dabeaz LLC may be used to
+#    endorse or promote products derived from this software without
+#    specific prior written permission.
 #
 #    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 #    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
@@ -51,6 +50,9 @@
 #    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 #    (End of terms and conditions for the PCPP excerpt)
+#
+#    The particular excerpt used is this one:
+# https://github.com/ned14/pcpp/blob/e1219ce157b4dfcfee3181faa6ec5129c3a41e78/pcpp/preprocessor.py#L873-L935
 #
 #    The following fragments of code are hereby irrevokably donated to the
 #    public domain:
