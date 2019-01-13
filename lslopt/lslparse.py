@@ -464,7 +464,7 @@ class parser(object):
                             else:
                                 self.SetOpt(opt, True)
 
-    def GetToken(self):
+    def GetToken(self, pragma=False):
         """Lexer"""
 
         try:
@@ -578,6 +578,23 @@ class parser(object):
                     while isalphanum_(self.script[self.pos:self.pos+1]):
                         ident += self.script[self.pos]
                         self.pos += 1
+
+                    if self.processpre and ident == '_Pragma' and not pragma:
+                        savepos = self.pos
+                        errorpos = self.errorpos
+                        tok = self.tok
+
+                        if (self.GetToken(True)[0] == '('
+                            and self.NextToken(True)[0] == 'STRING_VALUE'
+                            and self.GetToken(True)[0] == ')'
+                           ):
+                            self.ProcessDirective("#pragma "
+                                                  + self.tok[1])
+                            return self.GetToken()
+                        else:
+                            self.pos = savepos
+                            self.errorpos = errorpos
+                            self.tok = tok
 
                     # Got an identifier - check if it's a reserved word
                     if ident in self.keywords:
@@ -705,9 +722,10 @@ class parser(object):
 
         return ('EOF',)
 
-    def NextToken(self):
+    def NextToken(self, pragma=False):
         """Calls GetToken and sets the internal token."""
-        self.tok = self.GetToken()
+        self.tok = self.GetToken(pragma)
+        return self.tok
 
     # Recursive-descendent parser. The result is an AST and a symbol table.
 
@@ -2937,7 +2955,8 @@ list lazy_list_set(list L, integer i, list v)
         self.scanglobals = True  # Tell the lexer not to process directives
         self.pos = self.errorpos = 0
         self.linestart = True
-        self.tok = self.GetToken()
+        self.tok = None
+        self.NextToken()
 
         self.globals = self.BuildTempGlobalsTable() if not lslcommon.IsCalc \
           else self.funclibrary.copy()
@@ -2947,7 +2966,8 @@ list lazy_list_set(list L, integer i, list v)
         self.scanglobals = False
         self.pos = self.errorpos = 0
         self.linestart = True
-        self.tok = self.GetToken()
+        self.tok = None
+        self.NextToken()
 
         # Reserve spots at the beginning for functions we add
         self.tree = [nr(nt='LAMBDA', t=None)]
