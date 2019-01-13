@@ -668,7 +668,7 @@ class Preproc(preprocessor.Preprocessor):
 
         evaluator = Evaluator(tokens)
         try:
-            result = evaluator.evaluate()
+            result = int(evaluator.evaluate())
         except EvalError as e:
             self.on_error(evaluator.token.source, evaluator.token.lineno,
                 e.message)
