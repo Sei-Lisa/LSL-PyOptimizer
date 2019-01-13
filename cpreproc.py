@@ -132,15 +132,26 @@ class Evaluator(object):
             while True:
                 tok = self.token = self.tokens[self.ptr]
                 self.ptr += 1
-                if tok.type != 'CPP_WS' or '\n' in tok.value:
-                    break
+                # Eat whitespace except newlines, and /* */ comments
+                if (tok.type == 'CPP_WS' and '\n' not in tok.value
+                    or tok.type == 'CPP_COMMENT1'
+                   ):
+                    continue
+                break
 
         except IndexError:
             # Synthesize a new CPP_WS token with a newline, to signal
             # end-of-text (we copy it from the last one in the token stream).
-            self.token = copy.copy(self.tokens[-1])
-            self.token.type = 'CPP_WS'
-            self.token.value = '\n'
+            tok = self.token = copy.copy(self.tokens[-1])
+            tok.type = 'CPP_WS'
+            tok.value = '\n'
+            return
+
+        # Single-line comments are line terminators; convert them
+        if tok.type == 'CPP_COMMENT2':
+            tok = self.token = copy.copy(tok)
+            tok.type = 'CPP_WS'
+            tok.value = '\n'
             return
 
         # Work around a lexing problem in PCPP
