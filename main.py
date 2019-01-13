@@ -258,6 +258,8 @@ Use: {progname} -O help for help on the optimizer control options.
 Comments are always removed in the output, even when using --prettify.
 
 Preprocessor modes:
+    int       Preprocess source using the internal preprocessor
+              (ignores --precmd; accepts --preargs -D, -U and -I)
     ext       Invoke a preprocessor with no default parameters
     mcpp      Invoke mcpp as preprocessor, setting default parameters pertinent
               to it. Implies --precmd=mcpp
@@ -495,7 +497,7 @@ def main(argv):
 
         elif opt in ('-p', '--preproc'):
             preproc = arg.lower()
-            supported = ('ext', 'mcpp', 'gcpp', 'none')
+            supported = ('int', 'ext', 'mcpp', 'gcpp', 'none')
             if preproc not in supported:
                 Usage(argv[0])
                 werr(u"\nUnknown --preproc option: '%s'."
@@ -689,6 +691,22 @@ def main(argv):
         pperrors = False
         if preproc_show_cmdline:
             script = ' '.join(preproc_cmdline)
+
+        elif preproc == 'int':
+            # Use internal preprocessor.
+
+            from cpreproc import Preproc
+            pperrors, script, macros = Preproc(script,
+                preproc_cmdline[1:]).get()
+            if pperrors:
+                preshow = True # Force preshow to display errors
+
+            if 'USE_LAZY_LISTS' in macros:
+                options.add('lazylists')
+            if 'USE_SWITCHES' in macros:
+                options.add('enableswitch')
+            del macros
+
         elif preproc != 'none':
             # PreparePreproc uses and returns Unicode string encoding.
             script = u2b(PreparePreproc(any2u(script, 'utf8')), 'utf8')
