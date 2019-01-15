@@ -244,7 +244,7 @@ class Evaluator(object):
         """Perform usual arithmetic conversions on two operands."""
         assert type(op1) in (sint, uint) and type(op2) in (sint, uint)
         if type(op1) != type(op2):
-            return uint(op1), uint(op2)
+            return self.to_uint(op1), self.to_uint(op2)
         return op1, op2
 
     def primary_expression(self, evaluating):
