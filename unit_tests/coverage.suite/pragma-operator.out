@@ -1,0 +1,18 @@
+default
+{
+    state_entry()
+    {
+        string ___ret__00001;
+        {
+            integer x = 5;
+            {
+                {
+                    ___ret__00001 = "ok";
+                    jump ___rtl__00001;
+                }
+            }
+        }
+        @___rtl__00001;
+        llOwnerSay(___ret__00001);
+    }
+}
