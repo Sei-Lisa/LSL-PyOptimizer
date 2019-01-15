@@ -31,6 +31,7 @@ from lslopt.lsloptimizer import optimizer
 import sys, os, getopt, re
 import lslopt.lslcommon
 import lslopt.lslloadlib
+from strutil import *
 
 
 VERSION = '0.3.0beta'
@@ -44,7 +45,7 @@ def ReportError(script, e):
     # When the encoding of stderr is unknown (e.g. when redirected to a file),
     # output will be encoded in UTF-8; otherwise the terminal's encoding will
     # be used.
-    enc = sys.stderr.encoding or 'utf8'
+    enc = getattr(sys.stderr, 'encoding', 'utf8')
 
     # Synchronize the UTF-8 encoded line with the output line in the
     # terminal's encoding. We need to compensate for the fact that the
@@ -58,15 +59,15 @@ def ReportError(script, e):
 
     # Write the whole line in the target encoding.
     err_line = script[linestart:lineend] + b'\n'
-    sys.stderr.write(err_line.decode('utf8').encode(enc, 'backslashreplace'))
-    sys.stderr.write(u" " * cno + u"^\n")
-    sys.stderr.write(e.args[0] + u"\n")
+    werr(err_line.decode('utf8'))
+    werr(" " * cno + "^\n")
+    werr(e.args[0] + u"\n")
 
 class UniConvScript(object):
     """Converts the script to Unicode, setting the properties required by
     EParse to report a meaningful error position.
     """
-    def __init__(self, script, options = (), filename = '<stdin>'):
+    def __init__(self, script, options = (), filename = b'<stdin>'):
         self.linedir = []
         self.filename = filename
         # We don't interpret #line here. In case of an encode error,
@@ -118,29 +119,29 @@ def PreparePreproc(script):
     # least surprise seems to suggest to accept valid LSL strings as LSL
     # instead of reproducing that C quirk. This also matches what FS is doing
     # currently, so it's good for compatibility.
-    tok = re.compile(
-        ur'(?:'
-            ur'/(?:\?\?/\n|\\\n)*\*.*?\*(?:\?\?/\n|\\\n)*/'
-            ur'|/(?:\?\?/\n|\\\n)*/(?:\?\?/\n|\\\n|[^\n])*\n'
-            ur'|[^"]'
-        ur')+'
-        ur'|"'
-        , re.S)
+    tok = re.compile(str2u(
+        r'(?:'
+            r'/(?:\?\?/\n|\\\n)*\*.*?\*(?:\?\?/\n|\\\n)*/'
+            r'|/(?:\?\?/\n|\\\n)*/(?:\?\?/\n|\\\n|[^\n])*\n'
+            r'|[^"]'
+        r')+'
+        r'|"'
+        ), re.S)
     # RE used inside strings.
-    tok2 = re.compile(
-        ur'(?:'
-            ur"\?\?[='()!<>-]"  # valid trigraph except ??/ (backslash)
-            ur"|(?:\?\?/|\\)(?:\?\?[/='()!<>-]|[^\n])"
+    tok2 = re.compile(str2u(
+        r'(?:'
+            r"\?\?[='()!<>-]"  # valid trigraph except ??/ (backslash)
+            r"|(?:\?\?/|\\)(?:\?\?[/='()!<>-]|[^\n])"
                                 # backslash trigraph or actual backslash,
                                 # followed by any trigraph or non-newline
-            ur'|(?!\?\?/\n|\\\n|"|\n).'
+            r'|(?!\?\?/\n|\\\n|"|\n).'
                                 # any character that doesn't start a trigraph/
                                 # backslash escape followed by a newline
                                 # or is a newline or double quote, as we're
                                 # interested in all those individually.
-        ur')+'                  # as many of those as possible
-        ur'|\?\?/\n|\\\n|\n|"'  # or any of those individually
-        )
+        r')+'                   # as many of those as possible
+        r'|\?\?/\n|\\\n|\n|"'   # or any of those individually
+        ))
 
     pos = 0
     match = tok.search(script, pos)
@@ -155,24 +156,24 @@ def PreparePreproc(script):
                 matched2 = match2.group(0)
                 pos += len(matched2)
 
-                if matched2 == u'\\\n' or matched2 == u'??/\n':
+                if matched2 == b'\\\n' or matched2 == b'??/\n':
                     nlines += 1
                     col = 0
                     match2 = tok2.search(script, pos)
                     continue
-                if matched2 == u'"':
+                if matched2 == b'"':
                     if nlines:
-                        if script[pos:pos+1] == u'\n':
+                        if script[pos:pos+1] == b'\n':
                             col = -1 # don't add spaces if not necessary
                         # col misses the quote added here, so add 1
-                        s += u'"' + u'\n'*nlines + u' '*(col+1)
+                        s += b'"' + b'\n'*nlines + b' '*(col+1)
                     else:
-                        s += u'"'
+                        s += b'"'
                     break
-                if matched2 == u'\n':
+                if matched2 == b'\n':
                     nlines += 1
                     col = 0
-                    s += u'\\n'
+                    s += b'\\n'
                 else:
                     col += len(matched2)
                     s += matched2
@@ -186,20 +187,20 @@ def PreparePreproc(script):
 
 def ScriptHeader(script, avname):
     if avname:
-        avname = ' - ' + avname
-    return ('//start_unprocessed_text\n/*'
+        avname = b' - ' + avname
+    return (b'//start_unprocessed_text\n/*'
         # + re.sub(r'([*/])(?=[*|/])', r'\1|', script) # FS's algorithm
         # HACK: This won't break strings containing ** or /* or // like URLs,
         # while still being compatible with FS.
-        + re.sub(r'([*/]\||\*(?=/))', r'\1|', script)
-        + '*/\n//end_unprocessed_text\n//nfo_preprocessor_version 0\n'
-          '//program_version LSL PyOptimizer v' + VERSION + avname
-        + '\n//mono\n\n')
+        + re.sub(br'([*/]\||\*(?=/))', br'\1|', script)
+        + b'*/\n//end_unprocessed_text\n//nfo_preprocessor_version 0\n'
+          b'//program_version LSL PyOptimizer v' + str2b(VERSION)
+        + str2b(avname) + b'\n//mono\n\n')
 
 def Usage(progname, about = None):
     if about is None:
-        sys.stderr.write(
-ur"""LSL optimizer v{version}
+        werr(
+u"""LSL optimizer v{version}
 
     (C) Copyright 2015-2019 Sei Lisa. All rights reserved.
 
@@ -253,12 +254,12 @@ Preprocessor modes:
 
 Normally, running the preprocessor needs the option 'processpre' active, to
 make the output readable by the optimizer. This option is active by default.
-""".format(progname=progname, version=VERSION))
+""".format(progname=str2u(progname), version=str2u(VERSION)))
         return
 
     if about == 'optimizer-options':
-        sys.stderr.write(
-ur"""
+        werr(
+u"""
 Optimizer control options.
 + means active by default, - means inactive by default.
 Case insensitive.
@@ -363,7 +364,7 @@ For example:
    {progname} -O -DCR,+BreakCont scriptname.lsl
 would turn off dead code removal (which is active by default) and turn on the
 break/continue syntax extension (which is inactive by default).
-""".format(progname=progname))
+""".format(progname=str2u(progname)))
         return
 
 validoptions = frozenset(('extendedglobalexpr','breakcont','extendedtypecast',
@@ -405,7 +406,7 @@ def main(argv):
             'libdata='))
     except getopt.GetoptError as e:
         Usage(argv[0])
-        sys.stderr.write(u"\nError: %s\n" % str(e).decode('utf8', 'replace'))
+        werr(u"\nError: %s\n" % str(e).decode('utf8', 'replace'))
         return 1
 
     outfile = '-'
@@ -462,7 +463,7 @@ def main(argv):
             return 0
 
         elif opt == '--version':
-            sys.stdout.write('LSL PyOptimizer version %s\n' % VERSION)
+            wout(u'LSL PyOptimizer version %s\n' % str2u(VERSION))
             return 0
 
         elif opt in ('-o', '--output'):
@@ -558,7 +559,7 @@ def main(argv):
         fname = args[0] if args else None
         if fname is None:
             Usage(argv[0])
-            sys.stderr.write(u"\nError: Input file not specified. Use -"
+            werr(u"\nError: Input file not specified. Use -"
                 u" if you want to use stdin.\n")
             return 1
 
@@ -644,7 +645,7 @@ def main(argv):
             except EParse as e:
                 # We don't call ReportError to prevent problems due to
                 # displaying invalid UTF-8
-                sys.stderr.write(e.args[0] + u"\n")
+                werr(e.args[0] + u"\n")
                 return 1
 
         if preproc != 'none':

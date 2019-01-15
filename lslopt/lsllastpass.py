@@ -17,8 +17,8 @@
 
 # Optimizations that have a negative effect on other stages.
 
-import lslcommon
-from lslcommon import nr
+from lslopt import lslcommon
+from lslopt.lslcommon import nr
 #from lslcommon import Vector, Quaternion
 #import lslfuncs
 #from lslfuncs import ZERO_VECTOR, ZERO_ROTATION

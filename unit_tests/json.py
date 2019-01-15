@@ -1,4 +1,5 @@
 import sys
+from strutil import *
 from lslopt.lslfuncs import *
 
 tests = 0
@@ -7,7 +8,6 @@ errors = 0
 # Begin JSON tests from http://wiki.secondlife.com/wiki/Json_usage_in_LSL/TestScript
 def verify(msg, result, expected):
     global tests
-    werr = sys.stderr.write
     tests += 1
     if expected != result:
         global errors
@@ -356,7 +356,6 @@ def test_jira_fixes():
     maint3081();
 
 def run_tests():
-    werr = sys.stderr.write
     # JSON tests from the wiki
     test_types();
     test_get_value();

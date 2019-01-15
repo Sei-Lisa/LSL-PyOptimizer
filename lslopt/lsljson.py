@@ -19,8 +19,8 @@
 
 import re
 import math
-from lslcommon import *
-from lslbasefuncs import llStringTrim, fs, fl, InternalTypecast
+from lslopt.lslcommon import *
+from lslopt.lslbasefuncs import llStringTrim, fs, fl, InternalTypecast
 
 # INCOMPATIBILITY NOTE: The JSON functions in SL have very weird behaviour
 # in corner cases. Despite our best efforts, that behaviour is not replicated
@@ -44,8 +44,8 @@ JSON_DELETE  = u'\uFDD8'
 JSON_APPEND  = -1
 
 jsonesc_re = re.compile(u'[\x08\x09\x0A\x0C\x0D"/\\\\]')
-jsonesc_dict = {u'\x08':ur'\b', u'\x09':ur'\t', u'\x0A':ur'\n', u'\x0C':ur'\f',
-                u'\x0D':ur'\r', u'"':ur'\"', u'/':ur'\/', u'\\':ur'\\'}
+jsonesc_dict = {u'\x08':u'\\b', u'\x09':u'\\t', u'\x0A':u'\\n', u'\x0C':u'\\f',
+                u'\x0D':u'\\r', u'"':u'\\"', u'/':u'\\/', u'\\':u'\\\\'}
 jsonunesc_dict = {u'b':u'\x08', u't':u'\x09', u'n':u'\x0A', u'f':u'\x0C', u'r':u'\x0D'}
 
 # LSL JSON numbers differ from standard JSON numbers in many respects:
@@ -72,18 +72,37 @@ jsonunesc_dict = {u'b':u'\x08', u't':u'\x09', u'n':u'\x0A', u'f':u'\x0C', u'r':u
 # elements when appropriate.
 
 # Real JSON number parser:
-#jsonnum_re = re.compile(ur'-?(?:[1-9][0-9]*|0)(?:\.[0-9]+)?(?:[Ee][+-]?[0-9]+)?')
+#jsonnum_re = re.compile(str2u(
+#    r'-?(?:[1-9][0-9]*|0)(?:\.[0-9]+)?(?:[Ee][+-]?[0-9]+)?'
+#    ))
 
 # BUG-6466 active:
-jsonnumbug_re = re.compile(ur'-?(?:[0-9]*([Ee])-?[0-9]*\.?[0-9]*|(?=[0-9Ee.])[0-9]*(\.?[0-9]*(?:[Ee]-?)?[0-9]*))')
+jsonnumbug_re = re.compile(str2u(r'''
+    -?(?:
+        [0-9]*([Ee])-?[0-9]*\.?[0-9]*
+        |(?=[0-9Ee.])[0-9]*(\.?[0-9]*(?:[Ee]-?)?[0-9]*)
+    )
+    '''), re.X)
 # BUG-6466 fixed:
 # The new RE is just a modified version of the crap, allowing + exponents and
 # disallowing zeros, sometimes even when legal (e.g. 0e0)
-#jsonnum_re = re.compile(ur'-?(?:(?=[1-9]|\.(?:[^e]|$)|0(?:[^0-9e]|$))[0-9]*([Ee])[+-]?[0-9]*\.?[0-9]*|(?=[1-9]|\.(?:[^e]|$)|0(?:[^0-9e]|$))[0-9]*(\.?[0-9]*(?:[Ee][+-]?)?[0-9]*))')
+#jsonnum_re = re.compile(str2u(r'''
+#    -?(?:
+#        (?=[1-9]|\.(?:[^e]|$)
+#            |0(?:[^0-9e]|$))[0-9]*([Ee])[+-]?[0-9]*\.?[0-9]*
+#        |(?=[1-9]|\.(?:[^e]|$)
+#            |0(?:[^0-9e]|$))[0-9]*(\.?[0-9]*(?:[Ee][+-]?)?[0-9]*)
+#    )
+#    '''), re.X)
 # They've fixed BUG-6657 by bringing BUG-6466 back to life.
-jsonnum_re = re.compile(ur'-?(?:[0-9]*([Ee])-?[0-9]*\.?[0-9]*|(?=[0-9Ee.])[0-9]*(\.?[0-9]*(?:[Ee]-?)?[0-9]*))')
+jsonnum_re = re.compile(str2u(r'''
+    -?(?:
+        [0-9]*([Ee])-?[0-9]*\.?[0-9]*
+        |(?=[0-9Ee.])[0-9]*(\.?[0-9]*(?:[Ee]-?)?[0-9]*)
+    )
+    '''), re.X)
 
-jsonstring_re = re.compile(ur'"(?:[^"\\]|\\.)*"')
+jsonstring_re = re.compile(str2u(r'"(?:[^"\\]|\\.)*"'))
 
 # This might need some explanation. The ] and - are included in the first
 # set, the ] in the first after the ^ and the - in the last positions of
@@ -91,7 +110,7 @@ jsonstring_re = re.compile(ur'"(?:[^"\\]|\\.)*"')
 # though it confuses things. The set comprises any character not in
 # -{}[],:"0123456789
 # The second set comprises zero or more characters not in ,:]}
-#word_re = re.compile(ur'[^][{}0-9",:-][^]},:]*')
+#word_re = re.compile(str2u(r'[^][{}0-9",:-][^]},:]*'))
 # Screw that, we're using just a fallback.
 jsoncatchall_re = re.compile(u'(.*?)[\x09\x0A\x0B\x0C\x0D ]*(?:[]},]|$)')
 

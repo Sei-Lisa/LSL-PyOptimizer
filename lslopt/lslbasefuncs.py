@@ -34,12 +34,13 @@
 # The JSON functions have been separated to their own module.
 
 import re
-from lslcommon import *
-import lslcommon
+from lslopt.lslcommon import *
+from lslopt import lslcommon
 from ctypes import c_float
 import math
 import hashlib
 from base64 import b64encode, b64decode
+from strutil import *
 
 
 # Regular expressions used along the code. They are needed mainly because
@@ -58,18 +59,49 @@ from base64 import b64encode, b64decode
 # as is (vector)"<1,inf,info>". The 1st gives <0,0,0>, the others <1,inf,inf>.
 # The lookahead (?!i) is essential for parsing them that way without extra code.
 # Note that '|' in REs is order-sensitive.
-float_re = re.compile(ur'^\s*[+-]?(?:0(x)(?:[0-9a-f]+(?:\.[0-9a-f]*)?|\.[0-9a-f]+)(?:p[+-]?[0-9]+)?'
-                      ur'|(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e[+-]?[0-9]+)?|inf|(nan))',
-                      re.I)
-vfloat_re = re.compile(ur'^\s*[+-]?(?:0(x)(?:[0-9a-f]+(?:\.[0-9a-f]*)?|\.[0-9a-f]+)(?:p[+-]?[0-9]+)?'
-                      ur'|(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e[+-]?[0-9]+)?|infinity|inf(?!i)|(nan))',
-                      re.I)
+float_re  = re.compile(str2u(r'''
+    ^\s*[+-]?(?:
+        0(x)(?:             # Hex float or hex int (captures the 'x')
+            [0-9a-f]+(?:\.[0-9a-f]*)?
+            |\.[0-9a-f]+    # Hex digits
+        )(?:
+            p[+-]?[0-9]+    # Hex float exponent
+        )?                  # (optional)
+        |(?:                # Decimal float or decimal int
+            [0-9]+(?:\.[0-9]*)?
+            |\.[0-9]+       # Decimal digits
+        )(?:
+            e[+-]?[0-9]+    # Decimal float exponent
+        )?                  # (optional)
+        |inf                # Infinity
+        |(nan)              # NaN (captured)
+    )
+    '''), re.I | re.X)
+vfloat_re = re.compile(str2u(r'''
+    ^\s*[+-]?(?:
+        0(x)(?:             # Hex float or hex int (captures the 'x')
+            [0-9a-f]+(?:\.[0-9a-f]*)?
+            |\.[0-9a-f]+    # Hex digits
+        )(?:
+            p[+-]?[0-9]+    # Hex float exponent
+        )?                  # (optional)
+        |(?:                # Decimal float or decimal int
+            [0-9]+(?:\.[0-9]*)?
+            |\.[0-9]+       # Decimal digits
+        )(?:
+            e[+-]?[0-9]+    # Decimal float exponent
+        )?                  # (optional)
+        |infinity|inf(?!i)  # Infinity (the only difference with the above)
+        |(nan)              # NaN (captured)
+    )
+    '''), re.I | re.X)
 
-int_re = re.compile(ur'^0(x)[0-9a-f]+|^\s*[+-]?[0-9]+', re.I)
+int_re = re.compile(str2u(r'^0(x)[0-9a-f]+|^\s*[+-]?[0-9]+'), re.I)
 
-key_re = re.compile(ur'^[0-9a-f]{8}(?:-[0-9a-f]{4}){4}[0-9a-f]{8}$', re.I)
+key_re = re.compile(str2u(r'^[0-9a-f]{8}(?:-[0-9a-f]{4}){4}[0-9a-f]{8}$'),
+                    re.I)
 
-b64_re = re.compile(ur'^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2,3})?')
+b64_re = re.compile(str2u(r'^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2,3})?'))
 
 ZERO_VECTOR      = Vector((0.0, 0.0, 0.0))
 ZERO_ROTATION    = Quaternion((0.0, 0.0, 0.0, 1.0))

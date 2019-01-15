@@ -17,8 +17,8 @@
 
 # Extra functions that have predictable return values for certain arguments.
 
-from lslcommon import Key, Vector #, Quaternion
-from lslbasefuncs import ELSLCantCompute, fi,ff,fs,fk,v2f,q2f,fl, \
+from lslopt.lslcommon import Key, Vector #, Quaternion
+from lslopt.lslbasefuncs import ELSLCantCompute, fi,ff,fs,fk,v2f,q2f,fl, \
   NULL_KEY, ZERO_VECTOR, ZERO_ROTATION, \
   TOUCH_INVALID_TEXCOORD, cond
 ff, q2f  # keep pyflakes happy as these are not used

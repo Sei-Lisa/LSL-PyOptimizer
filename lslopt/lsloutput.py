@@ -17,9 +17,9 @@
 
 # Convert an abstract syntax tree + symbol table back to a script as text.
 
-import lslfuncs
-import lslcommon
-from lslcommon import Key, Vector, Quaternion, warning
+from lslopt import lslfuncs
+from lslopt import lslcommon
+from lslopt.lslcommon import Key, Vector, Quaternion, warning
 from math import copysign
 
 debugScopes = False

@@ -56,9 +56,13 @@ try:
     import difflib
 except ImportError:
     difflib = None
-import StringIO as StringStream
+if sys.hexversion < 0x3000000:
+    from StringIO import StringIO as StringStream
+else:
+    from io import BytesIO as StringStream
 from lslopt import lslcommon,lslfuncs,lslparse,lsloutput,lslloadlib
 from lslopt.lslcommon import nr
+from strutil import *
 
 class EArgError(Exception):
     pass
@@ -89,25 +93,25 @@ def parseArgs(s):
     State = Space
     p = 0
     Len = len(s)
-    arg = ''
+    arg = b''
 
     while p < Len:
-        c = s[p]
+        c = s[p:p+1]
         p += 1
         if State in (Space, Normal):
-            if c == '\\':
+            if c == b'\\':
                 State = NBackslash if State == Normal else SBackslash
-            elif c == '"':
+            elif c == b'"':
                 State = DQuote
-            elif c == "'":
+            elif c == b"'":
                 State = SQuote
-            elif c in (' ', '\t'):
+            elif c in (b' ', b'\t'):
                 if State == Normal:
                     State = Space
                     args.append(arg)
-                    arg = ''
+                    arg = b''
                 # else remain in the 'Space' state
-            elif c == '\n':
+            elif c == b'\n':
                 break
             else:
                 State = Normal
@@ -118,20 +122,20 @@ def parseArgs(s):
                          else Space if State == SBackslash
                          else Normal)
             else:
-                if State == DQBackslash and c not in ('"', '`', '$', '\\'):
-                    arg += '\\'
+                if State == DQBackslash and c not in (b'"', b'`', b'$', b'\\'):
+                    arg += b'\\'
                 arg += c
                 State = DQuote if State == DQBackslash else Normal
         elif State == DQuote:
-            if c == '\\':
+            if c == b'\\':
                 State = DQBackslash
             # ` and $ are not interpreted by this parser.
-            elif c == '"':
+            elif c == b'"':
                 State = Normal
             else:
                 arg += c
         elif State == SQuote:
-            if c == "'":
+            if c == b"'":
                 State = Normal
             else:
                 arg += c
@@ -185,7 +189,7 @@ def parseArgs(s):
 def tryRead(fn):
     result = None
     try:
-        f = open(fn, 'r')
+        f = open(fn, 'rb')
         try:
             result = f.read()
         finally:
@@ -197,12 +201,9 @@ def tryRead(fn):
 
 # In StringIO, mixing unicode and str causes problems with non-ASCII chars.
 # Avoid it by overriding the write method, to always encode unicode as UTF-8.
-class StrUTF8IO(StringStream.StringIO):
+class StrUTF8IO(StringStream):
     def write(self, s):
-        if type(s) == unicode:
-            StringStream.StringIO.write(self, s.encode('utf8'))
-        else:
-            StringStream.StringIO.write(self, s)
+        StringStream.write(self, any2b(s))
 
 def invokeMain(argv, stdin = None):
     """Invoke main.main, substituting stdin, stdout, stderr.
@@ -218,7 +219,7 @@ def invokeMain(argv, stdin = None):
     stdout_output = None
     stderr_output = None
     try:
-        sys.stdin = StringStream.StringIO(stdin)
+        sys.stdin = StringStream(stdin)
         sys.stdout = StrUTF8IO()
         sys.stderr = StrUTF8IO()
         sys.stdin.encoding = 'utf8'
@@ -314,8 +315,10 @@ class UnitTestRegression(UnitTestCase):
         stdout_output = False
         stderr_output = False
         try:
-            sys.stdout = StringStream.StringIO()
-            sys.stderr = StringStream.StringIO()
+            sys.stdout = StringStream()
+            sys.stdout.encoding = 'utf8'
+            sys.stderr = StringStream()
+            sys.stderr.encoding = 'utf8'
             errs = json.run_tests()
             stdout_output = sys.stdout.getvalue()
             stderr_output = sys.stderr.getvalue()
@@ -439,7 +442,8 @@ class UnitTestCoverage(UnitTestCase):
         self.assertEqual(repr(lslfuncs.q2f(lslcommon.Quaternion((1,0,0,0)))),
                          'Quaternion((1.0, 0.0, 0.0, 0.0))')
         # Key repr coverage
-        self.assertEqual(repr(lslcommon.Key(u'')), "Key(u'')")
+        self.assertEqual(repr(lslcommon.Key(u'')), "Key(u'')"
+            if str != unicode else "Key('')")
 
         # string + key coverage
         self.assertEqual(lslfuncs.add(u'a', lslcommon.Key(u'b')), u'ab')
@@ -684,8 +688,8 @@ def generateScriptTests():
             def makeTestFunction(fbase, suite):
                 def TestFunction(self):
                     stdin = tryRead(fbase + '.lsl') or ''
-                    expected_stdout = tryRead(fbase + '.out') or ''
-                    expected_stderr = tryRead(fbase + '.err') or ''
+                    expected_stdout = tryRead(fbase + '.out') or b''
+                    expected_stderr = tryRead(fbase + '.err') or b''
                     runargs = (parseArgs(tryRead(fbase + '.run'))
                                or (['main.py', '-y', '-'] if suite != 'Expr'
                                    else ['main.py',
@@ -694,18 +698,18 @@ def generateScriptTests():
                                                ',addstrings,expr',
                                          '-y',
                                          '-']))
-                    sys.stderr.write("\nRunning test %s: " % fbase)
+                    werr(u"\nRunning test %s: " % any2u(fbase))
                     actual_stdout, actual_stderr = invokeMain(runargs, stdin)
-                    actual_stdout = (actual_stdout.replace('\r','\r\n')
-                                     .replace('\r\n\n','\n')
-                                     .replace('\r\n','\n'))
+                    actual_stdout = (actual_stdout.replace(b'\r',b'\r\n')
+                                     .replace(b'\r\n\n',b'\n')
+                                     .replace(b'\r\n',b'\n'))
 
-                    actual_stderr = (actual_stderr.replace('\r','\r\n')
-                                     .replace('\r\n\n','\n')
-                                     .replace('\r\n','\n'))
+                    actual_stderr = (actual_stderr.replace(b'\r',b'\r\n')
+                                     .replace(b'\r\n\n',b'\n')
+                                     .replace(b'\r\n',b'\n'))
 
                     try:
-                        if expected_stderr.startswith('REGEX\n'):
+                        if expected_stderr.startswith(b'REGEX\n'):
                             self.assertIsNotNone(
                                 re.search(expected_stderr[6:],
                                           actual_stderr.decode('utf8')
@@ -714,66 +718,67 @@ def generateScriptTests():
                         else:
                             self.assertTrue(expected_stderr == actual_stderr)
                     except AssertionError:
-                        sys.stderr.write('Failed'
-                                         '\n************ expected stderr:\n')
-                        sys.stderr.write(expected_stderr)
-                        sys.stderr.write('\n************ actual stderr:\n')
-                        sys.stderr.write(actual_stderr)
+                        werr(u'Failed'
+                             u'\n************ expected stderr:\n')
+                        werr(expected_stderr)
+                        werr(u'\n************ actual stderr:\n')
+                        werr(actual_stderr)
                         if difflib and expected_stderr and actual_stderr:
-                            sys.stderr.write('\n************ diff:\n'
-                                 + '\n'.join(difflib.unified_diff(
-                                    expected_stderr.split('\n'),
-                                    actual_stderr.split('\n'),
+                            sys.stderr.write(u'\n************ diff:\n'
+                                 + u'\n'.join(difflib.unified_diff(
+                                    b2u(expected_stderr).split(u'\n'),
+                                    b2u(actual_stderr).split(u'\n'),
                                     'expected', 'actual', lineterm=''
                             )))
-                        sys.stderr.write('\n************ ')
+                        werr(u'\n************ ')
                         raise
                     try:
-                        if expected_stdout.startswith('REGEX\n'):
+                        if expected_stdout.startswith(b'REGEX\n'):
                             self.assertIsNotNone(re.search(expected_stdout[6:],
                                                            actual_stdout))
                         else:
                             self.assertTrue(expected_stdout == actual_stdout)
                     except AssertionError:
-                        sys.stderr.write('Failed'
-                                         '\n************ expected stdout:\n')
-                        sys.stderr.write(expected_stdout)
-                        sys.stderr.write('\n************ actual stdout:\n')
-                        sys.stderr.write(actual_stdout)
+                        werr(u'Failed'
+                             u'\n************ expected stdout:\n')
+                        werr(expected_stdout)
+                        werr(u'\n************ actual stdout:\n')
+                        werr(actual_stdout)
                         if difflib and expected_stdout and actual_stdout:
-                            sys.stderr.write('\n************ diff:\n'
-                                 + '\n'.join(difflib.unified_diff(
-                                    expected_stdout.split('\n'),
-                                    actual_stdout.split('\n'),
+                            werr(u'\n************ diff:\n'
+                                 + u'\n'.join(difflib.unified_diff(
+                                    b2u(expected_stdout).split('\n'),
+                                    b2u(actual_stdout).split('\n'),
                                     'expected', 'actual', lineterm=''
                             )))
-                        sys.stderr.write('\n************ ')
+                        sys.stderr.write(u'\n************ ')
                         raise
                 return TestFunction
             TestFunction = makeTestFunction(fbase, testsuite)
             # __doc__ is used by Eric
-            line = ''
+            line = b''
             try:
-                f = open(fbase + '.lsl')
+                f = open(fbase + '.lsl', 'rb')
                 try:
                     line = f.readline()
-                    if line.endswith('\r\n'):
+                    if line.endswith(b'\r\n'):
                         line = line[:-2]
-                    elif line[-1:] in ('\r', '\n'):
+                    elif line[-1:] in (b'\r', b'\n'):
                         line = line[:-1]
                 finally:
                     f.close()
             except IOError as e:
                 if e.errno != 2:
                     raise
-            TestFunction.__doc__ = line[3:] if line.startswith('// ') else None
+            TestFunction.__doc__ = (b2u(line[3:]) if line.startswith(b'// ')
+                                    else None)
 
             TestFunction.__name__ = ('test_' + testsuite + '__'
                 + os.path.basename(fbase).replace('-','_'))
             fail = tryRead(fbase + '.fail')
             if fail is not None:
                 if fail:
-                    TestFunction.__doc__ = fail
+                    TestFunction.__doc__ = b2u(fail)
                 TestFunction = unittest.expectedFailure(TestFunction)
             else:
                 skip = tryRead(fbase + '.skp')
@@ -786,3 +791,4 @@ def generateScriptTests():
 generateScriptTests()
 if __name__ == '__main__':
     unittest.main(argv = sys.argv)
+#UnitTestRegression().test_Regression__multiline_string()

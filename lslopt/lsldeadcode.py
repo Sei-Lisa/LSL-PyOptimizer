@@ -17,8 +17,8 @@
 
 # Dead Code Removal optimization
 
-import lslfuncs
-from lslcommon import nr
+from lslopt import lslfuncs
+from lslopt.lslcommon import nr
 
 class deadcode(object):
 

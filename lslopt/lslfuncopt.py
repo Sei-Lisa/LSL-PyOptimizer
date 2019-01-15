@@ -18,9 +18,9 @@
 # Optimize calls to LSL library functions and parameters where possible
 # This is dependent on the LSL function library.
 
-import lslcommon
-from lslcommon import Key, Vector, Quaternion, nr
-import lslfuncs
+from lslopt import lslcommon
+from lslopt.lslcommon import Key, Vector, Quaternion, nr
+from lslopt import lslfuncs
 
 def OptimizeArgs(node, sym):
     """Transform function arguments to shorter equivalents where possible."""

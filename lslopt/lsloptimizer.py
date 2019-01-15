@@ -17,13 +17,13 @@
 
 # Optimizer class that wraps and calls the other parts.
 
-import lslfuncs
+from lslopt import lslfuncs
 
-from lslcommon import nr
-from lslfoldconst import foldconst
-from lslrenamer import renamer
-from lsldeadcode import deadcode
-from lsllastpass import lastpass
+from lslopt.lslcommon import nr
+from lslopt.lslfoldconst import foldconst
+from lslopt.lslrenamer import renamer
+from lslopt.lsldeadcode import deadcode
+from lslopt.lsllastpass import lastpass
 
 class optimizer(foldconst, renamer, deadcode, lastpass):
 

@@ -18,8 +18,8 @@
 # Load the builtins and function properties.
 
 import sys, re
-from lslcommon import types, warning, Vector, Quaternion
-import lslcommon, lslfuncs
+from lslopt.lslcommon import types, warning, Vector, Quaternion
+from lslopt import lslcommon, lslfuncs
 
 def LoadLibrary(builtins = None, fndata = None):
     """Load builtins.txt and fndata.txt (or the given filenames) and return
@@ -40,21 +40,21 @@ def LoadLibrary(builtins = None, fndata = None):
     # Library read code
 
     parse_lin_re = re.compile(
-        r'^\s*([a-z]+)\s+'
-        r'([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*('
-            r'[a-z]+\s+[a-zA-Z_][a-zA-Z0-9_]*'
-            r'(?:\s*,\s*[a-z]+\s+[a-zA-Z_][a-zA-Z0-9_]*)*'
-        r')?\s*\)\s*$'
-        r'|'
-        r'^\s*const\s+([a-z]+)'
-        r'\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.*?)\s*$'
-        r'|'
-        r'^\s*(?:#.*|//.*)?$')
-    parse_arg_re = re.compile(r'^\s*([a-z]+)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*$')
-    parse_fp_re  = re.compile(r'^\s*(-?(?=[0-9]|\.[0-9])[0-9]*'
-                              r'((?:\.[0-9]*)?(?:[Ee][+-]?[0-9]+)?))\s*$')
-    parse_int_re = re.compile(r'^\s*(-?0x[0-9A-Fa-f]+|-?[0-9]+)\s*$')
-    parse_str_re = re.compile(ur'^"((?:[^"\\]|\\.)*)"$')
+        br'^\s*([a-z]+)\s+'
+        br'([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*('
+            br'[a-z]+\s+[a-zA-Z_][a-zA-Z0-9_]*'
+            br'(?:\s*,\s*[a-z]+\s+[a-zA-Z_][a-zA-Z0-9_]*)*'
+        br')?\s*\)\s*$'
+        br'|'
+        br'^\s*const\s+([a-z]+)'
+        br'\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.*?)\s*$'
+        br'|'
+        br'^\s*(?:#.*|//.*)?$')
+    parse_arg_re = re.compile(br'^\s*([a-z]+)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*$')
+    parse_fp_re  = re.compile(br'^\s*(-?(?=[0-9]|\.[0-9])[0-9]*'
+                              br'((?:\.[0-9]*)?(?:[Ee][+-]?[0-9]+)?))\s*$')
+    parse_int_re = re.compile(br'^\s*(-?0x[0-9A-Fa-f]+|-?[0-9]+)\s*$')
+    parse_str_re = re.compile(u'^"((?:[^"\\\\]|\\\\.)*)"$')
 
     f = open(builtins, 'rb')
     try:

@@ -17,12 +17,12 @@
 
 # Constant folding and simplification of expressions and statements.
 
-import lslcommon
-from lslcommon import Vector, Quaternion, warning, nr
-import lslfuncs
-from lslfuncs import ZERO_VECTOR, ZERO_ROTATION
+from lslopt import lslcommon
+from lslopt.lslcommon import Vector, Quaternion, warning, nr
+from lslopt import lslfuncs
+from lslopt.lslfuncs import ZERO_VECTOR, ZERO_ROTATION
 import math
-from lslfuncopt import OptimizeFunc, OptimizeArgs, FuncOptSetup
+from lslopt.lslfuncopt import OptimizeFunc, OptimizeArgs, FuncOptSetup
 
 # TODO: Remove special handling of @ within IF,WHILE,FOR,DO
 

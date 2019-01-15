@@ -20,8 +20,9 @@
 
 # TODO: Add info to be able to propagate error position to the source.
 
-from lslcommon import Key, Vector, Quaternion, types, nr
-import lslcommon, lslfuncs
+from lslopt.lslcommon import Key, Vector, Quaternion, types, nr
+from lslopt import lslcommon, lslfuncs
+from strutil import *
 import re
 
 # Note this module was basically written from bottom to top, which may help
@@ -70,8 +71,8 @@ class EParse(Exception):
         self.errorpos = parser.errorpos
         self.lno, self.cno, self.fname = GetErrLineCol(parser)
         filename = (self.fname.decode('utf8', 'replace')
-                    .replace(u'\\', ur'\\')
-                    .replace(u'"', ur'\"')
+                    .replace(u'\\', u'\\\\')
+                    .replace(u'"', u'\\"')
                    )
 
         if parser.processpre and filename != '<stdin>':

@@ -18,6 +18,7 @@
 # Classes, functions and variables for use of all modules.
 
 import sys
+from strutil import *
 
 _exclusions = frozenset(('nt','t','name','value','ch', 'X','SEF'))
 

@@ -17,6 +17,6 @@
 
 # Put all LSL functions together in one single module
 
-from lslbasefuncs import *
-from lsljson import *
-from lslextrafuncs import *
+from lslopt.lslbasefuncs import *
+from lslopt.lsljson import *
+from lslopt.lslextrafuncs import *
