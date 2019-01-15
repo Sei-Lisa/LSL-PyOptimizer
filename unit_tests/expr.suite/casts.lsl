@@ -53,6 +53,7 @@
 , (vector)"<infinity,1,1>"
 , (vector)"<infini,1,1>"
 , (vector)"<infinite,1,1>"
+, (vector)"<info,1,1>"
 , (quaternion)"<-nan,nan,-nan,nan>"
 , (string)-.5e-6
 , (string)((float)"-0x1.0C6F7Ap-21")
