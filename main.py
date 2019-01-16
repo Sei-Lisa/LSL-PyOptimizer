@@ -224,6 +224,9 @@ Usage: {progname}
     [-p|--preproc=mode]         run external preprocessor (see below for modes)
                                 (resets the preprocessor command line so far)
     [-P|--prearg=<arg>]         add parameter to preprocessor's command line
+                                before predefined ones
+    [-A|--postarg=<arg>]        add parameter to preprocessor's command line
+                                after predefined ones
     [--precmd=<cmd>]            preprocessor command ('cpp' by default)
     [--prenodef]                no LSL specific defines (__AGENTKEY__ etc.)
     [--preshow]                 show preprocessor output, and stop
@@ -398,12 +401,12 @@ def main(argv):
         % (b"', '".join(options - validoptions)).decode('utf8'))
 
     try:
-        opts, args = getopt.gnu_getopt(argv[1:], 'hO:o:p:P:HTyb:L:',
+        opts, args = getopt.gnu_getopt(argv[1:], 'hO:o:p:P:HTyb:L:A:',
             ('optimizer-options=', 'help', 'version', 'output=', 'header',
             'timestamp', 'python-exceptions', 'prettify', 'bom',
             'preproc=', 'precmd=', 'prearg=', 'prenodef', 'preshow',
             'avid=', 'avname=', 'assetid=', 'shortname=', 'builtins='
-            'libdata='))
+            'libdata=', 'postarg='))
     except getopt.GetoptError as e:
         Usage(argv[0])
         werr(u"\nError: %s\n" % str(e).decode('utf8', 'replace'))
@@ -415,7 +418,8 @@ def main(argv):
     shortname = ''
     assetid = '00000000-0000-0000-0000-000000000000'
     preproc_command = 'cpp'
-    preproc_user_args = []
+    preproc_user_preargs = []
+    preproc_user_postargs = []
     preproc = 'none'
     predefines = True
     script_header = ''
@@ -498,7 +502,7 @@ def main(argv):
             preproc_command = arg
 
         elif opt in ('-P', '--prearg'):
-            preproc_user_args.append(arg)
+            preproc_user_preargs.append(arg)
 
         elif opt == '--prenodef':
             predefines = False
@@ -597,7 +601,7 @@ def main(argv):
             shortname = os.path.basename(fname)
 
         # Build preprocessor command line
-        preproc_cmdline = [preproc_command]
+        preproc_cmdline = [preproc_command] + preproc_user_preargs
         if preproc == 'gcpp':
             preproc_cmdline += [
                 '-undef', '-x', 'c', '-std=c99', '-nostdinc',
@@ -631,7 +635,7 @@ def main(argv):
             preproc_cmdline.append('-D__OPTIMIZER_VERSION__=' + VERSION)
 
         # Append user arguments at the end to allow them to override defaults
-        preproc_cmdline += preproc_user_args
+        preproc_cmdline += preproc_user_postargs
 
         if type(script) is unicode:
             script = script.encode('utf8')
