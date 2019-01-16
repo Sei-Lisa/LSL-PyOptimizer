@@ -432,11 +432,6 @@ def main(argv):
     libdata = None
 
     for opt, arg in opts:
-        if type(opt) is unicode:
-            opt = opt.encode('utf8')
-        if type(arg) is unicode:
-            arg = arg.encode('utf8')
-
         if opt in ('-O', '--optimizer-options'):
             optchanges = arg.lower().split(',')
             for chg in optchanges:
@@ -453,7 +448,7 @@ def main(argv):
                     chgfix = '+' + chgfix
                 if chgfix[1:] not in validoptions:
                     Usage(argv[0], 'optimizer-options')
-                    sys.stderr.write(u"\nError: Unrecognized"
+                    werr(u"\nError: Unrecognized"
                         u" optimizer option: %s\n" % chg.decode('utf8'))
                     return 1
                 if chgfix[0] == '-':
@@ -487,9 +482,9 @@ def main(argv):
             supported = ('ext', 'mcpp', 'gcpp', 'none')
             if preproc not in supported:
                 Usage(argv[0])
-                sys.stderr.write(u"\nUnknown --preproc option: '%s'."
+                werr(u"\nUnknown --preproc option: '%s'."
                     u" Only '%s' supported.\n"
-                    % (preproc, u"', '".join(supported)))
+                    % (preproc, str2u("', '".join(supported))))
                 return 1
 
             if preproc == 'gcpp':
@@ -577,7 +572,7 @@ def main(argv):
                 f = open(fname, 'r')
             except IOError as e:
                 if e.errno == 2:
-                    sys.stderr.write('Error: File not found: %s\n' % fname)
+                    werr(u"Error: File not found: %s\n" % str2u(fname))
                     return 2
                 raise
             try:
@@ -593,7 +588,7 @@ def main(argv):
             import time
             tmp = time.time()
             script_timestamp = time.strftime(
-                '// Generated on %Y-%m-%dT%H:%M:%S.{0:06d}Z\n'
+                b'// Generated on %Y-%m-%dT%H:%M:%S.{0:06d}Z\n'
                 .format(int(tmp % 1 * 1000000)), time.gmtime(tmp))
             del tmp
 
@@ -660,7 +655,7 @@ def main(argv):
                 # As a special treatment for mcpp, we force it to output its
                 # macros so we can read if USE_xxx are defined. With GCC that
                 # is achieved with -dN, but mcpp has no command line option.
-                script += '\n#pragma MCPP put_defines\n'
+                script += b'\n#pragma MCPP put_defines\n'
 
             # Invoke the external preprocessor
             import subprocess
@@ -680,13 +675,13 @@ def main(argv):
             #    - Comments preceding the directive should not cause problems.
             #              e.g.: /* test */ #directive
             #    - #directive within a comment or string should be ignored.
-            for x in re.findall(r'(?:(?<=\n)|^)\s*#\s*define\s+('
-                                r'USE_SWITCHES'
-                                r'|USE_LAZY_LISTS'
-                                r')(?:$|[^A-Za-z0-9_])', script, re.S):
-                if x == 'USE_SWITCHES':
+            for x in re.findall(br'(?:(?<=\n)|^)\s*#\s*define\s+('
+                                br'USE_SWITCHES'
+                                br'|USE_LAZY_LISTS'
+                                br')(?:$|[^A-Za-z0-9_])', script, re.S):
+                if x == b'USE_SWITCHES':
                     options.add('enableswitch')
-                elif x == 'USE_LAZY_LISTS':
+                elif x == b'USE_LAZY_LISTS':
                     options.add('lazylists')
 
         if not preshow:
@@ -727,7 +722,7 @@ def main(argv):
     except Exception as e:
         if raise_exception:
             raise
-        sys.stderr.write(e.__class__.__name__ + ': ' + str(e) + '\n')
+        werr(e.__class__.__name__ + ': ' + str(e) + '\n')
         return 1
 
 if __name__ == '__main__':
