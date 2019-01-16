@@ -606,7 +606,7 @@ def main(argv):
 
         elif preproc == 'mcpp':
             preproc_cmdline += [
-                '-e', 'UTF-8', '-I-', '-N', '-3', '-j',
+                '-e', 'UTF-8', '-I-', '-N', '-2', '-3', '-j',
                 '-V199901L',
                 ]
 
