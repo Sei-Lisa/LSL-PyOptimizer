@@ -707,7 +707,8 @@ def main(argv):
         del script_header, script_timestamp
 
         if bom:
-            script = b'\xEF\xBB\xBF' + script
+            if not script.startswith(b'\xEF\xBB\xBF'):
+                script = b'\xEF\xBB\xBF' + script
 
         if outfile == '-':
             sys.stdout.write(script)
