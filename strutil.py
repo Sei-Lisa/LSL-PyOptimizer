@@ -42,13 +42,13 @@ if sys.hexversion >= 0x3000000:
     def b2str(s, enc=None):
         """Convert a Bytes string to native Python 3 str."""
         return s.decode(getattr(enc, 'encoding', enc) or 'utf8',
-                        'backslashreplace')
+                        'replace')
 
 else:
     def str2u(s, enc=None):
         """Convert a native Python2 str to Unicode."""
         return s.decode(getattr(enc, 'encoding', enc) or 'utf8',
-                        'backslashreplace')
+                        'replace')
 
     def str2b(s, enc=None):
         """Convert a native Python2 str to bytes. This is a NOP."""
