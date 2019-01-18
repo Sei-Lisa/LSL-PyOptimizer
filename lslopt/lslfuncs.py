@@ -20,3 +20,4 @@
 from lslopt.lslbasefuncs import *
 from lslopt.lsljson import *
 from lslopt.lslextrafuncs import *
+lslbasefuncs_used

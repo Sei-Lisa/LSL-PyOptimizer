@@ -23,6 +23,7 @@
 from lslopt.lslcommon import Key, Vector, Quaternion, types, nr
 from lslopt import lslcommon, lslfuncs
 from strutil import *
+strutil_used
 import re
 
 # Note this module was basically written from bottom to top, which may help

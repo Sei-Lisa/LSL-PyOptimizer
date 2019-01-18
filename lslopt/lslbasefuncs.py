@@ -1982,3 +1982,5 @@ def llXorBase64StringsCorrect(s, xor):
         if xor[i] == b'\x00':
             i = 0
     return b64encode(ret).decode('utf8')
+
+lslbasefuncs_used = True

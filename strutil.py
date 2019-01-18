@@ -22,7 +22,7 @@ import codecs
 codecs.register(lambda x: codecs.lookup('utf8') if x == 'cp65001' else None)
 
 import sys
-if sys.hexversion >= 0x3000000:
+if sys.version_info.major >= 3:
     unicode = str
     unichr = chr
     def str2u(s, enc=None):
@@ -87,3 +87,5 @@ def werr(s):
 def wout(s):
     """Write any string to stdout"""
     sys.stdout.write(any2u(s, sys.stdout))
+
+strutil_used = True

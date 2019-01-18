@@ -19,6 +19,7 @@
 
 import sys
 from strutil import *
+strutil_used
 
 _exclusions = frozenset(('nt','t','name','value','ch', 'X','SEF'))
 

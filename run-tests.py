@@ -56,7 +56,7 @@ try:
     import difflib
 except ImportError:
     difflib = None
-if sys.hexversion < 0x3000000:
+if sys.version_info.major < 3:
     from StringIO import StringIO as StringStream
 else:
     from io import BytesIO as StringStream
