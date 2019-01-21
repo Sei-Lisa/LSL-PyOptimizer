@@ -317,7 +317,10 @@ class Evaluator(object):
                 raise EvalError("Invalid integer literal")
             val = (int(m.group(2), 8) if m.group(2)
                    else int(m.group(1) or m.group(3), 0))
-            val = self.to_uint(val) if m.group(4) else self.to_sint(val)
+            val = (self.to_uint(val)
+                   if m.group(4)
+                      or val >= -INTMAX_MIN and m.group(3) is None
+                   else self.to_sint(val))
             return val
 
         if tok.type == 'CPP_STRING':
