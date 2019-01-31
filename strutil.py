@@ -17,6 +17,10 @@
 
 # String <-> Bytes conversion and output utilities
 
+# Microsoft again not following standards. Sigh.
+import codecs
+codecs.register(lambda x: codecs.lookup('utf8') if x == 'cp65001' else None)
+
 import sys
 if sys.hexversion >= 0x3000000:
     unicode = str
