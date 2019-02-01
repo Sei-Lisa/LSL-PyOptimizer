@@ -427,9 +427,8 @@ class inliner(object):
             del child[2]
             del child[0]
             child[1].ch.append(nr(nt='JUMP', t=None, name=lbl, scope=scope))
-            fns.extend(self.RecurseExpression(child, 0, scope))
+            fns = self.RecurseExpression(child, 0, scope)
             self.RecurseSingleStatement(child, 1, scope)
-            #assert False, parent[index]
 
         else:
             assert False, u"Unexpected node type: %s" % nt.decode('utf8')

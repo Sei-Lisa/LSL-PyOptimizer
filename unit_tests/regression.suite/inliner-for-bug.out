@@ -1,0 +1,15 @@
+default
+{
+    state_entry()
+    {
+        @___for__00001;
+        if (llSetRegionPos(<0, 0, 2>))
+        {
+            {
+                llSleep(4);
+            }
+            llSleep(3);
+            jump ___for__00001;
+        }
+    }
+}
