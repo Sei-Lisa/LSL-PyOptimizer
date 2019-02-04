@@ -67,9 +67,10 @@ class UniConvScript(object):
     """Converts the script to Unicode, setting the properties required by
     EParse to report a meaningful error position.
     """
-    def __init__(self, script, options = (), filename = b'<stdin>'):
+    def __init__(self, script, options=(), filename=b'<stdin>', emap=False):
         self.linedir = []
         self.filename = filename
+        self.emap = emap
         # We don't interpret #line here. In case of an encode error,
         # we're in the dark about which file it comes from. User needs
         # --preshow to view the #line directives and find the correspondence
@@ -647,7 +648,8 @@ def main(argv):
                 # errors with accurate line information. At this point we don't
                 # need the result.
                 UniConvScript(script, options,
-                              fname if fname != '-' else '<stdin>').to_unicode()
+                              fname if fname != '-' else '<stdin>',
+                              emap).to_unicode()
             except EParse as e:
                 # We don't call ReportError to prevent problems due to
                 # displaying invalid UTF-8
