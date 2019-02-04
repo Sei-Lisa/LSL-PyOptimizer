@@ -236,6 +236,8 @@ Usage: {progname}
     [--shortname=<name>]      * specify the script's short file name
     [--prettify]                Prettify source file. Disables all -O options.
     [--bom]                     Prefix script with a UTF-8 byte-order mark
+    [--emap]                    Output error messages in a format suitable for
+                                automated processing
     filename                    input file
 
 Options marked with * are used to define the preprocessor macros __AGENTID__,
@@ -403,7 +405,7 @@ def main(argv):
     try:
         opts, args = getopt.gnu_getopt(argv[1:], 'hO:o:p:P:HTyb:L:A:',
             ('optimizer-options=', 'help', 'version', 'output=', 'header',
-            'timestamp', 'python-exceptions', 'prettify', 'bom',
+            'timestamp', 'python-exceptions', 'prettify', 'bom', 'emap',
             'preproc=', 'precmd=', 'prearg=', 'prenodef', 'preshow',
             'avid=', 'avname=', 'assetid=', 'shortname=', 'builtins='
             'libdata=', 'postarg='))
@@ -428,6 +430,7 @@ def main(argv):
     raise_exception = False
     prettify = False
     bom = False
+    emap = False
     builtins = None
     libdata = None
 
@@ -528,6 +531,10 @@ def main(argv):
 
         elif opt == '--bom':
             bom = True
+
+        elif opt == '--emap':
+            emap = True
+
     del opts
 
     if prettify:
@@ -685,6 +692,9 @@ def main(argv):
                     options.add('lazylists')
 
         if not preshow:
+
+            if emap:
+                options.add('emap')
 
             lib = lslopt.lslloadlib.LoadLibrary(builtins, libdata)
             p = parser(lib)

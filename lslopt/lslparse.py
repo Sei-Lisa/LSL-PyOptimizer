@@ -71,14 +71,22 @@ class EParse(Exception):
     def __init__(self, parser, msg):
         self.errorpos = parser.errorpos
         self.lno, self.cno, self.fname = GetErrLineCol(parser)
-        filename = (self.fname.decode('utf8', 'replace')
+        if parser.emap:
+            filename = parser.filename
+        else:
+            filename = self.fname
+
+        filename = (filename.decode('utf8', 'replace')
                     .replace(u'\\', u'\\\\')
                     .replace(u'"', u'\\"')
                    )
 
-        if parser.processpre and filename != '<stdin>':
-            msg = u"(Line %d char %d): ERROR in \"%s\": %s" % (self.lno,
-                self.cno, filename, msg)
+        if parser.emap:
+            msg = u'::ERROR::"%s":%d:%d: %s' % (
+                any2u(filename.lstrip('u')), self.lno, self.cno, msg)
+        elif parser.processpre and filename != '<stdin>':
+            msg = u"(Line %d char %d): ERROR in \"%s\": %s" % (
+                self.lno, self.cno, filename, msg)
         else:
             msg = u"(Line %d char %d): ERROR: %s" % (self.lno, self.cno, msg)
         super(EParse, self).__init__(msg)
@@ -2862,6 +2870,9 @@ list lazy_list_set(list L, integer i, list v)
         # Inline keyword
         self.enable_inline = 'inline' in options
 
+        # Automated Processing friendly error messages
+        self.emap = 'emap' in options
+
         # Symbol table:
         # This is a list of all local and global symbol tables.
         # The first element (0) is the global scope. Each symbol table is a
@@ -2983,7 +2994,7 @@ list lazy_list_set(list L, integer i, list v)
         finally:
             f.close()
 
-        return self.parse(script, options, lib = lib)
+        return self.parse(script, options, filename, lib)
 
     def __init__(self, lib = None):
         """Initialization of library and lazy compilation.
