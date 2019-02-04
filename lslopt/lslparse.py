@@ -71,10 +71,9 @@ class EParse(Exception):
     def __init__(self, parser, msg):
         self.errorpos = parser.errorpos
         self.lno, self.cno, self.fname = GetErrLineCol(parser)
-        if parser.emap:
+        filename = self.fname
+        if parser.emap and filename == '<stdin>':
             filename = parser.filename
-        else:
-            filename = self.fname
 
         filename = (filename.decode('utf8', 'replace')
                     .replace(u'\\', u'\\\\')
