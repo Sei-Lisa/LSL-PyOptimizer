@@ -836,6 +836,8 @@ float llGetTime()
 float llGetTimeOfDay()
 - unstable
 - SEF
+- min 0
+- max 86399.9921875
 
 string llGetTimestamp()
 - unstable
@@ -1564,6 +1566,17 @@ string llXorBase64Strings(string str1, string str2)
 string llXorBase64StringsCorrect(string str1, string str2)
 - SEF
 
+integer llReplaceAgentEnvironment(key agent_id, float transition, string environment)
+- unstable
+
+integer llSetAgentEnvironment( key agent_id, float transition, list params )
+- unstable
+
+float llGetRegionTimeOfDay()
+- SEF
+- unstable
+- min 0
+- max 86399.9921875
 
 ###################################################################
 
