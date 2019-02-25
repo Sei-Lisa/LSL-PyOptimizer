@@ -123,7 +123,7 @@ class inliner(object):
             copy = node.copy()
             oldscope = node.scope
             oldname = node.name
-            copy.name = self.newId('lbl', scope, {'Type':'l', 'Scope':scope,
+            copy.name = self.newId('lbl', scope, {'Kind':'l', 'Scope':scope,
                                                   'ref':0})
             copy.scope = scope
             self.symtab[oldscope][oldname]['NewSymbolName'] = copy.name
@@ -207,7 +207,7 @@ class inliner(object):
         self.retvar = retvar
         self.retscope = scope
         self.retlscope = scope
-        retlabel = self.newId('rtl', scope, {'Type':'l', 'Scope':scope,
+        retlabel = self.newId('rtl', scope, {'Kind':'l', 'Scope':scope,
                                              'ref':0})
         self.retlabel = retlabel
 
