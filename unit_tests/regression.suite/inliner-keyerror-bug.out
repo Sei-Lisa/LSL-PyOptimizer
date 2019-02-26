@@ -1,0 +1,16 @@
+default
+{
+    touch(integer LslLibrary)
+    {
+        integer loc____ret__00001;
+        {
+            {
+                loc____ret__00001 = 3;
+                ;
+            }
+        }
+        @___rtl__00001;
+        loc____ret__00001;
+        LslLibrary++;
+    }
+}
