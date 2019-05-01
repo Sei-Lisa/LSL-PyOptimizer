@@ -1,0 +1,94 @@
+x()
+{
+    if (1)
+    {
+        llDie();
+        return;
+    }
+    while (1)
+    {
+        llDie();
+        return;
+    }
+    do
+    {
+        llDie();
+        return;
+    }
+    while (1);
+    for (; 1; )
+    {
+        llDie();
+        return;
+    }
+    if (1)
+    {
+        {
+            llDie();
+            return;
+        }
+        if (1)
+        {
+            llDie();
+            return;
+        }
+        else
+        {
+            llDie();
+            return;
+        }
+        {
+            llDie();
+            return;
+        }
+    }
+}
+
+default
+{
+    state_entry()
+    {
+        if (1)
+        {
+            llDie();
+            return;
+        }
+        while (1)
+        {
+            llDie();
+            return;
+        }
+        do
+        {
+            llDie();
+            return;
+        }
+        while (1);
+        for (; 1; )
+        {
+            llDie();
+            return;
+        }
+        if (1)
+        {
+            {
+                llDie();
+                return;
+            }
+            if (1)
+            {
+                llDie();
+                return;
+            }
+            else
+            {
+                llDie();
+                return;
+            }
+            {
+                llDie();
+                return;
+            }
+        }
+    }
+}

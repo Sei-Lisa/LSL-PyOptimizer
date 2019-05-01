@@ -1791,7 +1791,8 @@ list lazy_list_set(list L, integer i, list v)
                 if AllowStSw is False:
                     raise EParseCantChangeState(self)
                 if AllowStSw is None:
-                    self.SuspiciousStSw.append(self.errorpos)
+                    self.PruneBug.append((self.errorpos,
+                        EParseCantChangeState))
             self.NextToken()
             if self.tok[0] not in ('DEFAULT', 'IDENT'):
                 raise EParseSyntax(self)
@@ -1812,12 +1813,31 @@ list lazy_list_set(list L, integer i, list v)
                 value = None
             else:
                 savepos = self.errorpos
+                saveAllowVoid = self.allowVoid
+                # Needed due to another LSL bug, see regr/void-in-return.lsl
+                self.allowVoid = True
                 value = self.Parse_expression()
+                self.allowVoid = saveAllowVoid
             self.expect(';')
             self.NextToken()
             if ReturnType is None and value is not None:
-                self.errorpos = savepos
-                raise EParseReturnShouldBeEmpty(self)
+                # It follows the same rules as AllowStSw
+                if AllowStSw is False:
+                    self.errorpos = savepos
+                    raise EParseReturnShouldBeEmpty(self)
+                elif value.t is None:
+                    if AllowStSw is None:
+                        self.PruneBug.append((self.errorpos,
+                            EParseReturnShouldBeEmpty))
+                    self.PushScope()
+                    scope = self.scopeindex
+                    self.PopScope()
+                    return nr(nt='{}', t=None, scope=scope,
+                        ch=[nr(nt='EXPR', t=None, ch=[value]),
+                            nr(nt='RETURN', t=None)])
+                else:
+                    self.errorpos = savepos
+                    raise EParseTypeMismatch(self)
             if ReturnType is not None and value is None:
                 self.errorpos = savepos
                 raise EParseReturnIsEmpty(self)
@@ -1835,22 +1855,22 @@ list lazy_list_set(list L, integer i, list v)
             ret.ch.append(self.Parse_expression())
             self.expect(')')
             self.NextToken()
-            saveSuspiciousStSw = self.SuspiciousStSw
-            self.SuspiciousStSw = []
+            savePruneBug = self.PruneBug
+            self.PruneBug = []
             ret.ch.append(self.Parse_statement(ReturnType, AllowStSw = None, InsideLoop = InsideLoop))
             if self.tok[0] == 'ELSE':
-                if AllowStSw is False and self.SuspiciousStSw:
-                    self.errorpos = self.SuspiciousStSw[0]
-                    raise EParseCantChangeState(self)
+                if AllowStSw is False and self.PruneBug:
+                    self.errorpos = self.PruneBug[0][0]
+                    raise self.PruneBug[0][1](self)
                 LastIsReturn = getattr(ret.ch[1], 'LIR', False)
                 self.NextToken()
                 ret.ch.append(self.Parse_statement(ReturnType,
                     AllowStSw = AllowStSw, InsideLoop = InsideLoop))
                 if AllowStSw is None:
-                    saveSuspiciousStSw += self.SuspiciousStSw
+                    savePruneBug += self.PruneBug
                 if LastIsReturn and getattr(ret.ch[2], 'LIR', False):
                     ret.LIR = True
-            self.SuspiciousStSw = saveSuspiciousStSw
+            self.PruneBug = savePruneBug
             return ret
 
         if tok0 == 'WHILE':
@@ -2915,8 +2935,10 @@ list lazy_list_set(list L, integer i, list v)
         # List of preprocessor #line directives.
         self.linedir = []
 
-        # List of positions with suspicious state change statements.
-        self.SuspiciousStSw = []
+        # List of tuples (position, exception) where suspicious state change
+        # statements or returns with void expressions happen. These can only
+        # be detected when the 'else' is found.
+        self.PruneBug = []
 
         # This is a small hack to prevent circular definitions in globals when
         # extended expressions are enabled. When false (default), forward

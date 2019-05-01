@@ -368,8 +368,19 @@ class UnitTestRegression(UnitTestCase):
         parser.parse('default{timer(){[llDie()];}}')
         parser.parse('default{timer(){llDie();}}')
         parser.parse('default{timer(){(llDie());}}')
-        parser.parse('default{timer(){for(llDie();1;llDie());}}'
-            , ('optimize',))
+        parser.parse('default{timer(){for(llDie();1;llDie());}}',
+            ('optimize',))
+        # 'return <void expr>' works in the same situations as state changes
+        self.assertRaises(lslparse.EParseReturnShouldBeEmpty, parser.parse,
+            'default{timer(){return llDie();}}')
+        self.assertRaises(lslparse.EParseReturnShouldBeEmpty, parser.parse,
+            'default{timer(){if(1)return llDie();else;}}')
+        self.assertRaises(lslparse.EParseReturnShouldBeEmpty, parser.parse,
+            'default{timer(){if(1);else return llDie();}}')
+        self.assertRaises(lslparse.EParseReturnShouldBeEmpty, parser.parse,
+            'default{timer(){return 1;}}')
+        self.assertRaises(lslparse.EParseTypeMismatch, parser.parse,
+            'default{timer(){if(1)return 1;}}')
 
 class UnitTestCoverage(UnitTestCase):
     def test_coverage_misc(self):
