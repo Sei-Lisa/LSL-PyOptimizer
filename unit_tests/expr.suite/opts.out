@@ -23,9 +23,9 @@
 , 3 + llGetLinkNumber()
 , ~llGetLinkNumber()
 , llGetLinkNumber()
-, -((~-~llGetLinkNumber()) + (~-~llGetLinkNumber()))
-, -~-~llGetLinkNumber() + (~-~-llGetLinkNumber())
-, (~-~-llGetLinkNumber()) + (~-~-llGetLinkNumber())
+, -(~-~llGetLinkNumber() + ~-~llGetLinkNumber())
+, -~-~llGetLinkNumber() + ~-~-llGetLinkNumber()
+, ~-~-llGetLinkNumber() + ~-~-llGetLinkNumber()
 , 5 + llGetLinkNumber() + (5 + llGetLinkNumber())
 , 0
 ]

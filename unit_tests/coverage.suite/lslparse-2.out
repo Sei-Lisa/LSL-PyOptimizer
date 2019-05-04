@@ -15,9 +15,9 @@ default
         list L;
         f += (float)i;
         L += (list)((integer)((float)i));
-        i = (~(integer)-2) * 3;
-        i = (~(integer)-2.) * 3;
-        i = (~(integer)(-i)) * 3;
+        i = ~(integer)-2 * 3;
+        i = ~(integer)-2. * 3;
+        i = ~(integer)(-i) * 3;
         "" + (string)((key)"");
         (string)((key)"") + "";
         @J;

@@ -26,11 +26,11 @@ debugScopes = False
 
 class outscript(object):
 
-    binary_operands = frozenset(('||','&&','^','|','&','==','!=','<','<=','>',
+    binary_operators = frozenset(('||','&&','^','|','&','==','!=','<','<=','>',
         '>=','<<','>>','+','-','*','/','%', '=', '+=', '-=', '*=', '/=','%=',
         ))
     extended_assignments = frozenset(('&=', '|=', '^=', '<<=', '>>='))
-    unary_operands = frozenset(('NEG', '!', '~'))
+    unary_operators = frozenset(('NEG', '!', '~'))
     op_priority = {'=':0, '+=':0, '-=':0, '*=':0, '/=':0, '%=':0, '&=':0,
         '|=':0, '^=':0, '<<=':0, '>>=':0,
         '||':1, '&&':1, '|':2, '^':3, '&':4, '==':5, '!=':5,
@@ -216,7 +216,7 @@ class outscript(object):
         nt = expr.nt
         child = expr.ch
 
-        if nt in self.binary_operands:
+        if nt in self.binary_operators:
             lnt = child[0].nt
             lparen = False
             rnt = child[1].nt
@@ -237,7 +237,8 @@ class outscript(object):
                     lparen = True
 
                 # This situation has ugly cases due to the strange precedence
-                # of unary minus. Consider the following two statements:
+                # of unary minus. Consider the following two statements, paying
+                # attention to the binding power of the binary not ~ operator:
                 #     (~-a) * a
                 #     a * (~-a) * a
                 # In one case, the (~-a) is a left child; in the other, it's
@@ -246,20 +247,44 @@ class outscript(object):
                 #     ~-(a * a)
                 #     a * ~-(a * a)
                 # Yet the tree structure makes it quite hard to detect these.
-                # So as a safeguard, for now we parenthesize all ~ and ! within
-                # binary operands, as they have a deceitful binding power when
-                # there's a unary minus downstream.
-                #
-                # TODO: See if the parenthesizing of ~ and ! can be improved.
+                # We have to descend down the left nodes as we keep finding
+                # binary operators or unary operators, to find whether the
+                # symbol is followed by unary minus. If that's the case, we
+                # need to act as if there was a negation right here.
                 elif lnt in ('~', '!'):
-                    lparen = True
+                    lnode = child[0]
+                    while True:
+                        lnode = lnode.ch[0]
+                        if (lnode.nt not in self.op_priority
+                            and lnode.nt not in ('~', '!')
+                           ):
+                            break
+                    if lnode.nt == 'NEG' and base_pri > self.op_priority['-']:
+                        lparen = True
 
                 if rnt in self.op_priority:
                     if self.op_priority[rnt] <= base_pri:
                         rparen = True
+                elif rnt == 'NEG' and self.op_priority['-'] < base_pri:
+                    rparen = True
                 # see above
                 elif rnt in ('~', '!'):
-                    rparen = True
+                    lnode = child[1]
+                    while True:
+                        # Descend down the left nodes of the right node, to
+                        # find whether it's immediately followed by -
+                        lnode = lnode.ch[0]
+                        if lnode.nt not in self.op_priority and lnode.nt not in ('~', '!'):
+                            break
+                    if lnode.nt == 'NEG' and base_pri > self.op_priority['-']:
+                        # TODO: Improve right operand parenthesis removal
+                        #       for minus signs.
+                        # Shouldn't this look into the RHS node?
+                        #       a * -b * c
+                        # is currently translated to
+                        #       a * (-b * c)
+                        # which is correct but not optimal.
+                        rparen = True
 
             if lparen:
                 ret = '(' + self.OutExpr(child[0]) + ')'
@@ -328,7 +353,7 @@ class outscript(object):
         if nt == 'PRINT':
             return 'print(' + self.OutExpr(child[0]) + ')'
 
-        if nt in self.unary_operands:
+        if nt in self.unary_operators:
             ret = nt
             lnt = child[0].nt
             paren = False
