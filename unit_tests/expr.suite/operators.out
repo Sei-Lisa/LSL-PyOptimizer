@@ -50,6 +50,9 @@
 , <3., 4., 5.>
 , <2.6432, 3.8576, 5.304>
 , <3.4, 3.72, 4.96>
+, "FIXME: We're not obtaining the same as SL; expected output should be 8.32 exact rather than 8.320001"
+, <6.24, 8.320001, 12.8, 10.>
+, <-1.08, 0.2800001, -0.7600001, 19.24>
 , 0
 , 1
 , 2

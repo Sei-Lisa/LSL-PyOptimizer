@@ -50,6 +50,9 @@
 , <3.,4.,5.>*ZERO_ROTATION
 , <3.,4.,5.>*<.22,.26,.38,.86>
 , <3.,4.,5.>/<.22,.26,.38,.86>
+, "FIXME: We're not obtaining the same as SL; expected output should be 8.32 exact rather than 8.320001"
+, <3.,5.,7.,17.>*<.22,.26,.38,.86>
+, <3.,5.,7.,17.>/<.22,.26,.38,.86>
 , 0 % 5
 , 1 % 5
 , 2 % 5

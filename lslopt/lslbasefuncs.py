@@ -722,10 +722,11 @@ def mul(a, b, f32=True):
         a = q2f(a)
         b = q2f(b)
         # quaternion product - product formula reversed
-        return Quaternion(F32((a[0] * b[3] + a[3] * b[0] + a[2] * b[1] - a[1] * b[2],
-                               a[1] * b[3] - a[2] * b[0] + a[3] * b[1] + a[0] * b[2],
-                               a[2] * b[3] + a[1] * b[0] - a[0] * b[1] + a[3] * b[2],
-                               a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]), f32))
+        return Quaternion(F32((F32(a[0] * b[3]) + F32(a[3] * b[0]) + F32(a[2] * b[1]) - F32(a[1] * b[2]),
+                               F32(a[1] * b[3]) - F32(a[2] * b[0]) + F32(a[3] * b[1]) + F32(a[0] * b[2]),
+                               F32(a[2] * b[3]) + F32(a[1] * b[0]) - F32(a[0] * b[1]) + F32(a[3] * b[2]),
+                               F32(a[3] * b[3]) - F32(a[0] * b[0]) - F32(a[1] * b[1]) - F32(a[2] * b[2])
+                              ), f32))
 
     if ta != Vector:
         raise ELSLInvalidType  # Should never happen at this point
@@ -745,21 +746,32 @@ def mul(a, b, f32=True):
         raise ELSLInvalidType  # Should never happen at this point
 
     # vector * quaternion: perform conjugation
-    #v = mul(Quaternion((-b[0], -b[1], -b[2], b[3])), mul(Quaternion((a[0], a[1], a[2], 0.0)), b, f32=False))
+    #v = mul(Quaternion((-b[0], -b[1], -b[2], b[3])),
+    #        mul(Quaternion((a[0], a[1], a[2], 0.0)), b, f32=False))
     #return Vector((v[0], v[1], v[2]))
-    # this is more precise as it goes directly to the gist of it:
+    # this removes redundant calculations:
     a = v2f(a)
     b = q2f(b)
-    return Vector(F32((
-        math.fsum(( a[0]*(b[0]*b[0]-b[1]*b[1]-b[2]*b[2]+b[3]*b[3]),
-                    a[1]*2*(b[0]*b[1]-b[2]*b[3]),
-                    a[2]*2*(b[0]*b[2]+b[1]*b[3]))),
-        math.fsum(( a[0]*2*(b[0]*b[1]+b[2]*b[3]),
-                   -a[1]*(b[0]*b[0]-b[1]*b[1]+b[2]*b[2]-b[3]*b[3]),  # notice minus sign
-                    a[2]*2*(b[1]*b[2]-b[0]*b[3]))),
-        math.fsum(( a[0]*2*(b[0]*b[2]-b[1]*b[3]),
-                    a[1]*2*(b[1]*b[2]+b[0]*b[3]),
-                   -a[2]*(b[0]*b[0]+b[1]*b[1]-b[2]*b[2]-b[3]*b[3])))  # notice minus sign
+    b0b0 = b[0] * b[0]
+    b0b1 = b[0] * b[1]
+    b0b2 = b[0] * b[2]
+    b0b3 = b[0] * b[3]
+    b1b1 = b[1] * b[1]
+    b1b2 = b[1] * b[2]
+    b1b3 = b[1] * b[3]
+    b2b2 = b[2] * b[2]
+    b2b3 = b[2] * b[3]
+    b3b3 = b[3] * b[3]
+    return Vector(F32(
+        ( a[0] * (b0b0 - b1b1 - b2b2 + b3b3)
+        + a[1] * (b0b1 - b2b3) * 2
+        + a[2] * (b0b2 + b1b3) * 2
+        , a[0] * (b0b1 + b2b3) * 2
+        + a[1] * (b1b1 - b0b0 - b2b2 + b3b3)
+        + a[2] * (b1b2 - b0b3) * 2
+        , a[0] * (b0b2 - b1b3) * 2
+        + a[1] * (b1b2 + b0b3) * 2
+        + a[2] * (b2b2 - b0b0 - b1b1 + b3b3)
         ), f32))
 
 def div(a, b, f32=True):
