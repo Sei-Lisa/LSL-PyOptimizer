@@ -1,0 +1,16 @@
+default
+{
+    timer()
+    {
+        integer x = llGetNumberOfPrims();
+        integer y = llGetUnixTime();
+        llOwnerSay((string)((float)x / y));
+        llOwnerSay((string)((float)x / y));
+        llOwnerSay((string)(-(float)x / y));
+        llOwnerSay((string)((float)x / y));
+        llOwnerSay((string)(-(float)x / y));
+        llOwnerSay((string)(-(x + (float)x)));
+        llOwnerSay((string)((float)y));
+        llOwnerSay((string)((float)x + y));
+    }
+}

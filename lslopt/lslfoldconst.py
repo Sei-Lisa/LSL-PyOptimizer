@@ -1204,24 +1204,29 @@ class foldconst(object):
                            and b == 1 and val in (-1, 1)
                        ):
                         if val == 1:
-                            parent[index] = child[a]
+                            parent[index] = self.Cast(child[a], optype)
+                            self.FoldTree(parent, index)
                             return
                         if val == 0:
                             if child[a].SEF:
-                                parent[index] = child[b]
+                                parent[index] = self.Cast(child[b], optype)
+                                self.FoldTree(parent, index)
                             return
                         if val == -1:
                             # Note 0.0*-1 equals -0.0 in LSL, so this is safe
                             node = parent[index] = nr(nt='NEG', t=node.t,
-                                ch=[child[a]], SEF=child[a].SEF)
+                                ch=[self.Cast(child[a], optype)],
+                                SEF=child[a].SEF)
+                            self.FoldTree(parent, index)
                             return
                         # only -2, 2 remain
                         if child[a].nt == 'IDENT' and self.isLocalVar(child[a]):
-                            child[b] = child[a].copy()
+                            child[b] = self.Cast(child[a].copy(), optype)
                             node.nt = '+'
                             if val == -2:
-                                parent[index] = nr(nt='NEG', t=node.t,
+                                parent[index] = nr(nt='NEG', t=optype,
                                     ch=[node], SEF=node.SEF)
+                            self.FoldTree(parent, index)
                             return
                 return
 
