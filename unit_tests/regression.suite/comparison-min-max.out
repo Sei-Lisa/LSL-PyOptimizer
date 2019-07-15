@@ -2,7 +2,7 @@ default
 {
     changed(integer ch)
     {
-        if (~llListFindList(llGetPrimitiveParams((list)9), (list)"a"))
+        if (!~llListFindList(llGetPrimitiveParams((list)9), (list)"a"))
             llDie();
         if (!llSameGroup(llGetOwner()))
             llOwnerSay("e");

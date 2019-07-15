@@ -549,23 +549,23 @@ class foldconst(object):
                         sym = self.symtab[0][child[a].name]
                         break
 
-                # cond(FNCALL < 0)  ->  cond(~FNCALL) if min == -1
+                # cond(FNCALL < 0)  ->  cond(!~FNCALL) if min == -1
                 if (child[1].nt == 'CONST' and child[1].value == 0
                     and child[0].nt == 'FNCALL'
                     and 'min' in sym and sym['min'] == -1
                    ):
-                    node = parent[index] = nr(nt='~', t='integer',
-                        ch=[child[0]])
+                    node = parent[index] = nr(nt='!', t='integer',
+                        ch=[nr(nt='~', t='integer', ch=[child[0]])])
                     self.FoldTree(parent, index)
                     return
 
-                # cond(FNCALL > -1)  ->  cond(!~FNCALL) if min == -1
+                # cond(FNCALL > -1)  ->  cond(~FNCALL) if min == -1
                 if (child[0].nt == 'CONST' and child[0].value == -1
                     and child[1].nt == 'FNCALL'
                     and 'min' in sym and sym['min'] == -1
                    ):
-                    node = parent[index] = nr(nt='!', t='integer',
-                        ch=[nr(nt='~', t='integer', ch=[child[1]])])
+                    node = parent[index] = nr(nt='~', t='integer',
+                        ch=[child[1]])
                     self.FoldTree(parent, index)
                     return
 
