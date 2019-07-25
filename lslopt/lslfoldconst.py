@@ -281,7 +281,7 @@ class foldconst(object):
             return False
         return None
 
-    def FoldCond(self, parent, index, ParentIsNegation = False):
+    def FoldAsBool(self, parent, index, ParentIsNegation = False):
         """When we know that the parent is interested only in the truth value
         of the node, we can perform further optimizations. This function deals
         with them.
@@ -311,7 +311,7 @@ class foldconst(object):
             # fall through to keep optimizing if necessary
 
         if nt == '!':
-            self.FoldCond(child, 0, True)
+            self.FoldAsBool(child, 0, True)
 
             if child[0].nt == '!':
                 # bool(!!a) equals bool(a)
@@ -347,13 +347,13 @@ class foldconst(object):
                         ch=[child[0].ch[i]], SEF=child[0].ch[i].SEF)
                 parent[index] = child[0]
                 self.FoldTree(parent, index)
-                self.FoldCond(parent, index)
+                self.FoldAsBool(parent, index)
                 return
 
         if nt == 'NEG':
             # bool(-a) equals bool(a)
             parent[index] = child[0]
-            self.FoldCond(parent, index, ParentIsNegation)
+            self.FoldAsBool(parent, index, ParentIsNegation)
             return
 
         if nt in self.binary_ops and child[0].t == child[1].t == 'integer':
@@ -369,8 +369,8 @@ class foldconst(object):
 
             if nt == '|':
                 # In a boolean context, the operands count as booleans.
-                self.FoldCond(child, 0)
-                self.FoldCond(child, 1)
+                self.FoldAsBool(child, 0)
+                self.FoldAsBool(child, 1)
 
                 # Deal with operands in any order
                 a, b = 0, 1
@@ -412,7 +412,7 @@ class foldconst(object):
                             child[1].value = ~(val1 | val2)
                             parent[index] = nr(nt='~', t='integer', ch=[node],
                                 SEF=node.SEF)
-                            self.FoldCond(parent, index, ParentIsNegation)
+                            self.FoldAsBool(parent, index, ParentIsNegation)
                             return
                         del val1, val2
                     del a, b, c, d, and1, and2
@@ -694,7 +694,7 @@ class foldconst(object):
 
         if nt == '!':
             self.FoldTree(child, 0)
-            self.FoldCond(child, 0, True)
+            self.FoldAsBool(child, 0, True)
             # !! does *not* cancel out (unless in cond)
             subexpr = child[0]
             snt = subexpr.nt
@@ -729,7 +729,7 @@ class foldconst(object):
                     and subexpr.ch[b].value == int(-2147483648)
                    ):
                     # !(i & 0x80000000)  ->  -1 < i (because one of our
-                    # optimizations can be counter-productive, see FoldCond)
+                    # optimizations can be counter-productive, see FoldAsBool)
                     subexpr.nt = '<'
                     subexpr.ch[b].value = -1
                     subexpr.ch = [subexpr.ch[b], subexpr.ch[a]]
@@ -1761,7 +1761,7 @@ class foldconst(object):
         if nt == 'IF':
             self.ExpandCondition(child, 0)
             self.FoldTree(child, 0)
-            self.FoldCond(child, 0)
+            self.FoldAsBool(child, 0)
             if child[0].nt == 'CONST':
                 # We might be able to remove one of the branches.
                 if lslfuncs.cond(child[0].value):
@@ -1823,7 +1823,7 @@ class foldconst(object):
                         child[0] = nr(nt='!', t='integer', ch=[child[0]])
                         del child[1]
                         self.FoldTree(child, 0)
-                        self.FoldCond(child, 0)
+                        self.FoldAsBool(child, 0)
 
             if all(subnode.SEF for subnode in child):
                 node.SEF = True
@@ -1839,7 +1839,7 @@ class foldconst(object):
 
                 self.ExpandCondition(child, 0)
                 self.FoldTree(child, 0)
-                self.FoldCond(child, 0)
+                self.FoldAsBool(child, 0)
                 if child[0].nt == 'CONST':
                     # See if the whole WHILE can be eliminated.
                     if not lslfuncs.cond(child[0].value):
@@ -1861,7 +1861,7 @@ class foldconst(object):
             self.FoldStmt(child, 0)
             self.ExpandCondition(child, 1)
             self.FoldTree(child, 1)
-            self.FoldCond(child, 1)
+            self.FoldAsBool(child, 1)
             # See if the latest part is a constant.
             if child[1].nt == 'CONST':
                 if not lslfuncs.cond(child[1].value):
@@ -1876,7 +1876,7 @@ class foldconst(object):
 
             self.ExpandCondition(child, 1) # Condition.
             self.FoldTree(child, 1)
-            self.FoldCond(child, 1)
+            self.FoldAsBool(child, 1)
             if child[1].nt == 'CONST':
                 # FOR is delicate. It can have multiple expressions at start.
                 # And if there is more than one, these expressions will need a
