@@ -299,6 +299,11 @@ def llGetInventoryPermMask(item, category):
         return 0
     raise ELSLCantCompute
 
+def llGetLinkName(link):
+    link = fi(link)
+    if link < -2147483646 or link > 256:
+        return NULL_KEY
+    raise ELSLCantCompute
 
 def llGetOwnerKey(id):
     id = fk(id)
