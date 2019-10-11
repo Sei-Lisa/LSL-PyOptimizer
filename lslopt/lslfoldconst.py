@@ -1276,9 +1276,11 @@ class foldconst(object):
 
                 if self.CompareTrees(child[0], child[1]):
                     # expr == expr  ->  1
+                    # FIXME: not true if NaN
                     parent[index] = nr(nt='CONST', t='integer', value=1,
                         SEF=True)
                     return
+                # TODO: Simplify if ((x & y) == y) for constant y to if (!(~x & y))
                 return
 
             if nt in ('<=', '>=') or nt == '!=' and child[0].t != 'list':
