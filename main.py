@@ -542,14 +542,16 @@ def main(argv):
         options &= set(('rsrclimit',))
         options.add('prettify')
 
+    rsrclimit = False
     try:
 
         if 'rsrclimit' in options:
+            rsrclimit = True
             import resource
-            resource.setrlimit(resource.RLIMIT_CPU, (5, 5))
-            resource.setrlimit(resource.RLIMIT_STACK, (393216, 393216))
-            resource.setrlimit(resource.RLIMIT_DATA, (4096, 4096))
-            resource.setrlimit(resource.RLIMIT_AS, (20001000, 20001000))
+            resource.setrlimit(resource.RLIMIT_CPU, (5, 8))
+            resource.setrlimit(resource.RLIMIT_STACK, (0x60000, 0x80000))
+            resource.setrlimit(resource.RLIMIT_DATA, (9001000, 12001000))
+            resource.setrlimit(resource.RLIMIT_AS, (61001000, 81001000))
 
         if 'lso' in options:
             lslopt.lslcommon.LSO = True
@@ -733,6 +735,12 @@ def main(argv):
         return 0
 
     except Exception as e:
+        if rsrclimit:
+            # Raise the soft limits to hopefully prevent double exceptions
+            resource.setrlimit(resource.RLIMIT_CPU, (8, 8))
+            resource.setrlimit(resource.RLIMIT_STACK, (0x80000, 0x80000))
+            resource.setrlimit(resource.RLIMIT_DATA, (12001000, 12001000))
+            resource.setrlimit(resource.RLIMIT_AS, (81001000, 81001000))
         if raise_exception:
             raise
         werr(e.__class__.__name__ + ': ' + str(e) + '\n')
