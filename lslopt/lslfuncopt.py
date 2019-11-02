@@ -22,13 +22,20 @@ from lslopt import lslcommon
 from lslopt.lslcommon import Key, Vector, Quaternion, nr
 from lslopt import lslfuncs
 
+SensorFunctions = {'llSensor', 'llSensorRepeat'}
+NoKeyOptimizationFunctions = {'llMessageLinked', 'llRemoteDataReply'}
+
 def OptimizeArgs(node, sym):
     """Transform function arguments to shorter equivalents where possible."""
     assert node.nt == 'FNCALL'
     params = node.ch
     name = node.name
 
-    if name in ('llSensor', 'llSensorRepeat'):
+    if 'Loc' in sym:
+        # This is a UDF. We can't do anything for these.
+        return
+
+    if name in SensorFunctions:
         # The cutoff value is at a bit less than 3.1275 for some reason,
         # but we use 3.14159.
         if (params[4].nt == 'CONST' and params[4].t == 'float'
@@ -36,9 +43,10 @@ def OptimizeArgs(node, sym):
             params[4].value = 4.0
 
     types = sym['ParamTypes']
-    if name != 'llMessageLinked':
-        # Transform invalid/null keys to "" e.g. llGetOwnerKey(NULL_KEY) -> llGetOwnerKey("")
-        # llMessageLinked is the exception.
+    # not too sure about llRemoteDataReply but let's fall on the safe side
+    if name not in NoKeyOptimizationFunctions:
+        # Transform invalid/null keys to "" with the exceptions above,
+        # e.g. llGetOwnerKey(NULL_KEY) -> llGetOwnerKey("")
         for i in range(len(types)):
             if types[i] == 'key':
                 if params[i].nt == 'CONST':
@@ -47,7 +55,8 @@ def OptimizeArgs(node, sym):
                         params[i].type = 'string'
 
 
-# Type of each entry in llGetObjectDetails. Last: 40 (OBJECT_ANIMATED_SLOTS_AVAILABLE).
+# Type of each entry in llGetObjectDetails.
+# Last: 40 (OBJECT_ANIMATED_SLOTS_AVAILABLE).
 objDetailsTypes = 'issvrvkkkiiififfffkiiiiiiffkiviiksiisiiii'
 primParamsTypes = \
     ( False, False # 0 (unassigned) and 1=PRIM_TYPE_LEGACY
@@ -269,7 +278,8 @@ def OptimizeFunc(self, parent, index):
         if listarg.nt == 'FNCALL' \
            and listarg.name == 'llGetObjectDetails':
 
-            listarg = listarg.ch[1] # make it the list argument of llGetObjectDetails
+            # make it the list argument of llGetObjectDetails
+            listarg = listarg.ch[1]
             value = self.GetListNodeElement(listarg, idx)
             tvalue = self.TypeFromNodeOrConst(value)
             const = self.ConstFromNodeOrConst(value)
@@ -394,8 +404,8 @@ def OptimizeFunc(self, parent, index):
 
     if name == 'llDialog':
         if self.GetListNodeLength(child[2]) == 1:
-            button = self.ConstFromNodeOrConst(self.GetListNodeElement(child[2],
-                                                                       0))
+            button = self.ConstFromNodeOrConst(
+                self.GetListNodeElement(child[2], 0))
             if type(button) == unicode and button == u'OK':
                 # remove the element, as 'OK' is the default button in SL
                 child[2] = nr(nt='CONST', t='list', value=[], SEF=True)
