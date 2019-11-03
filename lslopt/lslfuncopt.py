@@ -23,6 +23,7 @@ from lslopt.lslcommon import Key, Vector, Quaternion, nr
 from lslopt import lslfuncs
 
 SensorFunctions = {'llSensor', 'llSensorRepeat'}
+# not sure about llRemoteDataReply but let's fall on the safe side
 NoKeyOptimizationFunctions = {'llMessageLinked', 'llRemoteDataReply'}
 
 def OptimizeArgs(node, sym):
@@ -43,7 +44,6 @@ def OptimizeArgs(node, sym):
             params[4].value = 4.0
 
     types = sym['ParamTypes']
-    # not too sure about llRemoteDataReply but let's fall on the safe side
     if name not in NoKeyOptimizationFunctions:
         # Transform invalid/null keys to "" with the exceptions above,
         # e.g. llGetOwnerKey(NULL_KEY) -> llGetOwnerKey("")
