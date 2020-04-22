@@ -1236,6 +1236,14 @@ def llIntegerToBase64(x):
     return b64encode(chr((x>>24)&255) + chr((x>>16)&255) + chr((x>>8)&255)
                      + chr(x&255)).decode('utf8')
 
+def llLinear2sRGB(v):
+    v = v2f(v)
+    return F32(Vector(
+        12.920000076293945 * x if x <= 0.0031308000907301903 else
+        F32(1.0549999475479126 * F32(x ** 0.4166666567325592))
+            - 0.054999999701976776
+        for x in v))
+
 def llList2CSV(lst):
     lst = fl(lst)
     ret = []
@@ -1770,6 +1778,14 @@ def llSqrt(f):
         return Indet
     # LSL and Python both produce -0.0 when the input is -0.0.
     return F32(math.sqrt(f))
+
+def llsRGB2Linear(v):
+    v = v2f(v)
+    return F32(Vector(
+        x / 12.920000076293945 if x <= 0.040449999272823334 else
+        F32(F32(x + 0.054999999701976776) / 1.0549999475479126)
+            ** 2.4000000953674316
+        for x in v))
 
 def llStringLength(s):
     s = fs(s)
