@@ -17,7 +17,7 @@
 #
 #    This file includes an excerpt from PCPP, by Niall Douglas and David
 #    Beazley. PCPP is available here: https://github.com/ned14/pcpp and
-#    distributed under the following conditions:
+#    the fragment used here was distributed under the following conditions:
 #
 #    (C) Copyright 2018-2019 Niall Douglas http://www.nedproductions.biz/
 #    (C) Copyright 2007-2019 David Beazley http://www.dabeaz.com/
@@ -53,6 +53,8 @@
 #
 #    The particular excerpt used is this one:
 # https://github.com/ned14/pcpp/blob/e1219ce157b4dfcfee3181faa6ec5129c3a41e78/pcpp/preprocessor.py#L873-L935
+#    The license that applies, reproduced above, is this one:
+# https://raw.githubusercontent.com/ned14/pcpp/e1219ce157b4dfcfee3181faa6ec5129c3a41e78/LICENSE.txt
 #
 #    The following fragments of code are hereby irrevokably donated to the
 #    public domain:
