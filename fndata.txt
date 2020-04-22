@@ -931,6 +931,9 @@ key llKeyCountKeyValue()
 key llKeysKeyValue(integer start, integer count)
 - unstable
 
+vector llLinear2sRGB(vector color)
+- SEF
+
 void llLinkParticleSystem(integer linknumber, list rules)
 - SEF if linknumber > 256
 
@@ -1453,6 +1456,9 @@ void llSoundPreload(string sound)
 float llSqrt(float val)
 - SEF
 
+vector llsRGB2Linear(vector srgb)
+- SEF
+
 void llStartAnimation(string anim)
 
 void llStartObjectAnimation(string anim)
@@ -1496,6 +1502,9 @@ float llTan(float theta)
 
 integer llTarget(vector position, float range)
 - unstable
+
+void llTargetedEmail(integer target, string subject, string body)
+- delay 20.0
 
 void llTargetOmega(vector axis, float spinrate, float gain)
 
