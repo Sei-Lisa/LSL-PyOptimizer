@@ -2,7 +2,7 @@ default
 {
     timer()
     {
-        list a;
+        list a = llGetPhysicsMaterial();
         integer b = llGetLinkNumber();
         a = a + 1;
         a = a + b;
@@ -24,5 +24,6 @@ default
         a = b + a;
         a = 1 + a;
         a = b + a;
+        llParticleSystem(a);
     }
 }

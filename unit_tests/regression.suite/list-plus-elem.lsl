@@ -1,6 +1,6 @@
 default{timer(){
 
-  list a;
+  list a = llGetPhysicsMaterial();
   integer b = llGetLinkNumber();
   a += 1;
   a += b;
@@ -23,4 +23,5 @@ default{timer(){
   a = (list)(list)(list)(list)(list)[b] + a;
   a = (list)(list)(list)(list)(list)1 + a;
   a = (list)(list)(list)(list)(list)b + a;
+  llParticleSystem(a);
 }}
