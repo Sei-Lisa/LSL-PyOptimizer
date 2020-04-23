@@ -905,7 +905,7 @@ class foldconst(object):
                         rnt = rval.nt
 
                 if optype == 'list' and not (ltype == rtype == 'list'):
-                    if lnt == 'CONST' and not lval.value:
+                    if lnt == 'CONST' and ltype == 'list' and not lval.value:
                         # [] + nonlist  ->  (list)nonlist
                         parent[index] = self.Cast(rval, optype)
                         # node is SEF if rval is
@@ -928,18 +928,26 @@ class foldconst(object):
                 if optype in ('string', 'float', 'list'):
                     # All these types evaluate to boolean False when they are
                     # the neutral addition element.
-                    if lnt == 'CONST' and not lval.value:
-                        # 0. + expr  ->  expr
-                        # "" + expr  ->  expr
-                        # [] + expr  ->  expr
+                    if lnt == 'CONST' and not lval.value and (ltype == rtype
+                       or ltype == 'integer' and rtype == 'float'
+                       or ltype == 'float' and rtype == 'integer'):
+                        # 0  + fval  ->  fval
+                        # 0. + fval  ->  fval
+                        # 0. + ival  ->  fval
+                        # "" + sval  ->  sval
+                        # [] + lval  ->  lval
                         parent[index] = self.Cast(rval, optype)
                         # node is SEF if rval is
                         parent[index].SEF = rval.SEF
                         return
-                    if rnt == 'CONST' and not rval.value:
-                        # expr + 0.  ->  expr
-                        # expr + ""  ->  expr
-                        # expr + []  ->  expr
+                    if rnt == 'CONST' and not rval.value and (rtype == ltype
+                       or rtype == 'integer' and ltype == 'float'
+                       or rtype == 'float' and ltype == 'integer'):
+                        # fval + 0   ->  fval
+                        # fval + 0.  ->  fval
+                        # ival + 0.  ->  fval
+                        # sval + ""  ->  sval
+                        # lval + []  ->  lval
                         parent[index] = self.Cast(lval, optype)
                         # node is SEF if lval is
                         parent[index].SEF = lval.SEF

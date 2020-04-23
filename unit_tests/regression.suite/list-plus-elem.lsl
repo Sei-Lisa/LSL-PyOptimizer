@@ -23,5 +23,21 @@ default{timer(){
   a = (list)(list)(list)(list)(list)[b] + a;
   a = (list)(list)(list)(list)(list)1 + a;
   a = (list)(list)(list)(list)(list)b + a;
+  a += (llGetPhysicsMaterial() + 0);
+  a += (llGetPhysicsMaterial() + 0.);
+  a += (llGetPhysicsMaterial() + "");
+  a += (llGetPhysicsMaterial() + []);
+  a += (0 + llGetPhysicsMaterial());
+  a += (0. + llGetPhysicsMaterial());
+  a += ("" + llGetPhysicsMaterial());
+  a += ([] + llGetPhysicsMaterial());
+  a += ([] + llGetPhysicsMaterial() + []);
+  a += (0 + []);
+  a += (0. + []);
+  a += ("" + []);
+  a += ([] + 0);
+  a += ([] + 0.);
+  a += ([] + "");
+  a += ([] + []);
   llParticleSystem(a);
 }}

@@ -24,6 +24,21 @@ default
         a = b + a;
         a = 1 + a;
         a = b + a;
+        a = a + (llGetPhysicsMaterial() + 0);
+        a = a + (llGetPhysicsMaterial() + ((float)0));
+        a = a + (llGetPhysicsMaterial() + "");
+        a = a + llGetPhysicsMaterial();
+        a = a + (0 + llGetPhysicsMaterial());
+        a = a + (((float)0) + llGetPhysicsMaterial());
+        a = a + ("" + llGetPhysicsMaterial());
+        a = a + llGetPhysicsMaterial();
+        a = a + llGetPhysicsMaterial();
+        a = a + 0;
+        a = a + ((float)0);
+        a = a + "";
+        a = a + 0;
+        a = a + ((float)0);
+        a = a + "";
         llParticleSystem(a);
     }
 }
