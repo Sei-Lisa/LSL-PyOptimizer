@@ -386,7 +386,7 @@ class deadcode(object):
 
         return False
 
-    def CleanNode(self, curnode):
+    def CleanNode(self, curnode, isFnDef = False):
         """Recursively checks if the children are used, deleting those that are
         not.
         """
@@ -402,14 +402,25 @@ class deadcode(object):
             node = curnode.ch[index]
 
             if not hasattr(node, 'X'):
-                if curnode.ch[index].nt == 'JUMP':
-                    # Decrease label reference count
-                    scope = curnode.ch[index].scope
-                    name = curnode.ch[index].name
-                    assert self.symtab[scope][name]['ref'] > 0
-                    self.symtab[scope][name]['ref'] -= 1
-                del curnode.ch[index]
-                continue
+                deleted = curnode.ch[index]
+                # Don't delete the child of a RETURN statement!
+                if curnode.nt == 'RETURN':
+                    pass
+                # If it's a RETURN as the last statement of a block in a
+                # function definition, don't delete it (a hacky workaround for
+                # issue #14).
+                elif (deleted.nt == 'RETURN' and index == len(curnode.ch) - 1
+                      and isFnDef):
+                    pass
+                else:
+                    del curnode.ch[index]
+                    if deleted.nt == 'JUMP':
+                        # Decrease label reference count
+                        scope = deleted.scope
+                        name = deleted.name
+                        assert self.symtab[scope][name]['ref'] > 0
+                        self.symtab[scope][name]['ref'] -= 1
+                    continue
 
             nt = node.nt
 
@@ -484,7 +495,7 @@ class deadcode(object):
                     child[1] = nr(nt='CONST', X=True, SEF=True, t='integer',
                         value=0)
 
-            self.CleanNode(node)
+            self.CleanNode(node, isFnDef = (curnode.nt == 'FNDEF'))
             index += 1
 
 
