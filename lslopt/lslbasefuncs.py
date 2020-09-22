@@ -112,6 +112,12 @@ Infinity = float('inf')
 Indet = Infinity * 0
 NaN = -Indet  # Don't use float("nan") - Windows gets upset.
 
+# Upper/Lower casing tables
+lowerMap = False
+upperMap = False
+lowerLSOMap = False
+upperLSOMap = False
+
 class ELSLTypeMismatch(Exception):
     def __init__(self):
         super(ELSLTypeMismatch, self).__init__(u"Type mismatch")
@@ -1825,14 +1831,14 @@ def llTan(f):
 def llToLower(s):
     s = fs(s)
     if lslcommon.LSO:
-        return zstr(re.sub(u'[A-Z]', lambda x: x.group().lower(), s))
-    return zstr(s.lower())
+        return zstr(s).translate(lowerLSOMap)
+    return zstr(s).translate(lowerMap)
 
 def llToUpper(s):
     s = fs(s)
     if lslcommon.LSO:
-        return zstr(re.sub(u'[a-z]', lambda x: x.group().upper(), s))
-    return zstr(s.upper())
+        return zstr(s).translate(upperLSOMap)
+    return zstr(s).translate(upperMap)
 
 def llUnescapeURL(s):
     s = fs(s)
@@ -2010,5 +2016,233 @@ def llXorBase64StringsCorrect(s, xor):
         if xor[i] == b'\x00':
             i = 0
     return b64encode(ret).decode('utf8')
+
+# Create upper and lower tables
+def __make_tables():
+    global lowerMap, lowerLSOMap
+    global upperMap, upperLSOMap
+
+    lowerLSOMap = bytearray(range(256))
+    for i in range(ord('A'), ord('Z') + 1):
+        lowerLSOMap[i] = i + 32
+
+    upperLSOMap = bytearray(range(256))
+    for i in range(ord('a'), ord('z') + 1):
+        upperLSOMap[i] = i - 32
+
+    lowerMap = {}
+    upperMap = {}
+
+    def lohi(a, b):
+        lowerMap[a] = b
+        upperMap[b] = a
+
+    for i in range(65, 90+1):
+        lohi(i, i+32)
+
+    for i in range(192, 222+1):
+        if i != 215:
+            lohi(i, i+32)
+
+
+    for i in range(256, 311+1, 2):
+        if i != 304:
+            lohi(i, i+1)
+
+    for i in range(313, 328+1, 2):
+        lohi(i, i+1)
+
+    for i in range(330, 375+1, 2):
+        lohi(i, i+1)
+
+    lohi(376, 255)
+
+    for i in range(377, 382+1, 2):
+        lohi(i, i+1)
+
+    lohi(385, 595)
+
+    for i in range(386, 389+1, 2):
+        lohi(i, i+1)
+
+    lohi(390, 596)
+    lohi(391, 392)
+
+    lohi(393, 598)
+    lohi(394, 599)
+
+    lohi(395, 396)
+
+    lohi(398, 477)
+    lohi(399, 601)
+    lohi(400, 603)
+
+    lohi(401, 402)
+
+    lohi(403, 608)
+    lohi(404, 611)
+    lohi(406, 617)
+    lohi(407, 616)
+
+    lohi(408, 409)
+
+    lohi(412, 623)
+    lohi(413, 626)
+    lohi(415, 629)
+
+    lohi(416, 417)
+    lohi(418, 419)
+    lohi(420, 421)
+
+    lohi(423, 424)
+
+    lohi(425, 643)
+
+    lohi(428, 429)
+
+    lohi(430, 648)
+
+    lohi(431, 432)
+
+    lohi(433, 650)
+    lohi(434, 651)
+
+    lohi(435, 436)
+    lohi(437, 438)
+
+    lohi(439, 658)
+
+    lohi(440, 441)
+    lohi(444, 445)
+
+    lohi(452, 454)
+    lohi(455, 457)
+    lohi(458, 460)
+
+    for i in range(461, 476 + 1, 2):
+        lohi(i, i+1)
+
+    for i in range(478, 495 + 1, 2):
+        lohi(i, i+1)
+
+    lohi(497, 499)
+
+    lohi(500, 501)
+
+    for i in range(506, 535 + 1, 2):
+        lohi(i, i+1)
+
+    lohi(902, 940)
+    lohi(904, 941)
+    lohi(905, 942)
+    lohi(906, 943)
+    lohi(908, 972)
+    lohi(910, 973)
+    lohi(911, 974)
+
+    for i in range(913, 939+1):
+        if i != 930:
+            lohi(i, i+32)
+
+    # Sigma at end of word -> Upper case Sigma but no reverse mapping
+    upperMap[962] = 931
+
+    for i in range(994, 1007+1, 2):
+        lohi(i, i+1)
+
+    for i in range(1025, 1039+1):
+        if i != 1037:
+            lohi(i, i+80)
+
+    for i in range(1040, 1071+1):
+        lohi(i, i+32)
+
+    for i in range(1120, 1153+1, 2):
+        lohi(i, i+1)
+
+    for i in range(1168, 1215+1, 2):
+        lohi(i, i+1)
+
+    lohi(1217, 1218)
+    lohi(1219, 1220)
+    lohi(1223, 1224)
+    lohi(1227, 1228)
+
+    for i in range(1232, 1269+1, 2):
+        if i != 1260:
+            lohi(i, i+1)
+
+    lohi(1272, 1273)
+
+    for i in range(1329, 1366+1):
+        lohi(i, i+48)
+
+    # Asymmetrical, these can't be upper()'d back
+    for i in range(4256, 4293+1):
+        lowerMap[i] = i + 48
+
+    for i in range(7680, 7829+1, 2):
+        lohi(i, i+1)
+
+    for i in range(7840, 7929+1, 2):
+        lohi(i, i+1)
+
+    for i in range(7944, 7951+1):
+        lohi(i, i-8)
+
+    for i in range(7960, 7965+1):
+        lohi(i, i-8)
+
+    for i in range(7976, 7983+1):
+        lohi(i, i-8)
+
+    for i in range(7992, 7999+1):
+        lohi(i, i-8)
+
+    for i in range(8008, 8013+1):
+        lohi(i, i-8)
+
+    lohi(8025, 8017)
+    lohi(8027, 8019)
+    lohi(8029, 8021)
+    lohi(8031, 8023)
+
+    for i in range(8040, 8047+1):
+        lohi(i, i-8)
+
+    lohi(8120, 8112)
+    lohi(8121, 8113)
+
+    lohi(8122, 8048)
+    lohi(8123, 8049)
+
+    for i in range(8136, 8139+1):
+        lohi(i, i-86)
+
+    lohi(8152, 8144)
+    lohi(8153, 8145)
+    lohi(8154, 8054)
+    lohi(8155, 8055)
+    lohi(8168, 8160)
+    lohi(8169, 8161)
+    lohi(8170, 8058)
+    lohi(8171, 8059)
+    lohi(8172, 8165)
+    lohi(8184, 8056)
+    lohi(8185, 8057)
+    lohi(8186, 8060)
+    lohi(8187, 8061)
+
+    for i in range(8544, 8559+1):
+        lohi(i, i+16)
+
+    for i in range(9398, 9423+1):
+        lohi(i, i+26)
+
+    for i in range(65313, 65338+1):
+        lohi(i, i+32)
+
+__make_tables()
+
 
 lslbasefuncs_used = True
