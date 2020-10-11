@@ -2276,6 +2276,7 @@ list lazy_list_set(list L, integer i, list v)
         LastIsReturn = False
         while True:
             if self.tok[0] == '}':
+                self.closebrace = self.errorpos
                 break
             stmt = self.Parse_statement(ReturnType, AllowDecl = True,
                 AllowStSw = AllowStSw, InsideSwitch = InsideSwitch,
@@ -2548,6 +2549,7 @@ list lazy_list_set(list L, integer i, list v)
                 body = self.Parse_code_block(typ)
                 del self.locallabels
                 if typ and not getattr(body, 'LIR', False):  # is LastIsReturn flag set?
+                    self.errorpos = self.closebrace
                     raise EParseCodePathWithoutRet(self)
                 paramscope = self.scopeindex
                 self.AddSymbol('f', 0, name, Loc=len(self.tree), Type=typ,
