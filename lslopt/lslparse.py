@@ -427,12 +427,15 @@ class parser(object):
         if directive[len(directive)-1:] == '\\':
             raise EParseInvalidBackslash(self)
 
+        # compile the RE lazily, to avoid penalizing programs not using it
         if self.parse_directive_re is None:
             self.parse_directive_re = re.compile(
                 r'^#\s*(?:'
                     r'(?:line)?\s+(\d+)(?:\s+("(?:\\.|[^"])*")(?:\s+\d+)*)?'
                     r'|'
-                    r'([a-z0-9_]+)\s+([a-z0-9_]+)\s+([-+,a-z0-9_]+)'
+                    r'(?:pragma)\s+(?:OPT)\s+([-+,a-z0-9_]+)'
+                    r'|'
+                    r'([a-z0-9_]+)(?:\s+(.*)?)'  # others
                 r')\s*$'
                 , re.I
             )
@@ -460,25 +463,29 @@ class parser(object):
                 actlinenum = self.script.count('\n', 0, self.pos)
                 self.linedir.append((actlinenum, reflinenum, filename))
                 del actlinenum, reflinenum, filename
-            else:
-                assert match.group(3) is not None
-                if match.group(3).lower() == 'pragma' and match.group(4) == 'OPT':
-                    opts = match.group(5).lower().split(',')
-                    for opt in opts:
-                        if opt != '':
-                            if opt[0] == '-':
-                                self.SetOpt(opt[1:], False)
-                            elif opt[0] == '+':
-                                self.SetOpt(opt[1:], True)
-                            else:
-                                self.SetOpt(opt, True)
+            elif match.group(3):  # '#pragma OPT <options>' found
+                opts = match.group(3).lower().split(',')
+                for opt in opts:
+                    if opt != '':
+                        if opt[0] == '-':
+                            self.SetOpt(opt[1:], False)
+                        elif opt[0] == '+':
+                            self.SetOpt(opt[1:], True)
+                        else:
+                            self.SetOpt(opt, True)
+            elif match.group(4) == 'warning':
+                if match.group(5):
+                    warning("Warning: #warning " + match.group(5))
+                else:
+                    warning("Warning: #warning")
+            # else ignore
 
     def GetToken(self):
         """Lexer"""
 
         try:
             while self.pos < self.length:
-                # If an error occurs, it will happen at the start of this token.
+                # In case of error, report it at the start of this token.
                 self.errorpos = self.pos
 
                 c = self.script[self.pos]
