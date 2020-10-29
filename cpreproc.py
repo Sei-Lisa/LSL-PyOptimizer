@@ -577,31 +577,53 @@ class Evaluator(object):
         return result
 
 class Preproc(preprocessor.Preprocessor):
-    def __init__(self, input, defines=(), sysincpaths=(), incpaths=()):
+    def __init__(self, input, params=()):
         super(Preproc, self).__init__()
         self.auto_pragma_once_enabled = False
-        for define in defines:
-            self.define('%s %s' % define)
-
-        for v in sysincpaths:
-            self.add_path(v)
-        for v in incpaths:
-            self.add_path(v)
+        for v in params:
+            if v.startswith('-I'):
+                self.add_path(v[2:])
+            elif v.startswith('-D'):
+                defn = v[2:]
+                if '=' not in defn:
+                    defn += '=1'
+                if defn.startswith('='):
+                    self.on_error("\nError: Empty macro name in definition.\n")
+                    return
+                defn = defn.replace('=', ' ', 1)
+                self.define(defn)
+            elif v.startswith('-U'):
+                defn = v[2:]
+                if defn in self.macros:
+                    del self.macros[defn]
+            else:
+                self.on_error("\nError: Option for the internal"
+                    " preprocessor not -D, -U or -I:\n    %s\n" % v)
+                return
 
         self.ignore = set()
         self.parser = self.parsegen(input, '<stdin>', '<stdin>')
+        self.errors_present = False
 
     def get(self):
+        if self.errors_present:
+            return True, '', {}
+
         try:
             import StringIO
         except ImportError:
             import io as StringIO
         ret = StringIO.StringIO()
         self.write(ret)
-        return (ret.getvalue(), self.macros)
+        return (self.errors_present, ret.getvalue(), self.macros)
+
+    def on_error(self, *args, **kwargs):
+        """Flag that errors are present when called."""
+        self.errors_present = True
+        return super(Preproc, self).on_error(*args, **kwargs)
 
     def on_include_not_found(self, is_system_include, curdir, includepath):
-        """Don't pass through the #include line if the file does not exist"""
+        """Don't pass through the #include line if the file does not exist."""
         self.on_error(self.lastdirective.source, self.lastdirective.lineno,
             "Include file not found: %s" % includepath)
 
