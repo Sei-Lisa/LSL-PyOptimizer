@@ -1,3 +1,3 @@
 }
- ^
-(Line 3 char 2): ERROR: Not all code paths return a value
+^
+(Line 3 char 1): ERROR: Not all code paths return a value
