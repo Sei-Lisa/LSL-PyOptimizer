@@ -1,1 +1,1 @@
-main.py -O -constfold,-dcr,expr -
+main.py -y -O -constfold,-dcr,expr -

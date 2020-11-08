@@ -1,1 +1,1 @@
-main.py -O clear,expr,optimize,constfold,optsigns -
+main.py -y -O clear,expr,optimize,constfold,optsigns -

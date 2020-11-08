@@ -1,1 +1,1 @@
-main.py -O clear,optimize,constfold,lso,expr,addstrings -
+main.py -y -O clear,optimize,constfold,lso,expr,addstrings -

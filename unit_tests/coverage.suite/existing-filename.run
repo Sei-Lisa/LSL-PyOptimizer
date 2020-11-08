@@ -1,1 +1,1 @@
-main.py unit_tests/coverage.suite/existing-filename.lsl
+main.py -y unit_tests/coverage.suite/existing-filename.lsl

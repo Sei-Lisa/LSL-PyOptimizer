@@ -1,1 +1,1 @@
-main.py -L unit_tests/seftable-coverage.txt -
+main.py -y -L unit_tests/seftable-coverage.txt -

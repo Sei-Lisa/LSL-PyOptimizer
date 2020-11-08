@@ -1,1 +1,1 @@
-./main.py - -O -listadd,-dcr
+main.py - -y -O -listadd,-dcr

@@ -1,1 +1,1 @@
-main.py -O -dcr,-constfold,shrinknames -
+main.py -y -O -dcr,-constfold,shrinknames -

@@ -1,1 +1,1 @@
-./main.py - -O -optimize
+main.py - -y -O -optimize

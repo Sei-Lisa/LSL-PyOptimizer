@@ -1,1 +1,1 @@
-main.py -T -H --avname=Sei\ Lisa --shortname=script.lsl -
+main.py -y -T -H --avname=Sei\ Lisa --shortname=script.lsl -

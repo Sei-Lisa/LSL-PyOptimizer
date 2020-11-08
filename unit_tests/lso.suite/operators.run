@@ -1,1 +1,1 @@
-main.py -O lso,-listadd -
+main.py -y -O lso,-listadd -

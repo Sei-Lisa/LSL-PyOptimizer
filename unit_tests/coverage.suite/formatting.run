@@ -1,1 +1,1 @@
-./main.py --prettify -O clear -
+main.py -y --prettify -O clear -

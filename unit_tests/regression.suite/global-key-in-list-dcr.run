@@ -1,1 +1,1 @@
-main.py -O clear,optimize,constfold,dcr,extendedglobalexpr -
+main.py -y -O clear,optimize,constfold,dcr,extendedglobalexpr -

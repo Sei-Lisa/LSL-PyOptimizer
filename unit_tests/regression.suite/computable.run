@@ -1,1 +1,1 @@
-main.py -O -dcr,addstrings,-optfloats,-listadd -
+main.py -y -O -dcr,addstrings,-optfloats,-listadd -

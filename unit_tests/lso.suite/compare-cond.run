@@ -1,1 +1,1 @@
-main.py -O -dcr,lso -
+main.py -y -O -dcr,lso -

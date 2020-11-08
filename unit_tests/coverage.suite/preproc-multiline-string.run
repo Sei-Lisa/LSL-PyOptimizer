@@ -1,1 +1,1 @@
-main.py --prenodef -p ext --precmd=python --prearg=unit_tests/cat.py --preshow -
+main.py -y --prenodef -p ext --precmd=python --prearg=unit_tests/cat.py --preshow -

@@ -1,1 +1,1 @@
-main.py -O clear,breakcont -
+main.py -y -O clear,breakcont -

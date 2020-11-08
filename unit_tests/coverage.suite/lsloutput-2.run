@@ -1,1 +1,1 @@
-main.py -O -dcr,-constfold,lazylists -
+main.py -y -O -dcr,-constfold,lazylists -

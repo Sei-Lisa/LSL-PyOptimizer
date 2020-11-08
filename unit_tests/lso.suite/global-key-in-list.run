@@ -1,1 +1,1 @@
-main.py -O clear,lso,optimize,constfold -
+main.py -y -O clear,lso,optimize,constfold -
