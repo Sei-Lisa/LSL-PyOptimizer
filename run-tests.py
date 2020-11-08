@@ -93,25 +93,25 @@ def parseArgs(s):
     State = Space
     p = 0
     Len = len(s)
-    arg = b''
+    arg = ''
 
     while p < Len:
         c = s[p:p+1]
         p += 1
         if State in (Space, Normal):
-            if c == b'\\':
+            if c == '\\':
                 State = NBackslash if State == Normal else SBackslash
-            elif c == b'"':
+            elif c == '"':
                 State = DQuote
-            elif c == b"'":
+            elif c == "'":
                 State = SQuote
-            elif c in (b' ', b'\t'):
+            elif c in (' ', '\t'):
                 if State == Normal:
                     State = Space
                     args.append(arg)
-                    arg = b''
+                    arg = ''
                 # else remain in the 'Space' state
-            elif c == b'\n':
+            elif c == '\n':
                 break
             else:
                 State = Normal
@@ -122,20 +122,20 @@ def parseArgs(s):
                          else Space if State == SBackslash
                          else Normal)
             else:
-                if State == DQBackslash and c not in (b'"', b'`', b'$', b'\\'):
-                    arg += b'\\'
+                if State == DQBackslash and c not in ('"', '`', '$', '\\'):
+                    arg += '\\'
                 arg += c
                 State = DQuote if State == DQBackslash else Normal
         elif State == DQuote:
-            if c == b'\\':
+            if c == '\\':
                 State = DQBackslash
             # ` and $ are not interpreted by this parser.
-            elif c == b'"':
+            elif c == '"':
                 State = Normal
             else:
                 arg += c
         elif State == SQuote:
-            if c == b"'":
+            if c == "'":
                 State = Normal
             else:
                 arg += c
@@ -186,10 +186,10 @@ def parseArgs(s):
 #        args[i] = argout
 #    return args
 
-def tryRead(fn):
+def tryRead(fn, Binary = True):
     result = None
     try:
-        f = open(fn, 'rb')
+        f = open(fn, 'rb' if Binary else 'r')
         try:
             result = f.read()
         finally:
@@ -701,7 +701,7 @@ def generateScriptTests():
                     stdin = tryRead(fbase + '.lsl') or ''
                     expected_stdout = tryRead(fbase + '.out') or b''
                     expected_stderr = tryRead(fbase + '.err') or b''
-                    runargs = (parseArgs(tryRead(fbase + '.run'))
+                    runargs = (parseArgs(tryRead(fbase + '.run', Binary=False))
                                or (['main.py', '-y', '-'] if suite != 'Expr'
                                    else ['main.py',
                                          # Defaults for Expr:
