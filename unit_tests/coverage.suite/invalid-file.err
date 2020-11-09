@@ -1,2 +1,2 @@
 REGEX
-IOError: (?:\[Errno 21\] Is a directory|\[Errno 13\] Permission denied): 'unit_tests/coverage.suite/actually-a-dir.d'
+Error: (?:\[Errno 21\] Is a directory|\[Errno 13\] Permission denied): 'unit_tests/coverage.suite/actually-a-dir.d'

@@ -188,15 +188,15 @@ def PreparePreproc(script):
 
 def ScriptHeader(script, avname):
     if avname:
-        avname = b' - ' + avname
-    return (b'//start_unprocessed_text\n/*'
+        avname = ' - ' + avname
+    return ('//start_unprocessed_text\n/*'
         # + re.sub(r'([*/])(?=[*|/])', r'\1|', script) # FS's algorithm
         # HACK: This won't break strings containing ** or /* or // like URLs,
         # while still being compatible with FS.
-        + re.sub(br'([*/]\||\*(?=/))', br'\1|', script)
-        + b'*/\n//end_unprocessed_text\n//nfo_preprocessor_version 0\n'
-          b'//program_version LSL PyOptimizer v' + str2b(VERSION)
-        + str2b(avname) + b'\n//mono\n\n')
+        + re.sub(r'([*/]\||\*(?=/))', r'\1|', script)
+        + '*/\n//end_unprocessed_text\n//nfo_preprocessor_version 0\n'
+          '//program_version LSL PyOptimizer v' + VERSION
+        + avname + '\n//mono\n\n')
 
 def Usage(progname, about = None):
     if about is None:
@@ -453,7 +453,7 @@ def main(argv):
                 if chgfix[1:] not in validoptions:
                     Usage(argv[0], 'optimizer-options')
                     werr(u"\nError: Unrecognized"
-                         u" optimizer option: %s\n" % chg.decode('utf8'))
+                         u" optimizer option: %s\n" % str2u(chg, 'utf8'))
                     return 1
                 if chgfix[0] == '-':
                     options.discard(chgfix[1:])
@@ -591,6 +591,28 @@ def main(argv):
                 f.close()
                 del f
 
+        # Transform to str and check Unicode validity
+        if type(script) is unicode:
+            script = u2str(script, 'utf8')
+        else:
+            try:
+                # Try converting the script to Unicode, to report any encoding
+                # errors with accurate line information.
+                tmp = UniConvScript(script, options,
+                                    fname if fname != '-' else '<stdin>',
+                                    emap).to_unicode()
+                # For Python 2, just report any errors and ignore the result.
+                # For Python 3, use the Unicode.
+                if python3:
+                    script = tmp
+                del tmp
+            except EParse as e:
+                # We don't call ReportError to prevent problems due to
+                # displaying invalid UTF-8
+                werr(e.args[0] + u"\n")
+                return 1
+        # Now script is in native str format.
+
         if script_header:
             script_header = ScriptHeader(script, avname)
 
@@ -598,7 +620,7 @@ def main(argv):
             import time
             tmp = time.time()
             script_timestamp = time.strftime(
-                b'// Generated on %Y-%m-%dT%H:%M:%S.{0:06d}Z\n'
+                '// Generated on %Y-%m-%dT%H:%M:%S.{0:06d}Z\n'
                 .format(int(tmp % 1 * 1000000)), time.gmtime(tmp))
             del tmp
 
@@ -642,27 +664,11 @@ def main(argv):
         # Append user arguments at the end to allow them to override defaults
         preproc_cmdline += preproc_user_postargs
 
-        # Transform to bytes and check Unicode validity
-        if type(script) is unicode:
-            script = script.encode('utf8')
-        else:
-            try:
-                # Try converting the script to Unicode, to report any encoding
-                # errors with accurate line information. At this point we don't
-                # need the result.
-                UniConvScript(script, options,
-                              fname if fname != '-' else '<stdin>',
-                              emap).to_unicode()
-            except EParse as e:
-                # We don't call ReportError to prevent problems due to
-                # displaying invalid UTF-8
-                werr(e.args[0] + u"\n")
-                return 1
-
         if preproc != 'none':
+            # PreparePreproc uses and returns Unicode string encoding.
+            script = u2b(PreparePreproc(any2u(script, 'utf8')), 'utf8')
             # At this point, for the external preprocessor to work we need the
             # script as a byte array, not as unicode, but it should be UTF-8.
-            script = PreparePreproc(script.decode('utf8')).encode('utf8')
             if preproc == 'mcpp':
                 # As a special treatment for mcpp, we force it to output its
                 # macros so we can read if USE_xxx are defined. With GCC that
@@ -680,6 +686,8 @@ def main(argv):
                 return status
             del p, status
 
+            script = any2str(script, 'utf8')
+
             # This method is very imperfect, in several senses. However, since
             # it's applied to the output of the preprocessor, all of the
             # concerns should be addressed:
@@ -687,13 +695,13 @@ def main(argv):
             #    - Comments preceding the directive should not cause problems.
             #              e.g.: /* test */ #directive
             #    - #directive within a comment or string should be ignored.
-            for x in re.findall(br'(?:(?<=\n)|^)\s*#\s*define\s+('
-                                br'USE_SWITCHES'
-                                br'|USE_LAZY_LISTS'
-                                br')(?:$|[^A-Za-z0-9_])', script, re.S):
-                if x == b'USE_SWITCHES':
+            for x in re.findall(r'(?:(?<=\n)|^)\s*#\s*define\s+('
+                                r'USE_SWITCHES'
+                                r'|USE_LAZY_LISTS'
+                                r')(?:$|[^A-Za-z0-9_])', script, re.S):
+                if x == 'USE_SWITCHES':
                     options.add('enableswitch')
-                elif x == b'USE_LAZY_LISTS':
+                elif x == 'USE_LAZY_LISTS':
                     options.add('lazylists')
 
         if not preshow:
@@ -703,9 +711,10 @@ def main(argv):
 
             lib = lslopt.lslloadlib.LoadLibrary(builtins, libdata)
             p = parser(lib)
+            assert type(script) == str
             try:
                 ts = p.parse(script, options,
-                             fname if fname != '-' else '<stdin>')
+                             'stdin' if fname == '-' else fname)
             except EParse as e:
                 ReportError(script, e)
                 return 1

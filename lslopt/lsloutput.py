@@ -21,6 +21,7 @@ from lslopt import lslfuncs
 from lslopt import lslcommon
 from lslopt.lslcommon import Key, Vector, Quaternion, warning
 from math import copysign
+from strutil import *
 
 debugScopes = False
 
@@ -62,7 +63,7 @@ class outscript(object):
                          " spaces by the viewer when copy-pasting the code"
                          " (disable this warning by disabling the 'warntabs'"
                          " option).")
-            return pfx + '"' + value.encode('utf8').replace('\\','\\\\') \
+            return pfx + '"' + any2str(value, 'utf8').replace('\\','\\\\') \
                 .replace('"','\\"').replace('\n','\\n') + '"' + sfx
         if tvalue == int:
             if value < 0 and not self.globalmode and self.optsigns:

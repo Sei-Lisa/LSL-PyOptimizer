@@ -23,6 +23,7 @@ from lslopt import lslfuncs
 from lslopt.lslfuncs import ZERO_VECTOR, ZERO_ROTATION
 import math
 from lslopt.lslfuncopt import OptimizeFunc, OptimizeArgs, FuncOptSetup
+from strutil import xrange, unicode
 
 # TODO: Remove special handling of @ within IF,WHILE,FOR,DO
 

@@ -20,6 +20,7 @@
 import sys, re
 from lslopt.lslcommon import types, warning, Vector, Quaternion
 from lslopt import lslcommon, lslfuncs
+from strutil import *
 
 def LoadLibrary(builtins = None, fndata = None):
     """Load builtins.txt and fndata.txt (or the given filenames) and return
@@ -40,27 +41,27 @@ def LoadLibrary(builtins = None, fndata = None):
     # Library read code
 
     parse_lin_re = re.compile(
-        br'^\s*([a-z]+)\s+'
-        br'([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*('
-            br'[a-z]+\s+[a-zA-Z_][a-zA-Z0-9_]*'
-            br'(?:\s*,\s*[a-z]+\s+[a-zA-Z_][a-zA-Z0-9_]*)*'
-        br')?\s*\)\s*$'
-        br'|'
-        br'^\s*const\s+([a-z]+)'
-        br'\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.*?)\s*$'
-        br'|'
-        br'^\s*(?:#.*|//.*)?$')
-    parse_arg_re = re.compile(br'^\s*([a-z]+)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*$')
-    parse_fp_re  = re.compile(br'^\s*(-?(?=[0-9]|\.[0-9])[0-9]*'
-                              br'((?:\.[0-9]*)?(?:[Ee][+-]?[0-9]+)?))\s*$')
-    parse_int_re = re.compile(br'^\s*(-?0x[0-9A-Fa-f]+|-?[0-9]+)\s*$')
+        r'^\s*([a-z]+)\s+'
+        r'([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*('
+            r'[a-z]+\s+[a-zA-Z_][a-zA-Z0-9_]*'
+            r'(?:\s*,\s*[a-z]+\s+[a-zA-Z_][a-zA-Z0-9_]*)*'
+        r')?\s*\)\s*$'
+        r'|'
+        r'^\s*const\s+([a-z]+)'
+        r'\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.*?)\s*$'
+        r'|'
+        r'^\s*(?:#.*|//.*)?$')
+    parse_arg_re = re.compile(r'^\s*([a-z]+)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*$')
+    parse_fp_re  = re.compile(r'^\s*(-?(?=[0-9]|\.[0-9])[0-9]*'
+                              r'((?:\.[0-9]*)?(?:[Ee][+-]?[0-9]+)?))\s*$')
+    parse_int_re = re.compile(r'^\s*(-?0x[0-9A-Fa-f]+|-?[0-9]+)\s*$')
     parse_str_re = re.compile(u'^"((?:[^"\\\\]|\\\\.)*)"$')
 
-    f = open(builtins, 'rb')
+    f = open(builtins, 'r')
     try:
         linenum = 0
         try:
-            ubuiltins = builtins.decode(sys.getfilesystemencoding())
+            ubuiltins = str2u(builtins, sys.getfilesystemencoding())
         except UnicodeDecodeError:
             # This is just a guess at the filename encoding.
             ubuiltins = builtins.decode('iso-8859-15')
@@ -70,7 +71,7 @@ def LoadLibrary(builtins = None, fndata = None):
             if not line: break
             if line[-1] == '\n': line = line[:-1]
             try:
-                uline = line.decode('utf8')
+                uline = str2u(line, 'utf8')
             except UnicodeDecodeError:
                 warning(u"Bad Unicode in %s line %d" % (ubuiltins, linenum))
                 continue
@@ -153,7 +154,7 @@ def LoadLibrary(builtins = None, fndata = None):
                 elif typ == 'float':
                     value = lslfuncs.F32(float(value))
                 elif typ == 'string':
-                    value = value.decode('utf8')
+                    value = str2u(value, 'utf8')
                     if parse_str_re.search(value):
                         esc = False
                         tmp = value[1:-1]
@@ -242,14 +243,14 @@ def LoadLibrary(builtins = None, fndata = None):
     # TODO: "quaternion" doesn't compare equal to "rotation" even if they are
     #       equivalent. Canonicalize it before comparison, to avoid false
     #       reports of mismatches.
-    f = open(fndata, 'rb')
+    f = open(fndata, 'r')
     try:
         linenum = 0
         curr_fn = None
         curr_ty = None
         skipping = False
         try:
-            ufndata = fndata.decode(sys.getfilesystemencoding())
+            ufndata = str2u(fndata, sys.getfilesystemencoding())
         except UnicodeDecodeError:
             # This is just a guess at the filename encoding.
             ufndata = fndata.decode('iso-8859-15')
@@ -259,7 +260,7 @@ def LoadLibrary(builtins = None, fndata = None):
             if not line: break
             if line[-1] == '\n': line = line[:-1]
             try:
-                uline = line.decode('utf8')
+                uline = str2u(line, 'utf8')
             except UnicodeDecodeError:
                 warning(u"Bad Unicode in %s line %d" % (ufndata, linenum))
                 continue
@@ -272,7 +273,7 @@ def LoadLibrary(builtins = None, fndata = None):
             if match_fn and (rettype in ('void', 'event') or rettype in types):
                 skipping = True  # until proven otherwise
                 name = match_fn.group(2)
-                uname = name.decode('utf8')
+                uname = str2u(name, 'utf8')
                 if (rettype == 'event' and name not in events
                     or rettype != 'event' and name not in functions
                    ):
@@ -347,7 +348,7 @@ def LoadLibrary(builtins = None, fndata = None):
                         skipping = True
                         continue
                     if not skipping:
-                        ucurr_fn = curr_fn.decode('utf8')
+                        ucurr_fn = str2u(curr_fn, 'utf8')
                         if match_flag.group(1):
                             # SEF
                             # We don't handle conditions yet. Take the
@@ -438,7 +439,7 @@ def LoadLibrary(builtins = None, fndata = None):
 
     # Post-checks
     for i in functions:
-        ui = i.decode('utf8')
+        ui = str2u(i, 'utf8')
         if 'NeedsData' in functions[i]:
             del functions[i]['NeedsData']
             warning(u"Library data, file %s: Function %s has no data."
@@ -455,7 +456,7 @@ def LoadLibrary(builtins = None, fndata = None):
                     u" delay. Removing SEF." % ui)
             del functions[i]['SEF']
     for i in events:
-        ui = i.decode('utf8')
+        ui = str2u(i, 'utf8')
         if 'NeedsData' in events[i]:
             del events[i]['NeedsData']
             warning(u"Library data, file %s: Event %s has no data."

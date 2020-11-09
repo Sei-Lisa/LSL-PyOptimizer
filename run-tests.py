@@ -213,9 +213,9 @@ def invokeMain(argv, stdin = None):
     lslcommon.IsCalc = False
     lslcommon.Bugs.clear()
     lslcommon.Bugs.add(6495)
-    save_stdin = sys.stdin
-    save_stdout = sys.stdout
-    save_stderr = sys.stderr
+    lslcommon.save_stdin = sys.stdin
+    lslcommon.save_stdout = sys.stdout
+    lslcommon.save_stderr = sys.stderr
     stdout_output = None
     stderr_output = None
     try:
@@ -231,9 +231,9 @@ def invokeMain(argv, stdin = None):
         stdout_output = sys.stdout.getvalue()
         stderr_output = sys.stderr.getvalue()
     finally:
-        sys.stdin = save_stdin
-        sys.stdout = save_stdout
-        sys.stderr = save_stderr
+        sys.stdin = lslcommon.save_stdin
+        sys.stdout = lslcommon.save_stdout
+        sys.stderr = lslcommon.save_stderr
         lslcommon.LSO = False
         lslcommon.IsCalc = False
         lslcommon.Bugs.clear()
@@ -721,10 +721,9 @@ def generateScriptTests():
 
                     try:
                         if expected_stderr.startswith(b'REGEX\n'):
-                            self.assertIsNotNone(
-                                re.search(expected_stderr[6:],
-                                          actual_stderr.decode('utf8')
-                                )
+                            self.assertIsNotNone(re.search(
+                                b2u(expected_stderr[6:], 'utf8'),
+                                b2u(actual_stderr, 'utf8'))
                             )
                         else:
                             self.assertTrue(expected_stderr == actual_stderr)
@@ -734,6 +733,7 @@ def generateScriptTests():
                         werr(expected_stderr)
                         werr(u'\n************ actual stderr:\n')
                         werr(actual_stderr)
+#                        werr(('1' if difflib else '0')+('1' if expected_stderr else '0') + ('1' if actual_stderr else '0'))
                         if difflib and expected_stderr and actual_stderr \
                            and not expected_stderr.startswith(b'REGEX\n'):
                             werr(u'\n************ diff:\n'
@@ -746,8 +746,9 @@ def generateScriptTests():
                         raise
                     try:
                         if expected_stdout.startswith(b'REGEX\n'):
-                            self.assertIsNotNone(re.search(expected_stdout[6:],
-                                                           actual_stdout))
+                            self.assertIsNotNone(re.search(
+                                b2u(expected_stdout[6:], 'utf8'),
+                                b2u(actual_stdout, 'utf8')))
                         else:
                             self.assertTrue(expected_stdout == actual_stdout)
                     except AssertionError:

@@ -29,6 +29,10 @@ import re
 # Note this module was basically written from bottom to top, which may help
 # reading it.
 
+WHITESPACE_CHARS = frozenset({' ', '\r', '\n', '\x0B', '\x0C'})
+SINGLE_SYMBOLS = frozenset({'.', ';', '{', '}', ',', '=', '(', ')', '-', '+',
+    '*', '/', '%', '@', ':', '<', '>', '[', ']', '&', '|', '^', '~', '!'})
+
 def isdigit(c):
     return '0' <= c <= '9'
 
@@ -48,7 +52,7 @@ def GetErrLineCol(parser):
     # Find start of current line
     lstart = parser.script.rfind('\n', 0, errorpos) + 1
     # Find zero-based column number in characters
-    cno = len(parser.script[lstart:errorpos].decode('utf8'))
+    cno = len(any2u(parser.script[lstart:errorpos], 'utf8'))
     # Find in #line directives list
     i = len(parser.linedir)
     filename = '<stdin>'  # value to return if there's no #line before lno
@@ -75,7 +79,7 @@ class EParse(Exception):
         if parser.emap and filename == '<stdin>':
             filename = parser.filename
 
-        filename = (filename.decode('utf8', 'replace')
+        filename = (str2u(filename, 'utf8')
                     .replace(u'\\', u'\\\\')
                     .replace(u'"', u'\\"')
                    )
@@ -543,7 +547,7 @@ class parser(object):
 
                 # self.linestart is related to the preprocessor, therefore we
                 # check the characters that are relevant for standard C.
-                if c not in ' \n\r\x0B\x0C':
+                if c not in WHITESPACE_CHARS:
                     self.linestart = False
 
                 # Process strings
@@ -584,7 +588,7 @@ class parser(object):
 
                     if is_string:
                         self.pos += 1
-                        return ('STRING_VALUE', lslfuncs.zstr(strliteral.decode('utf8')))
+                        return ('STRING_VALUE', lslfuncs.zstr(str2u(strliteral, 'utf8')))
                     # fall through (to consider the L or to ignore the ")
 
                 if isalpha_(c):
@@ -705,7 +709,7 @@ class parser(object):
                         return (self.script[self.pos-3:self.pos],)
                     return (self.script[self.pos-2:self.pos],)
 
-                if c in '.;{},=()-+*/%@:<>[]&|^~!' and c != '':
+                if c in SINGLE_SYMBOLS:
                     return (c,)
 
                 if c == '\n':
@@ -2801,8 +2805,7 @@ list lazy_list_set(list L, integer i, list v)
 
         self.filename = filename
 
-        if type(script) is unicode:
-            script = script.encode('utf8')
+        script = any2str(script, 'utf8')
 
         self.script = script
         self.length = len(script)

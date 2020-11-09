@@ -19,6 +19,7 @@
 
 from lslopt import lslfuncs
 from lslopt.lslcommon import nr
+from strutil import xrange
 
 class deadcode(object):
 
@@ -530,7 +531,7 @@ class deadcode(object):
         self.MarkReferences(statedef)
 
         # Track removal of global lines, to reasign locations later.
-        LocMap = range(len(self.tree))
+        LocMap = list(range(len(self.tree)))
 
         GlobalDeletions = []
 
