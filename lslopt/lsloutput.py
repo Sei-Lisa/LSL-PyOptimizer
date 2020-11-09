@@ -26,17 +26,17 @@ debugScopes = False
 
 class outscript(object):
 
-    binary_operators = frozenset(('||','&&','^','|','&','==','!=','<','<=','>',
+    binary_operators = frozenset({'||','&&','^','|','&','==','!=','<','<=','>',
         '>=','<<','>>','+','-','*','/','%', '=', '+=', '-=', '*=', '/=','%=',
-        ))
-    extended_assignments = frozenset(('&=', '|=', '^=', '<<=', '>>='))
-    unary_operators = frozenset(('NEG', '!', '~'))
+        })
+    extended_assignments = frozenset({'&=', '|=', '^=', '<<=', '>>='})
+    unary_operators = frozenset({'NEG', '!', '~'})
     op_priority = {'=':0, '+=':0, '-=':0, '*=':0, '/=':0, '%=':0, '&=':0,
         '|=':0, '^=':0, '<<=':0, '>>=':0,
         '||':1, '&&':1, '|':2, '^':3, '&':4, '==':5, '!=':5,
         '<':6, '<=':6, '>':6, '>=':6, '<<':7, '>>':7, '+':8, '-':8,# 'NEG':8,
         '*':9, '/':9, '%':9}#, '!':10, '~':10, '++':10, '--':10, }
-    assignment_ops = ('=', '+=', '-=', '*=', '/=','%=')
+    assignment_ops = frozenset({'=', '+=', '-=', '*=', '/=','%='})
 
     def Value2LSL(self, value):
         tvalue = type(value)

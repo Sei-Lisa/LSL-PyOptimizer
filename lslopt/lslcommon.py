@@ -21,7 +21,7 @@ import sys
 from strutil import *
 strutil_used
 
-_exclusions = frozenset(('nt','t','name','value','ch', 'X','SEF'))
+_exclusions = frozenset({'nt','t','name','value','ch', 'X','SEF'})
 
 # Node Record type. Used for AST nodes.
 class nr(object):
@@ -102,8 +102,8 @@ DataPath = ''
 
 # These are hardcoded because additions or modifications imply
 # important changes to the code anyway.
-types = frozenset(('integer','float','string','key','vector',
-    'quaternion','rotation','list'))
+types = frozenset({'integer','float','string','key','vector',
+    'quaternion','rotation','list'})
 
 # Conversion of LSL types to Python types and vice versa.
 

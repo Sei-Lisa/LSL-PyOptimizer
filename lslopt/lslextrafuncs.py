@@ -47,7 +47,7 @@ xp_error_messages = {
     18:u'experience permissions request timed out'
 }
 
-valid_inventory_kinds = frozenset((0, 1, 3, 5, 6, 7, 10, 13, 20, 21))
+valid_inventory_kinds = frozenset({0, 1, 3, 5, 6, 7, 10, 13, 20, 21})
 
 def llCloud(v):
     v = v2f(v)

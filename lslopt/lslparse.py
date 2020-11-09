@@ -221,19 +221,19 @@ class EInternal(Exception):
     pass
 
 class parser(object):
-    assignment_toks = frozenset(('=', '+=', '-=', '*=', '/=', '%='))
-    extassignment_toks = frozenset(('|=', '&=', '^=', '<<=', '>>='))
+    assignment_toks = frozenset({'=', '+=', '-=', '*=', '/=', '%='})
+    extassignment_toks = frozenset({'|=', '&=', '^=', '<<=', '>>='})
 
-    double_toks = frozenset(('++', '--', '+=', '-=', '*=', '/=', '%=', '==',
-                                     '!=', '>=', '<=', '&&', '||', '<<', '>>'))
-    extdouble_toks = frozenset(('|=', '&=', '^='))
+    double_toks = frozenset({'++', '--', '+=', '-=', '*=', '/=', '%=', '==',
+                                     '!=', '>=', '<=', '&&', '||', '<<', '>>'})
+    extdouble_toks = frozenset({'|=', '&=', '^='})
 
     # These are hardcoded because additions or modifications imply
     # important changes to the code anyway.
-    base_keywords = frozenset(('default', 'state', 'event', 'jump', 'return',
-        'if', 'else', 'for', 'do', 'while', 'print', 'TRUE', 'FALSE'))
-    brkcont_keywords = frozenset(('break', 'continue'))
-    switch_keywords = frozenset(('switch', 'case', 'break', 'default'))
+    base_keywords = frozenset({'default', 'state', 'event', 'jump', 'return',
+        'if', 'else', 'for', 'do', 'while', 'print', 'TRUE', 'FALSE'})
+    brkcont_keywords = frozenset({'break', 'continue'})
+    switch_keywords = frozenset({'switch', 'case', 'break', 'default'})
 
     PythonType2LSLToken = {int:'INTEGER_VALUE', float:'FLOAT_VALUE',
         unicode:'STRING_VALUE', Key:'KEY_VALUE', Vector:'VECTOR_VALUE',

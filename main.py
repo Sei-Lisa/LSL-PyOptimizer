@@ -373,7 +373,7 @@ break/continue syntax extension (which is inactive by default).
 """.format(progname=str2u(progname)))
         return
 
-validoptions = frozenset(('extendedglobalexpr','breakcont','extendedtypecast',
+validoptions = frozenset({'extendedglobalexpr','breakcont','extendedtypecast',
     'extendedassignment','allowkeyconcat','allowmultistrings','duplabels',
     'lazylists','enableswitch','errmissingdefault','funcoverride','optimize',
     'optsigns','optfloats','constfold','dcr','shrinknames','addstrings',
@@ -383,7 +383,7 @@ validoptions = frozenset(('extendedglobalexpr','breakcont','extendedtypecast',
     'lso','expr','rsrclimit',
     # 'clear' is handled as a special case
     # 'prettify' is internal, as it's a user flag
-))
+})
 
 def main(argv):
     """Main executable."""

@@ -34,9 +34,9 @@ class optimizer(foldconst, renamer, deadcode, lastpass):
         }
 
     # explicitly exclude assignments
-    binary_ops = frozenset(('+','-','*','/','%','<<','>>','<','<=','>','>=',
-        '==','!=','|','^','&','||','&&'))
-    assign_ops = frozenset(('=','+=','-=','*=','/=','%=','&=','|=','^=','<<=','>>='))
+    binary_ops = frozenset({'+','-','*','/','%','<<','>>','<','<=','>','>=',
+        '==','!=','|','^','&','||','&&'})
+    assign_ops = frozenset({'=','+=','-=','*=','/=','%=','&=','|=','^=','<<=','>>='})
 
     def Cast(self, value, newtype):
         """Return a CAST node if the types are not equal, otherwise the
