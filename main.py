@@ -96,7 +96,7 @@ def PreparePreproc(script):
     line up to the point where the string was closed. That will place the next
     token in the same line and column it previously was.
     """
-    s = ''
+    s = u''
     nlines = 0
     col = 0
 
@@ -120,29 +120,29 @@ def PreparePreproc(script):
     # least surprise seems to suggest to accept valid LSL strings as LSL
     # instead of reproducing that C quirk. This also matches what FS is doing
     # currently, so it's good for compatibility.
-    tok = re.compile(str2u(
+    tok = re.compile(str2u(  # Python 3.5 does not recognize ur'...' literals
         r'(?:'
             r'/(?:\?\?/\n|\\\n)*\*.*?\*(?:\?\?/\n|\\\n)*/'
             r'|/(?:\?\?/\n|\\\n)*/(?:\?\?/\n|\\\n|[^\n])*\n'
             r'|[^"]'
         r')+'
         r'|"'
-        ), re.S)
+        , 'utf8'), re.S)
     # RE used inside strings.
     tok2 = re.compile(str2u(
         r'(?:'
             r"\?\?[='()!<>-]"  # valid trigraph except ??/ (backslash)
             r"|(?:\?\?/|\\)(?:\?\?[/='()!<>-]|[^\n])"
-                                # backslash trigraph or actual backslash,
-                                # followed by any trigraph or non-newline
+                               # backslash trigraph or actual backslash,
+                               # followed by any trigraph or non-newline
             r'|(?!\?\?/\n|\\\n|"|\n).'
-                                # any character that doesn't start a trigraph/
-                                # backslash escape followed by a newline
-                                # or is a newline or double quote, as we're
-                                # interested in all those individually.
-        r')+'                   # as many of those as possible
-        r'|\?\?/\n|\\\n|\n|"'   # or any of those individually
-        ))
+                               # any character that doesn't start a trigraph/
+                               # backslash escape followed by a newline
+                               # or is a newline or double quote, as we're
+                               # interested in all those individually.
+        r')'                   # as many of those as possible
+        r'|\?\?/\n|\\\n|\n|"'  # or any of those individually
+        , 'utf8'))
 
     pos = 0
     match = tok.search(script, pos)
@@ -157,24 +157,24 @@ def PreparePreproc(script):
                 matched2 = match2.group(0)
                 pos += len(matched2)
 
-                if matched2 == b'\\\n' or matched2 == b'??/\n':
+                if matched2 == u'\\\n' or matched2 == u'??/\n':
                     nlines += 1
                     col = 0
                     match2 = tok2.search(script, pos)
                     continue
-                if matched2 == b'"':
+                if matched2 == u'"':
                     if nlines:
-                        if script[pos:pos+1] == b'\n':
+                        if script[pos:pos+1] == u'\n':
                             col = -1 # don't add spaces if not necessary
                         # col misses the quote added here, so add 1
-                        s += b'"' + b'\n'*nlines + b' '*(col+1)
+                        s += u'"' + u'\n'*nlines + u' '*(col+1)
                     else:
-                        s += b'"'
+                        s += u'"'
                     break
-                if matched2 == b'\n':
+                if matched2 == u'\n':
                     nlines += 1
                     col = 0
-                    s += b'\\n'
+                    s += u'\\n'
                 else:
                     col += len(matched2)
                     s += matched2
@@ -453,7 +453,7 @@ def main(argv):
                 if chgfix[1:] not in validoptions:
                     Usage(argv[0], 'optimizer-options')
                     werr(u"\nError: Unrecognized"
-                        u" optimizer option: %s\n" % chg.decode('utf8'))
+                         u" optimizer option: %s\n" % chg.decode('utf8'))
                     return 1
                 if chgfix[0] == '-':
                     options.discard(chgfix[1:])
@@ -642,6 +642,7 @@ def main(argv):
         # Append user arguments at the end to allow them to override defaults
         preproc_cmdline += preproc_user_postargs
 
+        # Transform to bytes and check Unicode validity
         if type(script) is unicode:
             script = script.encode('utf8')
         else:

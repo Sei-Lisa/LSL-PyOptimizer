@@ -698,7 +698,7 @@ def generateScriptTests():
             # Create a closure with the test data
             def makeTestFunction(fbase, suite):
                 def TestFunction(self):
-                    stdin = tryRead(fbase + '.lsl') or ''
+                    stdin = tryRead(fbase + '.lsl') or b''
                     expected_stdout = tryRead(fbase + '.out') or b''
                     expected_stderr = tryRead(fbase + '.err') or b''
                     runargs = (parseArgs(tryRead(fbase + '.run', Binary=False))
@@ -734,8 +734,9 @@ def generateScriptTests():
                         werr(expected_stderr)
                         werr(u'\n************ actual stderr:\n')
                         werr(actual_stderr)
-                        if difflib and expected_stderr and actual_stderr:
-                            sys.stderr.write(u'\n************ diff:\n'
+                        if difflib and expected_stderr and actual_stderr \
+                           and not expected_stderr.startswith(b'REGEX\n'):
+                            werr(u'\n************ diff:\n'
                                  + u'\n'.join(difflib.unified_diff(
                                     b2u(expected_stderr).split(u'\n'),
                                     b2u(actual_stderr).split(u'\n'),
@@ -755,7 +756,8 @@ def generateScriptTests():
                         werr(expected_stdout)
                         werr(u'\n************ actual stdout:\n')
                         werr(actual_stdout)
-                        if difflib and expected_stdout and actual_stdout:
+                        if difflib and expected_stdout and actual_stdout \
+                           and not expected_stdout.startswith(b'REGEX\n'):
                             werr(u'\n************ diff:\n'
                                  + u'\n'.join(difflib.unified_diff(
                                     b2u(expected_stdout).split('\n'),

@@ -31,8 +31,7 @@ if sys.version_info.major >= 3:
 
     def str2b(s, enc=None):
         """Convert a native Python3 str to bytes, with the given encoding."""
-        return s.encode(enc if type(enc) == str
-                        else getattr(enc, 'encoding', 'utf8'),
+        return s.encode(getattr(enc, 'encoding', enc) or 'utf8',
                         'backslashreplace')
 
     def u2str(s, enc=None):
@@ -56,8 +55,7 @@ else:
 
     def u2str(s, enc=None):
         """Convert a Unicode string to native Python 2 str."""
-        return s.encode(enc if type(enc) == str
-                        else getattr(enc, 'encoding', 'utf8'),
+        return s.encode(getattr(enc, 'encoding', enc) or 'utf8',
                         'backslashreplace')
 
     def b2str(s, enc=None):
@@ -70,7 +68,7 @@ def b2u(s, enc=None):
 
 def u2b(s, enc=None):
     """Unicode to Bytes"""
-    return u2str(str2b(s, enc), enc)
+    return str2b(u2str(s, enc), enc)
 
 def any2b(s, enc=None):
     """Bytes or Unicode to Bytes"""

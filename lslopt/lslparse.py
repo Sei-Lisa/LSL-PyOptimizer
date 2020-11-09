@@ -3007,7 +3007,7 @@ list lazy_list_set(list L, integer i, list v)
         del self.scopestack
 
         if self.enable_inline:
-            import lslinliner
+            from lslopt import lslinliner
             lslinliner.inliner().inline(self.tree, self.symtab)
 
         treesymtab = self.tree, self.symtab

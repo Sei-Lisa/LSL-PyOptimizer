@@ -18,9 +18,9 @@
 # Expand inlined functions. This could perhaps be made at parse time, but that
 # would obfuscate the source too much.
 
-from lslcommon import nr
+from lslopt.lslcommon import nr
 
-# Statement-level nodes that have at most 1 child and is of type expression
+# Statement-level nodes that have at most 1 child and are of type expression
 SINGLE_OPT_EXPR_CHILD_NODES = frozenset({'DECL', 'EXPR', 'RETURN',
     '@', 'STSW', 'JUMP', ';', 'LAMBDA'})
 
