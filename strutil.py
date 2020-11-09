@@ -25,6 +25,10 @@ import sys
 if sys.version_info.major >= 3:
     unicode = str
     unichr = chr
+    xrange = range
+    python3 = True
+    python2 = False
+
     def str2u(s, enc=None):
         """Convert a native Python3 str to Unicode. This is a NOP."""
         return s
@@ -43,7 +47,17 @@ if sys.version_info.major >= 3:
         return s.decode(getattr(enc, 'encoding', enc) or 'utf8',
                         'replace')
 
+    def any2str(s, enc=None):
+        """Convert Bytes or Unicode to native Python 3 str."""
+        return s if type(s) == str else b2str(s, enc)
+
 else:
+    unicode = unicode
+    unichr = unichr
+    xrange = xrange
+    python2 = True
+    python3 = False
+
     def str2u(s, enc=None):
         """Convert a native Python2 str to Unicode."""
         return s.decode(getattr(enc, 'encoding', enc) or 'utf8',
@@ -61,6 +75,11 @@ else:
     def b2str(s, enc=None):
         """Convert a Bytes string to native Python 2 str. This is a NOP."""
         return s
+
+    def any2str(s, enc=None):
+        """Convert Bytes or Unicode to native Python 2 str."""
+        return s if type(s) == str else u2str(s, enc)
+
 
 def b2u(s, enc=None):
     """Bytes to Unicode"""
@@ -80,10 +99,10 @@ def any2u(s, enc=None):
 
 def werr(s):
     """Write any string to stderr"""
-    sys.stderr.write(any2u(s, sys.stderr))
+    sys.stderr.write(any2str(s, sys.stderr))
 
 def wout(s):
     """Write any string to stdout"""
-    sys.stdout.write(any2u(s, sys.stdout))
+    sys.stdout.write(any2str(s, sys.stdout))
 
 strutil_used = True
