@@ -568,42 +568,42 @@ def InternalUTF8toString(s):
     # U+10FFFF are not supported. Both things complicate the alg a bit.
 
     ret = u''
-    partialchar = b''
+    partialchar = bytearray(b'')
     pending = 0
-    for c in s:
-        o = ord(c)
+    for o in s:
         if partialchar:
+            c = partialchar[0] if len(partialchar) == 1 else None
             if 0x80 <= o < 0xC0 and (
-                    partialchar[1:2]
-                    or b'\xC2' <= partialchar < b'\xF4' and partialchar not in b'\xE0\xED\xF0'
-                    or partialchar == b'\xE0' and o >= 0xA0
-                    or partialchar == b'\xED' and o < 0xA0
-                    or partialchar == b'\xF0' and o >= 0x90
-                    or partialchar == b'\xF4' and o < 0x90
+                    c is None
+                    or 0xC2 <= c < 0xF4 and c not in (0xE0, 0xED, 0xF0)
+                    or c == 0xE0 and o >= 0xA0
+                    or c == 0xED and o < 0xA0
+                    or c == 0xF0 and o >= 0x90
+                    or c == 0xF4 and o < 0x90
                     ):
-                partialchar += c
+                partialchar.append(o)
                 pending -= 1
                 if pending == 0:
                     ret += partialchar.decode('utf8')
-                    partialchar = b''
-                c = c
+                    partialchar = bytearray(b'')
+                o = o
                 # NOTE: Without the above line, the following one hits a bug in
                 # python-coverage. It IS executed but not detected.
                 continue
             if lslcommon.LSO:
                 raise ELSONotSupported(u"Byte strings not supported")
             ret += u'?' * len(partialchar)
-            partialchar = b''
+            partialchar = bytearray(b'')
             # fall through to process current character
         if o >= 0xC2 and o <= 0xF4:
-            partialchar = c
+            partialchar = bytearray((o,))
             pending = 1 if o < 0xE0 else 2 if o < 0xF0 else 3
         elif o >= 0x80:
             if lslcommon.LSO:
                 raise ELSONotSupported(u"Byte strings not supported")
             ret += u'?'
         else:
-            ret += c.decode('utf8')
+            ret += unichr(o)
 
     if partialchar:
         if lslcommon.LSO:
@@ -997,9 +997,9 @@ def llBase64ToInteger(s):
     if len(s) < 3:
         # not computable deterministically
         raise ELSLCantCompute
-    s = (s + b'\0')[:4]
-    i = ord(s[0]) if s[0] < b'\x80' else ord(s[0])-256
-    return (i<<24)+(ord(s[1])<<16)+(ord(s[2])<<8)+ord(s[3])
+    s = bytearray(s + b'\0')[:4]
+    i = s[0] if s[0] < 128 else s[0]-256
+    return (i<<24)+(s[1]<<16)+(s[2]<<8)+s[3]
 
 b64tos_re = re.compile(
     b'('
@@ -1056,7 +1056,7 @@ def llBase64ToString(s):
 
         match = b64tos_re.search(byteseq, pos)
 
-    return InternalUTF8toString(bytes(byteseq))
+    return InternalUTF8toString(byteseq)
 
 def llCSV2List(s):
     s = fs(s)
@@ -1119,13 +1119,14 @@ def llDumpList2String(lst, sep):
 
 def llEscapeURL(s):
     s = fs(s)
-    s = s.encode('utf8')  # get bytes
+    s = bytearray(s.encode('utf8'))
     ret = u''
     for c in s:
-        if b'A' <= c <= b'Z' or b'a' <= c <= b'z' or b'0' <= c <= b'9':
-            ret += c.encode('utf8')
+        # 0x30='0', 0x39='9', 0x41='A', 0x5A='Z', 0x61='a', 0x7A='z'
+        if 0x30 <= c <= 0x39 or 0x41 <= c <= 0x5A or 0x61 <= c <= 0x7A:
+            ret += unichr(c)
         else:
-            ret += u'%%%02X' % ord(c)
+            ret += u'%%%02X' % c
     return ret
 
 def llEuler2Rot(v):
@@ -1239,8 +1240,8 @@ def llInsertString(s, pos, src):
 
 def llIntegerToBase64(x):
     x = fi(x)
-    return b64encode(chr((x>>24)&255) + chr((x>>16)&255) + chr((x>>8)&255)
-                     + chr(x&255)).decode('utf8')
+    return (b64encode(bytearray(((x>>24)&255, (x>>16)&255, (x>>8)&255, x&255)))
+            .decode('utf8'))
 
 def llLinear2sRGB(v):
     v = v2f(v)
@@ -1327,9 +1328,9 @@ def llList2ListStrided(lst, start, end, stride):
         start = 0
         end = L-1
     # start is rounded up to ceil(start/stride)*stride
-    start = ((start+stride-1)/stride)*stride
+    start = ((start+stride-1)//stride)*stride
     # end is rounded down to floor(start/stride)*stride
-    end = (end/stride)*stride
+    end = (end//stride)*stride
 
     return lst[start:end+1:stride]
 
@@ -1588,7 +1589,8 @@ def llLog10(f):
 def llMD5String(s, salt):
     s = fs(s)
     salt = fi(salt)
-    return hashlib.md5(zstr(s).encode('utf8') + b':' + bytes(salt)).hexdigest().decode('utf8')
+    return str2u(hashlib.md5(zstr(s).encode('utf8') + b':'
+        + unicode(salt).encode('utf8')).hexdigest(), 'utf8')
 
 def llModPow(base, exp, mod):
     base = fi(base)
@@ -1768,7 +1770,7 @@ def llRound(f):
 
 def llSHA1String(s):
     s = fs(s)
-    return hashlib.sha1(s.encode('utf8')).hexdigest().decode('utf8')
+    return str2u(hashlib.sha1(s.encode('utf8')).hexdigest(), 'utf8')
 
 def llSin(f):
     f = ff(f)
@@ -1842,7 +1844,7 @@ def llToUpper(s):
 
 def llUnescapeURL(s):
     s = fs(s)
-    ret = b''
+    ret = bytearray(b'')
     L = len(s)
     i = 0
     while i < L:
@@ -1862,13 +1864,13 @@ def llUnescapeURL(s):
             v = int(c, 16)<<4
         c = s[i]  # Second digit
         if c == u'%':
-            ret += chr(v)
+            ret.append(v)
             i += 1
             continue
         i += 1
         if u'0' <= c <= u'9' or u'A' <= c <= u'F' or u'a' <= c <= u'f':
             v += int(c, 16)
-        ret += chr(v)
+        ret.append(v)
     return InternalUTF8toString(ret)
 
 def llVecDist(v1, v2):
@@ -1914,12 +1916,12 @@ def llXorBase64(s, xor):
         L2 = 2
         xor = u'AA'
 
-    s = b64decode(s + u'=' * (-L1 & 3))
-    xor = b64decode(xor + u'=' * (-L2 & 3))
+    s = bytearray(b64decode(s + u'=' * (-L1 & 3)))
+    xor = bytearray(b64decode(xor + u'=' * (-L2 & 3)))
     L2 = len(xor)
 
     i = 0
-    ret = b''
+    ret = bytearray(b'')
 
     Bug3763 = 3763 in Bugs
     # BUG-3763 consists of the binary string having an extra NULL every time after the second repetition of
@@ -1927,13 +1929,13 @@ def llXorBase64(s, xor):
     # b'12345678901234567890', the XOR binary string behaves as if it was b'pqrpqr\0pqr\0pqr\0pqr\0pq'.
     # We emulate that by adding the zero and increasing the length the first time.
     for c in s:
-        ret += chr(ord(c) ^ ord(xor[i]))
+        ret.append(c ^ xor[i])
         i += 1
         if i >= L2:
             i = 0
             if Bug3763:
                 Bug3763 = False
-                xor = xor + b'\x00'
+                xor.append(0)
                 L2 += 1
     return b64encode(ret).decode('utf8')
 
@@ -2004,16 +2006,16 @@ def llXorBase64StringsCorrect(s, xor):
         L2 = 2
         xor = u'AA'
 
-    s = b64decode(s + u'=' * (-L1 & 3))
-    xor = b64decode(xor + u'=' * (-L2 & 3)) + b'\x00'
+    s = bytearray(b64decode(s + u'=' * (-L1 & 3)))
+    xor = bytearray(b64decode(xor + u'=' * (-L2 & 3)) + b'\x00')
 
     i = 0
-    ret = b''
+    ret = bytearray(b'')
 
     for c in s:
-        ret += chr(ord(c) ^ ord(xor[i]))
+        ret.append(c ^ xor[i])
         i += 1
-        if xor[i] == b'\x00':
+        if xor[i] == 0:
             i = 0
     return b64encode(ret).decode('utf8')
 

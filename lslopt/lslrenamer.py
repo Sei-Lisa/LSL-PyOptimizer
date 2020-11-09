@@ -175,7 +175,7 @@ class renamer(object):
                 # Skip globals
                 continue
             InParams = False
-            for name,sym in table.iteritems():
+            for name,sym in table.items():
                 if name == -1: continue
                 if sym['Kind'] != 'v':
                     assert sym['Kind'] == 'l'

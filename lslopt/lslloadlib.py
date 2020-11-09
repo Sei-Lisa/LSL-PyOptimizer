@@ -64,7 +64,7 @@ def LoadLibrary(builtins = None, fndata = None):
             ubuiltins = str2u(builtins, sys.getfilesystemencoding())
         except UnicodeDecodeError:
             # This is just a guess at the filename encoding.
-            ubuiltins = builtins.decode('iso-8859-15')
+            ubuiltins = str2u(builtins, 'iso-8859-15')
         while True:
             linenum += 1
             line = f.readline()
@@ -98,7 +98,7 @@ def LoadLibrary(builtins = None, fndata = None):
                     for arg in arglist:
                         argtyp = parse_arg_re.search(arg).group(1)
                         if argtyp not in types:
-                            uargtyp = argtyp.decode('utf8')
+                            uargtyp = str2u(argtyp, 'utf8')
                             warning(u"Invalid type in %s, line %d: %s"
                                     % (ubuiltins, linenum, uargtyp))
                             del uargtyp
@@ -110,7 +110,7 @@ def LoadLibrary(builtins = None, fndata = None):
                 name = match.group(2)
                 if typ == 'event':
                     if name in events:
-                        uname = name.decode('utf8')
+                        uname = str2u(name, 'utf8')
                         warning(u"Event at line %d was already defined in %s,"
                                 u" overwriting: %s"
                                 % (linenum, ubuiltins, uname))
@@ -121,7 +121,7 @@ def LoadLibrary(builtins = None, fndata = None):
                     # they are implemented in lslfuncs.*, they get a
                     # reference to the implementation; otherwise None.
                     if name in functions:
-                        uname = name.decode('utf8')
+                        uname = str2u(name, 'utf8')
                         warning(u"Function at line %d was already defined"
                                 u" in %s, overwriting: %s"
                                 % (linenum, ubuiltins, uname))
@@ -135,13 +135,13 @@ def LoadLibrary(builtins = None, fndata = None):
                 # constant
                 name = match.group(5)
                 if name in constants:
-                    uname = name.decode('utf8')
+                    uname = str2u(name, 'utf8')
                     warning(u"Global at line %d was already defined in %s,"
                             u" overwriting: %s" % (linenum, ubuiltins, uname))
                     del uname
                 typ = match.group(4)
                 if typ not in types:
-                    utyp = typ.decode('utf8')
+                    utyp = str2u(typ, 'utf8')
                     warning(u"Invalid type in %s, line %d: %s"
                             % (ubuiltins, linenum, utyp))
                     del utyp
@@ -253,7 +253,7 @@ def LoadLibrary(builtins = None, fndata = None):
             ufndata = str2u(fndata, sys.getfilesystemencoding())
         except UnicodeDecodeError:
             # This is just a guess at the filename encoding.
-            ufndata = fndata.decode('iso-8859-15')
+            ufndata = str2u(fndata, 'iso-8859-15')
         while True:
             linenum += 1
             line = f.readline()
@@ -448,7 +448,7 @@ def LoadLibrary(builtins = None, fndata = None):
             if functions[i]['min'] > functions[i]['max']:
                 warning(u"Library data: Function %s has min > max:"
                         u" min=%s max=%s, removing both."
-                        % (ui, repr(functions[i]['min']).decode('utf8'),
+                        % (ui, str2u(repr(functions[i]['min']), 'utf8'),
                            repr(functions[i]['max'])))
                 del functions[i]['min'], functions[i]['max']
         if 'SEF' in functions[i] and 'delay' in functions[i]:

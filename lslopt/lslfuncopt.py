@@ -21,6 +21,7 @@
 from lslopt import lslcommon
 from lslopt.lslcommon import Key, Vector, Quaternion, nr
 from lslopt import lslfuncs
+from strutil import unicode
 
 SensorFunctions = {'llSensor', 'llSensorRepeat'}
 # not sure about llRemoteDataReply but let's fall on the safe side

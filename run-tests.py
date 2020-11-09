@@ -486,7 +486,8 @@ class UnitTestCoverage(UnitTestCase):
                 msg = str(e)
         finally:
             lslcommon.IsCalc = save_IsCalc
-        self.assertEqual(msg, u"Value of unknown type in Value2LSL: 'ab'")
+        self.assertEqual(msg, u"Value of unknown type in Value2LSL: 'ab'"
+            if python2 else u"Value of unknown type in Value2LSL: b'ab'")
         del msg
         # Extended assignment in output
         script = [nr(nt='EXPR', t='integer', ch=[

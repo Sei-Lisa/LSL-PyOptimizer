@@ -38,8 +38,8 @@ VERSION = '0.3.0beta'
 
 
 def ReportError(script, e):
-    linestart = script.rfind(b'\n', 0, e.errorpos) + 1
-    lineend = script.find(b'\n', e.errorpos)
+    linestart = script.rfind('\n', 0, e.errorpos) + 1
+    lineend = script.find('\n', e.errorpos)
     if lineend == -1: lineend = len(script) # may hit EOF
 
     # When the encoding of stderr is unknown (e.g. when redirected to a file),
@@ -53,13 +53,13 @@ def ReportError(script, e):
     # 1. Trim the UTF-8 line.
     err_frag = script[linestart:e.errorpos]
     # 2. Convert to Unicode; encode in the target encoding with replacing.
-    err_frag = err_frag.decode('utf8').encode(enc, 'backslashreplace')
+    err_frag = str2u(err_frag, 'utf8').encode(enc, 'backslashreplace')
     # 3. Collect our prize: the length of that in characters.
     cno = len(err_frag.decode(enc))
 
     # Write the whole line in the target encoding.
-    err_line = script[linestart:lineend] + b'\n'
-    werr(err_line.decode('utf8'))
+    err_line = script[linestart:lineend] + '\n'
+    werr(err_line)
     werr(" " * cno + "^\n")
     werr(e.args[0] + u"\n")
 
@@ -412,7 +412,7 @@ def main(argv):
             'libdata=', 'postarg='))
     except getopt.GetoptError as e:
         Usage(argv[0])
-        werr(u"\nError: %s\n" % str(e).decode('utf8', 'replace'))
+        werr(u"\nError: %s\n" % str2u(str(e), 'utf8'))
         return 1
 
     outfile = '-'
