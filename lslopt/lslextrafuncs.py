@@ -23,12 +23,14 @@ from lslopt.lslbasefuncs import ELSLCantCompute, fi,ff,fs,fk,v2f,q2f,fl, \
   TOUCH_INVALID_TEXCOORD, cond
 ff, q2f  # keep pyflakes happy as these are not used
 
-GetEnvSettings = frozenset(('agent_limit', 'dynamic_pathfinding', 'estate_id',
-    'estate_name', 'frame_number', 'region_cpu_ratio', 'region_idle',
-    'region_product_name', 'region_product_sku', 'region_start_time',
-    'sim_channel', 'sim_version', 'simulator_hostname',
-    'region_max_prims', # <http://wiki.secondlife.com/wiki/Release_Notes/Second_Life_RC_Magnum/16#16.11.02.321369>
-    'region_object_bonus')) # <http://wiki.secondlife.com/wiki/Release_Notes/Second_Life_RC_Magnum/16#16.12.03.322072>
+GetEnvSettings = frozenset({'agent_limit', 'dynamic_pathfinding', 'estate_id'
+    , 'estate_name', 'frame_number', 'region_cpu_ratio', 'region_idle'
+    , 'region_product_name', 'region_product_sku', 'region_start_time'
+    , 'sim_channel', 'sim_version', 'simulator_hostname'
+    , 'region_max_prims' # <http://wiki.secondlife.com/wiki/Release_Notes/Second_Life_RC_Magnum/16#16.11.02.321369>
+    , 'region_object_bonus' # <http://wiki.secondlife.com/wiki/Release_Notes/Second_Life_RC_Magnum/16#16.12.03.322072>
+    , 'whisper_range', 'chat_range', 'shout_range'
+    })
 
 xp_error_messages = {
     -1:u'unknown error id',
