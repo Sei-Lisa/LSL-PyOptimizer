@@ -60,7 +60,7 @@ def ReportError(script, e):
     # Write the whole line in the target encoding.
     err_line = script[linestart:lineend] + '\n'
     werr(err_line)
-    werr(" " * cno + "^\n")
+    werr(u" " * cno + u"^\n")
     werr(e.args[0] + u"\n")
 
 class UniConvScript(object):
@@ -84,6 +84,8 @@ class UniConvScript(object):
             try:
                 self.script = self.script.decode('utf8')
             except UnicodeDecodeError as e:
+                # EParse requires str
+                self.script = b2str(self.script, 'utf8')
                 self.errorpos = e.start
                 raise EParse(self, u"Invalid UTF-8 in script")
         return self.script
@@ -753,7 +755,7 @@ def main(argv):
             resource.setrlimit(resource.RLIMIT_AS, (81001000, 81001000))
         if raise_exception:
             raise
-        werr(e.__class__.__name__ + ': ' + str(e) + '\n')
+        werr(e.__class__.__name__ + u': ' + str(e) + u'\n')
         return 1
 
 if __name__ == '__main__':

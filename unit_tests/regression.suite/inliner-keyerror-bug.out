@@ -1,16 +1,17 @@
+REGEX
 default
-{
-    touch(integer LslLibrary)
-    {
+\{
+    touch\(integer ([a-zA-Z]+)\)
+    \{
         integer loc____ret__00001;
-        {
-            {
+        \{
+            \{
                 loc____ret__00001 = 3;
                 ;
-            }
-        }
+            \}
+        \}
         @___rtl__00001;
         loc____ret__00001;
-        LslLibrary++;
-    }
-}
+        \1\+\+;
+    \}
+\}

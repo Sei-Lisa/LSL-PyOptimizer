@@ -202,6 +202,7 @@ def tryRead(fn, Binary = True):
 # In StringIO, mixing unicode and str causes problems with non-ASCII chars.
 # Avoid it by overriding the write method, to always encode unicode as UTF-8.
 class StrUTF8IO(StringStream):
+    encoding = 'utf8'
     def write(self, s):
         StringStream.write(self, any2b(s))
 
@@ -309,25 +310,60 @@ class UnitTestRegression(UnitTestCase):
         from unit_tests import json
         # Patch llJsonSetValue, to allow running the test.
         json.llJsonSetValue = lambda x, y, z: u"***"
-        sys.stderr.write('\nRunning JSON test module: ')
+        werr('\nRunning JSON test module: ')
         save_stdout = sys.stdout
         save_stderr = sys.stderr
-        stdout_output = False
-        stderr_output = False
+        actual_stdout = False
+        actual_stderr = False
         try:
-            sys.stdout = StringStream()
-            sys.stdout.encoding = 'utf8'
-            sys.stderr = StringStream()
-            sys.stderr.encoding = 'utf8'
+            sys.stdout = StrUTF8IO()
+            sys.stderr = StrUTF8IO()
             errs = json.run_tests()
-            stdout_output = sys.stdout.getvalue()
-            stderr_output = sys.stderr.getvalue()
+            actual_stdout = sys.stdout.getvalue()
+            actual_stderr = sys.stderr.getvalue()
         finally:
             sys.stdout = save_stdout
             sys.stderr = save_stderr
         self.assertLessEqual(errs, 138)
-        self.assertEqual(stdout_output, tryRead('unit_tests/json.out'))
-        self.assertEqual(stderr_output, tryRead('unit_tests/json.err'))
+
+        expected_stdout = tryRead('unit_tests/json.out')
+        expected_stderr = tryRead('unit_tests/json.err')
+        try:
+            self.assertTrue(actual_stdout == expected_stdout)
+        except AssertionError:
+            werr(u'Failed'
+                 u'\n************ expected stdout:\n')
+            werr(expected_stdout)
+            werr(u'\n************ actual stdout:\n')
+            werr(actual_stdout)
+            if difflib and expected_stdout and actual_stdout \
+               and not expected_stdout.startswith(b'REGEX\n'):
+                werr(u'\n************ diff:\n'
+                     + u'\n'.join(difflib.unified_diff(
+                        b2u(expected_stdout).split(u'\n'),
+                        b2u(actual_stdout).split(u'\n'),
+                        'expected', 'actual', lineterm=''
+                )))
+            werr(u'\n************ ')
+            raise
+        try:
+            self.assertTrue(actual_stderr == expected_stderr)
+        except AssertionError:
+            werr(u'Failed'
+                 u'\n************ expected stderr:\n')
+            werr(expected_stderr)
+            werr(u'\n************ actual stderr:\n')
+            werr(actual_stderr)
+            if difflib and expected_stderr and actual_stderr \
+               and not expected_stderr.startswith(b'REGEX\n'):
+                werr(u'\n************ diff:\n'
+                     + u'\n'.join(difflib.unified_diff(
+                        b2u(expected_stderr).split(u'\n'),
+                        b2u(actual_stderr).split(u'\n'),
+                        'expected', 'actual', lineterm=''
+                )))
+            werr(u'\n************ ')
+            raise
         assert 'unit_tests.json' in sys.modules
         del sys.modules['unit_tests.json']
 
@@ -734,7 +770,6 @@ def generateScriptTests():
                         werr(expected_stderr)
                         werr(u'\n************ actual stderr:\n')
                         werr(actual_stderr)
-#                        werr(('1' if difflib else '0')+('1' if expected_stderr else '0') + ('1' if actual_stderr else '0'))
                         if difflib and expected_stderr and actual_stderr \
                            and not expected_stderr.startswith(b'REGEX\n'):
                             werr(u'\n************ diff:\n'
@@ -806,4 +841,3 @@ def generateScriptTests():
 generateScriptTests()
 if __name__ == '__main__':
     unittest.main(argv = sys.argv)
-#UnitTestRegression().test_Regression__multiline_string()
