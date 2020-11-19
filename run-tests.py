@@ -743,7 +743,7 @@ def generateScriptTests():
                                    else ['main.py',
                                          # Defaults for Expr:
                                          '-O', 'clear,optimize,constfold'
-                                               ',addstrings,expr',
+                                               ',addstrings,foldtabs,expr',
                                          '-y',
                                          '-']))
                     werr(u"\nRunning test %s: " % any2u(fbase))

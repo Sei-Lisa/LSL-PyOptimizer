@@ -555,8 +555,9 @@ def InternalList2Strings(val):
 
 good_utf8_re = re.compile(b'(?:'
     b'[\x00-\x7F]|[\xC2-\xDF][\x80-\xBF]'
-    b'|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}'
+    b'|[\xE1-\xEC\xEE][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}'
     b'|\xE0[\xA0-\xBF][\x80-\xBF]|\xED[\x80-\x9F][\x80-\xBF]'
+    b'|\xEF[\x80-\xBE][\x80-\xBF]|\xEF\xBF[\x80-\xBD\xBF]'
     b'|\xF0[\x90-\xBF][\x80-\xBF]{2}|\xF4[\x80-\x8F][\x80-\xBF]{2}'
     b')+')
 
@@ -573,19 +574,25 @@ def InternalUTF8toString(s):
     # present, we need to write our own algorithm.
 
     # We reproduce the following observed behaviour:
-    # - A valid UTF-8 sequence is a UTF-8/1993 sequence excluding overlong
-    #   sequences, the range U+D800-U+DFFF (UTF-16 surrogate pairs) and the
-    #   range above 0x10FFFF. Any sequence that is not valid is invalid.
+    # - A valid UTF-8 sequence is a RFC-2279 UTF-8 sequence excluding overlong
+    #   sequences, the range U+D800-U+DFFF (UTF-16 surrogate pairs), everything
+    #   above U+10FFFF and the codepoint U+FFFE. Any sequence that is not valid
+    #   is invalid.
     # - If an invalid sequence is detected, each byte in the sequence is
     #   treated as an invalid character and replaced with a ? character.
     #
-    # Notes:
+    # The invalid sequences are the ones starting with the following:
     # - \xC0 and \xC1 generate overlong codes in the range 0-7F.
     # - \xE0\x80 through \xE0\x9F generate overlong codes in the range 0-7FF.
-    # - \xF0\x80 through \xF0\x8F generate overlong codes in the range 0-FFFF.
     # - \xED\xA0 through \xED\xBF generate high and low UTF-16 surrogates.
+    # - \xEF\xBF\xBE is the sequence for the invalid code U+FFFE.
+    # - \xF0\x80 through \xF0\x8F generate overlong codes in the range 0-FFFF.
     # - \xF4\x90 through \xF4\xBF generate codes above U+10FFFF.
-    # - All of the above are invalid, as well as start bytes >= \xF5.
+    # - \xF5 through \xFD generate even bigger codes.
+    # - \xFE and \xFF were never valid UTF-8.
+    #
+    # Reminder: Start codes \xC0-\xDF have length 2; \xE0-\xEF have length 3
+    # and \xF0-\xF4, length 4.
     #
     # Examples:
     #   b'\xC0\x81' is invalid because it represents an overlong U+0001.
