@@ -553,6 +553,13 @@ def InternalList2Strings(val):
         ret.append(InternalTypecast(elem, unicode, InList=True, f32=True))
     return ret
 
+good_utf8_re = re.compile(b'(?:'
+    b'[\x00-\x7F]|[\xC2-\xDF][\x80-\xBF]'
+    b'|[\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}|[\xF1-\xF3][\x80-\xBF]{3}'
+    b'|\xE0[\xA0-\xBF][\x80-\xBF]|\xED[\x80-\x9F][\x80-\xBF]'
+    b'|\xF0[\x90-\xBF][\x80-\xBF]{2}|\xF4[\x80-\x8F][\x80-\xBF]{2}'
+    b')+')
+
 def InternalUTF8toString(s):
     """Convert UTF-8 to a Unicode string, marking invalid UTF-8 with ?'s."""
     # Note Mono and LSO behave differently here.
@@ -591,48 +598,19 @@ def InternalUTF8toString(s):
     #     be replaced with u'?\U000000C0'.
 
     ret = u''
-    partialchar = bytearray(b'')
-    pending = 0
-    for o in s:
-        if partialchar:
-            c = partialchar[0] if len(partialchar) == 1 else None
-            if 0x80 <= o < 0xC0 and (
-                    c is None
-                    or 0xC2 <= c < 0xF4 and c not in (0xE0, 0xED, 0xF0)
-                    or c == 0xE0 and o >= 0xA0
-                    or c == 0xED and o < 0xA0
-                    or c == 0xF0 and o >= 0x90
-                    or c == 0xF4 and o < 0x90
-                    ):
-                partialchar.append(o)
-                pending -= 1
-                if pending == 0:
-                    ret += partialchar.decode('utf8')
-                    partialchar = bytearray(b'')
-                o = o
-                # NOTE: Without the above line, the following one hits a bug in
-                # python-coverage. It IS executed but not detected.
-                continue
-            if lslcommon.LSO:
-                raise ELSONotSupported(u"Byte strings not supported")
-            ret += u'?' * len(partialchar)
-            partialchar = bytearray(b'')
-            # fall through to process current character
-        if o >= 0xC2 and o <= 0xF4:
-            partialchar = bytearray((o,))
-            pending = 1 if o < 0xE0 else 2 if o < 0xF0 else 3
-        elif o >= 0x80:
-            if lslcommon.LSO:
-                raise ELSONotSupported(u"Byte strings not supported")
-            ret += u'?'
-        else:
-            ret += unichr(o)
-
-    if partialchar:
-        if lslcommon.LSO:
-            raise ELSONotSupported(u"Byte strings not supported")
-        ret += u'?' * len(partialchar)
-
+    last = 0
+    invalid_sum = 0
+    for frag in good_utf8_re.finditer(s):
+        invalid_length = frag.start() - last
+        ret += u'?' * invalid_length
+        ret += frag.group().decode('utf8')
+        last = frag.end()
+        invalid_sum += invalid_length
+    invalid_length = len(s) - last
+    ret += u'?' * invalid_length
+    invalid_sum += invalid_length
+    if invalid_sum and lslcommon.LSO:
+        raise ELSONotSupported(u"Byte strings not supported")
     return zstr(ret)
 
 # The code of llDeleteSubList and llDeleteSubString is identical except for the
