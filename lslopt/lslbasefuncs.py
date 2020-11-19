@@ -554,6 +554,7 @@ def InternalList2Strings(val):
     return ret
 
 def InternalUTF8toString(s):
+    """Convert UTF-8 to a Unicode string, marking invalid UTF-8 with ?'s."""
     # Note Mono and LSO behave differently here.
     # LSO *CAN* store invalid UTF-8.
     # For example, llEscapeURL(llUnescapeURL("%80%C3")) gives "%80%C3" in LSO.
@@ -564,8 +565,30 @@ def InternalUTF8toString(s):
     # what LSL does (LSL replaces with '?'). Since U+FFFD must be preserved if
     # present, we need to write our own algorithm.
 
-    # Problem: Aliases are not valid UTF-8 for LSL, and code points above
-    # U+10FFFF are not supported. Both things complicate the alg a bit.
+    # We reproduce the following observed behaviour:
+    # - A valid UTF-8 sequence is a UTF-8/1993 sequence excluding overlong
+    #   sequences, the range U+D800-U+DFFF (UTF-16 surrogate pairs) and the
+    #   range above 0x10FFFF. Any sequence that is not valid is invalid.
+    # - If an invalid sequence is detected, each byte in the sequence is
+    #   treated as an invalid character and replaced with a ? character.
+    #
+    # Notes:
+    # - \xC0 and \xC1 generate overlong codes in the range 0-7F.
+    # - \xE0\x80 through \xE0\x9F generate overlong codes in the range 0-7FF.
+    # - \xF0\x80 through \xF0\x8F generate overlong codes in the range 0-FFFF.
+    # - \xED\xA0 through \xED\xBF generate high and low UTF-16 surrogates.
+    # - \xF4\x90 through \xF4\xBF generate codes above U+10FFFF.
+    # - All of the above are invalid, as well as start bytes >= \xF5.
+    #
+    # Examples:
+    #   b'\xC0\x81' is invalid because it represents an overlong U+0001.
+    #     It should be replaced with u'??'.
+    #   b'\xED\xA0\x80' is invalid because it represents the UTF-16 upper
+    #     surrogate. It should be replaced with u'???'.
+    #   b'\x80\x81\xFF' is invalid because it does not represent anything
+    #     resembling UTF-8. It should be replaced with u'???'.
+    #   b'\xF4\xC3\x80' is partially invalid and partially valid, and should
+    #     be replaced with u'?\U000000C0'.
 
     ret = u''
     partialchar = bytearray(b'')
@@ -1034,8 +1057,8 @@ def llBase64ToString(s):
     # Mono they are fortunately stopped on the conversion to UTF-8 instead).
     # The check that llBase64ToString does has the quirk that the invalid
     # sequences that it catches are treated as 1 single bad character instead
-    # of as many as the sequence has. The latter is what normal conversion to
-    # UTF-8 does. This causes inconsistencies in the number of ?'s returned.
+    # of as many as the invalid sequence has, as normal conversion to UTF-8
+    # does. This causes inconsistencies in the number of ?'s returned.
 
     # In llBase64ToString, trailing NUL is stripped, and embedded NULs are
     # converted to "?". In addition, characters in range 00-1F are also
