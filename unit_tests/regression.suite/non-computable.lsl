@@ -22,9 +22,6 @@ default
             , llGetDisplayName(TEXTURE_BLANK)
             , llGetEnv("estate_name")
             , llXorBase64Strings("++++", "?")
-            , llXorBase64StringsCorrect("++++", "?")
-            , llXorBase64("++++", "?")
-            , llBase64ToInteger("ABC")
             , llAbs(-2147483648)
             ]);
     }

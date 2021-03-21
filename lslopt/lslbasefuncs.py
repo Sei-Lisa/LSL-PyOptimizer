@@ -28,8 +28,9 @@
 #
 # In some instances, the result can't be computed; in these cases the function
 # raises a LSLCantCompute exception that is caught by the optimizer to leave
-# the expression unchanged. For example, llBase64ToInteger("AA") returns
-# unpredictable garbage in the low bytes in LSL, so it is left unchanged.
+# the expression unchanged. For example, llXorBase64Strings has a delay, so it
+# can't just be replaced by its value; llFrand produces unpredictable results
+# (by design) in most cases, but not all.
 #
 # The JSON functions have been separated to their own module.
 
@@ -993,8 +994,6 @@ def llAxisAngle2Rot(axis, angle):
     s = math.sin(angle*0.5)
     return Quaternion(F32((axis[0]*s, axis[1]*s, axis[2]*s, c)))
 
-# NOTE: This one does not always return the same value in LSL. When it isn't
-# deterministic, it raises ELSLCantCompute.
 def llBase64ToInteger(s):
     s = fs(s)
     if len(s) > 8:
@@ -1002,14 +1001,11 @@ def llBase64ToInteger(s):
     s = b64_re.search(s).group()
     i = len(s)
     s = b64decode(s + u'='*(-i & 3))
-    if len(s) < 3:
-        # not computable deterministically
-        raise ELSLCantCompute
-    s = bytearray(s + b'\0')[:4]
+    s = bytearray(s + b'\0\0\0\0')[:4]
     i = s[0] if s[0] < 128 else s[0]-256
     return (i<<24)+(s[1]<<16)+(s[2]<<8)+s[3]
 
-b64tos_re = re.compile(
+b64tostr_re = re.compile(
     b'('
       # Those pass through and are caught by InternalUTF8toString:
       b'\x00$'  # NUL at last position (zstr removes it)
@@ -1052,9 +1048,9 @@ def llBase64ToString(s):
     byteseq = bytearray(b64decode(s + u'=' * (-len(s) & 3)))
 
     pos = 0
-    match = b64tos_re.search(byteseq, pos)
+    match = b64tostr_re.search(byteseq, pos)
     while match is not None:
-        assert match.group(3) is None, 'Fail in b64tos_re: ' + match.group(3)
+        assert match.group(3) is None, 'Fail in b64tostr_re: ' + match.group(3)
         L = len(match.group(2) or '')
         if L:
             byteseq[pos:pos+L] = b'?'
@@ -1062,7 +1058,7 @@ def llBase64ToString(s):
         else:
             pos = match.end(1)
 
-        match = b64tos_re.search(byteseq, pos)
+        match = b64tostr_re.search(byteseq, pos)
 
     return InternalUTF8toString(byteseq)
 
@@ -1917,10 +1913,6 @@ def llXorBase64(s, xor):
 
     if L2 == 0:
         # The input xor string starts with zero or one valid Base64 characters.
-        # This produces garbage bytes (the first byte is zero though).
-        if L1 > 2:
-            # We don't produce a result in this case.
-            raise ELSLCantCompute
         L2 = 2
         xor = u'AA'
 
@@ -1932,10 +1924,12 @@ def llXorBase64(s, xor):
     ret = bytearray(b'')
 
     Bug3763 = 3763 in Bugs
-    # BUG-3763 consists of the binary string having an extra NULL every time after the second repetition of
-    # the XOR pattern. For example, if the XOR binary string is b'pqr' and the input string is
-    # b'12345678901234567890', the XOR binary string behaves as if it was b'pqrpqr\0pqr\0pqr\0pqr\0pq'.
-    # We emulate that by adding the zero and increasing the length the first time.
+    # BUG-3763 consists of the binary string having an extra NULL every time
+    # after the second repetition of the XOR pattern. For example, if the XOR
+    # binary string is b'pqr' and the input string is b'12345678901234567890',
+    # the XOR binary string behaves as if it was b'pqrpqr\0pqr\0pqr\0pqr\0pq'.
+    # We emulate that by adding the zero and increasing the length the first
+    # time.
     for c in s:
         ret.append(c ^ xor[i])
         i += 1
@@ -2007,10 +2001,6 @@ def llXorBase64StringsCorrect(s, xor):
 
     if L2 == 0:
         # The input xor string starts with zero or one valid Base64 characters.
-        # This produces garbage bytes (the first byte is zero though).
-        if L1 > 2:
-            # We don't produce a result in this case.
-            raise ELSLCantCompute
         L2 = 2
         xor = u'AA'
 
