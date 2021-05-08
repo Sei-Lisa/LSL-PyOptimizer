@@ -29,18 +29,18 @@ string DumpFloat(float f)
 
 string AddLine(string lines, string lineToAdd)
 {
-    if (llStringLength(llStringToBase64(lines + "\n\t, " + lineToAdd)) > 1364)
+    if (llStringLength(llStringToBase64(lines + "\n, " + lineToAdd)) > 1364)
     {
         llSay(0, lines);
-        lines = "\n\t, " + lineToAdd;
+        lines = "\n, " + lineToAdd;
         llSleep(1);
     }
     else
     {
         if (lines == "")
-            lines = "\n\t[ " + lineToAdd;
+            lines = "\n[ " + lineToAdd;
         else
-            lines = lines + "\n\t, " + lineToAdd;
+            lines = lines + "\n, " + lineToAdd;
     }
     return lines;
 }
@@ -78,8 +78,8 @@ DumpListLSL(list L)
         else
             ret = AddLine(ret, llList2CSV(llList2List(L, i, i)));
     }
-    if (ret == "") ret = "\n\t[";
-    llSay(0, ret + "\n\t]");
+    if (ret == "") ret = "\n[";
+    llSay(0, ret + "\n]");
 }
 
 default
