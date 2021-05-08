@@ -1578,7 +1578,7 @@ string llXorBase64StringsCorrect(string str1, string str2)
 integer llReplaceAgentEnvironment(key agent_id, float transition, string environment)
 - unstable
 
-integer llSetAgentEnvironment( key agent_id, float transition, list params )
+integer llSetAgentEnvironment(key agent_id, float transition, list params)
 - unstable
 
 float llGetRegionTimeOfDay()
@@ -1586,6 +1586,15 @@ float llGetRegionTimeOfDay()
 - unstable
 - min 0
 - max 86399.9921875
+
+string llChar(integer code)
+- SEF
+
+integer llHash(string val)
+- SEF
+
+integer llOrd(string val, integer index)
+- SEF
 
 ###################################################################
 
