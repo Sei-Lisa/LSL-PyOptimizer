@@ -1596,6 +1596,9 @@ integer llHash(string val)
 integer llOrd(string val, integer index)
 - SEF
 
+integer llOpenFloater(string title, string url, list params)
+- unstable
+
 ###################################################################
 
 # Events are SEF if a script with an empty event can't be
