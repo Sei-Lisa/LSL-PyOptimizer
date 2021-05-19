@@ -1132,11 +1132,11 @@ def llChar(code):
     # Here's an alternative, simpler implementation that only works for Mono:
     if lslcommon.LSO:
         raise ELSLCantCompute
-    if code == 0:
-        return u''
-    if code < 0:
-        return u'?'
-    if code > 0x10FFFF:
+    if code <= 0 or code > 0x10FFFF:
+        if code == 0:
+            return u''
+        if code < 0:
+            return u'?'
         if code >= 0x4000000:
             return u'??????'
         if code >= 0x200000:
