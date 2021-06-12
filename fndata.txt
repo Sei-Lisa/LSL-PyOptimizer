@@ -375,6 +375,8 @@ void llForceMouselook(integer mouselook)
 float llFrand(float mag)
 - unstable
 - SEF
+# It's not really SEF, in that it supposedly updates the internal state,
+# but assuming it's actually SEF is safe because the seed is unknown.
 
 key llGenerateKey()
 - unstable
@@ -1598,6 +1600,10 @@ integer llOrd(string val, integer index)
 
 integer llOpenFloater(string title, string url, list params)
 - unstable
+# (may fail if invoked a second time, e.g. if throttled)
+
+string llGetInventoryAcquireTime(string item)
+- SEF
 
 ###################################################################
 
