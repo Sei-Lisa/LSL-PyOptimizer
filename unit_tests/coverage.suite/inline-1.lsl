@@ -5,12 +5,12 @@ f1() inline
     llOwnerSay("f1");
 }
 
-f2(integer f2param) inline
+f2(integer f2param) /*pragma inline*/
 {
     llOwnerSay("f2:" + (string)f2param);
 }
 
-vector f3(integer f3p1, string f3p2) inline
+vector f3(integer f3p1, string f3p2) //pragma inline
 {
     f2(f3p1);
     integer f3p1; // test shading the parameter

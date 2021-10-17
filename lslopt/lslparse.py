@@ -525,6 +525,18 @@ class parser(object):
                 if c == '/':
                     if self.script[self.pos:self.pos+1] == '/':
                         self.pos += 1
+                        if self.enable_inline and self.script.startswith(
+                           'pragma inline', self.pos
+                           ) and not isalphanum_(self.script[self.pos + 13:
+                                                 self.pos + 14]
+                           ):
+                            self.pos += 12  # len('pragma inline') - 1
+                            while self.script[self.pos] != '\n':
+                                self.pos += 1
+                                # Check for normal EOF. Note: 'inline' is not
+                                # inserted if the file ends before a newline.
+                                self.ceof()
+                            return ('IDENT', 'inline')
                         self.ceof()
                         while self.script[self.pos] != '\n':
                             self.pos += 1
@@ -537,6 +549,10 @@ class parser(object):
 
                     elif self.script[self.pos:self.pos+1] == '*':
                         self.pos += 2
+                        if self.enable_inline and self.script.startswith(
+                                'pragma inline*/', self.pos-1):
+                            self.pos += 14  # len('pragma inline*/') - 1
+                            return ('IDENT', 'inline')
                         while self.script[self.pos-1:self.pos+1] != '*/':
                             self.pos += 1
                             self.ueof()  # An unterminated multiline comment *is* unexpected EOF.
