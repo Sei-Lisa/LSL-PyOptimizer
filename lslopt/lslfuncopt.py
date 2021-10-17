@@ -60,7 +60,8 @@ def OptimizeArgs(node, sym):
 # Last: 40 (OBJECT_ANIMATED_SLOTS_AVAILABLE).
 objDetailsTypes = 'issvrvkkkiiififfffkiiiiiiffkiviiksiisiiii'
 primParamsTypes = \
-    ( False, False # 0 (unassigned) and 1=PRIM_TYPE_LEGACY
+    ( False # 0 (unassigned)
+    , 'i*' # 1=PRIM_TYPE_LEGACY
     , 'i' # 2=PRIM_MATERIAL
     , 'i' # 3=PRIM_PHYSICS
     , 'i' # 4=PRIM_TEMP_ON_REZ
@@ -96,8 +97,9 @@ primParamsTypes = \
     , 'i' # 39=PRIM_ALLOW_UNSIT
     , 'i' # 40=PRIM_SCRIPTED_SIT_ONLY
     , 'ivv' # 41=PRIM_SIT_TARGET
+    , 'sfff' # 42=PRIM_PROJECTOR
     )
-# Primitive Params with arguments. F=face, L=link.
+# GetPrimitiveParams parameters with arguments. F=face, L=link.
 primParamsArgs = \
     { 17: 'F' # 17=PRIM_TEXTURE
     , 18: 'F' # 18=PRIM_COLOR
@@ -380,16 +382,18 @@ def OptimizeFunc(self, parent, index):
                                 ch=[child[0]], SEF=child[0].SEF)
                             return
 
-                    if (returntypes.find('*') == -1
-                        or idx >= 0 and idx < returntypes.find('*')
-                        or idx < 0 and idx > returntypes.rfind('*')
-                                             - len(returntypes)
+                    # The position of parameters past the first asterisk can't
+                    # be determined, so we only consider parameters before it.
+                    asteriskPos = returntypes.find('*')
+                    if (asteriskPos == -1
+                        or 0 <= idx < asteriskPos
+                        or asteriskPos - len(returntypes) < idx < 0
                        ):
                         # Check for type incompatibility or index
                         # out of range.
                         if idx < 0:
                             # s[-1:0] doesn't return the last char
-                            # so we have to compensate
+                            # so we make it positive to ensure correctness
                             idx += len(returntypes)
                         if ((node.t[0] + returntypes[idx:idx+1])
                                 not in listCompat
