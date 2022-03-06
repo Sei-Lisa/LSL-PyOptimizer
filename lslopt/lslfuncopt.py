@@ -57,8 +57,8 @@ def OptimizeArgs(node, sym):
 
 
 # Type of each entry in llGetObjectDetails.
-# Last: 40 (OBJECT_ANIMATED_SLOTS_AVAILABLE).
-objDetailsTypes = 'issvrvkkkiiififfffkiiiiiiffkiviiksiisiiii'
+# Last: 41 (OBJECT_ACCOUNT_LEVEL).
+objDetailsTypes = 'issvrvkkkiiififfffkiiiiiiffkiviiksiisiiiii'
 primParamsTypes = \
     ( False # 0 (unassigned)
     , 'i*' # 1=PRIM_TYPE_LEGACY
