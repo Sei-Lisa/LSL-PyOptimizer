@@ -1486,8 +1486,31 @@ def llListInsertList(lst, elems, pos):
     # Unlike llInsertString, this function does support negative indices.
     return lst[:pos] + elems + lst[pos:]
 
-# not implemented as it does not give the same output for the same input
-#def llListRandomize(x):
+def llListRandomize(lst, stride):
+    if lslcommon.IsCalc:
+        lst = fl(lst)
+        stride = fi(stride)
+        L = len(lst)
+        if stride <= 0:
+            stride = 1
+        if L % stride == 0:
+            # valid stride
+            L //= stride  # length in records
+            import random
+            for i in range(L - 1):
+                # choose which record to swap it with
+                rnd = random.randint(i, L - 1)
+                # swap each record
+                lst[i*stride:(i+1)*stride], lst[rnd*stride:(rnd+1)*stride] = \
+                    lst[rnd*stride:(rnd+1)*stride], lst[i*stride:(i+1)*stride]
+        #else:
+        #    # if the stride isn't valid, don't modify the list
+        #    pass
+
+        return lst
+
+    # Can't give a concrete value
+    raise ELSLCantCompute
 
 def llListReplaceList(lst, elems, start, end):
     lst = fl(lst)
