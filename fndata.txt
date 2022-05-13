@@ -863,6 +863,9 @@ vector llGetVel()
 #- unstable
 - SEF
 
+list llGetVisualParams(key id, list params)
+- SEF
+
 float llGetWallclock()
 - SEF
 - min 0

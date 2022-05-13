@@ -21,16 +21,34 @@ from lslopt.lslcommon import Key, Vector #, Quaternion
 from lslopt.lslbasefuncs import ELSLCantCompute, fi,ff,fs,fk,v2f,q2f,fl, \
   NULL_KEY, ZERO_VECTOR, ZERO_ROTATION, \
   TOUCH_INVALID_TEXCOORD, cond
+#from strutil import unicode
 ff, q2f  # keep pyflakes happy as these are not used
 
 GetEnvSettings = frozenset({'agent_limit', 'dynamic_pathfinding', 'estate_id'
     , 'estate_name', 'frame_number', 'region_cpu_ratio', 'region_idle'
     , 'region_product_name', 'region_product_sku', 'region_start_time'
     , 'sim_channel', 'sim_version', 'simulator_hostname'
-    , 'region_max_prims' # <http://wiki.secondlife.com/wiki/Release_Notes/Second_Life_RC_Magnum/16#16.11.02.321369>
-    , 'region_object_bonus' # <http://wiki.secondlife.com/wiki/Release_Notes/Second_Life_RC_Magnum/16#16.12.03.322072>
-    , 'whisper_range', 'chat_range', 'shout_range'
+    , 'region_max_prims'  # <http://wiki.secondlife.com/wiki/Release_Notes/Second_Life_RC_Magnum/16#16.11.02.321369>
+    , 'region_object_bonus'  # <http://wiki.secondlife.com/wiki/Release_Notes/Second_Life_RC_Magnum/16#16.12.03.322072>
+    , 'whisper_range', 'chat_range', 'shout_range'  #? (jun 2020)
+    , 'agent_limit_max', 'agent_reserved', 'agent_underserved'  # <https://releasenotes.secondlife.com/simulator/2022-04-21.571166.html>
     })
+
+# Values valid for llGetVisualDetails parameters
+GVD_ValidValues = \
+    { 33, "height"
+    , 38, "torso_length"
+    , 80, "male"
+    , 198, "heel_height"
+    , 503, "platform_height"
+    , 616, "shoe_height"
+    , 692, "leg_length"
+    , 693, "arm_length"
+    , 756, "neck_length"
+    , 814, "waist_height"
+    , 842, "hip_length"
+    , 11001, "hover"
+    }
 
 xp_error_messages = {
     -1:u'unknown error id',
@@ -317,6 +335,20 @@ def llGetStatus(mask):
     # leave out STATUS_DIE_AT_EDGE and STATUS_CAST_SHADOWS
     if (mask & 0b10101111111) == 0:
         return 0
+    raise ELSLCantCompute
+
+def llGetVisualParams(id, params):
+    id = fk(id)
+    params = fl(params)
+    if not cond(id) or params.nt == 'CONST' and not params.ch:
+        return []
+# TODO: This needs to check whether the list is a literal, and whether the
+# elements are constant.
+#    if params.nt == 'LIST':
+#    for i in params:
+#        if (i.lower() if type(i) == unicode else i) in GVD_ValidValues:
+#            raise ELSLCantCompute
+#    return [u""] * len(params)
     raise ELSLCantCompute
 
 # TODO: Add more predictable functions.
