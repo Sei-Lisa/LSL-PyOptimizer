@@ -368,67 +368,113 @@ def v2f(v):
         return v
     return Vector((ff(v[0]), ff(v[1]), ff(v[2])))
 
-def f2s(val, DP=6):
+def f2s(val, DP=6, SignedZero=True):
     if math.isinf(val):
         return u'Infinity' if val > 0 else u'-Infinity'
     if math.isnan(val):
         return u'NaN'
-    if lslcommon.LSO or val == 0.:
+    if lslcommon.LSO or SignedZero and val == 0.:
         return u'%.*f' % (DP, val)  # deals with -0.0 too
 
-    # Format according to Mono rules (7 decimals after the DP, found experimentally)
-    s = u'%.*f' % (DP+7, val)
+    # Format according to Mono rules. Mono displays 7 significant decimal
+    # digits, rounded with round-to-nearest-or-even.
+    # Decimal numbers seem to be subjected to an extra rounding:
+    # With 6 decimals output, 0.0000014999995 is rounded as 0.000002
+    # while 0.0000014999994 is rounded as 0.000001. The rounding point for the
+    # first rounding is the 8th significant decimal, per the above; SL applies
+    # a second rounding at the (DP+1)-th decimal.
 
-    if s[:DP+3] == u'-0.' + '0'*DP and s[DP+3] < u'5':
-        return u'0.' + '0'*DP  # underflown negatives return 0.0 except for -0.0 dealt with above
+    # This was an attempt to do the rounding ourselves based on the 8th digit,
+    # but there was always one or another case that failed, depending on where
+    # we cut the initial formatting. Since all cases were fixed by letting the
+    # formatting function do the rounding, this code is now disabled and will
+    # be removed soon. We used either %.7e but that did rounding at the 9th
+    # significant digit, or %.148e which is guaranteed to not do any rounding.
+#    # First, find the decimal mantissa and exponent.
+#    m, e = (u'%.148e' % val).split(u'e')
+#    if m[0] == u'-':
+#        sgn = u'-'
+#        m = m[1:]
+#    else:
+#        sgn = u''
+#
+#    # Remove the decimal point but leave it as a string; add a leading '0'
+#    # to catch a possible carry all the way to that digit.
+#    m = u'0' + m[0] + m[2:9]
+#    assert len(m) == 9, 'Failed with val=%.17g' % val
+#    # Convert the exponent to integer
+#    e = int(e, 10)
+#    # Round the mantissa according to the 8th digit
+#    if m[8] >= u'5':
+#        # Go backwards from right to left
+#        i = 7
+#        while m[i] == u'9':
+#            m = m[:i] + u'0' + m[i+1:]
+#            i = i - 1
+#        # Add 1 to the first digit found that was not a 9
+#        # (we are guaranteed to have at least one: the initial zero)
+#        m = m[:i] + unichr(ord(m[i]) + 1) + m[i+1:]
+#    # Leave the significant digits only, including the leading 0 or 1 (for
+#    # the second rounding)
+#    m = m[:8]
 
+    # First, find the decimal mantissa and exponent. The first rounding is
+    # derived from the conversion itself, and it applies the
+    # round-to-nearest-or-even rounding mode.
+    m, e = (u'%.6e' % val).split(u'e')
+    # Convert the exponent to integer
+    e = int(e, 10)
     # Separate the sign
-    sgn = u'-' if s[0] == u'-' else u''
-    if sgn: s = s[1:]
-
-    # If we don't have significant digits, return zero
-    if s == '0.' + '0'*(DP+7):
-        return sgn + s[:DP+2]
-
-    # Look for position of first nonzero from the left
-    i = 0
-    while s[i] in u'0.':
-        i += 1
-
-    dot = s.index(u'.')
-
-    # Find rounding point. It's either the 7th digit after the first significant one,
-    # or the (DP+1)-th decimal after the period, whichever comes first.
-    digits = 0
-    while digits < 7:
-        if i >= dot+1+DP:
-            break
-        if i == dot:
-            i += 1
-        i += 1
-        digits += 1
-
-    if s[i if i != dot else i+1] >= u'5':
-        # Rounding - increment s[:i] storing result into new_s
-        new_s = u''
-        ci = i-1  # carry index
-        while ci >= 0 and s[ci] == u'9':
-            new_s = u'0' + new_s
-            ci -= 1
-            if ci == dot:
-                ci -= 1  # skip over the dot
-                new_s = u'.' + new_s  # but add it to new_s
-        if ci < 0:
-            new_s = u'1' + new_s  # 9...9 -> 10...0
-        else:
-            # increment s[ci] e.g. 43999 -> 44000
-            new_s = s[:ci] + chr(ord(s[ci]) + 1) + new_s
+    if m[0] == u'-':
+        sgn = u'-'
+        m = m[1:]
     else:
-        new_s = s[:i]
+        sgn = u''
 
-    if i <= dot:
-        return sgn + new_s + u'0' * (dot - i) + u'.' + u'0' * DP
-    return sgn + new_s + u'0' * (dot + 1 + DP - i)
+    # Remove the decimal point but leave the mantissa as a string; add a
+    # leading '0' to catch a possible carry all the way to the first digit.
+    m = u'0' + m[0] + m[2:]
+
+    # If the first digit is at a decimal position > DP+1, the result is zero.
+    # Same if it lies exactly at DP+1 and the first digit is < 5.
+    # Otherwise, we have to check rounding at a minimum.
+    i = 1 if m[0] == u'0' else 0  # determine 1st significant digit
+    if e < -(DP+1) or e == -(DP+1) and m[i] < u'5':
+        return u'0.' + u'0' * DP
+
+    # Predict where DP will cut the number, so that we can apply the second
+    # rounding to the digit after:
+    i = DP + e + 2
+    if 0 <= i <= 7 and m[i] >= u'5':
+        # Need to round up; add 1 in the right place
+        i = i - 1
+        while m[i] == u'9':
+            m = m[:i] + u'0' + m[i+1:]
+            i = i - 1
+        # Add 1 to the first digit found that was not a 9
+        # (we are guaranteed to have at least one: the initial zero)
+        m = m[:i] + unichr(ord(m[i]) + 1) + m[i+1:]
+
+    # If first digit is 0, remove it; if not, increase the exponent because
+    # the leading digit has changed, so e.g. 9.9999995e4 is now 1.000000e5.
+    # Also, make sure that m ends up with 7 digits.
+    if m[0] == u'0':
+        m = m[1:]
+    else:
+        e = e + 1
+        m = m[:7]
+
+    # Now we have the final 7 digits. Complete the number using the exponent.
+    if e >= 6:
+        m = m + u'0' * (e - 6) + u'.' + u'0' * DP
+    elif e < 0:
+        m = u'0.' + u'0' * (-1 - e) + m[:]#FIXME
+    else:
+        m = m[:e+1] + u'.' + m[e+1:] + u'0' * (e - len(m) + DP + 1)
+
+    # Cut out the decimal part at DP decimals; add sign and return the result
+    dotpos = m.index(u'.')
+    return sgn + m[:dotpos + 1 + DP]
 
 def vr2s(v, DP=6):
     assert len(v) == (3 if type(v) == Vector else 4)
@@ -560,11 +606,30 @@ def InternalTypecast(val, out, InList, f32):
 
     raise ELSLInvalidType
 
-def InternalList2Strings(val):
+def fpz(f):
+    """Like f2s but forcing positive zero."""
+    ret = f2s(f)
+    return ret if ret != u'-0.000000' else u'0.000000'
+
+def InternalList2Strings(val, ForcePositiveZero=False):
     """Convert a list of misc.items to a list of strings."""
     ret = []
-    for elem in val:
-        ret.append(InternalTypecast(elem, unicode, InList=True, f32=True))
+    if ForcePositiveZero:
+        for elem in val:
+            telem = type(elem)
+            if telem == unicode:
+                ret.append(zstr(elem))
+            elif telem == int:
+                ret.append(unicode(elem))
+            elif telem == Key:
+                ret.append(zstr(unicode(elem)))
+            elif telem == float:
+                ret.append(fpz(F32(elem)))
+            else:  # Vector or Quaternion
+                ret.append(u'<' + u', '.join(fpz(F32(f)) for f in elem) + u'>')
+    else:
+        for elem in val:
+            ret.append(InternalTypecast(elem, unicode, InList=True, f32=True))
     return ret
 
 good_utf8_re = re.compile(b'(?:'
@@ -1180,7 +1245,7 @@ def llDeleteSubString(s, start, end):
 def llDumpList2String(lst, sep):
     lst = fl(lst)
     sep = fs(sep)
-    return sep.join(InternalList2Strings(lst))
+    return sep.join(InternalList2Strings(lst, ForcePositiveZero=True))
 
 def llEscapeURL(s):
     s = fs(s)
