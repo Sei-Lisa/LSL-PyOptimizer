@@ -30,10 +30,10 @@
 , (vector)"<nan(1),nan,nano>"
 , (string)<0,0,0>
 , (string)[<0,0,0>]
-, (list)<(float)"nan", 2, 3>
-, (list)[<(float)"nan", 2, 3>]
-, (float)"1e-38"
-, (vector)"<1e-38,0,0>"
+, llList2Vector((list)<(float)"nan", 2, 3>, 0)
+, llList2Vector((list)[<(float)"nan", 2, 3>], 0)
+, (float)"1e-38"*85070591730234615865843651857942052864.*16777216.
+, (vector)"<1e-38,0,0>"*85070591730234615865843651857942052864.*16777216.
 , 1e40/1
 , 1e40-1e40
 , (1e40*0)*(1e40*0)
