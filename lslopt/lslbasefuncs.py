@@ -379,47 +379,14 @@ def f2s(val, DP=6, SignedZero=True):
     # Format according to Mono rules. Mono displays 7 significant decimal
     # digits, rounded with round-to-nearest-or-even.
     # Decimal numbers seem to be subjected to an extra rounding:
-    # With 6 decimals output, 0.0000014999995 is rounded as 0.000002
+    # with 6 decimals output, 0.0000014999995 is rounded as 0.000002,
     # while 0.0000014999994 is rounded as 0.000001. The rounding point for the
     # first rounding is the 8th significant decimal, per the above; SL applies
-    # a second rounding at the (DP+1)-th decimal.
-
-    # This was an attempt to do the rounding ourselves based on the 8th digit,
-    # but there was always one or another case that failed, depending on where
-    # we cut the initial formatting. Since all cases were fixed by letting the
-    # formatting function do the rounding, this code is now disabled and will
-    # be removed soon. We used either %.7e but that did rounding at the 9th
-    # significant digit, or %.148e which is guaranteed to not do any rounding.
-#    # First, find the decimal mantissa and exponent.
-#    m, e = (u'%.148e' % val).split(u'e')
-#    if m[0] == u'-':
-#        sgn = u'-'
-#        m = m[1:]
-#    else:
-#        sgn = u''
-#
-#    # Remove the decimal point but leave it as a string; add a leading '0'
-#    # to catch a possible carry all the way to that digit.
-#    m = u'0' + m[0] + m[2:9]
-#    assert len(m) == 9, 'Failed with val=%.17g' % val
-#    # Convert the exponent to integer
-#    e = int(e, 10)
-#    # Round the mantissa according to the 8th digit
-#    if m[8] >= u'5':
-#        # Go backwards from right to left
-#        i = 7
-#        while m[i] == u'9':
-#            m = m[:i] + u'0' + m[i+1:]
-#            i = i - 1
-#        # Add 1 to the first digit found that was not a 9
-#        # (we are guaranteed to have at least one: the initial zero)
-#        m = m[:i] + unichr(ord(m[i]) + 1) + m[i+1:]
-#    # Leave the significant digits only, including the leading 0 or 1 (for
-#    # the second rounding)
-#    m = m[:8]
+    # a second rounding at the (DP+1)-th decimal which seems to be of the
+    # round-to-nearest, ties-away-from-zero kind.
 
     # First, find the decimal mantissa and exponent. The first rounding is
-    # derived from the conversion itself, and it applies the
+    # derived from the conversion itself, and it applies the built-in
     # round-to-nearest-or-even rounding mode.
     m, e = (u'%.6e' % val).split(u'e')
     # Convert the exponent to integer
@@ -442,7 +409,7 @@ def f2s(val, DP=6, SignedZero=True):
     if e < -(DP+1) or e == -(DP+1) and m[i] < u'5':
         return u'0.' + u'0' * DP
 
-    # Predict where DP will cut the number, so that we can apply the second
+    # Predict where DP will trim the number, so that we can apply the second
     # rounding to the digit after:
     i = DP + e + 2
     if 0 <= i <= 7 and m[i] >= u'5':
