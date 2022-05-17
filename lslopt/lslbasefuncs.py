@@ -386,6 +386,10 @@ def f2s(val, DP=6):
     sgn = u'-' if s[0] == u'-' else u''
     if sgn: s = s[1:]
 
+    # If we don't have significant digits, return zero
+    if s == '0.' + '0'*(DP+7):
+        return sgn + s[:DP+2]
+
     # Look for position of first nonzero from the left
     i = 0
     while s[i] in u'0.':
