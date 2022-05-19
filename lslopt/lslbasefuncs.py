@@ -522,6 +522,8 @@ def InternalTypecast(val, out, InList, f32):
             #    # (float)"-nan" produces NaN instead of Indet, even though
             #    # (vector)"<-nan,0,0>" produces <Indet, 0., 0.>. Go figure.
             #    ret = NaN
+            elif match.group(2):
+                ret = Indet if match.group(0)[0] == '-' else NaN
             else:
                 ret = float(match.group(0))
             # The following is no longer true as of Server 2022-05-05.571557;
