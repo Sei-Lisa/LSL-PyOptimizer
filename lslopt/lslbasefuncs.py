@@ -482,7 +482,9 @@ def InternalTypecast(val, out, InList, f32):
 
     if tval == float:
         val = F32(val, f32)
-        if out == int: return S32(int(val)) if val >= -2147483648.0 and val < 2147483648.0 else -2147483648
+        if out == int:
+            return (S32(int(val)) if -2147483648.0 <= val < 2147483648.0
+                else -2147483648)
         if out == float: return val
         if out == unicode: return f2s(val, 6)
         raise ELSLTypeMismatch
@@ -1212,7 +1214,8 @@ def llDeleteSubString(s, start, end):
 def llDumpList2String(lst, sep):
     lst = fl(lst)
     sep = fs(sep)
-    return sep.join(InternalList2Strings(lst, ForcePositiveZero=True))
+    return sep.join(InternalList2Strings(lst, ForcePositiveZero=not
+        lslcommon.LSO))
 
 def llEscapeURL(s):
     s = fs(s)
