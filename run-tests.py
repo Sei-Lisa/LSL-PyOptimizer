@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 #
-#    (C) Copyright 2015-2021 Sei Lisa. All rights reserved.
+#    (C) Copyright 2015-2022 Sei Lisa. All rights reserved.
 #
 #    This file is part of LSL PyOptimizer.
 #

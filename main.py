@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 #
-#    (C) Copyright 2015-2021 Sei Lisa. All rights reserved.
+#    (C) Copyright 2015-2022 Sei Lisa. All rights reserved.
 #
 #    This file is part of LSL PyOptimizer.
 #
@@ -205,7 +205,7 @@ def Usage(progname, about = None):
         werr(
 u"""LSL optimizer v{version}
 
-    (C) Copyright 2015-2021 Sei Lisa. All rights reserved.
+    (C) Copyright 2015-2022 Sei Lisa. All rights reserved.
 
     This program comes with ABSOLUTELY NO WARRANTY.
     This is free software, and you are welcome to redistribute it
