@@ -368,12 +368,12 @@ def v2f(v):
         return v
     return Vector((ff(v[0]), ff(v[1]), ff(v[2])))
 
-def f2s(val, DP=6, SignedZero=True):
+def f2s(val, DP=6):
     if math.isinf(val):
         return u'Infinity' if val > 0 else u'-Infinity'
     if math.isnan(val):
         return u'NaN'
-    if lslcommon.LSO or SignedZero and val == 0.:
+    if lslcommon.LSO or val == 0.:
         return u'%.*f' % (DP, val)  # deals with -0.0 too
 
     # Format according to Mono rules. Mono displays 7 significant decimal
@@ -685,6 +685,16 @@ def InternalGetDeleteSubSequence(val, start, end, isGet):
         return val[:end+1] + val[start:] if isGet else val[end+1:start]
     return val[start:end+1] if isGet else val[:start] + val[end+1:]
 
+def reduce(t):
+    t = F32(t)
+    if not t.is_integer():
+        return t  # Accurate-ish until big numbers come into play
+    return int(t * 18446744073709551616) % 115904311329233965478 / 18446744073709551616.
+
+#
+# Functions for LSL-compatible operators
+#
+
 def typecast(val, out, InList=False, f32=True):
     """Type cast an item. Calls InternalList2Strings for lists and
     defers the rest to InternalTypecast.
@@ -945,12 +955,6 @@ def cond(x):
         # SVC-689: lists of 1 element count as false
         return len(x) > 1
     return bool(x)  # works fine for int, float, string, list
-
-def reduce(t):
-    t = F32(t)
-    if not t.is_integer():
-        return t  # Accurate-ish until big numbers come into play
-    return int(t * 18446744073709551616) % 115904311329233965478 / 18446744073709551616.
 
 #
 # LSL-compatible computation functions
