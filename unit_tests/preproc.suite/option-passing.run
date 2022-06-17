@@ -1,0 +1,8 @@
+main.py -y -O clear,processpre \
+  -p gcpp \
+  --preproc-show-cmdline \
+  -P --prefix-test-1 \
+  -A --suffix-test-1 \
+  --prearg=--prefix-test-2 \
+  --postarg=--suffix-test-2 \
+  -

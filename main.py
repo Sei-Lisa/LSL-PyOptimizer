@@ -233,6 +233,7 @@ Usage: {progname}
     [--precmd=<cmd>]            preprocessor command ('cpp' by default)
     [--prenodef]                no LSL specific defines (__AGENTKEY__ etc.)
     [--preshow]                 show preprocessor output, and stop
+    [--preproc-show-cmdline]    show preprocessor invocation line, and stop
     [--avid=<UUID>]           * specify UUID of avatar saving the script
     [--avname=<name>]         * specify name of avatar saving the script
     [--assetid=<UUID>]        * specify the asset UUID of the script
@@ -411,7 +412,7 @@ def main(argv):
             'timestamp', 'python-exceptions', 'prettify', 'bom', 'emap',
             'preproc=', 'precmd=', 'prearg=', 'prenodef', 'preshow',
             'avid=', 'avname=', 'assetid=', 'shortname=', 'builtins='
-            'libdata=', 'postarg='))
+            'libdata=', 'postarg=', 'preproc-show-cmdline'))
     except getopt.GetoptError as e:
         Usage(argv[0])
         werr(u"\nError: %s\n" % str2u(str(e), 'utf8'))
@@ -430,6 +431,7 @@ def main(argv):
     script_header = ''
     script_timestamp = ''
     preshow = False
+    preproc_show_cmdline = False
     raise_exception = False
     prettify = False
     bom = False
@@ -505,11 +507,17 @@ def main(argv):
         elif opt in ('-P', '--prearg'):
             preproc_user_preargs.append(arg)
 
+        elif opt in ('-A', '--postarg'):
+            preproc_user_postargs.append(arg)
+
         elif opt == '--prenodef':
             predefines = False
 
         elif opt == '--preshow':
             preshow = True
+
+        elif opt == '--preproc-show-cmdline':
+            preproc_show_cmdline = True
 
         elif opt in ('-H', '--header'):
             script_header = True
@@ -576,58 +584,59 @@ def main(argv):
 
         del args
 
-        script = ''
-        if fname == '-':
-            script = sys.stdin.read()
-        else:
-            try:
-                f = open(fname, 'r')
-            except IOError as e:
-                if e.errno == 2:
-                    werr(u"Error: File not found: %s\n" % str2u(fname))
-                    return 2
-                raise
-            try:
-                script = f.read()
-            finally:
-                f.close()
-                del f
+        if not preproc_show_cmdline:
+            script = ''
+            if fname == '-':
+                script = sys.stdin.read()
+            else:
+                try:
+                    f = open(fname, 'r')
+                except IOError as e:
+                    if e.errno == 2:
+                        werr(u"Error: File not found: %s\n" % str2u(fname))
+                        return 2
+                    raise
+                try:
+                    script = f.read()
+                finally:
+                    f.close()
+                    del f
 
-        # Transform to str and check Unicode validity
-        if type(script) is unicode:
-            script = u2str(script, 'utf8')
-        else:
-            try:
-                # Try converting the script to Unicode, to report any encoding
-                # errors with accurate line information.
-                tmp = UniConvScript(script, options,
-                                    fname if fname != '-' else '<stdin>',
-                                    emap).to_unicode()
-                # For Python 2, just report any errors and ignore the result.
-                # For Python 3, use the Unicode.
-                if python3:
-                    script = tmp
+            # Transform to str and check Unicode validity
+            if type(script) is unicode:
+                script = u2str(script, 'utf8')
+            else:
+                try:
+                    # Try converting the script to Unicode, to report any encoding
+                    # errors with accurate line information.
+                    tmp = UniConvScript(script, options,
+                                        fname if fname != '-' else '<stdin>',
+                                        emap).to_unicode()
+                    # For Python 2, just report any errors and ignore the result.
+                    # For Python 3, use the Unicode.
+                    if python3:
+                        script = tmp
+                    del tmp
+                except EParse as e:
+                    # We don't call ReportError to prevent problems due to
+                    # displaying invalid UTF-8
+                    werr(e.args[0] + u"\n")
+                    return 1
+            # Now script is in native str format.
+
+            if script_header:
+                script_header = ScriptHeader(script, avname)
+
+            if script_timestamp:
+                import time
+                tmp = time.time()
+                script_timestamp = time.strftime(
+                    '// Generated on %Y-%m-%dT%H:%M:%S.{0:06d}Z\n'
+                    .format(int(tmp % 1 * 1000000)), time.gmtime(tmp))
                 del tmp
-            except EParse as e:
-                # We don't call ReportError to prevent problems due to
-                # displaying invalid UTF-8
-                werr(e.args[0] + u"\n")
-                return 1
-        # Now script is in native str format.
 
-        if script_header:
-            script_header = ScriptHeader(script, avname)
-
-        if script_timestamp:
-            import time
-            tmp = time.time()
-            script_timestamp = time.strftime(
-                '// Generated on %Y-%m-%dT%H:%M:%S.{0:06d}Z\n'
-                .format(int(tmp % 1 * 1000000)), time.gmtime(tmp))
-            del tmp
-
-        if shortname == '':
-            shortname = os.path.basename(fname)
+            if shortname == '':
+                shortname = os.path.basename(fname)
 
         # Build preprocessor command line
         preproc_cmdline = [preproc_command] + preproc_user_preargs
@@ -660,13 +669,15 @@ def main(argv):
             preproc_cmdline.append('-D__AGENTNAME__="%s"' % avname)
             preproc_cmdline.append('-D__ASSETID__=' + assetid)
             preproc_cmdline.append('-D__SHORTFILE__="%s"' % shortname)
-            preproc_cmdline.append('-D__OPTIMIZER__=LSL PyOptimizer')
+            preproc_cmdline.append('-D__OPTIMIZER__=LSL-PyOptimizer')
             preproc_cmdline.append('-D__OPTIMIZER_VERSION__=' + VERSION)
 
         # Append user arguments at the end to allow them to override defaults
         preproc_cmdline += preproc_user_postargs
 
-        if preproc != 'none':
+        if preproc_show_cmdline:
+            script = ' '.join(preproc_cmdline)
+        elif preproc != 'none':
             # PreparePreproc uses and returns Unicode string encoding.
             script = u2b(PreparePreproc(any2u(script, 'utf8')), 'utf8')
             # At this point, for the external preprocessor to work we need the
@@ -706,7 +717,7 @@ def main(argv):
                 elif x == 'USE_LAZY_LISTS':
                     options.add('lazylists')
 
-        if not preshow:
+        if not preshow and not preproc_show_cmdline:
 
             if emap:
                 options.add('emap')
