@@ -675,13 +675,14 @@ def main(argv):
         # Append user arguments at the end to allow them to override defaults
         preproc_cmdline += preproc_user_postargs
 
+        pperrors = False
         if preproc_show_cmdline:
             script = ' '.join(preproc_cmdline)
         elif preproc != 'none':
             # PreparePreproc uses and returns Unicode string encoding.
             script = u2b(PreparePreproc(any2u(script, 'utf8')), 'utf8')
-            # At this point, for the external preprocessor to work we need the
-            # script as a byte array, not as unicode, but it should be UTF-8.
+            # At this point, for the preprocessor to work we need the script
+            # as a byte array, not as unicode, but it should be UTF-8.
             if preproc == 'mcpp':
                 # As a special treatment for mcpp, we force it to output its
                 # macros so we can read if USE_xxx are defined. With GCC that
@@ -755,6 +756,11 @@ def main(argv):
                 outf.write(script)
             finally:
                 outf.close()
+
+        if pperrors:
+            sys.stderr.write(u"\n* Errors found during preprocessing\n")
+            return 1
+
         return 0
 
     except Exception as e:
