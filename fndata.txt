@@ -1162,6 +1162,10 @@ void llRemoveInventory(string item)
 
 void llRemoveVehicleFlags(integer flags)
 
+integer llReplaceEnvironment(vector position, string environment, integer track_no, integer day_length, integer day_offset)
+# not sure but we better choose the safest setting
+- unstable
+
 key llRequestAgentData(key id, integer data)
 - unstable
 - delay 0.1
