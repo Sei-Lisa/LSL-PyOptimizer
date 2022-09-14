@@ -28,6 +28,7 @@ default
             , llGetDisplayName("")
             , llGetEnv("")
             , llGetEnv("yadda")
+            , llGetStatus(STATUS_CAST_SHADOWS)
             ]);
     }
 }

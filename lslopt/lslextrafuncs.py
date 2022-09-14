@@ -332,11 +332,8 @@ def llGetOwnerKey(id):
     raise ELSLCantCompute
 
 def llGetStatus(mask):
-    # Leave out STATUS_DIE_AT_EDGE, _DIE_AT_NO_ENTRY and _CAST_SHADOWS.
-    # For some reason, llGetStatus(STATUS_DIE_AT_EDGE) does not return the
-    # actual value of whether the flag is set or not for the object. Same for
-    # STATUS_DIE_AT_NO_ENTRY. STATUS_CAST_SHADOWS is unused so that's normal.
-    if (mask & ~(0x800|0x200|0x80)) == 0:
+    # Leave out STATUS_CAST_SHADOWS from the flags to check.
+    if (mask & ~0x200) == 0:
         return 0
     raise ELSLCantCompute
 

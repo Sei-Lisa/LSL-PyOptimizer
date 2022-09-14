@@ -21,6 +21,8 @@ default
             , llGetEnv("estate_name")
             , llXorBase64Strings("++++", "?")
             , llAbs(((integer)-2147483648))
+            , llGetStatus(128)
+            , llGetStatus(2048)
             ]);
     }
 }
