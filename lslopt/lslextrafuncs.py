@@ -325,6 +325,10 @@ def llGetLinkName(link):
         return NULL_KEY
     raise ELSLCantCompute
 
+def llGetObjectLinkKey(id, link):
+    # TODO: Investigate behaviour with invalid key, invalid link etc.
+    raise ELSLCantCompute
+
 def llGetOwnerKey(id):
     id = fk(id)
     if not cond(id):

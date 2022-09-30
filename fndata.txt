@@ -658,6 +658,9 @@ list llGetObjectDetails(key id, list params)
 #- unstable
 - SEF
 
+key llGetObjectLinkKey(key id, integer link)
+- SEF
+
 float llGetObjectMass(key id)
 - SEF
 
