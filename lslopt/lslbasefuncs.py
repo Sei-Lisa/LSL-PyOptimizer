@@ -1916,6 +1916,10 @@ def llSHA1String(s):
     s = fs(s)
     return str2u(hashlib.sha1(s.encode('utf8')).hexdigest(), 'utf8')
 
+def llSHA256String(s):
+    s = fs(s)
+    return str2u(hashlib.sha256(s.encode('utf8')).hexdigest(), 'utf8')
+
 def llSin(f):
     f = ff(f)
     if math.isinf(f):

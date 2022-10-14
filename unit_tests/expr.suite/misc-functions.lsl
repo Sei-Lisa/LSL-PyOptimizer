@@ -9,5 +9,11 @@
 , llGetListEntryType([], 0)
 , llGetListEntryType([[]], 0)
 , llMD5String("", 0)
+, llMD5String("abc", 0)
+, llMD5String("abc", 1)
+, llMD5String("abc", -12345)
 , llSHA1String("")
+, llSHA1String("abc")
+, llSHA256String("")
+, llSHA256String("abc")
 ]

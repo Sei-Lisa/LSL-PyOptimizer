@@ -1275,6 +1275,9 @@ integer llRound(float val)
 string llSHA1String(string src)
 - SEF
 
+string llSHA256String(string src)
+- SEF
+
 integer llSameGroup(key id)
 - SEF
 - min 0
