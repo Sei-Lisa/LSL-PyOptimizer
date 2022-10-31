@@ -68,6 +68,7 @@ class optimizer(foldconst, renamer, deadcode, lastpass):
         self.shrinknames = 'shrinknames' in options
 
         self.constfold = 'constfold' in options
+        self.ifelseswap = 'ifelseswap' in options
         self.optlistlength = 'listlength' in options
         self.optlistadd = 'listadd' in options
         self.dcr = 'dcr' in options

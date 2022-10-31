@@ -1,0 +1,7 @@
+default{timer(){
+
+integer a = llGetLinkNumber();
+if (a == 3) llOwnerSay("1"); else llOwnerSay("2");
+if (!a) llOwnerSay("3"); else llOwnerSay("4");
+
+}}

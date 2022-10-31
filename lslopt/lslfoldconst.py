@@ -1796,7 +1796,7 @@ class foldconst(object):
                     self.FoldTree(child, 2)
                     self.FoldStmt(child, 2)
                     # Check if it makes sense to swap if and else branches
-                    if not child[2].SEF:
+                    if self.ifelseswap and not child[2].SEF:
                         # Check if we can gain something by negating the
                         # expression.
                         # Swap 'if' and 'else' branch when the condition has

@@ -17,10 +17,10 @@ if ((key)((string)a)) ; else llDie();
 if (<a,0,0>) ; else llDie();
 if (<a,0,0,1>) ; else llDie();
 if ((list)a) ; else llDie();
-if (!a) llDie(); else llOwnerSay("ok");
-if (a == 3) llDie(); else llOwnerSay("ok");
-if (a > 5) if (a == 12) ; else llDie(); else llOwnerSay("ok");
-if (a == 12) llOwnerSay("1"); else if (a > 5) llOwnerSay("2");
+if (!a) llDie(); else llOwnerSay("1");
+if (a == 3) llDie(); else llOwnerSay("2");
+if (a > 5) if (a == 12) ; else llDie(); else llOwnerSay("3");
+if (a == 12) llOwnerSay("4"); else if (a > 5) llOwnerSay("5");
 if (a > 5) if (a == 12) ; else /*@f1*/; else llDie();
 if (a == 12) llDie(); else if (a > 5) /*@f4*/;
 // Fixed: Regression: this produces if (!(a == 3)) and no optimization kicks in

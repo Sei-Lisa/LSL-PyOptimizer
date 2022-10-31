@@ -22,11 +22,11 @@ default
         if ((list)a == [])
             llDie();
         if (a)
-            llOwnerSay("ok");
+            llOwnerSay("1");
         else
             llDie();
         if (a ^ 3)
-            llOwnerSay("ok");
+            llOwnerSay("2");
         else
             llDie();
         if (5 < a)
@@ -35,14 +35,14 @@ default
                 llDie();
         }
         else
-            llOwnerSay("ok");
+            llOwnerSay("3");
         if (a ^ 12)
         {
             if (5 < a)
-                llOwnerSay("2");
+                llOwnerSay("5");
         }
         else
-            llOwnerSay("1");
+            llOwnerSay("4");
         if (a < 6)
             llDie();
         if (a == 12)

@@ -326,6 +326,9 @@ Case insensitive.
   OptFloats          + Optimize floats that represent an integral value.
   ConstFold          + Fold constant expressions to their values, and simplify
                        some expressions and statements.
+  IfElseSwap         + In 'if' statements, when negating the condition produces
+                       shorter code, do it and swap the if and else branches.
+                       Requires ConstFold to be enabled.
   DCR                + Dead code removal. This option removes several instances
                        of code that will never execute, and performs other
                        optimizations like removal of unused variables,
@@ -379,9 +382,9 @@ break/continue syntax extension (which is inactive by default).
 validoptions = frozenset({'extendedglobalexpr','breakcont','extendedtypecast',
     'extendedassignment','allowkeyconcat','allowmultistrings','duplabels',
     'lazylists','enableswitch','errmissingdefault','funcoverride','optimize',
-    'optsigns','optfloats','constfold','dcr','shrinknames','addstrings',
-    'foldtabs','warntabs','processpre','explicitcast','listlength','listadd',
-    'inline', 'help',
+    'optsigns','optfloats','constfold','ifelseswap','dcr','shrinknames',
+    'addstrings','foldtabs','warntabs','processpre','explicitcast',
+    'listlength','listadd','inline','help',
     # undocumented
     'lso','expr','rsrclimit',
     # 'clear' is handled as a special case
@@ -396,10 +399,10 @@ def main(argv):
     lslopt.lslcommon.DataPath = __file__[:-len(os.path.basename(__file__))]
 
     # Default options
-    options = set(('extendedglobalexpr','extendedtypecast','extendedassignment',
-        'allowkeyconcat','allowmultistrings','processpre','warntabs','optimize',
-        'optsigns','optfloats','constfold','dcr','errmissingdefault',
-        'listlength','listadd',
+    options = set(('extendedglobalexpr','extendedtypecast',
+        'extendedassignment','allowkeyconcat','allowmultistrings','processpre',
+        'warntabs','optimize','optsigns','optfloats','constfold','ifelseswap',
+        'dcr','errmissingdefault','listlength','listadd',
         ))
 
     assert not (options - validoptions), (u"Default options not present in"
