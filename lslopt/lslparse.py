@@ -2327,7 +2327,7 @@ list lazy_list_set(list L, integer i, list v)
 
         simple_expr: simple_expr_except_list | list_simple_expr
         simple_expr_except_list: STRING_VALUE | KEY_VALUE | VECTOR_VALUE
-            | ROTATION_VALUE | TRUE | FALSE | number_value
+            | ROTATION_VALUE | TRUE | FALSE | IDENT | number_value
             | '<' simple_expr ',' simple_expr ',' simple_expr '>'
             | '<' simple_expr ',' simple_expr ',' simple_expr ',' simple_expr '>'
         number_value: FLOAT_VALUE | INTEGER_VALUE | '-' FLOAT_VALUE | '-' INTEGER_VALUE
