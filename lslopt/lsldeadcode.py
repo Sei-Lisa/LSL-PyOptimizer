@@ -387,12 +387,32 @@ class deadcode(object):
 
         return False
 
+    def ReplaceGlobalValues(self, parent, index):
+        """Recursively check global expressions (incl. lists, vectors...) and
+        if an identifier is scheduled for removal, replace it with its value.
+        """
+        node = parent[index]
+        if node.ch is not None:
+            for i in range(len(node.ch)):
+                self.ReplaceGlobalValues(node.ch, i)
+            return  # Nodes with children can't be identifiers to replace
+
+        if node.nt == 'IDENT' and node.name in self.GlobalDeletions:
+            sym = self.symtab[node.scope][node.name]
+            parent[index] = sym['W'].copy()
+
+        return
+
     def CleanNode(self, curnode, isFnDef = False):
         """Recursively checks if the children are used, deleting those that are
-        not.
+        not. Global declarations are treated specially.
         """
-        if curnode.ch is None or (curnode.nt == 'DECL'
-                                  and curnode.scope == 0):
+        if curnode.ch is None:
+            return
+        if curnode.nt == 'DECL' and curnode.scope == 0:
+            # Global declaration; if it references a removed symbol, replace it
+            # with its value.
+            self.ReplaceGlobalValues(curnode.ch, 0)
             return
         # NOTE: Should not depend on 'Loc', since the nodes that are the
         # destination of 'Loc' are renumbered as we delete stuff from globals.
@@ -533,7 +553,7 @@ class deadcode(object):
         # Track removal of global lines, to reasign locations later.
         LocMap = list(range(len(self.tree)))
 
-        GlobalDeletions = []
+        self.GlobalDeletions = []
 
         # Perform the removal
         idx = 0
@@ -554,7 +574,7 @@ class deadcode(object):
                 # that we will remove in CleanNode later, that hold the
                 # original value.
                 if node.nt == 'DECL' or node.nt == 'STDEF':
-                    GlobalDeletions.append(node.name)
+                    self.GlobalDeletions.append(node.name)
                 del self.tree[idx]
                 del LocMap[idx]
             else:
@@ -562,10 +582,10 @@ class deadcode(object):
                 self.CleanNode(node)
 
         # Remove the globals now.
-        for name in GlobalDeletions:
+        for name in self.GlobalDeletions:
             del self.symtab[0][name]
 
-        del GlobalDeletions
+        del self.GlobalDeletions
 
         # Reassign locations
         for name in self.symtab[0]:

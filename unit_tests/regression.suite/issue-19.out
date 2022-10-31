@@ -1,0 +1,11 @@
+integer BAR = 1;
+integer BAZ = BAR;
+list L = [1, 2];
+
+default
+{
+    state_entry()
+    {
+        llOwnerSay((string)BAZ + (string)L + (string)3);
+    }
+}
