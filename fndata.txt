@@ -948,6 +948,34 @@ void llLinkParticleSystem(integer linknumber, list rules)
 void llLinkSitTarget(integer link, vector offset, rotation rot)
 - SEF if link > 256
 
+integer llLinksetDataAvailable()
+- SEF
+
+integer llLinksetDataCountKeys()
+- SEF
+
+integer llLinksetDataDelete(string key)
+
+integer llLinksetDataDeleteProtected(string key, string password)
+
+list llLinksetDataFindKeys(string pattern, integer start, integer count)
+- SEF
+
+list llLinksetDataListKeys(integer start, integer count)
+- SEF
+
+string llLinksetDataRead(string key)
+- SEF
+
+string llLinksetDataReadProtected(string key, string password)
+- SEF
+
+void llLinksetDataReset()
+
+integer llLinksetDataWrite(string key, string value)
+
+integer llLinksetDataWriteProtected(string key, string value, string password)
+
 string llList2CSV(list src)
 - SEF
 
@@ -1685,6 +1713,9 @@ event land_collision_start(vector pos)
 # Same as with collision().
 
 event link_message(integer sender_num, integer num, string str, key id)
+- SEF
+
+event linkset_data(integer action, string key, string value)
 - SEF
 
 event listen(integer channel, string name, key id, string message)
