@@ -40,7 +40,7 @@ def LoadLibrary(builtins = None, fndata = None):
 
     # Library read code
 
-    parse_lin_re = re.compile(
+    parse_lin_re = re.compile(str2u(
         r'^\s*([a-z]+)\s+'
         r'([a-zA-Z_][a-zA-Z0-9_]*)\s*\(\s*('
             r'[a-z]+\s+[a-zA-Z_][a-zA-Z0-9_]*'
@@ -50,14 +50,15 @@ def LoadLibrary(builtins = None, fndata = None):
         r'^\s*const\s+([a-z]+)'
         r'\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.*?)\s*$'
         r'|'
-        r'^\s*(?:#.*|//.*)?$')
-    parse_arg_re = re.compile(r'^\s*([a-z]+)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*$')
-    parse_fp_re  = re.compile(r'^\s*(-?(?=[0-9]|\.[0-9])[0-9]*'
-                              r'((?:\.[0-9]*)?(?:[Ee][+-]?[0-9]+)?))\s*$')
-    parse_int_re = re.compile(r'^\s*(-?0x[0-9A-Fa-f]+|-?[0-9]+)\s*$')
-    parse_str_re = re.compile(u'^"((?:[^"\\\\]|\\\\.)*)"$')
+        r'^\s*(?:#.*|//.*)?$'))
+    parse_arg_re = re.compile(str2u(
+        r'^\s*([a-z]+)\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*$'))
+    parse_fp_re  = re.compile(str2u(r'^\s*(-?(?=[0-9]|\.[0-9])[0-9]*'
+                              r'((?:\.[0-9]*)?(?:[Ee][+-]?[0-9]+)?))\s*$'))
+    parse_int_re = re.compile(str2u(r'^\s*(-?0x[0-9A-Fa-f]+|-?[0-9]+)\s*$'))
+    parse_str_re = re.compile(str2u(r'^"((?:[^"\\]|\\.)*)"$'))
 
-    f = open(builtins, 'r')
+    f = open(builtins, 'rb')
     try:
         linenum = 0
         try:
@@ -69,9 +70,10 @@ def LoadLibrary(builtins = None, fndata = None):
             linenum += 1
             line = f.readline()
             if not line: break
-            if line[-1] == '\n': line = line[:-1]
+            if line.endswith(b'\r\n'): line = line[:-2]
+            if line.endswith(b'\n'): line = line[:-1]
             try:
-                uline = str2u(line, 'utf8')
+                line = b2u(line, 'utf8')
             except UnicodeDecodeError:
                 warning(u"Bad Unicode in %s line %d" % (ubuiltins, linenum))
                 continue
@@ -98,10 +100,8 @@ def LoadLibrary(builtins = None, fndata = None):
                     for arg in arglist:
                         argtyp = parse_arg_re.search(arg).group(1)
                         if argtyp not in types:
-                            uargtyp = str2u(argtyp, 'utf8')
                             warning(u"Invalid type in %s, line %d: %s"
-                                    % (ubuiltins, linenum, uargtyp))
-                            del uargtyp
+                                    % (ubuiltins, linenum, argtyp))
                             bad = True
                             break
                         args.append(argtyp)
@@ -110,22 +110,18 @@ def LoadLibrary(builtins = None, fndata = None):
                 name = match.group(2)
                 if typ == 'event':
                     if name in events:
-                        uname = str2u(name, 'utf8')
                         warning(u"Event at line %d was already defined in %s,"
                                 u" overwriting: %s"
-                                % (linenum, ubuiltins, uname))
-                        del uname
+                                % (linenum, ubuiltins, name))
                     events[name] = {'pt':tuple(args), 'NeedsData':True}
                 else:
                     # Library functions go to the functions table. If
                     # they are implemented in lslfuncs.*, they get a
                     # reference to the implementation; otherwise None.
                     if name in functions:
-                        uname = str2u(name, 'utf8')
                         warning(u"Function at line %d was already defined"
                                 u" in %s, overwriting: %s"
-                                % (linenum, ubuiltins, uname))
-                        del uname
+                                % (linenum, ubuiltins, name))
                     fn = getattr(lslfuncs, name, None)
                     functions[name] = {'Kind':'f', 'Type':typ, 'uns':True,
                                        'ParamTypes':args, 'NeedsData':True}
@@ -135,16 +131,12 @@ def LoadLibrary(builtins = None, fndata = None):
                 # constant
                 name = match.group(5)
                 if name in constants:
-                    uname = str2u(name, 'utf8')
                     warning(u"Global at line %d was already defined in %s,"
-                            u" overwriting: %s" % (linenum, ubuiltins, uname))
-                    del uname
+                            u" overwriting: %s" % (linenum, ubuiltins, name))
                 typ = match.group(4)
                 if typ not in types:
-                    utyp = str2u(typ, 'utf8')
                     warning(u"Invalid type in %s, line %d: %s"
-                            % (ubuiltins, linenum, utyp))
-                    del utyp
+                            % (ubuiltins, linenum, typ))
                     continue
                 if typ == 'quaternion':
                     typ = 'rotation'
@@ -154,7 +146,6 @@ def LoadLibrary(builtins = None, fndata = None):
                 elif typ == 'float':
                     value = lslfuncs.F32(float(value))
                 elif typ == 'string':
-                    value = str2u(value, 'utf8')
                     if parse_str_re.search(value):
                         esc = False
                         tmp = value[1:-1]
@@ -175,11 +166,11 @@ def LoadLibrary(builtins = None, fndata = None):
                         #    value = Key(value)
                     else:
                         warning(u"Invalid string in %s line %d: %s"
-                                % (ubuiltins, linenum, uline))
+                                % (ubuiltins, linenum, line))
                         value = None
                 elif typ == 'key':
                     warning(u"Key constants not supported in %s, line %d: %s"
-                            % (ubuiltins, linenum, uline))
+                            % (ubuiltins, linenum, line))
                     value = None
                 elif typ in ('vector', 'rotation'):
                     try:
@@ -210,16 +201,16 @@ def LoadLibrary(builtins = None, fndata = None):
                             value = Quaternion(value)
                     except ValueError:
                         warning(u"Invalid vector/rotation syntax in %s"
-                                u" line %d: %s" % (ubuiltins, linenum, uline))
+                                u" line %d: %s" % (ubuiltins, linenum, line))
                 else:
                     assert typ == 'list'
                     if value[0:1] != '[' or value[-1:] != ']':
                         warning(u"Invalid list value in %s, line %d: %s"
-                                % (ubuiltins, linenum, uline))
+                                % (ubuiltins, linenum, line))
                     elif value[1:-1].strip() != '':
                         warning(u"Non-empty list constants not supported"
                                 u" in %s, line %d: %s"
-                                % (ubuiltins, linenum, uline))
+                                % (ubuiltins, linenum, line))
                         value = None
                     else:
                         value = []
@@ -231,19 +222,19 @@ def LoadLibrary(builtins = None, fndata = None):
 
     # Load the function data table as well.
 
-    parse_flag_re = re.compile(r'^\s*-\s+(?:(?:(sef)|return\s+'
-        r'("(?:\\.|[^"])*"|<[^>]+>|[-+0-9x.e]+'  # strings, vectors, numbers
+    parse_flag_re = re.compile(str2u(r'^\s*-\s+(?:(?:(sef)|return\s+'
+        r'("(?:\\.|[^"])*"|<[^>]+>|[-+0-9x.e]+'   # strings, vectors, numbers
         r'|\[(?:[^]"]|"(?:\\.|[^"])*")*\]))'      # lists
         r'(?:\s+if\s+(.*\S))?'
         r'|(unstable|stop|strlen|detect|touch|grab)'
         r'|(min|max|delay)\s+([-0-9.]+)'
         r'|listto\s+(integer|float|string|key|vector|rotation|list)'
-        r')\s*$', re.I)
+        r')\s*$'), re.I)
 
     # TODO: "quaternion" doesn't compare equal to "rotation" even if they are
     #       equivalent. Canonicalize it before comparison, to avoid false
     #       reports of mismatches.
-    f = open(fndata, 'r')
+    f = open(fndata, 'rb')
     try:
         linenum = 0
         curr_fn = None
@@ -258,9 +249,10 @@ def LoadLibrary(builtins = None, fndata = None):
             linenum += 1
             line = f.readline()
             if not line: break
-            if line[-1] == '\n': line = line[:-1]
+            if line.endswith(b'\r\n'): line = line[:-2]
+            if line.endswith(b'\n'): line = line[:-1]
             try:
-                uline = str2u(line, 'utf8')
+                line = b2u(line, 'utf8')
             except UnicodeDecodeError:
                 warning(u"Bad Unicode in %s line %d" % (ufndata, linenum))
                 continue
@@ -270,23 +262,22 @@ def LoadLibrary(builtins = None, fndata = None):
                 continue
 
             rettype = match_fn.group(1) if match_fn else None
-            if match_fn and (rettype in ('void', 'event') or rettype in types):
+            if match_fn and (rettype in (u'void', u'event') or rettype in types):
                 skipping = True  # until proven otherwise
                 name = match_fn.group(2)
-                uname = str2u(name, 'utf8')
-                if (rettype == 'event' and name not in events
-                    or rettype != 'event' and name not in functions
+                if (rettype == u'event' and name not in events
+                    or rettype != u'event' and name not in functions
                    ):
                     warning(u"%s %s is not in builtins, in %s line %d,"
                             u" skipping."
                             % (u"Function" if rettype != 'event' else u"Event",
-                               uname, ufndata, linenum))
+                               name, ufndata, linenum))
                     continue
                 rettype = rettype if rettype != 'void' else None
                 if 'event' != rettype != functions[name]['Type']:
                     warning(u"Function %s returns invalid type, in %s line %d,"
                             u" skipping."
-                            % (uname, ufndata, linenum))
+                            % (name, ufndata, linenum))
                     continue
                 argnames = []
                 arglist = match_fn.group(3)
@@ -294,13 +285,13 @@ def LoadLibrary(builtins = None, fndata = None):
                                 if rettype != 'event'
                                 else events[name]['pt'])
                 if arglist:
-                    arglist = arglist.split(',')
+                    arglist = arglist.split(u',')
                     if len(current_args) != len(arglist):
                         warning(u"Parameter list mismatch in %s line %d,"
                                 u" %s %s. Skipping."
                                 % (ufndata, linenum,
-                                   u"function" if rettype != 'event'
-                                   else u"event", uname))
+                                   u"function" if rettype != u'event'
+                                   else u"event", name))
                         continue
 
                     bad = False  # used to 'continue' at this loop level
@@ -312,8 +303,8 @@ def LoadLibrary(builtins = None, fndata = None):
                             warning(u"Parameter list mismatch in %s line %d,"
                                     u" %s %s. Skipping."
                                     % (ufndata, linenum,
-                                       u"function" if rettype != 'event'
-                                       else u"event", uname))
+                                       u"function" if rettype != u'event'
+                                       else u"event", name))
                             bad = True
                             break
                         argnames.append(argname)
@@ -326,7 +317,7 @@ def LoadLibrary(builtins = None, fndata = None):
                                        else events[name]):
                     warning(u"Duplicate %s %s in %s line %d. Skipping."
                             % (u"function" if rettype != 'event' else u"event",
-                               uname, ufndata, linenum))
+                               name, ufndata, linenum))
                     continue
 
                 # passed all tests
@@ -344,11 +335,10 @@ def LoadLibrary(builtins = None, fndata = None):
                     if curr_fn is None and not skipping:
                         warning(u"Flags present before any function or event"
                                 u" in %s line %d: %s"
-                                % (ufndata, linenum, uline))
+                                % (ufndata, linenum, line))
                         skipping = True
                         continue
                     if not skipping:
-                        ucurr_fn = str2u(curr_fn, 'utf8')
                         if match_flag.group(1):
                             # SEF
                             # We don't handle conditions yet. Take the
@@ -358,7 +348,7 @@ def LoadLibrary(builtins = None, fndata = None):
                                 warning(u"Events do not support conditions"
                                         u" in SEF flags, in line %d, event %s."
                                         u" Omitting: %s"
-                                        % (linenum, ucurr_fn, uline))
+                                        % (linenum, curr_fn, line))
                                 continue
                             elif curr_ty == 'event':
                                 events[curr_fn]['SEF'] = True
@@ -375,7 +365,7 @@ def LoadLibrary(builtins = None, fndata = None):
                                     warning(u"Events only support a few flags"
                                             u", in line %d, event %s."
                                             u" Omitting: %s"
-                                            % (linenum, ucurr_fn, uline))
+                                            % (linenum, curr_fn, line))
                             continue
                         elif match_flag.group(2):
                             pass # return not handled yet
@@ -405,14 +395,14 @@ def LoadLibrary(builtins = None, fndata = None):
                                 else:
                                     warning(u"Type mismatch or value error in %s"
                                             u" line %d: %s"
-                                            % (ufndata, linenum, uline))
+                                            % (ufndata, linenum, line))
                                     continue
                             else:  # delay
                                 value = parse_fp_re.search(match_flag.group(6))
                                 if not value:
                                     warning(u"Invalid delay value in %s"
                                             u" line %d: %s"
-                                            % (ufndata, linenum, uline))
+                                            % (ufndata, linenum, line))
                                     continue
 
                                 value = float(value.group(1))  # no need to F32
@@ -420,7 +410,7 @@ def LoadLibrary(builtins = None, fndata = None):
                                     warning(u"Side-effect-free function"
                                             u" %s contradicts delay, in %s"
                                             u" line %d"
-                                            % (ucurr_fn, ufndata, linenum))
+                                            % (curr_fn, ufndata, linenum))
                                     continue
 
                                 functions[curr_fn]['delay'] = value
@@ -431,7 +421,7 @@ def LoadLibrary(builtins = None, fndata = None):
                             pass
                 else:
                     warning(u"Syntax error in %s line %d, skipping: %s"
-                            % (ufndata, linenum, uline))
+                            % (ufndata, linenum, line))
                     continue
 
     finally:
@@ -439,27 +429,25 @@ def LoadLibrary(builtins = None, fndata = None):
 
     # Post-checks
     for i in functions:
-        ui = str2u(i, 'utf8')
         if 'NeedsData' in functions[i]:
             del functions[i]['NeedsData']
             warning(u"Library data, file %s: Function %s has no data."
-                    % (ufndata, ui))
+                    % (ufndata, i))
         if 'min' in functions[i] and 'max' in functions[i]:
             if functions[i]['min'] > functions[i]['max']:
                 warning(u"Library data: Function %s has min > max:"
                         u" min=%s max=%s, removing both."
-                        % (ui, str2u(repr(functions[i]['min']), 'utf8'),
+                        % (i, str2u(repr(functions[i]['min']), 'utf8'),
                            repr(functions[i]['max'])))
                 del functions[i]['min'], functions[i]['max']
         if 'SEF' in functions[i] and 'delay' in functions[i]:
             warning(u"Library data: Side-effect-free function %s contradicts"
-                    u" delay. Removing SEF." % ui)
+                    u" delay. Removing SEF." % i)
             del functions[i]['SEF']
     for i in events:
-        ui = str2u(i, 'utf8')
         if 'NeedsData' in events[i]:
             del events[i]['NeedsData']
             warning(u"Library data, file %s: Event %s has no data."
-                    % (ufndata, ui))
+                    % (ufndata, i))
 
     return events, constants, functions
