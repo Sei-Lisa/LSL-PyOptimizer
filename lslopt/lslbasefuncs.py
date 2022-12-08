@@ -1153,50 +1153,10 @@ def llCeil(f):
 
 def llChar(code):
     code = fi(code)
-    # The result is consistent with a conversion of the codepoint to
-    # UTF-8-1993, then using InternalUTF8toString on the result.
-    # A thorough test shows that llChar(n) equals llUnescapeURL(utf8_1993)
-    # up to codepoint 0x13FFFF. Furthermore llChar(0x200000) returns "?????",
-    # and llChar(0x7FFFFFFF) returns "??????", which are also consistent with
-    # that. LSO also returns UTF-8-1993 for codepoints > 0x10FFFF. So, the
-    # internal implementation is likely to form a UTF8-1993 string from the
-    # codepoint and then convert that to string, like this:
-#    if code < 0:
-#       return u'?'
-#    if code < 0x80:
-#        s = (code,)
-#    elif code < 0x800:
-#        s = (0xC0+(code >> 6), 0x80+(code&0x3F))
-#    elif code < 0x10000:
-#        s = (0xE0+(code >> 12), 0x80+((code >> 6)&0x3F), 0x80+(code&0x3F))
-#    elif code < 0x200000:
-#        s = (0xF0+(code >> 18), 0x80+((code >> 12)&0x3F),
-#            0x80+((code >> 6)&0x3F), 0x80+(code&0x3F))
-#    elif code < 0x4000000:
-#        s = (0xF8+(code >> 24),
-#            0x80+((code >> 18)&0x3F), 0x80+((code >> 12)&0x3F),
-#            0x80+((code >> 6)&0x3F), 0x80+(code&0x3F))
-#    else:
-#        s = (0xFC+(code >> 30), 0x80+((code >> 24)&0x3F),
-#            0x80+((code >> 18)&0x3F), 0x80+((code >> 12)&0x3F),
-#            0x80+((code >> 6)&0x3F), 0x80+(code&0x3F))
-#    return zstr(InternalUTF8toString(bytearray(s)))
 
-    # Here's an alternative, simpler implementation that only works for Mono:
-    if lslcommon.LSO:
-        raise ELSLCantCompute
-    if code <= 0 or code > 0x10FFFF:
-        if code == 0:
-            return u''
-        if code < 0:
-            return u'?'
-        if code >= 0x4000000:
-            return u'??????'
-        if code >= 0x200000:
-            return u'?????'
-        return u'????'
-    if (0xD800 <= code <= 0xDFFF) or code == 0xFFFE:
-        return u'???'
+    if (not 1 <= code <= 0x10FFFF or 0xD800 <= code <= 0xDFFF
+            or code == 0xFFFE or code == 0xFFFF):
+        return u'' if code == 0 else u'\uFFFD'
     return unichr(code)
 
 def llCos(f):
