@@ -186,7 +186,7 @@ def parseArgs(s):
 #        args[i] = argout
 #    return args
 
-def tryRead(fn, Binary = True):
+def tryRead(fn, Binary = False):
     result = None
     try:
         f = open(fn, 'rb' if Binary else 'r')
@@ -326,8 +326,8 @@ class UnitTestRegression(UnitTestCase):
             sys.stderr = save_stderr
         self.assertLessEqual(errs, 138)
 
-        expected_stdout = tryRead('unit_tests/json.out')
-        expected_stderr = tryRead('unit_tests/json.err')
+        expected_stdout = str2b(tryRead('unit_tests/json.out'), 'utf8')
+        expected_stderr = str2b(tryRead('unit_tests/json.err'), 'utf8')
         try:
             self.assertTrue(actual_stdout == expected_stdout)
         except AssertionError:
@@ -735,10 +735,17 @@ def generateScriptTests():
             # Create a closure with the test data
             def makeTestFunction(fbase, suite):
                 def TestFunction(self):
-                    stdin = tryRead(fbase + '.lsl') or b''
-                    expected_stdout = tryRead(fbase + '.out') or b''
-                    expected_stderr = tryRead(fbase + '.err') or b''
-                    runargs = (parseArgs(tryRead(fbase + '.run', Binary=False))
+                    # We NEED to read in binary, because there's invalid UTF-8
+                    # as part of the tests, and Python 3 would choke otherwise.
+                    # This means we have to deal with CRLF line endings here.
+                    stdin = (tryRead(fbase + '.lsl', Binary=True) or b''
+                        ).replace(b'\r\n', b'\n')
+
+                    expected_stdout = str2b(tryRead(fbase + '.out') or '',
+                        'utf8')
+                    expected_stderr = str2b(tryRead(fbase + '.err') or '',
+                        'utf8')
+                    runargs = (parseArgs(tryRead(fbase + '.run'))
                                or (['main.py', '-y', '-'] if suite != 'Expr'
                                    else ['main.py',
                                          # Defaults for Expr:
@@ -748,13 +755,8 @@ def generateScriptTests():
                                          '-']))
                     werr(u"\nRunning test %s: " % any2u(fbase))
                     actual_stdout, actual_stderr = invokeMain(runargs, stdin)
-                    actual_stdout = (actual_stdout.replace(b'\r',b'\r\n')
-                                     .replace(b'\r\n\n',b'\n')
-                                     .replace(b'\r\n',b'\n'))
-
-                    actual_stderr = (actual_stderr.replace(b'\r',b'\r\n')
-                                     .replace(b'\r\n\n',b'\n')
-                                     .replace(b'\r\n',b'\n'))
+                    actual_stdout = actual_stdout.replace(b'\r\n', b'\n')
+                    actual_stderr = actual_stderr.replace(b'\r\n', b'\n')
 
                     try:
                         if expected_stderr.startswith(b'REGEX\n'):
