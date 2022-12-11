@@ -674,6 +674,8 @@ def InternalUTF8toString(s):
 # type check. Same for llGetSubString and llList2List. They are all joined into
 # one single function.
 def InternalGetDeleteSubSequence(val, start, end, isGet):
+    if type(val) == unicode:
+        val = uniwrap(val)
     start = fi(start)
     end = fi(end)
     L = len(val)
@@ -1298,7 +1300,7 @@ def llGetSubString(s, start, end):
     return InternalGetDeleteSubSequence(s, start, end, isGet=True)
 
 def llHash(s):
-    s = fs(s)
+    s = uniwrap(fs(s))
     hash = 0
     for i in s:
         hash = (hash * 65599 + ord(i)) & 0xFFFFFFFF
@@ -1718,7 +1720,7 @@ def llModPow(base, exp, mod):
     return S32(ret)
 
 def llOrd(val, index):
-    val = fs(val)
+    val = uniwrap(fs(val))
     index = fi(index)
     L = len(val)
     if -L <= index < L:

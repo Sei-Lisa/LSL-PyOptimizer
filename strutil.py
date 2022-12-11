@@ -22,12 +22,15 @@ import codecs
 codecs.register(lambda x: codecs.lookup('utf8') if x == 'cp65001' else None)
 
 import sys
+
 if sys.version_info.major >= 3:
     unicode = str
     unichr = chr
     xrange = range
     python3 = True
     python2 = False
+    python2Narrow = False
+    uniwrap = unicode
 
     def str2u(s, enc=None):
         """Convert a native Python3 str to Unicode. This is a NOP."""
@@ -57,6 +60,8 @@ else:
     xrange = xrange
     python2 = True
     python3 = False
+    python2Narrow = False
+    uniwrap = unicode
 
     def str2u(s, enc=None):
         """Convert a native Python2 str to Unicode."""
@@ -80,6 +85,68 @@ else:
         """Convert Bytes or Unicode to native Python 2 str."""
         return s if type(s) == str else u2str(s, enc)
 
+    if len(u'\U00010001') == 2:
+        # Narrow character build (UTF-16 strings)
+        # Monkey-patch the relevant functions
+        python2Narrow = True
+        _unichr = unichr
+        _ord = ord
+        _len = len
+
+        def unichr(n):
+            if not (65536 <= n < 0x110000):
+                return _unichr(n)
+            return ('\\U%08X' % n).decode('unicode-escape')
+
+        def ord(x):
+            if isinstance(x, unicode) and _len(x) == 2:
+                x = unicode(x)
+                if 0xD800 <= _ord(x[0]) < 0xDC00:
+                    return 65536 + ((_ord(x[0]) & 0x3FF) << 10
+                        | (_ord(x[1]) & 0x3FF))
+            return _ord(x)
+
+        def len(x):
+            if isinstance(x, unicode):
+                return _len(x.encode('utf-32le')) >> 2
+            return _len(x)
+
+        # Alas, we can't monkey-patch the unicode class' __getitem__ and
+        # __getslice__ methods; we need a workaround.
+        class uniwrap(unicode):
+            def __getslice__(self, start, stop):
+                lim = sys.maxint >> 2
+                if start < 0: start = 0
+                if stop < 0: stop = 0
+                if start < lim:
+                    start <<= 2
+                else:
+                    start = sys.maxint
+                if stop < lim:
+                    stop <<= 2
+                else:
+                    stop = sys.maxint
+                return self.encode('utf-32le')[start:stop].decode(
+                    'utf-32le')
+            def __getitem__(self, item):
+                if type(item) == slice:
+                    start = item.start
+                    stop = item.stop
+                    step = item.step
+                    if start is not None:
+                        start <<= 2
+                    if stop is not None:
+                        stop <<= 2
+                    if step is not None:
+                        step <<= 2
+                    return self.encode('utf-32le')[start:stop:step].decode(
+                        'utf-32le')
+                u = self.encode('utf-32le')
+                item <<= 2
+                if item >= _len(u):
+                    return u[item]  # raise IndexError, as slicing doesn't
+                return u[item:(item+4 if item != -4 else None)].decode(
+                    'utf-32le')
 
 def b2u(s, enc=None):
     """Bytes to Unicode"""
