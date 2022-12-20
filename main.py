@@ -414,7 +414,7 @@ def main(argv):
             ('optimizer-options=', 'help', 'version', 'output=', 'header',
             'timestamp', 'python-exceptions', 'prettify', 'bom', 'emap',
             'preproc=', 'precmd=', 'prearg=', 'prenodef', 'preshow',
-            'avid=', 'avname=', 'assetid=', 'shortname=', 'builtins='
+            'avid=', 'avname=', 'assetid=', 'shortname=', 'builtins=',
             'libdata=', 'postarg=', 'preproc-show-cmdline'))
     except getopt.GetoptError as e:
         Usage(argv[0])

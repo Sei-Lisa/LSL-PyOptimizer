@@ -1,1 +1,1 @@
-main.py -y -b unit_tests/builtins-coverage-1.txt -L unit_tests/fndata-coverage-3.txt -O -dcr -
+main.py --python-exceptions --builtins unit_tests/builtins-coverage-1.txt --libdata unit_tests/fndata-coverage-3.txt --optimizer-options -dcr -
