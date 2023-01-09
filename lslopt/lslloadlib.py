@@ -104,7 +104,7 @@ def LoadLibrary(builtins = None, fndata = None):
                                     % (ubuiltins, linenum, argtyp))
                             bad = True
                             break
-                        args.append(argtyp)
+                        args.append(u2str(argtyp))
                     if bad:
                         continue
                 name = match.group(2)
@@ -123,7 +123,8 @@ def LoadLibrary(builtins = None, fndata = None):
                                 u" in %s, overwriting: %s"
                                 % (linenum, ubuiltins, name))
                     fn = getattr(lslfuncs, name, None)
-                    functions[name] = {'Kind':'f', 'Type':typ, 'uns':True,
+                    styp = None if typ is None else u2str(typ)
+                    functions[name] = {'Kind':'f', 'Type':styp, 'uns':True,
                                        'ParamTypes':args, 'NeedsData':True}
                     if fn is not None:
                         functions[name]['Fn'] = fn

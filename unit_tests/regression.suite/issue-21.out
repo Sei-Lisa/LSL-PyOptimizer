@@ -1,0 +1,8 @@
+default
+{
+    state_entry()
+    {
+        llOwnerSay((key)((string)llGetObjectDetails("", (list)1)));
+        llOwnerSay("¡");
+    }
+}
