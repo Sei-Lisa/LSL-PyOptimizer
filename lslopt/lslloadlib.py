@@ -84,18 +84,18 @@ def LoadLibrary(builtins = None, fndata = None):
             if match.group(1):
                 # event or function
                 typ = match.group(1)
-                if typ == 'quaternion':
-                    typ = 'rotation'
-                if typ == 'void':
+                if typ == u'quaternion':
+                    typ = u'rotation'
+                if typ == u'void':
                     typ = None
-                elif typ != 'event' and typ not in types:
+                elif typ != u'event' and typ not in types:
                     warning(u"Invalid type in %s, line %d: %s"
                             % (ubuiltins, linenum, typ))
                     continue
                 args = []
                 arglist = match.group(3)
                 if arglist:
-                    arglist = arglist.split(',')
+                    arglist = arglist.split(u',')
                     bad = False
                     for arg in arglist:
                         argtyp = parse_arg_re.search(arg).group(1)
@@ -108,7 +108,7 @@ def LoadLibrary(builtins = None, fndata = None):
                     if bad:
                         continue
                 name = match.group(2)
-                if typ == 'event':
+                if typ == u'event':
                     if name in events:
                         warning(u"Event at line %d was already defined in %s,"
                                 u" overwriting: %s"
@@ -139,14 +139,14 @@ def LoadLibrary(builtins = None, fndata = None):
                     warning(u"Invalid type in %s, line %d: %s"
                             % (ubuiltins, linenum, typ))
                     continue
-                if typ == 'quaternion':
-                    typ = 'rotation'
+                if typ == u'quaternion':
+                    typ = u'rotation'
                 value = match.group(6)
-                if typ == 'integer':
+                if typ == u'integer':
                     value = int(value, 0)
-                elif typ == 'float':
+                elif typ == u'float':
                     value = lslfuncs.F32(float(value))
-                elif typ == 'string':
+                elif typ == u'string':
                     if parse_str_re.search(value):
                         esc = False
                         tmp = value[1:-1]
@@ -169,15 +169,15 @@ def LoadLibrary(builtins = None, fndata = None):
                         warning(u"Invalid string in %s line %d: %s"
                                 % (ubuiltins, linenum, line))
                         value = None
-                elif typ == 'key':
+                elif typ == u'key':
                     warning(u"Key constants not supported in %s, line %d: %s"
                             % (ubuiltins, linenum, line))
                     value = None
-                elif typ in ('vector', 'rotation'):
+                elif typ in (u'vector', u'rotation'):
                     try:
-                        if value[0:1] != '<' or value[-1:] != '>':
+                        if value[0:1] != u'<' or value[-1:] != u'>':
                             raise ValueError
-                        value = value[1:-1].split(',')
+                        value = value[1:-1].split(u',')
                         if len(value) != (3 if typ == 'vector' else 4):
                             raise ValueError
                         num = parse_fp_re.search(value[0])
@@ -192,7 +192,7 @@ def LoadLibrary(builtins = None, fndata = None):
                         if not num:
                             raise ValueError
                         value[2] = lslfuncs.F32(float(num.group(1)))
-                        if typ == 'vector':
+                        if typ == u'vector':
                             value = Vector(value)
                         else:
                             num = parse_fp_re.search(value[3])
@@ -204,8 +204,8 @@ def LoadLibrary(builtins = None, fndata = None):
                         warning(u"Invalid vector/rotation syntax in %s"
                                 u" line %d: %s" % (ubuiltins, linenum, line))
                 else:
-                    assert typ == 'list'
-                    if value[0:1] != '[' or value[-1:] != ']':
+                    assert typ == u'list'
+                    if value[0:1] != u'[' or value[-1:] != u']':
                         warning(u"Invalid list value in %s, line %d: %s"
                                 % (ubuiltins, linenum, line))
                     elif value[1:-1].strip() != '':
