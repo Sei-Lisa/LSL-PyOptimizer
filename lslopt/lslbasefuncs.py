@@ -552,7 +552,7 @@ def InternalTypecast(val, out, InList, f32):
         if out in (Vector, Quaternion):
             Z,dim = (ZERO_VECTOR,3) if out == Vector else (ZERO_ROTATION,4)
             ret = []
-            if val[0:1] != u'<':
+            if not val.startswith(u'<'):
                 return Z
             val = val[1:]
             for _ in range(dim):
@@ -562,7 +562,8 @@ def InternalTypecast(val, out, InList, f32):
                 if match.group(1):
                     ret.append(F32(float.fromhex(match.group(0)), f32))
                 elif match.group(2):
-                    ret.append(Indet if match.group(0)[0] == '-' else NaN)
+                    ret.append(Indet if match.group(0).startswith(u'-') else
+                        NaN)
                 else:
                     ret.append(F32(float(match.group(0)), f32))
                 if len(ret) < dim:

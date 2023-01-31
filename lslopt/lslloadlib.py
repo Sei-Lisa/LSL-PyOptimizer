@@ -175,7 +175,8 @@ def LoadLibrary(builtins = None, fndata = None):
                     value = None
                 elif typ in (u'vector', u'rotation'):
                     try:
-                        if value[0:1] != u'<' or value[-1:] != u'>':
+                        if not (value.startswith(u'<') and value.endswith(u'>')
+                                ):
                             raise ValueError
                         value = value[1:-1].split(u',')
                         if len(value) != (3 if typ == 'vector' else 4):
@@ -205,7 +206,8 @@ def LoadLibrary(builtins = None, fndata = None):
                                 u" line %d: %s" % (ubuiltins, linenum, line))
                 else:
                     assert typ == u'list'
-                    if value[0:1] != u'[' or value[-1:] != u']':
+                    if not (value.startswith(u'[') and value.endswith(u']')
+                            ):
                         warning(u"Invalid list value in %s, line %d: %s"
                                 % (ubuiltins, linenum, line))
                     elif value[1:-1].strip() != '':
