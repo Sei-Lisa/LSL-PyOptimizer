@@ -375,7 +375,13 @@ def LoadLibrary(builtins = None, fndata = None):
                         elif match_flag.group(4):
                             flag = match_flag.group(4).lower()
                             if flag == 'unstable':
-                                functions[curr_fn]['uns'] = True
+                                if functions[curr_fn]['Type'] is None:
+                                    warning(u"unstable does not make sense"
+                                        " with void function, in line %d,"
+                                        " function %s. Omitting flag."
+                                        % (linenum, curr_fn))
+                                else:
+                                    functions[curr_fn]['uns'] = True
                             else:
                                 functions[curr_fn][flag] = True
                         elif match_flag.group(5):

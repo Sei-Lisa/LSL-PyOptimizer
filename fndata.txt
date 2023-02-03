@@ -1650,6 +1650,17 @@ integer llOpenFloater(string title, string url, list params)
 string llGetInventoryAcquireTime(string item)
 - SEF
 
+void llLinkPlaySound(integer link, string sound, float volume, integer flags)
+
+void llLinkStopSound(integer link)
+
+void llLinkAdjustSoundVolume(integer link, float volume)
+- delay 0.1
+
+void llLinkSetSoundQueueing(integer link, integer queue)
+
+void llLinkSetSoundRadius(integer link, float radius)
+
 ###################################################################
 
 # Events are SEF if a script with an empty event can't be
