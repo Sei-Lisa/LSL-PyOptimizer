@@ -1307,6 +1307,41 @@ def llHash(s):
         hash = (hash * 65599 + ord(i)) & 0xFFFFFFFF
     return S32(hash)
 
+def llHMAC(pwd, data, alg):
+    pwd = bytewrap(uniwrap(fs(pwd)).encode('utf8'))
+    data = bytewrap(uniwrap(fs(data)).encode('utf8'))
+    alg = fs(alg)
+    hash = None
+    if alg == u'md5':
+        hash = hashlib.md5()
+    elif alg == u'sha1':
+        hash = hashlib.sha1()
+    elif alg == u'sha224':
+        hash = hashlib.sha224()
+    elif alg == u'sha256':
+        hash = hashlib.sha256()
+    elif alg == u'sha384':
+        hash = hashlib.sha384()
+    elif alg == u'sha512':
+        hash = hashlib.sha512()
+    if hash is None:
+        raise ELSLCantCompute  # we don't have info on how it behaves yet
+    # Calculate the HMAC here, to avoid requiring yet another module
+    if len(pwd) > hash.block_size:
+        tmp = hash.copy()
+        tmp.update(pwd)
+        pwd = bytewrap(tmp.digest())
+        del tmp
+    if len(pwd) < hash.block_size:
+        pwd += bytewrap(b'\x00') * (hash.block_size - len(pwd))
+    xorbytes = lambda a, b: bytewrap(x ^ y for (x, y) in zip(a, b))
+    ipadded = xorbytes(pwd, bytewrap(b'\x36') * hash.block_size)
+    opadded = xorbytes(pwd, bytewrap(b'\x5C') * hash.block_size)
+    ohash = hash.copy()
+    hash.update(ipadded + data)
+    ohash.update(opadded + hash.digest())
+    return b64encode(ohash.digest()).decode('utf8')
+
 def llInsertString(s, pos, src):
     s = fs(s)
     pos = fi(pos)
@@ -1316,7 +1351,7 @@ def llInsertString(s, pos, src):
 
 def llIntegerToBase64(x):
     x = fi(x)
-    return (b64encode(bytearray(((x>>24)&255, (x>>16)&255, (x>>8)&255, x&255)))
+    return (b64encode(bytewrap(((x>>24)&255, (x>>16)&255, (x>>8)&255, x&255)))
             .decode('utf8'))
 
 def llLinear2sRGB(v):

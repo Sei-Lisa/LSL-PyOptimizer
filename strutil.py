@@ -23,14 +23,15 @@ codecs.register(lambda x: codecs.lookup('utf8') if x == 'cp65001' else None)
 
 import sys
 
+python2Narrow = False
 if sys.version_info.major >= 3:
     unicode = str
     unichr = chr
     xrange = range
     python3 = True
     python2 = False
-    python2Narrow = False
     uniwrap = unicode
+    bytewrap = bytes
 
     def str2u(s, enc=None):
         """Convert a native Python3 str to Unicode. This is a NOP."""
@@ -60,8 +61,8 @@ else:
     xrange = xrange
     python2 = True
     python3 = False
-    python2Narrow = False
     uniwrap = unicode
+    bytewrap = bytearray
 
     def str2u(s, enc=None):
         """Convert a native Python2 str to Unicode."""
