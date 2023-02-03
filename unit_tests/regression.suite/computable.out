@@ -17,17 +17,15 @@ default
             , 1
             , 0
             , ""
-            , ["INVALID_SCOPE"]
             , <0., 0., 0.>
             , 1.
             , ""
-            , []
-            , []
             , <1., 1., 1.>
-            , ""
-            , ""
             , ""
             , 0
             ]);
+        llSetPrimitiveParams((list)"INVALID_SCOPE");
+        llSetPrimitiveParams([]);
+        llSetPrimitiveParams([]);
     }
 }

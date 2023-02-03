@@ -18,17 +18,15 @@ default
             , llEdgeOfWorld(<0,1,2>,<0,0,1>)
             , llGetAgentInfo(".")
             , llGetAgentLanguage("")
-            , llGetAgentList(3, [])
             , llGetAgentSize(NULL_KEY)
             , llGetAlpha(9)
             , llGetAnimation("0")
-            , llGetAnimationList("")
-            , llGetBoundingBox("")
             , llGetColor(9)
             , llGetDisplayName("")
-            , llGetEnv("")
-            , llGetEnv("yadda")
             , llGetStatus(STATUS_CAST_SHADOWS)
             ]);
+        llSetPrimitiveParams(llGetAgentList(3, []));
+        llSetPrimitiveParams(llGetAnimationList(""));
+        llSetPrimitiveParams(llGetBoundingBox(""));
     }
 }
