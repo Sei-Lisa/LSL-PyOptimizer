@@ -1,0 +1,11 @@
+default
+{
+    state_entry()
+    {
+        string tmp0 = llGetScriptName();
+        list tmp1 = (list)llGetOwner() + llGetOwner();
+        list tmp2 = (list)llGetScriptName() + llGetScriptName();
+        string encoded = tmp0 + ("|" + (llList2CSV(tmp1) + ("|Hello|123|" + llList2CSV(tmp2))));
+        llOwnerSay(encoded);
+    }
+}
