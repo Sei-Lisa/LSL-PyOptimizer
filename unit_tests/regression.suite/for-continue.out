@@ -1,0 +1,23 @@
+integer x;
+
+default
+{
+    timer()
+    {
+        x = 1;
+        @___for__00001;
+        if (x < 5)
+        {
+            {
+                if (x == 3)
+                    jump J_autoGen00002;
+                llOwnerSay((string)x);
+                @J_autoGen00002;
+            }
+            {
+                ++x;
+            }
+            jump ___for__00001;
+        }
+    }
+}
