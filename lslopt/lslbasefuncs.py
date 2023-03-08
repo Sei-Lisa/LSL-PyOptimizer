@@ -1325,7 +1325,7 @@ def llHMAC(pwd, data, alg):
     elif alg == u'sha512':
         hash = hashlib.sha512()
     if hash is None:
-        raise ELSLCantCompute  # we don't have info on how it behaves yet
+        raise ELSLCantCompute  # spews error
     # Calculate the HMAC here, to avoid requiring yet another module
     if len(pwd) > hash.block_size:
         tmp = hash.copy()

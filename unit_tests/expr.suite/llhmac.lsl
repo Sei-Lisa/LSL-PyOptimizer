@@ -1,4 +1,16 @@
-[ llHMAC("a", "b", "sha1")
+[ llHMAC("", "", "md5")
+, llHMAC("", "", "sha1")
+, llHMAC("", "", "sha224")
+, llHMAC("", "", "sha256")
+, llHMAC("", "", "sha384")
+, llHMAC("", "", "sha512")
+, llHMAC("a", "b", "md5")
+, llHMAC("a", "b", "sha1")
+, llHMAC("a", "b", "sha224")
+, llHMAC("a", "b", "sha256")
+, llHMAC("a", "b", "sha384")
+, llHMAC("a", "b", "sha512")
+// example from the wiki (?)
 , llHMAC("-----BEGIN RSA PRIVATE KEY-----
 MIIEogIBAAKCAQEAqxXSIhFHzYO9UNEUvMMXwhB4vf32fPirCxxV/w4m88jKPmFH
 QQe9DOwj7illmvg+81vzBNGt+uNYy/2zFegUtwvxKCEioeoanRpPcvn9r/d/kXad
