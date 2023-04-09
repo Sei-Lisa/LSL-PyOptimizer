@@ -1661,6 +1661,18 @@ void llLinkSetSoundQueueing(integer link, integer queue)
 
 void llLinkSetSoundRadius(integer link, float radius)
 
+string llHMAC(string authkey, string message, string hashalg)
+- SEF
+
+string llSignRSA(string privkey, string message, string hashalg)
+- SEF
+
+integer llVerifyRSA(string pubkey, string message, string signature, string hashalg)
+- SEF
+
+string llReplaceSubString(string source, string search, string replace, integer count)
+- SEF
+
 ###################################################################
 
 # Events are SEF if a script with an empty event can't be
