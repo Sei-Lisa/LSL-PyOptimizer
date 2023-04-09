@@ -1818,6 +1818,31 @@ def llPow(base, exp):
     except ValueError:  # should happen only with negative base and noninteger exponent
         return Indet
 
+def llReplaceSubString(source, search, replace, count):
+    source = fs(source)
+    search = fs(search)
+    replace = fs(replace)
+    count = fi(count)
+
+    if not search:
+        return source
+    if count == 0:
+        return source.replace(search, replace)
+    if count > 0:
+        return source.replace(search, replace, count)
+    # Replace *last* occurrences of "search" in "source"
+    slen = len(search)
+    i = len(source)
+    while True:
+        i = source.rfind(search, 0, i)
+        if i < 0:
+            break
+        source = source[:i] + replace + source[i + slen:]
+        count += 1
+        if count == 0:
+            break
+    return source
+
 def llRot2Angle(r):
     r = q2f(r)
     # Used by llAngleBetween.
