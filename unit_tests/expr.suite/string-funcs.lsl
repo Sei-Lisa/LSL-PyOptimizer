@@ -216,6 +216,7 @@
 , llReplaceSubString("cabadabaeaba", "", "faba", 0)
 , llReplaceSubString("cabadabaeaba", "", "faba", 1)
 , llReplaceSubString("cabadabaeaba", "", "faba", 20)
+, llReplaceSubString("aaaaaaaab", "aab", "ab", -3)
 , llReplaceSubString("", "", "faba", -2)
 , llReplaceSubString("", "", "faba", -1)
 , llReplaceSubString("", "", "faba", 0)
