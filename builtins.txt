@@ -491,6 +491,7 @@ const integer AGENT = 0x1
 const integer AGENT_ALWAYS_RUN = 0x1000
 const integer AGENT_ATTACHMENTS = 0x2
 const integer AGENT_AUTOPILOT = 0x2000
+const integer AGENT_AUTOMATED = 0x4000
 const integer AGENT_AWAY = 0x40
 const integer AGENT_BUSY = 0x800
 const integer AGENT_BY_LEGACY_NAME = 0x1
