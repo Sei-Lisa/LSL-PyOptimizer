@@ -1662,7 +1662,8 @@ void llLinkSetSoundQueueing(integer link, integer queue)
 void llLinkSetSoundRadius(integer link, float radius)
 
 string llHMAC(string authkey, string message, string hashalg)
-- SEF
+- SEF if alg == "md5" || alg == "sha1" || alg == "sha224" || alg == "sha256" || alg == "sha384" || alg == "sha512"
+# otherwise error
 
 string llSignRSA(string privkey, string message, string hashalg)
 - SEF
