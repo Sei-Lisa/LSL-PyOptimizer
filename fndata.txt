@@ -1674,6 +1674,15 @@ integer llVerifyRSA(string pubkey, string message, string signature, string hash
 string llReplaceSubString(string source, string search, string replace, integer count)
 - SEF
 
+list llList2ListSlice(list src, integer start, integer end, integer stride, integer slice_index)
+- SEF
+
+integer llListFindStrided(list src, list test, integer start, integer end, integer stride)
+- SEF
+
+list llListSortStrided(list src, integer stride, integer stride_index, integer ascending)
+- SEF
+
 ###################################################################
 
 # Events are SEF if a script with an empty event can't be

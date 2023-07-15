@@ -1426,6 +1426,14 @@ def llList2List(lst, start, end):
     end = fi(end)
     return InternalGetDeleteSubSequence(lst, start, end, isGet=True)
 
+def llList2ListSlice(src, start, end, stride, slice_idx):
+    src = fl(src)
+    start = fi(start)
+    end = fi(end)
+    stride = fi(stride)
+    slice_idx = fi(slice_idx)
+    raise ELSLCantCompute  # TODO: Implement llList2ListSlice
+
 def llList2ListStrided(lst, start, end, stride):
     lst = fl(lst)
     start = fi(start)
@@ -1531,6 +1539,14 @@ def llListFindList(lst, elems):
             return i
     return -1
 
+def llListFindListStrided(src, test, start, end, stride):
+    src = fl(src)
+    test = fl(test)
+    start = fi(start)
+    end = fi(end)
+    stride = fi(stride)
+    raise ELSLCantCompute  # TODO: Implement llListFindListStrided
+
 def llListInsertList(lst, elems, pos):
     lst = fl(lst)
     elems = fl(elems)
@@ -1634,6 +1650,13 @@ def llListSort(lst, stride, asc):
                 if broken and ta in (unicode, Key):
                     a = a.encode('utf-32-be')  # pragma: no cover
     return lst
+
+def llListSortStrided(src, stride, idx, ascending):
+    src = fl(src)
+    stride = fi(stride)
+    idx = fi(idx)
+    ascending = fi(ascending)
+    raise ELSLCantCompute  # FIXME: Implement llListSortStrided
 
 def llListStatistics(op, lst):
     op = fi(op)
