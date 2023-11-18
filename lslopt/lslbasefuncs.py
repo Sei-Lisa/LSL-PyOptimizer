@@ -967,10 +967,7 @@ def llAbs(i):
     i = fi(i)
     if i != -2147483648:
         return abs(i)
-    if lslcommon.LSO:
-        return i
-    # Mono raises an OverflowException in this case.
-    raise ELSLCantCompute
+    return i
 
 def llAcos(f):
     f = ff(f)

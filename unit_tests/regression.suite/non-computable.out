@@ -20,7 +20,6 @@ default
             , llGetDisplayName("5748decc-f629-461c-9a36-a35a221fe21f")
             , llGetEnv("estate_name")
             , llXorBase64Strings("++++", "?")
-            , llAbs(((integer)-2147483648))
             , llGetStatus(128)
             , llGetStatus(2048)
             ]);

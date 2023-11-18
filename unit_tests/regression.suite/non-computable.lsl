@@ -22,7 +22,6 @@ default
             , llGetDisplayName(TEXTURE_BLANK)
             , llGetEnv("estate_name")
             , llXorBase64Strings("++++", "?")
-            , llAbs(-2147483648)
             , llGetStatus(STATUS_DIE_AT_EDGE)
             , llGetStatus(STATUS_DIE_AT_NO_ENTRY)
             ]);
