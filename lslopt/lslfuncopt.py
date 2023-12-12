@@ -111,6 +111,18 @@ primParamsTypes = \
     , 40: 'i'        # 40=PRIM_SCRIPTED_SIT_ONLY
     , 41: 'ivv'      # 41=PRIM_SIT_TARGET
     , 42: 'sfff'     # 42=PRIM_PROJECTOR
+    , 43: 'i'        # 43=PRIM_CLICK_ACTION
+    , 44: 'iffi'     # 44=PRIM_REFLECTION_PROBE
+    # GLTF parameters admit an empty string in any of the places except the
+    # first integer (face number). We're not prepared to deal with that.
+#   , 45: 'isvvf'    # 45=PRIM_GLTF_NORMAL
+#   , 46: 'isvvfv'   # 46=PRIM_GLTF_EMISSIVE
+#   , 47: 'isvvfff'  # 47=PRIM_GLTF_METALLIC_ROUGHNESS
+#   , 48: 'isvvfvfifi'  # 48=PRIM_GLTF_BASE_COLOR
+    , 45: 'i*'       # 45=PRIM_GLTF_NORMAL
+    , 46: 'i*'       # 46=PRIM_GLTF_EMISSIVE
+    , 47: 'i*'       # 47=PRIM_GLTF_METALLIC_ROUGHNESS
+    , 48: 'i*'       # 48=PRIM_GLTF_BASE_COLOR
     }
 
 # llGetPrimitiveParams parameters with arguments. F=face, L=link.

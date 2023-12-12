@@ -1685,6 +1685,18 @@ integer llListFindStrided(list src, list test, integer start, integer end, integ
 list llListSortStrided(list src, integer stride, integer stride_index, integer ascending)
 - SEF
 
+integer llLinksetDataCountFound(string pattern)
+- SEF
+
+list llLinksetDataDeleteFound(string pattern, string pass)
+
+string llGetRenderMaterial(integer face)
+- SEF
+
+void llSetRenderMaterial(string material, integer face)
+
+void llSetLinkRenderMaterial(integer link, string material, integer face)
+
 ###################################################################
 
 # Events are SEF if a script with an empty event can't be
