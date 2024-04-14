@@ -1536,13 +1536,13 @@ def llListFindList(lst, elems):
             return i
     return -1
 
-def llListFindListStrided(src, test, start, end, stride):
+def llListFindStrided(src, test, start, end, stride):
     src = fl(src)
     test = fl(test)
     start = fi(start)
     end = fi(end)
     stride = fi(stride)
-    raise ELSLCantCompute  # TODO: Implement llListFindListStrided
+    raise ELSLCantCompute  # TODO: Implement llListFindStrided
 
 def llListInsertList(lst, elems, pos):
     lst = fl(lst)
@@ -1653,7 +1653,7 @@ def llListSortStrided(src, stride, idx, ascending):
     stride = fi(stride)
     idx = fi(idx)
     ascending = fi(ascending)
-    raise ELSLCantCompute  # FIXME: Implement llListSortStrided
+    raise ELSLCantCompute  # TODO: Implement llListSortStrided
 
 def llListStatistics(op, lst):
     op = fi(op)
