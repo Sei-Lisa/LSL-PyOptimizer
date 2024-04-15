@@ -24,6 +24,11 @@ default
             , llGetColor(9)
             , llGetDisplayName("")
             , llGetStatus(STATUS_CAST_SHADOWS)
+            , llIsFriend(".")
+            , llGetLinkSitFlags(257)
+            , llGetLinkSitFlags(-1)
+            , llGetLinkSitFlags(-2)
+            , llGetLinkSitFlags(-3)
             ]);
         llSetPrimitiveParams(llGetAgentList(3, []));
         llSetPrimitiveParams(llGetAnimationList(""));

@@ -1697,6 +1697,40 @@ void llSetRenderMaterial(string material, integer face)
 
 void llSetLinkRenderMaterial(integer link, string material, integer face)
 
+string llComputeHash(string data, string algorithm)
+- SEF if alg == "md5" || alg == "md5_sha1" || alg == "sha1" || alg == "sha224" || alg == "sha256" || alg == "sha384" || alg == "sha512"
+# otherwise error
+
+float llGetCameraAspect()
+# No error if PERMISSION_TRACK_CAMERA not granted, hence SEF
+- SEF
+
+float llGetCameraFOV()
+# No error if PERMISSION_TRACK_CAMERA not granted, hence SEF
+- SEF
+
+string llGetInventoryDesc(string itemname)
+# May produce error (if item doesn't exist), hence not SEF
+
+integer llGetLinkSitFlags(integer link)
+- SEF
+
+string llGetNotecardLineSync(string name, integer line)
+# May produce error (if notecard doesn't exist), hence not SEF
+
+integer llIsFriend(key agent)
+- SEF
+
+integer llListFindListNext(list src, list test, integer n)
+- SEF
+
+void llRezObjectWithParams(string itemname, list params)
+
+void llSetLinkSitFlags(integer link, integer flags)
+
+vector llWorldPosToHUD(vector pos)
+- SEF
+
 ###################################################################
 
 # Events are SEF if a script with an empty event can't be

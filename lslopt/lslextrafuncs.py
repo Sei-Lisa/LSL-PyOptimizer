@@ -325,6 +325,12 @@ def llGetLinkName(link):
         return NULL_KEY
     raise ELSLCantCompute
 
+def llGetLinkSitFlags(link):
+    link = fi(link)
+    if link > 256 or (link < 0 and link != -4):
+        return 0
+    raise ELSLCantCompute
+
 def llGetObjectLinkKey(id, link):
     # TODO: Investigate behaviour with invalid key, invalid link etc.
     raise ELSLCantCompute
@@ -353,6 +359,12 @@ def llGetVisualParams(id, params):
 #        if (i.lower() if type(i) == unicode else i) in GVD_ValidValues:
 #            raise ELSLCantCompute
 #    return [u""] * len(params)
+    raise ELSLCantCompute
+
+def llIsFriend(id):
+    id = fk(id)
+    if not cond(id):
+        return 0
     raise ELSLCantCompute
 
 # TODO: Add more predictable functions.

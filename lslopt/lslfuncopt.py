@@ -113,16 +113,18 @@ primParamsTypes = \
     , 42: 'sfff'     # 42=PRIM_PROJECTOR
     , 43: 'i'        # 43=PRIM_CLICK_ACTION
     , 44: 'iffi'     # 44=PRIM_REFLECTION_PROBE
-    # GLTF parameters admit an empty string in any of the places except the
-    # first integer (face number). We're not prepared to deal with that.
-#   , 45: 'isvvf'    # 45=PRIM_GLTF_NORMAL
-#   , 46: 'isvvfv'   # 46=PRIM_GLTF_EMISSIVE
-#   , 47: 'isvvfff'  # 47=PRIM_GLTF_METALLIC_ROUGHNESS
-#   , 48: 'isvvfvfifi'  # 48=PRIM_GLTF_BASE_COLOR
-    , 45: 'i*'       # 45=PRIM_GLTF_NORMAL
-    , 46: 'i*'       # 46=PRIM_GLTF_EMISSIVE
-    , 47: 'i*'       # 47=PRIM_GLTF_METALLIC_ROUGHNESS
-    , 48: 'i*'       # 48=PRIM_GLTF_BASE_COLOR
+    # GLTF parameters admit an empty string in any of the places. We're not
+    # prepared to deal with that.
+#   , 45: 'svvf'    # 45=PRIM_GLTF_NORMAL
+#   , 46: 'svvfv'   # 46=PRIM_GLTF_EMISSIVE
+#   , 47: 'svvfff'  # 47=PRIM_GLTF_METALLIC_ROUGHNESS
+#   , 48: 'svvfvfifi'  # 48=PRIM_GLTF_BASE_COLOR
+    , 45: '*'        # 45=PRIM_GLTF_NORMAL
+    , 46: '*'        # 46=PRIM_GLTF_EMISSIVE
+    , 47: '*'        # 47=PRIM_GLTF_METALLIC_ROUGHNESS
+    , 48: '*'        # 48=PRIM_GLTF_BASE_COLOR
+    , 49: 's'        # 49=PRIM_RENDER_MATERIAL
+    , 50: 'i'        # 50=PRIM_SIT_FLAGS
     }
 
 # llGetPrimitiveParams parameters with arguments. F=face, L=link.
@@ -137,6 +139,11 @@ primParamsArgs = \
     , 36: 'F' # PRIM_SPECULAR
     , 37: 'F' # PRIM_NORMAL
     , 38: 'F' # PRIM_ALPHA_MODE
+    , 45: 'F' # PRIM_GLTF_NORMAL
+    , 46: 'F' # PRIM_GLTF_EMISSIVE
+    , 47: 'F' # PRIM_GLTF_METALLIC_ROUGHNESS
+    , 48: 'F' # PRIM_GLTF_BASE_COLOR
+    , 49: 'F' # PRIM_RENDER_MATERIAL
     }
 
 # llGetPrimMediaParams and llGetLinkMedia return types
