@@ -1188,7 +1188,7 @@ def llComputeHash(data, alg):
         hash = InternalGetAlg(u'sha1')
         hash.update(data)
         ret += hash.hexdigest()
-    return ret.decode('utf8')
+    return str2u(ret)
 
 def llCos(f):
     f = ff(f)
