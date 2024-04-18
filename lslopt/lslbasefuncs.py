@@ -1448,7 +1448,14 @@ def llList2ListSlice(src, start, end, stride, slice_idx):
     end = fi(end)
     stride = fi(stride)
     slice_idx = fi(slice_idx)
-    raise ELSLCantCompute  # TODO: Implement llList2ListSlice
+    if stride <= 0 or slice_idx < -stride or slice_idx > stride - 1:
+        return []
+    # Resolve exclusion range exactly like llList2List, generating a new list.
+    # NOTE: This bears improvement, by not making an intermediate new list.
+    src = InternalGetDeleteSubSequence(src, start, end, isGet=True)
+    if slice_idx < 0:
+        slice_idx += stride
+    return src[slice_idx::stride]
 
 def llList2ListStrided(lst, start, end, stride):
     lst = fl(lst)
