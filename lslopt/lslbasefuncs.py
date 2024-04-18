@@ -1522,9 +1522,8 @@ def llListFindList(lst, elems):
     if L2 > L1:
         return -1  # can't find a sublist longer than the original list
     if L2 == 0:
-        # empty list is always found at position 0 in Mono,
-        # and in LSO if the first list isn't empty
-        return -1 if lslcommon.LSO and L1 == 0 else 0
+        # empty list is always found at position 0
+        return 0
     for i in xrange(L1-L2+1):
         for j in xrange(L2):
             e1 = lst[i+j]
