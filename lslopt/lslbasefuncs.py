@@ -688,6 +688,86 @@ def InternalGetDeleteSubSequence(val, start, end, isGet):
         return val[:end+1] + val[start:] if isGet else val[end+1:start]
     return val[start:end+1] if isGet else val[:start] + val[end+1:]
 
+def InternalCompareElems(e1, e2):
+    """Compares two list elements according to llListFindList rules."""
+    # NaN is found in floats, but not in vectors
+    if type(e1) == type(e2) == float:
+        if e1 == e2:
+            return True
+        # Exceptionally, NaN equals NaN
+        if math.isnan(e1) and math.isnan(e2):
+            return True
+        # Mismatch
+        return False
+    elif type(e1) == type(e2) in (Vector, Quaternion):
+        # Act as if the list's vector/quat was all floats, even if not
+        if type(e1) == Vector:
+            e1 = v2f(e1)
+            e2 = v2f(e2)
+        else:
+            e1 = q2f(e1)
+            e2 = q2f(e2)
+        # Unfortunately, Python fails to consider (NaN,) != (NaN,) sometimes
+        # so we need to implement our own test
+        for e1e,e2e in zip(e1,e2):
+             # NaNs are considered different to themselves here as normal
+            if e1e != e2e:
+                # Mismatch in vector/quaternion component
+                break
+        else:
+            # No mismatch in any component
+            return True
+        # Mismatch
+        return False
+    elif type(e1) != type(e2) or e1 != e2:
+        return False
+    return True
+
+def InternalListFindList(lst, elems, start, end, stride, instance):
+    """Generalizes llListFindList with start/end, stride and instance args."""
+    L1 = len(lst)
+    L2 = len(elems)
+    if L1 == L2 == 0:
+        return 0   # an empty list is always found in an empty list
+    if L2 > L1:
+        return -1  # can't find a sublist longer than the original list
+    if start < 0:
+        start += L1
+    if end < 0:
+        end += L1
+    if end >= L1:
+        end = L1 - 1
+    if start < 0 or start >= L1 or end < 0 or end >= L1 or start > end:
+        return -1
+    if L2 == 0:
+        # empty list is always found at position 0
+        return 0
+    if stride < 1:
+        return -1  # stride 0 or negative returns -1
+    if instance >= 0:
+        # Forward search
+        for i in xrange(start, end+2-L2, stride):
+            for j in xrange(L2):
+                if not InternalCompareElems(lst[i+j], elems[j]):
+                    break  # mismatch
+            else:
+                # no mismatch
+                if instance == 0:
+                    return i
+                instance -= 1
+    else:
+        # Backward search
+        for i in xrange(end+1-L2, start-1, -stride):
+            for j in xrange(L2):
+                if not InternalCompareElems(lst[i+j], elems[j]):
+                    break  # mismatch
+            else:
+                # no mismatch
+                instance += 1
+                if instance == 0:
+                    return i
+    return -1
+
 def reduce(t):
     t = F32(t)
     if not t.is_integer():
@@ -1516,64 +1596,21 @@ def llList2Vector(lst, pos):
 def llListFindList(lst, elems):
     lst = fl(lst)
     elems = fl(elems)
-    # NaN is found in floats, but not in vectors
-    L1 = len(lst)
-    L2 = len(elems)
-    if L2 > L1:
-        return -1  # can't find a sublist longer than the original list
-    if L2 == 0:
-        # empty list is always found at position 0
-        return 0
-    for i in xrange(L1-L2+1):
-        for j in xrange(L2):
-            e1 = lst[i+j]
-            e2 = elems[j]
-            if type(e1) == type(e2) == float:
-                if e1 == e2:
-                    continue
-                # Exceptionally, NaN equals NaN
-                if math.isnan(e1) and math.isnan(e2):
-                    continue
-                # Mismatch
-                break
-            elif type(e1) == type(e2) in (Vector, Quaternion):
-                # Act as if the list's vector/quat was all floats, even if not
-                if type(e1) == Vector:
-                    e1 = v2f(e1)
-                    e2 = v2f(e2)
-                else:
-                    e1 = q2f(e1)
-                    e2 = q2f(e2)
-                # Unfortunately, Python fails to consider (NaN,) != (NaN,) sometimes
-                # so we need to implement our own test
-                for e1e,e2e in zip(e1,e2):
-                    if e1e != e2e:  # NaNs are considered different to themselves here as normal
-                        # Mismatch in vector/quaternion sub-element
-                        break
-                else:
-                    # No mismatch in any sub-element, try next list element
-                    continue
-                break  # discrepancy found
-            elif type(e1) != type(e2) or e1 != e2:
-                break  # mismatch
-        else:
-            # no mismatch
-            return i
-    return -1
+    return InternalListFindList(lst, elems, 0, -1, 1, 0)
 
-def llListFindListNext(src, test, n):
-    src = fl(src)
-    test = fl(test)
-    n = fi(n)
-    raise eLSLCantCompute  # TODO: Implement llListFindListNext
+def llListFindListNext(lst, elems, instance):
+    lst = fl(lst)
+    elems = fl(elems)
+    instance = fi(instance)
+    return InternalListFindList(lst, elems, 0, -1, 1, instance)
 
-def llListFindStrided(src, test, start, end, stride):
-    src = fl(src)
-    test = fl(test)
+def llListFindStrided(lst, elems, start, end, stride):
+    lst = fl(lst)
+    elems = fl(elems)
     start = fi(start)
     end = fi(end)
     stride = fi(stride)
-    raise ELSLCantCompute  # TODO: Implement llListFindStrided
+    return InternalListFindList(lst, elems, start, end, stride, 0)
 
 def llListInsertList(lst, elems, pos):
     lst = fl(lst)
