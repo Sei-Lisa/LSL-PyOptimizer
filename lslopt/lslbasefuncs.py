@@ -1663,19 +1663,24 @@ def llListReplaceList(lst, elems, start, end):
     if end == -1: end += L
     return lst[:start] + elems + lst[end+1:]
 
-def llListSort(lst, stride, asc):
+def llListSort(lst, stride, asc, idx=0):
     lst = fl(lst)
     stride = fi(stride)
     asc = fi(asc)
     lst = lst[:]  # make a copy
     L = len(lst)
     broken = u'\ufb1a' > u'\U0001d41a'  # that happens on Windows
-    if stride < 1: stride = 1
+    if stride < 1:
+        stride = 1
     if L % stride:
         return lst
+    if idx < 0:
+        idx += stride
+    if not (0 <= idx < stride):
+        return []
     for i in xrange(0, L-stride, stride):
         # Optimized by caching the element in the outer loop AND after swapping.
-        a = lst[i]
+        a = lst[i+idx]
         ta = type(a)
         if ta == Vector:
             a = v2f(a)  # list should contain vectors made only of floats
@@ -1688,7 +1693,7 @@ def llListSort(lst, stride, asc):
             # It should be OK because only equal types are compared.
             a = a.encode('utf-32-be')  # pragma: no cover
         for j in xrange(i+stride, L, stride):
-            b = lst[j]
+            b = lst[j+idx]
             tb = type(b)
             gt = False
             if ta == tb:
@@ -1717,11 +1722,8 @@ def llListSort(lst, stride, asc):
     return lst
 
 def llListSortStrided(src, stride, idx, ascending):
-    src = fl(src)
-    stride = fi(stride)
     idx = fi(idx)
-    ascending = fi(ascending)
-    raise ELSLCantCompute  # TODO: Implement llListSortStrided
+    return llListSort(src, stride, ascending, idx)
 
 def llListStatistics(op, lst):
     op = fi(op)
