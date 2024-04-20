@@ -1,0 +1,7 @@
+default
+{
+    touch(integer num)
+    {
+        llOwnerSay("Not Dead");
+    }
+}

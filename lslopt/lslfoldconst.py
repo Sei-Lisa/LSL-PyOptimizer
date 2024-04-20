@@ -1819,7 +1819,7 @@ class foldconst(object):
                     # if (X) ;  ->  X;
                     if len(child) == 2:
                         parent[index] = nr(nt='EXPR', t=child[0].t,
-                            ch=[child[0]])
+                            ch=[child[0]], SEF=child[0].SEF)
                         # It has been promoted to statement. Fold it as such.
                         # (Will remove it if SEF)
                         self.FoldStmt(parent, index)
