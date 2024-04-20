@@ -116,6 +116,8 @@ integer llAbs(integer val)
 
 float llAcos(float val)
 - SEF
+- min -3.1415927
+- max 3.1415927
 
 void llAddToLandBanList(key avatar, float hours)
 - delay 0.1
@@ -135,6 +137,8 @@ void llAllowInventoryDrop(integer add)
 
 float llAngleBetween(rotation a, rotation b)
 - SEF
+- min 0
+- max 3.1415927
 
 void llApplyImpulse(vector force, integer local)
 
@@ -142,9 +146,13 @@ void llApplyRotationalImpulse(vector force, integer local)
 
 float llAsin(float val)
 - SEF
+- min -1.5707964
+- max 1.5707964
 
 float llAtan2(float y, float x)
 - SEF
+- min -3.1415927
+- max 3.1415927
 
 void llAttachToAvatar(integer attach_point)
 
@@ -345,6 +353,8 @@ string llDumpList2String(list src, string separator)
 
 integer llEdgeOfWorld(vector pos, vector dir)
 - SEF
+- min 0
+- max 1
 
 void llEjectFromLand(key avatar)
 
@@ -389,6 +399,7 @@ vector llGetAccel()
 
 integer llGetAgentInfo(key id)
 - SEF
+- min 0
 - return 0 if nulluuid(id)
 
 string llGetAgentLanguage(key avatar)
@@ -405,10 +416,13 @@ vector llGetAgentSize(key id)
 
 float llGetAlpha(integer face)
 - SEF
+- min 0
+- max 1
 - return 1 if face > 8
 
 float llGetAndResetTime()
 - unstable
+- min 0
 
 string llGetAnimation(key id)
 - SEF
@@ -459,6 +473,7 @@ string llGetDate()
 
 integer llGetDayLength()
 - SEF
+- min 0
 
 integer llGetDayOffset()
 - SEF
@@ -552,16 +567,20 @@ string llGetInventoryName(integer type, integer number)
 
 integer llGetInventoryNumber(integer type)
 - SEF
+- min 0
 - return 0 if type != -1 && type != 0 && type != 1 && type != 3 && type != 5 && type != 6 && type != 7 && type != 10 && type != 13 && type != 20 && type != 21
 
 integer llGetInventoryPermMask(string item, integer mask)
 - SEF
+- min 0
 - return 0 if mask < 0 || mask > 4 || item == ""
 
 # we've completed up to here
 
 integer llGetInventoryType(string name)
 - SEF
+- min -1
+- max 57
 
 key llGetKey()
 - SEF
@@ -581,9 +600,12 @@ string llGetLinkName(integer linknumber)
 integer llGetLinkNumber()
 - SEF
 - min 0
+- max 256
 
 integer llGetLinkNumberOfSides(integer link)
 - SEF
+- min 1
+- max 9
 
 list llGetLinkPrimitiveParams(integer linknumber, list rules)
 - SEF
@@ -609,18 +631,23 @@ rotation llGetLocalRot()
 
 float llGetMass()
 - SEF
+- min 0
 
 float llGetMassMKS()
 - SEF
+- min 0
 
 float llGetMaxScaleFactor()
 - SEF
+- min 0
 
 integer llGetMemoryLimit()
 - SEF
+- min 0
 
 float llGetMinScaleFactor()
 - SEF
+- min 0
 
 vector llGetMoonDirection()
 - SEF
@@ -663,12 +690,14 @@ key llGetObjectLinkKey(key id, integer link)
 
 float llGetObjectMass(key id)
 - SEF
+- min 0
 
 string llGetObjectName()
 - SEF
 
 integer llGetObjectPermMask(integer mask)
 - SEF
+- min 0
 
 integer llGetObjectPrimCount(key object_id)
 - SEF
@@ -693,6 +722,7 @@ list llGetParcelDetails(vector pos, list params)
 
 integer llGetParcelFlags(vector pos)
 - SEF
+# bit 31 can be set hence no limits
 
 integer llGetParcelMaxPrims(vector pos, integer sim_wide)
 - SEF
@@ -710,6 +740,7 @@ list llGetParcelPrimOwners(vector pos)
 
 integer llGetPermissions()
 - SEF
+- min 0
 
 key llGetPermissionsKey()
 - SEF
@@ -730,21 +761,26 @@ list llGetPrimitiveParams(list params)
 
 integer llGetRegionAgentCount()
 - SEF
+- min 0
 
 vector llGetRegionCorner()
 - SEF
 
 integer llGetRegionDayLength()
 - SEF
+- min 0
 
 integer llGetRegionDayOffset()
 - SEF
 
 float llGetRegionFPS()
 - SEF
+- min 0
+- max 45
 
 integer llGetRegionFlags()
 - SEF
+# bit 31 can be set hence no limits
 
 vector llGetRegionMoonDirection()
 - SEF
@@ -763,6 +799,8 @@ rotation llGetRegionSunRotation()
 
 float llGetRegionTimeDilation()
 - SEF
+- min 0
+- max 1
 
 vector llGetRootPosition()
 # physics caveat
@@ -781,6 +819,7 @@ rotation llGetRot()
 
 integer llGetSPMaxMemory()
 - SEF
+- min 0
 
 vector llGetScale()
 - SEF
@@ -790,9 +829,12 @@ string llGetScriptName()
 
 integer llGetScriptState(string name)
 - SEF
+- min 0
+- max 1
 
 float llGetSimStats(integer stat_type)
 - SEF
+- min 0
 
 string llGetSimulatorHostname()
 - delay 10.0
@@ -837,6 +879,7 @@ vector llGetTextureScale(integer side)
 float llGetTime()
 - SEF
 # It's stable within the same frame.
+- min 0
 
 float llGetTimeOfDay()
 - unstable
@@ -857,6 +900,7 @@ integer llGetUnixTime()
 integer llGetUsedMemory()
 - unstable
 - SEF
+- min 0
 
 string llGetUsername(key id)
 - SEF
@@ -892,6 +936,7 @@ void llGodLikeRezObject(key inventory, vector pos)
 float llGround(vector offset)
 - SEF
 - min 0
+- max 65536
 
 vector llGroundContour(vector offset)
 - SEF
@@ -950,13 +995,19 @@ void llLinkSitTarget(integer link, vector offset, rotation rot)
 
 integer llLinksetDataAvailable()
 - SEF
+- min 0
 
 integer llLinksetDataCountKeys()
 - SEF
+- min 0
 
 integer llLinksetDataDelete(string key)
+- min 0
+- max 5
 
 integer llLinksetDataDeleteProtected(string key, string password)
+- min 0
+- max 5
 
 list llLinksetDataFindKeys(string pattern, integer start, integer count)
 - SEF
@@ -973,8 +1024,12 @@ string llLinksetDataReadProtected(string key, string password)
 void llLinksetDataReset()
 
 integer llLinksetDataWrite(string key, string value)
+- min 0
+- max 5
 
 integer llLinksetDataWriteProtected(string key, string value, string password)
+- min 0
+- max 5
 
 string llList2CSV(list src)
 - SEF
@@ -1034,6 +1089,7 @@ float llListStatistics(integer operation, list src)
 - SEF
 
 integer llListen(integer channel, string name, key id, string msg)
+- unstable
 
 void llListenControl(integer number, integer active)
 - SEF if number == 0
@@ -1143,6 +1199,7 @@ void llPointAt(vector pos)
 
 float llPow(float base, float exponent)
 - SEF
+# note: can generate negative numbers, e.g. llPow(-2, 3)
 
 void llPreloadSound(string sound)
 - delay 1.0
@@ -1196,10 +1253,14 @@ void llRemoveVehicleFlags(integer flags)
 integer llSetEnvironment(vector position, list params)
 # not sure but we better choose the safest setting
 - unstable
+- min -9
+- max 1
 
 integer llReplaceEnvironment(vector position, string environment, integer track_no, integer day_length, integer day_offset)
 # not sure but we better choose the safest setting
 - unstable
+- min -9
+- max 1
 
 key llRequestAgentData(key id, integer data)
 - unstable
@@ -1268,6 +1329,8 @@ void llRezObject(string inventory, vector pos, vector vel, rotation rot, integer
 
 float llRot2Angle(rotation rot)
 - SEF
+- min 0
+- max 3.1415927
 
 vector llRot2Axis(rotation rot)
 - SEF
@@ -1385,6 +1448,8 @@ void llSetLinkColor(integer linknumber, vector color, integer face)
 
 integer llSetLinkMedia(integer link, integer face, list params)
 - SEF if link > 256
+- min 0
+- max 2001
 
 void llSetLinkPrimitiveParams(integer linknumber, list rules)
 - delay 0.2
@@ -1425,6 +1490,8 @@ void llSetPos(vector pos)
 
 integer llSetPrimMediaParams(integer face, list params)
 - delay 1.0
+- min 0
+- max 2001
 
 void llSetPrimURL(string url)
 # emits an error -> has side effects
@@ -1487,6 +1554,8 @@ void llShout(integer channel, string msg)
 
 float llSin(float theta)
 - SEF
+- min -1
+- max 1
 
 integer llSitOnLink(key agent_id, integer link)
 - min -7
@@ -1502,6 +1571,7 @@ void llSoundPreload(string sound)
 
 float llSqrt(float val)
 - SEF
+- min 0
 
 vector llsRGB2Linear(vector srgb)
 - SEF
@@ -1593,9 +1663,11 @@ key llUpdateKeyValue(string k, string v, integer checked, string original_value)
 
 float llVecDist(vector v1, vector v2)
 - SEF
+- min 0
 
 float llVecMag(vector v)
 - SEF
+- min 0
 
 vector llVecNorm(vector v)
 - SEF
@@ -1624,9 +1696,13 @@ string llXorBase64StringsCorrect(string str1, string str2)
 
 integer llReplaceAgentEnvironment(key agent_id, float transition, string environment)
 - unstable
+- min -8
+- max 1
 
 integer llSetAgentEnvironment(key agent_id, float transition, list params)
 - unstable
+- min -8
+- max 1
 
 float llGetRegionTimeOfDay()
 - SEF
@@ -1642,10 +1718,14 @@ integer llHash(string val)
 
 integer llOrd(string val, integer index)
 - SEF
+- min 0
+- max 1114111
 
 integer llOpenFloater(string title, string url, list params)
 - unstable
 # (may fail if invoked a second time, e.g. if throttled)
+- min -4
+- max 0
 
 string llGetInventoryAcquireTime(string item)
 - SEF
@@ -1672,6 +1752,8 @@ string llSignRSA(string privkey, string message, string alg)
 integer llVerifyRSA(string pubkey, string message, string signature, string alg)
 - SEF if alg == "md5" || alg == "sha1" || alg == "sha224" || alg == "sha256" || alg == "sha384" || alg == "sha512"
 # otherwise error
+- min 0
+- max 1
 
 string llReplaceSubString(string source, string search, string replace, integer count)
 - SEF
@@ -1681,12 +1763,14 @@ list llList2ListSlice(list src, integer start, integer end, integer stride, inte
 
 integer llListFindStrided(list src, list test, integer start, integer end, integer stride)
 - SEF
+- min 0
 
 list llListSortStrided(list src, integer stride, integer stride_index, integer ascending)
 - SEF
 
 integer llLinksetDataCountFound(string pattern)
 - SEF
+- min 0
 
 list llLinksetDataDeleteFound(string pattern, string pass)
 
@@ -1704,25 +1788,31 @@ string llComputeHash(string data, string algorithm)
 float llGetCameraAspect()
 # No error if PERMISSION_TRACK_CAMERA not granted, hence SEF
 - SEF
+- min 0
 
 float llGetCameraFOV()
 # No error if PERMISSION_TRACK_CAMERA not granted, hence SEF
 - SEF
+- min 0
 
 string llGetInventoryDesc(string itemname)
 # May produce error (if item doesn't exist), hence not SEF
 
 integer llGetLinkSitFlags(integer link)
 - SEF
+- min 0
 
 string llGetNotecardLineSync(string name, integer line)
 # May produce error (if notecard doesn't exist), hence not SEF
 
 integer llIsFriend(key agent)
 - SEF
+- min 0
+- max 1
 
 integer llListFindListNext(list src, list test, integer n)
 - SEF
+- min 0
 
 void llRezObjectWithParams(string itemname, list params)
 
