@@ -744,28 +744,20 @@ def InternalListFindList(lst, elems, start, end, stride, instance):
         return 0
     if stride < 1:
         return -1  # stride 0 or negative returns -1
-    if instance >= 0:
-        # Forward search
-        for i in xrange(start, end+2-L2, stride):
-            for j in xrange(L2):
-                if not InternalCompareElems(lst[i+j], elems[j]):
-                    break  # mismatch
-            else:
-                # no mismatch
-                if instance == 0:
-                    return i
-                instance -= 1
-    else:
-        # Backward search
-        for i in xrange(end+1-L2, start-1, -stride):
-            for j in xrange(L2):
-                if not InternalCompareElems(lst[i+j], elems[j]):
-                    break  # mismatch
-            else:
-                # no mismatch
+    range = xrange(start, end+2-L2, stride) if instance >= 0 else xrange(
+        end+1-L2, start-1, -stride)
+    for i in range:
+        for j in xrange(L2):
+            if not InternalCompareElems(lst[i+j], elems[j]):
+                break  # mismatch
+        else:
+            # no mismatch
+            if instance < 0:
                 instance += 1
-                if instance == 0:
-                    return i
+            if instance == 0:
+                return i
+            if instance > 0:
+                instance -= 1
     return -1
 
 def reduce(t):
