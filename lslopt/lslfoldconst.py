@@ -1331,38 +1331,26 @@ class foldconst(object):
                         SEF=True)
                     return
 
-                if child[0].nt == 'CONST' and child[1].SEF:
-                    # when CONST >= second.max: always false
-                    # when CONST < second.min: always true
-                    rmin = self.getMin(child[1])
-                    rmax = self.getMax(child[1])
-                    if (rmax is not None
-                        and not lslfuncs.less(child[0].value, rmax)
-                       ):
-                        parent[index] = nr(nt='CONST', t='integer',
-                            value=0, SEF=True)
-                        return
-                    if rmin is not None and lslfuncs.less(child[0].value, rmin):
-                        parent[index] = nr(nt='CONST', t='integer',
-                            value=1, SEF=True)
-                        return
-                    del rmin, rmax
-                if child[1].nt == 'CONST' and child[0].SEF:
-                    # when first.max < CONST: always true
-                    # when first.min >= CONST: always false
+                if child[0].SEF and child[1].SEF:
                     lmin = self.getMin(child[0])
                     lmax = self.getMax(child[0])
-                    if lmax is not None and lslfuncs.less(lmax, child[1].value):
+                    rmin = self.getMin(child[1])
+                    rmax = self.getMax(child[1])
+                    # when lmax < rmin: always true
+                    if (rmin is not None and lmax is not None
+                        and lslfuncs.less(lmax, rmin)
+                       ):
                         parent[index] = nr(nt='CONST', t='integer',
                             value=1, SEF=True)
                         return
-                    if (lmin is not None
-                        and not lslfuncs.less(lmin, child[1].value)
+                    # when lmin >= rmax: always false
+                    if (rmax is not None and lmin is not None
+                        and not lslfuncs.less(lmin, rmax)
                        ):
                         parent[index] = nr(nt='CONST', t='integer',
                             value=0, SEF=True)
                         return
-                    del lmin, lmax
+                    del lmin, lmax, rmin, rmax
 
                 # Convert 2147483647<i and i<-2147483648 to i&0
                 if (child[0].t == child[1].t == 'integer'
