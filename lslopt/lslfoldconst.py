@@ -29,6 +29,18 @@ from strutil import xrange, unicode
 
 class foldconst(object):
 
+    def getMin(self, node):
+        assert node.t in ('integer', 'float')
+        if node.nt == 'CONST':
+            return node.value
+        return getattr(node, 'min', None)
+
+    def getMax(self, node):
+        assert node.t in ('integer', 'float')
+        if node.nt == 'CONST':
+            return node.value
+        return getattr(node, 'max', None)
+
     def isLocalVar(self, node):
         name = node.name
         scope = node.scope
@@ -1322,33 +1334,35 @@ class foldconst(object):
                 if child[0].nt == 'CONST' and child[1].SEF:
                     # when CONST >= second.max: always false
                     # when CONST < second.min: always true
-                    if (hasattr(child[1], 'max')
-                        and not lslfuncs.less(child[0].value, child[1].max)
+                    rmin = self.getMin(child[1])
+                    rmax = self.getMax(child[1])
+                    if (rmax is not None
+                        and not lslfuncs.less(child[0].value, rmax)
                        ):
                         parent[index] = nr(nt='CONST', t='integer',
                             value=0, SEF=True)
                         return
-                    if (hasattr(child[1], 'min')
-                        and lslfuncs.less(child[0].value, child[1].min)
-                       ):
+                    if rmin is not None and lslfuncs.less(child[0].value, rmin):
                         parent[index] = nr(nt='CONST', t='integer',
                             value=1, SEF=True)
                         return
+                    del rmin, rmax
                 if child[1].nt == 'CONST' and child[0].SEF:
                     # when first.max < CONST: always true
                     # when first.min >= CONST: always false
-                    if (hasattr(child[0], 'max')
-                        and lslfuncs.less(child[0].max, child[1].value)
-                       ):
+                    lmin = self.getMin(child[0])
+                    lmax = self.getMax(child[0])
+                    if lmax is not None and lslfuncs.less(lmax, child[1].value):
                         parent[index] = nr(nt='CONST', t='integer',
                             value=1, SEF=True)
                         return
-                    if (hasattr(child[0], 'min')
-                        and not lslfuncs.less(child[0].min, child[1].value)
+                    if (lmin is not None
+                        and not lslfuncs.less(lmin, child[1].value)
                        ):
                         parent[index] = nr(nt='CONST', t='integer',
                             value=0, SEF=True)
                         return
+                    del lmin, lmax
 
                 # Convert 2147483647<i and i<-2147483648 to i&0
                 if (child[0].t == child[1].t == 'integer'
