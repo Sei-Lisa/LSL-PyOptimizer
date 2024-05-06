@@ -528,6 +528,12 @@ def OptimizeFunc(self, parent, index):
             parent[index] = nr(nt='CONST', t='list', value=[], SEF=True)
             return
 
+    if name == 'llFrand' and child[0].nt == 'CONST':
+        # We can set a range when the input is a constant
+        value = child[0].value
+        node.min = lslfuncs.F32(min(value, 0) * 0.9999999403953552)
+        node.max = lslfuncs.F32(max(value, 0) * 0.9999999403953552)
+
 def FuncOptSetup():
     # Patch the default values list for LSO
     if lslcommon.LSO:

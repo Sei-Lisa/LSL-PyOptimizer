@@ -1,3 +1,4 @@
+// Test that there's at least one 8-digit number
 [ llFrand(16777216)
 , llFrand(16777216)
 , llFrand(16777216)

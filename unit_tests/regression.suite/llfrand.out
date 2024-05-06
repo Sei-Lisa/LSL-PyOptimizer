@@ -1,0 +1,24 @@
+default
+{
+    timer()
+    {
+        llParticleSystem(
+            [ llFrand(((integer)-5))
+            , 1
+            , 1
+            , 0
+            , llFrand(((float)-5))
+            , llFrand(((integer)-16777216))
+            , llFrand(((float)-16777216))
+            , llFrand(5)
+            , 1
+            , 1
+            , 0
+            , llFrand(((float)5))
+            , llFrand(16777216)
+            , llFrand(((float)16777216))
+            , llFrand(33554433)
+            , llFrand(((float)33554432))
+            ]);
+    }
+}
