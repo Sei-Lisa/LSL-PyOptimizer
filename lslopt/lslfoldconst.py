@@ -1318,51 +1318,37 @@ class foldconst(object):
                     parent[index] = nr(nt='CONST', t='integer', value=0,
                         SEF=True)
                     return
-                if child[0].t == child[1].t in ('integer', 'float'):
-                    if (child[0].nt == 'CONST'
-                        and child[1].nt == 'FNCALL'
-                        and self.FnSEF(child[1])
+
+                if child[0].nt == 'CONST' and child[1].SEF:
+                    # when CONST >= second.max: always false
+                    # when CONST < second.min: always true
+                    if (hasattr(child[1], 'max')
+                        and not lslfuncs.less(child[0].value, child[1].max)
                        ):
-                        # CONST < FNCALL aka FNCALL > CONST
-                        # when FNCALL.max <= CONST: always false
-                        # when CONST < FNCALL.min: always true
-                        if ('max' in self.symtab[0][child[1].name]
-                            and not lslfuncs.less(child[0].value,
-                                self.symtab[0][child[1].name]['max'])
-                           ):
-                            parent[index] = nr(nt='CONST', t='integer',
-                                value=0, SEF=True)
-                            return
-                        if ('min' in self.symtab[0][child[1].name]
-                            and lslfuncs.less(child[0].value,
-                                self.symtab[0][child[1].name]['min'])
-                           ):
-                            parent[index] = nr(nt='CONST', t='integer',
-                                value=1, SEF=True)
-                            return
-                    if (child[1].nt == 'CONST'
-                        and child[0].nt == 'FNCALL'
-                        and self.FnSEF(child[0])
+                        parent[index] = nr(nt='CONST', t='integer',
+                            value=0, SEF=True)
+                        return
+                    if (hasattr(child[1], 'min')
+                        and lslfuncs.less(child[0].value, child[1].min)
                        ):
-                        # FNCALL < CONST
-                        # when CONST > FNCALL.max: always true
-                        # when CONST <= FNCALL.min: always false
-                        if ('max' in self.symtab[0][child[0].name]
-                            and lslfuncs.less(
-                                self.symtab[0][child[0].name]['max']
-                                , child[1].value)
-                           ):
-                            parent[index] = nr(nt='CONST', t='integer',
-                                value=1, SEF=True)
-                            return
-                        if ('min' in self.symtab[0][child[0].name]
-                            and not lslfuncs.less(
-                                self.symtab[0][child[0].name]['min'],
-                                child[1].value)
-                           ):
-                            parent[index] = nr(nt='CONST', t='integer',
-                                value=0, SEF=True)
-                            return
+                        parent[index] = nr(nt='CONST', t='integer',
+                            value=1, SEF=True)
+                        return
+                if child[1].nt == 'CONST' and child[0].SEF:
+                    # when first.max < CONST: always true
+                    # when first.min >= CONST: always false
+                    if (hasattr(child[0], 'max')
+                        and lslfuncs.less(child[0].max, child[1].value)
+                       ):
+                        parent[index] = nr(nt='CONST', t='integer',
+                            value=1, SEF=True)
+                        return
+                    if (hasattr(child[0], 'min')
+                        and not lslfuncs.less(child[0].min, child[1].value)
+                       ):
+                        parent[index] = nr(nt='CONST', t='integer',
+                            value=0, SEF=True)
+                        return
 
                 # Convert 2147483647<i and i<-2147483648 to i&0
                 if (child[0].t == child[1].t == 'integer'
@@ -1571,6 +1557,10 @@ class foldconst(object):
                 CONSTargs = CONSTargs and child[idx].nt == 'CONST'
 
             sym = self.symtab[0][name]
+            if 'min' in sym:
+                node.min = sym['min']
+            if 'max' in sym:
+                node.max = sym['max']
             OptimizeArgs(node, sym)
             try:
                 if 'Fn' in sym and (self.FnSEF(node) or lslcommon.IsCalc):

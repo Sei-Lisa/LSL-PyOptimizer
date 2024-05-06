@@ -39,4 +39,9 @@
 , (float)"nan" < (1e40*0)
 , 1e40 < 1e40
 , -1e40 < 1e40
+, llAbs(llGetLinkNumber()-2) >= 0
+, llAbs(llGetLinkNumber()-2) < 0
+, llAbs(llGetLinkNumber()-2) < -1
+, llAbs(llGetLinkNumber()-2) < 3
+, llFabs(llSetRegionPos(<1, 1, 1>) - 0.5) < 0
 ]
