@@ -895,6 +895,7 @@ vector llGetTorque()
 - SEF
 
 integer llGetUnixTime()
+- unstable
 - SEF
 
 integer llGetUsedMemory()
