@@ -1,0 +1,14 @@
+default
+{
+    timer()
+    {
+        integer ia = llGetUnixTime();
+        integer ib = llGetUnixTime();
+        integer ie = -(-5) * ia;
+        float fa = llGetTime();
+        float fb = llGetTime();
+        float fe = -(-5.5) * fa;
+        llOwnerSay((string)[-(--ia) * ib * ib, -++ia * ib * ib, (--ia) * ib, ie]);
+        llOwnerSay((string)[-(--fa) * fb * fb, -++fa * fb * fb, (--fa) * fb, fe]);
+    }
+}

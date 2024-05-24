@@ -194,6 +194,20 @@ class outscript(object):
             return self.symtab[scope][node]['NewName']
         return node
 
+    def LeadMinus(self, node):
+        """Tells whether a node starts with a minus sign"""
+        # TODO: This may add redundant parentheses around --V.
+        # More exactly, the line marked "!!!".
+        # They are necessary to prevent wrong output (---v instead of -(--v))
+        # but not always are they actually necessary. See regr/issue-31.lsl
+        return (node.nt == 'NEG'
+                or node.nt == '--V'  # !!!
+                or not self.optsigns
+                   and node.nt == 'CONST'
+                   and node.t in {'integer', 'float'}
+                   and copysign(1, node.value) == -1
+               )
+
     def OutIndented(self, node):
         if node.nt != '{}':
             self.indentlevel += 1
@@ -235,7 +249,9 @@ class outscript(object):
                 if lnt in self.op_priority:
                     if self.op_priority[lnt] < base_pri:
                         lparen = True
-                elif lnt == 'NEG' and base_pri > self.op_priority['-']:
+                elif (self.LeadMinus(child[0]) and base_pri >
+                      self.op_priority['-']
+                     ):
                     lparen = True
 
                 # This situation has ugly cases due to the strange precedence
@@ -261,13 +277,17 @@ class outscript(object):
                             and lnode.nt not in ('~', '!')
                            ):
                             break
-                    if lnode.nt == 'NEG' and base_pri > self.op_priority['-']:
+                    if (self.LeadMinus(lnode) and base_pri >
+                        self.op_priority['-']
+                       ):
                         lparen = True
 
                 if rnt in self.op_priority:
                     if self.op_priority[rnt] <= base_pri:
                         rparen = True
-                elif rnt == 'NEG' and self.op_priority['-'] < base_pri:
+                elif (self.LeadMinus(child[1]) and self.op_priority['-'] <
+                      base_pri
+                     ):
                     rparen = True
                 # see above
                 elif rnt in ('~', '!'):
@@ -278,7 +298,9 @@ class outscript(object):
                         lnode = lnode.ch[0]
                         if lnode.nt not in self.op_priority and lnode.nt not in ('~', '!'):
                             break
-                    if lnode.nt == 'NEG' and base_pri > self.op_priority['-']:
+                    if (self.LeadMinus(lnode) and base_pri >
+                        self.op_priority['-']
+                       ):
                         # TODO: Improve right operand parenthesis removal
                         #       for minus signs.
                         # Shouldn't this look into the RHS node?
