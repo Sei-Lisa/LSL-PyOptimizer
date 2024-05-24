@@ -1,1 +1,1 @@
-./main.py -O breakcont,inline -
+main.py -O breakcont,inline -
