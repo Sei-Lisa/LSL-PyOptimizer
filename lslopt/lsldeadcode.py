@@ -463,7 +463,7 @@ class deadcode(object):
                     if value.nt == 'CONST':
                         value = value.value[fieldidx]
                         value = nr(nt='CONST', X=True, SEF=True,
-                            t=self.PythonType2LSL[type(value)], value=value)
+                            t=lslfuncs.PythonType2LSL[type(value)], value=value)
                         value = self.Cast(value, 'float')
                         SEF = True
                     else: # assumed VECTOR or ROTATION per OKtoRemoveSymbol

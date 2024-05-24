@@ -1,0 +1,7 @@
+default
+{
+    timer()
+    {
+        llOwnerSay("1.000000");
+    }
+}
