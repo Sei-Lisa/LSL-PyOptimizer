@@ -1825,8 +1825,11 @@ list lazy_list_set(list L, integer i, list v)
                 raise EParseSyntax(self)
             # State Switch only searches for states in the global scope
             name = self.tok[1] if self.tok[0] == 'IDENT' else 'default'
-            if name not in self.symtab[0] and (name not in self.globals
-                    or self.globals[name]['Kind'] != 's'):
+            if (name not in self.symtab[0]
+                    or self.symtab[0][name]['Kind'] != 's'
+               ) and (name not in self.globals
+                    or self.globals[name]['Kind'] != 's'
+               ):
                 raise EParseUndefined(self)
             self.NextToken()
             self.expect(';')

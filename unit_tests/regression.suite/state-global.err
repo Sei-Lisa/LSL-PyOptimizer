@@ -1,0 +1,3 @@
+default{timer(){state Z;}}
+                      ^
+(Line 2 char 23): ERROR: Name not defined within scope
