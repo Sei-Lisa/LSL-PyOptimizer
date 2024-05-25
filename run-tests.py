@@ -418,6 +418,48 @@ class UnitTestRegression(UnitTestCase):
         self.assertRaises(lslparse.EParseTypeMismatch, parser.parse,
             'default{timer(){if(1)return 1;}}')
 
+        # Constants with 'c' in symbol table (introduced to solve issue #30)
+        # Some errors are not the expected ones. Most (all?) should be syntax.
+        parser.parse('integer a=LOOP;default{timer(){llOwnerSay(NAK+EOF);}}')
+        parser.parse('integer a=LOOP;default{timer(){llOwnerSay(NAK+EOF);}}',
+            ('prettify',))
+        parser.parse('default{timer(){LOOP;}}')
+        parser.parse('default{timer(){LOOP;}}', ('prettify',))
+        self.assertRaises(lslparse.EParseSyntax, parser.parse,
+            'default{touch(integer LOOP){}}', ('prettify',))
+        self.assertRaises(lslparse.EParseSyntax, parser.parse,
+            'default{timer(){ZERO_VECTOR.x;}}', ('prettify',))
+        self.assertRaises(lslparse.EParseSyntax, parser.parse,
+            'default{timer(){LOOP.x;}}', ('prettify',))
+        self.assertRaises(lslparse.EParseSyntax, parser.parse,
+            'default{timer(){LOOP=1;}}', ('prettify',))
+        self.assertRaises(lslparse.EParseSyntax, parser.parse,
+            'default{timer(){LOOP++;}}', ('prettify',))
+        # should raise EParseSyntax instead
+        self.assertRaises(lslparse.EParseUndefined, parser.parse,
+            'default{timer(){++LOOP;}}', ('prettify',))
+        # should raise EParseSyntax instead
+        self.assertRaises(lslparse.EParseAlreadyDefined, parser.parse,
+            'integer LOOP=0;', ('prettify',))
+        # should raise EParseSyntax instead
+        self.assertRaises(lslparse.EParseAlreadyDefined, parser.parse,
+            'integer LOOP(){}', ('prettify',))
+        self.assertRaises(lslparse.EParseSyntax, parser.parse,
+            'default{timer(){integer LOOP=1;}}', ('prettify',))
+        self.assertRaises(lslparse.EParseSyntax, parser.parse,
+            'default{timer(){integer LOOP;}}', ('prettify',))
+        # should raise EParseSyntax instead
+        self.assertRaises(lslparse.EParseAlreadyDefined, parser.parse,
+            'default{timer(){}}state LOOP{timer(){}}', ('prettify',))
+        # should raise EParseSyntax instead
+        self.assertRaises(lslparse.EParseUndefined, parser.parse,
+            'default{timer(){state LOOP;}}', ('prettify',))
+        self.assertRaises(lslparse.EParseSyntax, parser.parse,
+            'default{timer(){@LOOP;}}', ('prettify',))
+        self.assertRaises(lslparse.EParseSyntax, parser.parse,
+            'default{timer(){integer LOOP;}}', ('prettify',))
+
+
 class UnitTestCoverage(UnitTestCase):
     def test_coverage_misc(self):
         """Miscellaneous tests that can't be computed or are too difficult
