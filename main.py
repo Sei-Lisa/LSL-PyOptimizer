@@ -214,7 +214,7 @@ u"""LSL optimizer v{version}
     version 3.
 
 Usage: {progname}
-    [-O|--optimizer-options=[+|-]option[,[+|-]option[,...]]]
+    [-O|--optimizer-options=[+|-]<option>[,[+|-]<option>[,...]]]
                                 optimizer options (use '-O help' for help)
     [-h|--help]                 print this help
     [--version]                 print this program's version
@@ -238,7 +238,11 @@ Usage: {progname}
     [--avname=<name>]         * specify name of avatar saving the script
     [--assetid=<UUID>]        * specify the asset UUID of the script
     [--shortname=<name>]      * specify the script's short file name
-    [--prettify]                Prettify source file. Disables all -O options.
+    [-B|--blacklist=<consts>]   Comma-separated list of LSL constants that
+                                should appear verbatim in the source, without
+                                being expanded. Defaults to: NAK,JSON_*
+    [--prettify]                Prettify source file. Disables all -O options
+                                and blacklists all constants.
     [--bom]                     Prefix script with a UTF-8 byte-order mark
     [--emap]                    Output error messages in a format suitable for
                                 automated processing
@@ -410,12 +414,12 @@ def main(argv):
         % (b"', '".join(options - validoptions)).decode('utf8'))
 
     try:
-        opts, args = getopt.gnu_getopt(argv[1:], 'hO:o:p:P:HTyb:L:A:',
+        opts, args = getopt.gnu_getopt(argv[1:], 'hO:o:p:P:HTyb:L:A:B:',
             ('optimizer-options=', 'help', 'version', 'output=', 'header',
             'timestamp', 'python-exceptions', 'prettify', 'bom', 'emap',
             'preproc=', 'precmd=', 'prearg=', 'prenodef', 'preshow',
             'avid=', 'avname=', 'assetid=', 'shortname=', 'builtins=',
-            'libdata=', 'postarg=', 'preproc-show-cmdline'))
+            'libdata=', 'postarg=', 'preproc-show-cmdline', 'blacklist='))
     except getopt.GetoptError as e:
         Usage(argv[0])
         werr(u"\nError: %s\n" % str2u(str(e), 'utf8'))
@@ -441,6 +445,7 @@ def main(argv):
     emap = False
     builtins = None
     libdata = None
+    blacklist = ['NAK','JSON_*']
 
     for opt, arg in opts:
         if opt in ('-O', '--optimizer-options'):
@@ -542,6 +547,9 @@ def main(argv):
 
         elif opt == '--prettify':
             prettify = True
+
+        elif opt in {'-B', '--blacklist'}:
+            blacklist = arg.split(',') if arg != '' else []
 
         elif opt == '--bom':
             bom = True
@@ -727,7 +735,29 @@ def main(argv):
                 options.add('emap')
 
             lib = lslopt.lslloadlib.LoadLibrary(builtins, libdata)
+
+            wildcards = re.compile(str2u(r'^\*?[A-Za-z_?][A-Za-z0-9_*?]*$'))
+            for i in xrange(len(blacklist)-1, -1, -1):
+                c = blacklist[i]
+                if not wildcards.search(c):
+                    werr(u"Error: blacklist: \"%s\" contains invalid"
+                         u" characters\n" % c)
+                    return 1
+                expr = re.compile(c.replace('?', '.').replace('*', '.*') + '$')
+
+                matches = [j for j in lib[1].keys() if expr.match(j)]
+
+#                if not matches:
+#                    werr(u"Error: blacklist: \"%s\" does not match any constant"
+#                         u"\n" % c)
+#                    return 1
+                if not matches or matches[0] != c:
+                    blacklist = blacklist[:i] + matches + blacklist[i+1:]
+            blacklist = list(set(blacklist))  # remove dupes
+
             p = parser(lib)
+            p.blacklist = blacklist
+            del blacklist
             assert type(script) == str
             try:
                 ts = p.parse(script, options,

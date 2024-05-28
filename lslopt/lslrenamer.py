@@ -89,6 +89,8 @@ class renamer(object):
                     functions.append(name)
             elif kind == 'v':
                 globalvars.append(name)
+            elif kind == 'c':
+                pass
             else:
                 assert False, 'Invalid kind at this scope: ' \
                     + kind # pragma: no cover

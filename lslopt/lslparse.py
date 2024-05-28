@@ -2825,9 +2825,9 @@ list lazy_list_set(list L, integer i, list v)
 
         if lib is None:
             lib = self.lib
-        self.events = lib[0]
-        self.constants = lib[1]
-        self.funclibrary = lib[2]
+        self.events = lib[0].copy()
+        self.constants = lib[1].copy()
+        self.funclibrary = lib[2].copy()
 
         self.TypeToExtractionFunction.clear()
         for name in self.funclibrary:
@@ -2966,14 +2966,23 @@ list lazy_list_set(list L, integer i, list v)
         self.scopestack = [0]
 
         if self.prettify:
-            # Add the constants as symbol table variables...
-            for i in self.constants:
-                self.symtab[0][i] = {'Kind':'c', 'Scope':0,
-                    'Type':lslcommon.PythonType2LSL[type(self.constants[i])]}
-            # ... and remove them as constants.
-            self.constants = {}
+            # Add all constants to the blacklist
+            self.blacklist = list(u2str(i) for i in self.constants.keys())
             # Remove TRUE and FALSE from keywords
             self.keywords -= set(('TRUE', 'FALSE'))
+
+        # Some unit tests that reuse the parser object don't initialize the
+        # blacklist, so we don't rely on it being set.
+        if not hasattr(self, 'blacklist'):
+            self.blacklist = []
+
+        for name in self.blacklist:
+            # Add the blacklisted constants to the symbol table...
+            self.symtab[0][name] = {'Kind':'c', 'Scope':0, 'W':False,
+                'Type':lslcommon.PythonType2LSL[type(self.constants[name])]}
+            # ... and remove them from the list of substitutable constants.
+            del self.constants[name]
+        assert not self.prettify or len(self.constants) == 0
 
         # Last preprocessor __FILE__. <stdin> means the current file.
         self.lastFILE = '<stdin>'
