@@ -7,3 +7,4 @@
 + "T7" + llListSortStrided([1, "C", 3, "A", 2, "B"], 2, -3, TRUE)
 + "T8" + llListSortStrided([1, "C", 3, "A", 2, "B"], 2, -2, TRUE)
 + "T9" + llListSortStrided([1, "C", 3, "A", 2, "B"], 2, -1, TRUE)
++ "T10" + llListSortStrided([1, "b", 0, "c", 1, "a", 0, "b", 1, "c", 0, "a"], 2, 1, TRUE)

@@ -1704,8 +1704,8 @@ def llListSort(lst, stride, asc, idx=0):
                 # swap
                 lst[i:i+stride],lst[j:j+stride] = lst[j:j+stride],lst[i:i+stride]
                 # Re-cache
-                a = lst[i]
-                ta = type(a)
+                a = b
+                ta = tb
                 if ta == Vector:
                     a = v2f(a)
                     a = a[0]*a[0] + a[1]*a[1] + a[2]*a[2]
