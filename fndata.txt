@@ -1815,7 +1815,7 @@ integer llListFindListNext(list src, list test, integer n)
 - SEF
 - min 0
 
-void llRezObjectWithParams(string itemname, list params)
+key llRezObjectWithParams(string itemname, list params)
 - delay 0.1
 
 void llSetLinkSitFlags(integer link, integer flags)
