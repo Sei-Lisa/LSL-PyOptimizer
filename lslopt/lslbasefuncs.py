@@ -60,7 +60,7 @@ from strutil import *
 # as is (vector)"<1,inf,info>". The 1st gives <0,0,0>, the others <1,inf,inf>.
 # The lookahead (?!i) is essential for parsing them that way without extra code.
 # Note that '|' in REs is order-sensitive.
-float_re  = re.compile(str2u(r'''
+float_re_tpl = r'''
     ^\s*[+-]?(?:
         0(x)(?:             # Hex float or hex int (captures the 'x')
             [0-9a-f]+(?:\.[0-9a-f]*)?
@@ -74,28 +74,13 @@ float_re  = re.compile(str2u(r'''
         )(?:
             e[+-]?[0-9]+    # Decimal float exponent
         )?                  # (optional)
-        |inf                # Infinity
+        |%s                 # Infinity (normal or vector variant)
         |(nan)              # NaN (captured)
     )
-    '''), re.I | re.X)
-vfloat_re = re.compile(str2u(r'''
-    ^\s*[+-]?(?:
-        0(x)(?:             # Hex float or hex int (captures the 'x')
-            [0-9a-f]+(?:\.[0-9a-f]*)?
-            |\.[0-9a-f]+    # Hex digits
-        )(?:
-            p[+-]?[0-9]+    # Hex float exponent
-        )?                  # (optional)
-        |(?:                # Decimal float or decimal int
-            [0-9]+(?:\.[0-9]*)?
-            |\.[0-9]+       # Decimal digits
-        )(?:
-            e[+-]?[0-9]+    # Decimal float exponent
-        )?                  # (optional)
-        |infinity|inf(?!i)  # Infinity (the only difference with the above)
-        |(nan)              # NaN (captured)
-    )
-    '''), re.I | re.X)
+    '''
+float_re  = re.compile(str2u(float_re_tpl % 'inf'), re.I | re.X)
+vfloat_re = re.compile(str2u(float_re_tpl % 'infinity|inf(?!i)'), re.I | re.X)
+del float_re_tpl
 
 int_re = re.compile(str2u(r'^0(x)[0-9a-f]+|^\s*[+-]?[0-9]+'), re.I)
 
