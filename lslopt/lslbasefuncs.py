@@ -1797,15 +1797,9 @@ def llModPow(base, exp, mod):
     base = fi(base)
     exp = fi(exp)
     mod = fi(mod)
-    if not lslcommon.IsCalc:
-        # This function has a delay, therefore it's not safe to compute it
-        # unless in calculator mode.
-        raise ELSLCantCompute
     # With some luck, this works fully with native ints on 64 bit machines.
     if mod in (0, 1):
         return 0
-    if exp == 0:
-        return 1
     # Convert all numbers to unsigned
     base &= 0xFFFFFFFF
     exp  &= 0xFFFFFFFF
@@ -1814,11 +1808,11 @@ def llModPow(base, exp, mod):
     ret = 1
     while True:
         if exp & 1:
-            ret = ((ret * prod) & 0xFFFFFFFF) % mod
+            ret = ((ret * prod) % mod) & 0xFFFFFFFF
         exp = exp >> 1
         if exp == 0:
             break
-        prod = ((prod * prod) & 0xFFFFFFFF) % mod
+        prod = ((prod * prod) % mod) & 0xFFFFFFFF
 
     return S32(ret)
 

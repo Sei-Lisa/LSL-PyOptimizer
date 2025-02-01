@@ -1144,7 +1144,7 @@ void llMessageLinked(integer linknum, integer num, string str, key id)
 void llMinEventDelay(float delay)
 
 integer llModPow(integer a, integer b, integer c)
-- delay 1.0
+- SEF
 
 void llModifyLand(integer action, integer brush)
 

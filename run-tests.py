@@ -541,8 +541,6 @@ class UnitTestCoverage(UnitTestCase):
         # The SEF table prevents this assertion from being reachable via script.
         self.assertRaises(lslfuncs.ELSLCantCompute, lslfuncs.llXorBase64Strings,
                           u"AABA", u"AABA")
-        self.assertRaises(lslfuncs.ELSLCantCompute, lslfuncs.llModPow,
-                          3, 5, 7)
         # Check invalid type in llGetListEntryType
         self.assertRaises(lslfuncs.ELSLInvalidType, lslfuncs.llGetListEntryType,
             [b'a'], 0)
