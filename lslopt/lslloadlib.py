@@ -229,7 +229,7 @@ def LoadLibrary(builtins = None, fndata = None):
         r'("(?:\\.|[^"])*"|<[^>]+>|[-+0-9x.e]+'   # strings, vectors, numbers
         r'|\[(?:[^]"]|"(?:\\.|[^"])*")*\]))'      # lists
         r'(?:\s+if\s+(.*\S))?'
-        r'|(unstable|stop|strlen|detect|touch|grab)'
+        r'|(unstable|stop|strlen|detect|touch|grab|damage)'
         r'|(min|max|delay)\s+([-0-9.]+)'
         r'|listto\s+(integer|float|string|key|vector|rotation|list)'
         r')\s*$'), re.I)
@@ -362,7 +362,7 @@ def LoadLibrary(builtins = None, fndata = None):
                         elif curr_ty == 'event':
                             if match_flag.group(4):
                                 flag = match_flag.group(4).lower()
-                                if flag in ('detect','touch','grab'):
+                                if flag in ('detect','touch','grab', 'damage'):
                                     events[curr_fn][flag] = True
                                 else:
                                     warning(u"Events only support a few flags"

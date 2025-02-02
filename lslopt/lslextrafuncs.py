@@ -84,6 +84,12 @@ def llClearLinkMedia(link, face):
         return 0
     raise ELSLCantCompute
 
+def llDetectedDamage(idx, evsym=None):
+    idx = fi(idx)
+    if 0 <= idx <= 15 and (evsym is None or 'damage' in evsym):
+        raise ELSLCantCompute
+    return []
+
 def llDetectedGrab(idx, evsym=None):
     idx = fi(idx)
     if 0 <= idx <= 15 and (evsym is None or 'grab' in evsym):
@@ -125,6 +131,12 @@ def llDetectedPos(idx, evsym=None):
     if 0 <= idx <= 15 and (evsym is None or 'detect' in evsym):
         raise ELSLCantCompute
     return ZERO_VECTOR
+
+def llDetectedRezzer(idx, evsym=None):
+    idx = fi(idx)
+    if 0 <= idx <= 15 and (evsym is None or 'detect' in evsym):
+        raise ELSLCantCompute
+    return []
 
 def llDetectedRot(idx, evsym=None):
     idx = fi(idx)
@@ -250,6 +262,13 @@ def llGetAttachedList(id):
         return [u'NOT FOUND']
     raise ELSLCantCompute
 
+def llGetAttachedListFiltered(id, opts):
+    id = fk(id)
+    opts = fl(opts)
+    if not cond(id):
+        return [u'NOT FOUND']
+    raise ELSLCantCompute
+
 def llGetBoundingBox(id):
     id = fk(id)
     if not cond(id):
@@ -285,6 +304,12 @@ def llGetExperienceList(id):
     id = fk(id)
     # This function is not implemented and always returns empty list
     return []
+
+def llGetHealth(id):
+    id = fk(id)
+    if not cond(id):
+        return 0.0
+    raise ELSLCantCompute
 
 def llGetHTTPHeader(id, s):
     id = fk(id)

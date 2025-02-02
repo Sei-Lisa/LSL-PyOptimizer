@@ -57,8 +57,8 @@ def OptimizeArgs(node, sym):
 
 
 # llGetObjectDetails return types
-# Last: 49 (OBJECT_TEXT_ALPHA).
-objDetailsTypes = 'issvrvkkkiiififfffkiiiiiiffkiviiksiisiiiiiifssivvf'
+# Last: 52 (OBJECT_DAMAGE_TYPE).
+objDetailsTypes = 'issvrvkkkiiififfffkiiiiiiffkiviiksiisiiiiiifssivvfffi'
 
 # llGetParcelDetails return types
 # Last: 13 (PARCEL_DETAILS_SCRIPT_DANGER)
@@ -125,6 +125,8 @@ primParamsTypes = \
     , 48: '*'        # 48=PRIM_GLTF_BASE_COLOR
     , 49: 's'        # 49=PRIM_RENDER_MATERIAL
     , 50: 'i'        # 50=PRIM_SIT_FLAGS
+    , 51: 'fi'       # 51=PRIM_DAMAGE
+    , 52: 'f'        # 51=PRIM_HEALTH
     }
 
 # llGetPrimitiveParams parameters with arguments. F=face, L=link.

@@ -52,6 +52,9 @@
 #  grab:
 #    Marks the event as enabling grab detection.
 #
+#  damage:
+#    Marks the event as enabling damage detection.
+#
 #  delay <value>:
 #    Function has a delay.
 #
@@ -172,7 +175,6 @@ rotation llAxisAngle2Rot(vector axis, float angle)
 - SEF
 
 integer llBase64ToInteger(string str)
-# While it's unstable for some strings, we ignore that part.
 - SEF
 
 string llBase64ToString(string str)
@@ -263,39 +265,39 @@ integer llDetectedGroup(integer number)
 - SEF
 - min 0
 - max 1
-- return 0 if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+- return 0 if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" && event != "on_damage" && event != "final_damage" || number < 0 || number > 15
 
 key llDetectedKey(integer number)
 - detect
 - SEF
-- return "00000000-0000-0000-0000-000000000000" if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+- return "00000000-0000-0000-0000-000000000000" if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" && event != "on_damage" && event != "final_damage" || number < 0 || number > 15
 
 integer llDetectedLinkNumber(integer number)
 - detect
 - SEF
 - min 0
 - max 256
-- return 0 if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+- return 0 if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" && event != "on_damage" && event != "final_damage" || number < 0 || number > 15
 
 string llDetectedName(integer number)
 - detect
 - SEF
-- return "00000000-0000-0000-0000-000000000000" if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+- return "00000000-0000-0000-0000-000000000000" if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" && event != "on_damage" && event != "final_damage" || number < 0 || number > 15
 
 key llDetectedOwner(integer number)
 - detect
 - SEF
-- return "00000000-0000-0000-0000-000000000000" if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+- return "00000000-0000-0000-0000-000000000000" if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" && event != "on_damage" && event != "final_damage" || number < 0 || number > 15
 
 vector llDetectedPos(integer number)
 - detect
 - SEF
-- return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+- return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" && event != "on_damage" && event != "final_damage" || number < 0 || number > 15
 
 rotation llDetectedRot(integer number)
 - detect
 - SEF
-- return <0,0,0,1> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+- return <0,0,0,1> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" && event != "on_damage" && event != "final_damage" || number < 0 || number > 15
 
 vector llDetectedTouchBinormal(integer number)
 - detect
@@ -322,13 +324,13 @@ vector llDetectedTouchPos(integer number)
 vector llDetectedTouchST(integer number)
 - detect
 - SEF
-- return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+- return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" && event != "on_damage" && event != "final_damage" || number < 0 || number > 15
 - return <-1,-1,0> if (event == "collision" || event == "collision_start" || event == "collision_end" || event == "sensor") && number == 0
 
 vector llDetectedTouchUV(integer number)
 - detect
 - SEF
-- return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+- return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" && event != "on_damage" && event != "final_damage" || number < 0 || number > 15
 - return <-1,-1,0> if (event == "collision" || event == "collision_start" || event == "collision_end" || event == "sensor") && number == 0
 
 integer llDetectedType(integer number)
@@ -336,12 +338,12 @@ integer llDetectedType(integer number)
 - SEF
 - min 0
 - max 15
-- return 0 if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+- return 0 if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" && event != "on_damage" && event != "final_damage" || number < 0 || number > 15
 
 vector llDetectedVel(integer number)
 - detect
 - SEF
-- return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" || number < 0 || number > 15
+- return <0,0,0> if event != "" && event != "touch" && event != "touch_start" && event != "touch_end" && event != "collision" && event != "collision_start" && event != "collision_end" && event != "sensor" && event != "on_damage" && event != "final_damage" || number < 0 || number > 15
 
 void llDialog(key avatar, string message, list buttons, integer chat_channel)
 - delay 1.0
@@ -1823,6 +1825,47 @@ void llSetLinkSitFlags(integer link, integer flags)
 vector llWorldPosToHUD(vector pos)
 - SEF
 
+void llAdjustDamage(integer index, float damage)
+
+void llDamage(key id, float damage, integer damage_type)
+
+integer llDerezObject(key id, integer mode)
+- unstable
+
+list llDetectedDamage(integer index)
+- SEF
+
+key llDetectedRezzer(integer index)
+- SEF
+
+key llFindNotecardTextCount(string name, string pattern, list options)
+- unstable
+
+list llFindNotecardTextSync(string name, string pattern, integer start, integer count, list options)
+# may be dropped from cache between calls
+- unstable
+
+list llGetAttachedListFiltered(key agent, list options)
+- unstable
+
+float llGetHealth(key id)
+- unstable
+- SEF
+
+string llGetStartString()
+- SEF
+
+integer llGiveAgentInventory(key agent, string folder, list items, list options)
+- unstable
+
+void llMapBeacon(string region, vector position, list options)
+
+void llSetAgentRot(rotation orientation, integer flags)
+
+integer llTransferOwnership(key agent, integer flags, list options)
+- unstable
+
+
 ###################################################################
 
 # Events are SEF if a script with an empty event can't be
@@ -1959,4 +2002,20 @@ event touch_start(integer num_detected)
 # Not SEF; see touch().
 
 event transaction_result(key id, integer success, string data)
+- SEF
+
+event final_damage(integer num_detected)
+# Not SEF
+- detect
+- damage
+
+event game_control(key id, integer button_states, list axis_values)
+- SEF
+
+event on_damage(integer num_detected)
+# Not SEF
+- detect
+- damage
+
+event on_death()
 - SEF
